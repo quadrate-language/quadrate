@@ -1,0 +1,2 @@
+a d128 compares only with a d128 or an i64, not with float
+!Stack underflow

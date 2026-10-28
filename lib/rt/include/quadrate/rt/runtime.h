@@ -102,19 +102,19 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
 int qd_push_p(qd_context* ctx, void* value);
 
 /**
- * @brief Push an f128 onto the stack
+ * @brief Push a d128 onto the stack
  *
  * @param ctx Execution context
  * @param value Value to push
  * @return Execution result (0 on success)
  */
-int qd_push_q(qd_context* ctx, qd_f128_t value);
+int qd_push_q(qd_context* ctx, qd_d128_t value);
 
 /**
- * @brief Push an f128 given as the two words of its encoding
+ * @brief Push a d128 given as the two words of its encoding
  *
- * What compiled code calls for `0.1q`: the compiler reads the literal and passes its
- * qd_f128_t::w[0] and w[1], which crosses into C the same way on every target, where a
+ * What compiled code calls for `0.1d`: the compiler reads the literal and passes its
+ * qd_d128_t::w[0] and w[1], which crosses into C the same way on every target, where a
  * sixteen-byte struct would not.
  *
  * @return Execution result (0 on success)
@@ -122,13 +122,13 @@ int qd_push_q(qd_context* ctx, qd_f128_t value);
 int qd_push_q_bits(qd_context* ctx, uint64_t low, uint64_t high);
 
 /**
- * @brief Whether a stack element is an f128 equal to a literal, for `switch`
+ * @brief Whether a stack element is a d128 equal to a literal, for `switch`
  *
  * The literal arrives as qd_push_q_bits() takes it.
  *
- * @return 1 if `subject` is an f128 comparing equal to the literal, 0 otherwise
+ * @return 1 if `subject` is a d128 comparing equal to the literal, 0 otherwise
  */
-int qd_f128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high);
+int qd_d128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high);
 
 /** @} */ // end of StackPush group
 
@@ -182,13 +182,13 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size);
 int qd_pop_p(qd_context* ctx, void** value);
 
 /**
- * @brief Pop an f128 from the stack
+ * @brief Pop a d128 from the stack
  *
  * @param ctx Execution context
  * @param[out] value Receives the value
  * @return 0 on success, non-zero on error (underflow or type mismatch)
  */
-int qd_pop_q(qd_context* ctx, qd_f128_t* value);
+int qd_pop_q(qd_context* ctx, qd_d128_t* value);
 
 /** @} */ // end of StackPop group
 
@@ -642,7 +642,7 @@ int qd_casts(qd_context* ctx);
 int qd_castp(qd_context* ctx);
 
 /**
- * @brief Cast top element to f128
+ * @brief Cast top element to d128
  *
  * An integer converts exactly; an f64 converts its binary value, correctly rounded to
  * 34 digits.
@@ -656,7 +656,7 @@ int qd_castq(qd_context* ctx);
  * @brief Convert a function argument in place, for the casts a call implies
  *
  * The element `depth` places below the top -- 0 is the top -- becomes `type`: an i64 an
- * f64 or an f128, an f64 an i64 by truncation. Anything else is a type error.
+ * f64 or a d128, an f64 an i64 by truncation. Anything else is a type error.
  *
  * @param ctx Execution context
  * @param depth How far below the top the argument lies

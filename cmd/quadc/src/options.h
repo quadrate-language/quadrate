@@ -31,7 +31,7 @@ struct Options {
 	bool coverage = false;										 // Function coverage report (--coverage with --test)
 	bool freestanding = false;									 // No hosted runtime (no libc, no auto-main)
 	bool noJIT = false;											 // Disable JIT for -r mode
-	bool floatsAreF128 = false;									 // --default-float f128: `1.5` is `1.5q`
+	bool floatsAreD128 = false;									 // --default-float d128: `1.5` is `1.5d`
 	std::string targetTriple;									 // Cross-compilation target (e.g., aarch64-linux-gnu)
 	std::unordered_map<std::string, std::string> moduleVersions; // module name -> version
 };

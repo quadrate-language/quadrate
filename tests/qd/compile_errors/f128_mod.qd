@@ -1,4 +1,0 @@
-// Test: mod is integer-only, and the f128 module has both remainders.
-fn main() {
-	7q 2q % print nl
-}

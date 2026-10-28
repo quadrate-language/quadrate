@@ -4,23 +4,23 @@
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
-#include <inttypes.h>
-#include <quadrate/rt/runtime.h>
-#include <quadrate/rt/array.h>
-#include <quadrate/rt/qd_string.h>
-#include <quadrate/rt/qd_struct.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <signal.h>
-#include <stdatomic.h>
 #include "platform/thread_platform.h"
 #include "ptr_registry.h"
 #include "runtime_internal.h"
+#include <inttypes.h>
+#include <math.h>
+#include <quadrate/rt/array.h>
+#include <quadrate/rt/qd_string.h>
+#include <quadrate/rt/qd_struct.h>
+#include <quadrate/rt/runtime.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdatomic.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 static void dump_stack(qd_context* ctx);
 
@@ -195,7 +195,7 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 
 	// Check stack capacity
 	if (qd_stack_size(ctx->st) >= ctx->st->capacity) {
-		qd_string_release(value);  // Cleanup on overflow
+		qd_string_release(value); // Cleanup on overflow
 		return (int){-2};
 	}
 
@@ -216,24 +216,24 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return (int){0};
 }
 
-int qd_push_q(qd_context* ctx, qd_f128_t value) {
-	if (qd_stack_push_f128(ctx->st, value) != QD_STACK_OK) {
+int qd_push_q(qd_context* ctx, qd_d128_t value) {
+	if (qd_stack_push_d128(ctx->st, value) != QD_STACK_OK) {
 		return (int){-2};
 	}
 	return (int){0};
 }
 
 int qd_push_q_bits(qd_context* ctx, uint64_t low, uint64_t high) {
-	const qd_f128_t value = {{low, high}};
+	const qd_d128_t value = {{low, high}};
 	return qd_push_q(ctx, value);
 }
 
-int qd_f128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high) {
-	if (subject == NULL || subject->type != QD_STACK_TYPE_F128) {
+int qd_d128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high) {
+	if (subject == NULL || subject->type != QD_STACK_TYPE_D128) {
 		return 0;
 	}
-	const qd_f128_t label = {{low, high}};
-	return qd_f128_compare(subject->value.q, label) == 0;
+	const qd_d128_t label = {{low, high}};
+	return qd_d128_compare(subject->value.d, label) == 0;
 }
 
 int qd_pop_i(qd_context* ctx, int64_t* value) {
@@ -293,7 +293,7 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size) {
 	return result;
 }
 
-int qd_pop_q(qd_context* ctx, qd_f128_t* value) {
+int qd_pop_q(qd_context* ctx, qd_d128_t* value) {
 	if (!ctx || !value) {
 		return QD_ERR_NULL_POINTER;
 	}
@@ -302,11 +302,11 @@ int qd_pop_q(qd_context* ctx, qd_f128_t* value) {
 	if (err != QD_STACK_OK) {
 		return QD_ERR_GENERIC;
 	}
-	if (elem.type != QD_STACK_TYPE_F128) {
+	if (elem.type != QD_STACK_TYPE_D128) {
 		qdrt_release_element(&elem);
 		return QD_ERR_TYPE_MISMATCH;
 	}
-	*value = elem.value.q;
+	*value = elem.value.d;
 	return QD_OK;
 }
 
@@ -336,24 +336,24 @@ int qd_peek(qd_context* ctx) {
 		QDRT_FATAL(ctx, "peek", "Failed to peek value");
 	}
 	switch (val.type) {
-		case QD_STACK_TYPE_INT:
-			printf("%" PRId64 "\n", val.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			// Use %g to match qd_print's float formatting (consistent output).
-			printf("%g\n", val.value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			printf("%s\n", qd_string_data(val.value.s));
-			break;
-		case QD_STACK_TYPE_F128: {
-			char text[QD_F128_STRING_MAX];
-			qd_f128_format(val.value.q, text, sizeof text);
-			printf("%s\n", text);
-			break;
-		}
-		default:
-			return (int){-3};
+	case QD_STACK_TYPE_INT:
+		printf("%" PRId64 "\n", val.value.i);
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		// Use %g to match qd_print's float formatting (consistent output).
+		printf("%g\n", val.value.f);
+		break;
+	case QD_STACK_TYPE_STR:
+		printf("%s\n", qd_string_data(val.value.s));
+		break;
+	case QD_STACK_TYPE_D128: {
+		char text[QD_D128_STRING_MAX];
+		qd_d128_format(val.value.d, text, sizeof text);
+		printf("%s\n", text);
+		break;
+	}
+	default:
+		return (int){-3};
 	}
 	return (int){0};
 }
@@ -415,39 +415,39 @@ static void release_if_string(qd_stack_element_t* elem) {
 static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* elem) {
 	qd_stack_error err;
 	switch (elem->type) {
-		case QD_STACK_TYPE_INT:
-			err = qd_stack_push_int(stack, elem->value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			err = qd_stack_push_float(stack, elem->value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			// Retain the string reference (increment refcount) and push
-			qd_string_retain(elem->value.s);
-			if (qd_stack_size(stack) >= stack->capacity) {
-				qd_string_release(elem->value.s);  // Cleanup on overflow
-				return QD_STACK_ERR_OVERFLOW;
-			}
-			stack->data[stack->size].value.s = elem->value.s;
-			stack->data[stack->size].type = QD_STACK_TYPE_STR;
-			stack->data[stack->size].is_error_tainted = elem->is_error_tainted;
-			stack->size++;
-			return QD_STACK_OK;
-		case QD_STACK_TYPE_PTR:
-			// Take a reference of our own, as the string case above does. A slot owns what it
-			// holds, so a value that ends up in two slots -- `dup`, `over`, `pick` -- must be
-			// counted twice; otherwise releasing one slot frees a value the other still holds.
-			qd_ptr_retain(elem->value.p);
-			err = qd_stack_push_ptr(stack, elem->value.p);
-			if (err != QD_STACK_OK) {
-				qd_ptr_release(elem->value.p); // Cleanup on overflow
-			}
-			break;
-		case QD_STACK_TYPE_F128:
-			err = qd_stack_push_f128(stack, elem->value.q);
-			break;
-		default:
-			return QD_STACK_ERR_TYPE_MISMATCH;
+	case QD_STACK_TYPE_INT:
+		err = qd_stack_push_int(stack, elem->value.i);
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		err = qd_stack_push_float(stack, elem->value.f);
+		break;
+	case QD_STACK_TYPE_STR:
+		// Retain the string reference (increment refcount) and push
+		qd_string_retain(elem->value.s);
+		if (qd_stack_size(stack) >= stack->capacity) {
+			qd_string_release(elem->value.s); // Cleanup on overflow
+			return QD_STACK_ERR_OVERFLOW;
+		}
+		stack->data[stack->size].value.s = elem->value.s;
+		stack->data[stack->size].type = QD_STACK_TYPE_STR;
+		stack->data[stack->size].is_error_tainted = elem->is_error_tainted;
+		stack->size++;
+		return QD_STACK_OK;
+	case QD_STACK_TYPE_PTR:
+		// Take a reference of our own, as the string case above does. A slot owns what it
+		// holds, so a value that ends up in two slots -- `dup`, `over`, `pick` -- must be
+		// counted twice; otherwise releasing one slot frees a value the other still holds.
+		qd_ptr_retain(elem->value.p);
+		err = qd_stack_push_ptr(stack, elem->value.p);
+		if (err != QD_STACK_OK) {
+			qd_ptr_release(elem->value.p); // Cleanup on overflow
+		}
+		break;
+	case QD_STACK_TYPE_D128:
+		err = qd_stack_push_d128(stack, elem->value.d);
+		break;
+	default:
+		return QD_STACK_ERR_TYPE_MISMATCH;
 	}
 	if (err == QD_STACK_OK) {
 		// Copy error taint flag for non-string types
@@ -550,11 +550,11 @@ int qd_casti(qd_context* ctx) {
 		result = (int64_t)elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atoll(qd_string_data(elem.value.s));
-		release_if_string(&elem);  // Release the string after conversion
+		release_if_string(&elem); // Release the string after conversion
 	} else if (elem.type == QD_STACK_TYPE_PTR) {
 		result = (int64_t)(uintptr_t)elem.value.p;
-	} else if (elem.type == QD_STACK_TYPE_F128) {
-		result = qd_f128_to_i64(elem.value.q);
+	} else if (elem.type == QD_STACK_TYPE_D128) {
+		result = qd_d128_to_i64(elem.value.d);
 	} else {
 		QDRT_FATAL(ctx, "casti", "Cannot cast type to integer");
 	}
@@ -588,9 +588,9 @@ int qd_castf(qd_context* ctx) {
 		result = elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atof(qd_string_data(elem.value.s));
-		release_if_string(&elem);  // Release the string after conversion
-	} else if (elem.type == QD_STACK_TYPE_F128) {
-		result = qd_f128_to_f64(elem.value.q);
+		release_if_string(&elem); // Release the string after conversion
+	} else if (elem.type == QD_STACK_TYPE_D128) {
+		result = qd_d128_to_f64(elem.value.d);
 	} else {
 		QDRT_FATAL(ctx, "castf", "Cannot cast type to float");
 	}
@@ -641,8 +641,8 @@ int qd_casts(qd_context* ctx) {
 		} else {
 			snprintf(buffer, sizeof(buffer), "%" PRId64, (int64_t)(intptr_t)elem.value.p);
 		}
-	} else if (elem.type == QD_STACK_TYPE_F128) {
-		qd_f128_format(elem.value.q, buffer, sizeof buffer);
+	} else if (elem.type == QD_STACK_TYPE_D128) {
+		qd_d128_format(elem.value.d, buffer, sizeof buffer);
 	} else {
 		QDRT_FATAL(ctx, "casts", "Cannot cast type to string");
 	}
@@ -731,27 +731,27 @@ static void dump_stack(qd_context* ctx) {
 
 		fprintf(stderr, "  [%zu]: ", i);
 		switch (elem.type) {
-			case QD_STACK_TYPE_INT:
-				fprintf(stderr, "int = %" PRId64 "\n", elem.value.i);
-				break;
-			case QD_STACK_TYPE_FLOAT:
-				fprintf(stderr, "float = %f\n", elem.value.f);
-				break;
-			case QD_STACK_TYPE_STR:
-				fprintf(stderr, "str = \"%s\"\n", qd_string_data(elem.value.s));
-				break;
-			case QD_STACK_TYPE_PTR:
-				fprintf(stderr, "ptr = %p\n", elem.value.p);
-				break;
-			case QD_STACK_TYPE_F128: {
-				char text[QD_F128_STRING_MAX];
-				qd_f128_format(elem.value.q, text, sizeof text);
-				fprintf(stderr, "f128 = %s\n", text);
-				break;
-			}
-			default:
-				fprintf(stderr, "<unknown type>");
-				break;
+		case QD_STACK_TYPE_INT:
+			fprintf(stderr, "int = %" PRId64 "\n", elem.value.i);
+			break;
+		case QD_STACK_TYPE_FLOAT:
+			fprintf(stderr, "float = %f\n", elem.value.f);
+			break;
+		case QD_STACK_TYPE_STR:
+			fprintf(stderr, "str = \"%s\"\n", qd_string_data(elem.value.s));
+			break;
+		case QD_STACK_TYPE_PTR:
+			fprintf(stderr, "ptr = %p\n", elem.value.p);
+			break;
+		case QD_STACK_TYPE_D128: {
+			char text[QD_D128_STRING_MAX];
+			qd_d128_format(elem.value.d, text, sizeof text);
+			fprintf(stderr, "d128 = %s\n", text);
+			break;
+		}
+		default:
+			fprintf(stderr, "<unknown type>");
+			break;
 		}
 	}
 }
@@ -762,8 +762,8 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 	// Fast path: direct struct access for common cases
 	size_t stack_size = st->size;
 	if (stack_size < count) {
-		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n",
-			func_name, count, stack_size);
+		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n", func_name, count,
+				stack_size);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		qdrt_fatal_exit();
@@ -772,12 +772,12 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 	// Fast path: single integer parameter (very common case like fib(n:i64))
 	if (count == 1 && types[0] == QD_STACK_TYPE_INT) {
 		if (st->data[stack_size - 1].type == QD_STACK_TYPE_INT) {
-			return;  // Fast success
+			return; // Fast success
 		}
 		// Fall through to error reporting
 		const char* actual_type_name = qdrt_type_name(st->data[stack_size - 1].type);
-		fprintf(stderr, "Fatal error in %s: Type mismatch for parameter 1 (expected int, got %s)\n",
-			func_name, actual_type_name);
+		fprintf(stderr, "Fatal error in %s: Type mismatch for parameter 1 (expected int, got %s)\n", func_name,
+				actual_type_name);
 		dump_stack(ctx);
 		qd_print_stack_trace(ctx);
 		qdrt_fatal_exit();
@@ -798,8 +798,8 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			const char* expected_type_name = qdrt_type_name(types[i]);
 			const char* actual_type_name = qdrt_type_name(elem->type);
 
-			fprintf(stderr, "Fatal error in %s: Type mismatch for parameter %zu (expected %s, got %s)\n",
-				func_name, i + 1, expected_type_name, actual_type_name);
+			fprintf(stderr, "Fatal error in %s: Type mismatch for parameter %zu (expected %s, got %s)\n", func_name,
+					i + 1, expected_type_name, actual_type_name);
 			dump_stack(ctx);
 			qd_print_stack_trace(ctx);
 			qdrt_fatal_exit();
@@ -1229,7 +1229,9 @@ qd_context* qd_clone_context(const qd_context* src) {
 	if (src->error_context != NULL) {
 		ctx->error_context = strdup(src->error_context);
 		if (ctx->error_context == NULL) {
-			if (ctx->error_msg) free(ctx->error_msg);
+			if (ctx->error_msg) {
+				free(ctx->error_msg);
+			}
 			qd_stack_destroy(ctx->st);
 			free(ctx);
 			return NULL;
@@ -1456,7 +1458,8 @@ void qd_debug_print_stack(qd_context* ctx) {
 	}
 
 	fprintf(stderr, "\nTop of stack (most recent):");
-	fprintf(stderr, "  %sIdx%s  %sType%s     %sValue%s\n", color_blue, color_end, color_green, color_end, color_yellow, color_end);
+	fprintf(stderr, "  %sIdx%s  %sType%s     %sValue%s\n", color_blue, color_end, color_green, color_end, color_yellow,
+			color_end);
 	fprintf(stderr, "  ----------------------------------------");
 
 	// Print from top (most recent) to bottom
@@ -1472,7 +1475,8 @@ void qd_debug_print_stack(qd_context* ctx) {
 
 		switch (elem.type) {
 		case QD_STACK_TYPE_INT:
-			fprintf(stderr, "%sint    %s %s%" PRId64 "%s\n", color_green, color_end, color_yellow, elem.value.i, color_end);
+			fprintf(stderr, "%sint    %s %s%" PRId64 "%s\n", color_green, color_end, color_yellow, elem.value.i,
+					color_end);
 			break;
 		case QD_STACK_TYPE_FLOAT:
 			fprintf(stderr, "%sfloat  %s %s%g%s\n", color_green, color_end, color_yellow, elem.value.f, color_end);
@@ -1481,9 +1485,11 @@ void qd_debug_print_stack(qd_context* ctx) {
 			if (elem.value.s) {
 				// Truncate long strings
 				if (strlen(qd_string_data(elem.value.s)) > 40) {
-					fprintf(stderr, "%sstring %s %s\"%.37s...\"%s\n", color_green, color_end, color_cyan, qd_string_data(elem.value.s), color_end);
+					fprintf(stderr, "%sstring %s %s\"%.37s...\"%s\n", color_green, color_end, color_cyan,
+							qd_string_data(elem.value.s), color_end);
 				} else {
-					fprintf(stderr, "%sstring %s %s\"%s\"%s\n", color_green, color_end, color_cyan, qd_string_data(elem.value.s), color_end);
+					fprintf(stderr, "%sstring %s %s\"%s\"%s\n", color_green, color_end, color_cyan,
+							qd_string_data(elem.value.s), color_end);
 				}
 			} else {
 				fprintf(stderr, "%sstring %s %s<null>%s\n", color_green, color_end, color_cyan, color_end);
@@ -1492,10 +1498,10 @@ void qd_debug_print_stack(qd_context* ctx) {
 		case QD_STACK_TYPE_PTR:
 			fprintf(stderr, "%sptr    %s %s%p%s\n", color_green, color_end, color_yellow, elem.value.p, color_end);
 			break;
-		case QD_STACK_TYPE_F128: {
-			char text[QD_F128_STRING_MAX];
-			qd_f128_format(elem.value.q, text, sizeof text);
-			fprintf(stderr, "%sf128   %s %s%s%s\n", color_green, color_end, color_yellow, text, color_end);
+		case QD_STACK_TYPE_D128: {
+			char text[QD_D128_STRING_MAX];
+			qd_d128_format(elem.value.d, text, sizeof text);
+			fprintf(stderr, "%sd128   %s %s%s%s\n", color_green, color_end, color_yellow, text, color_end);
 			break;
 		}
 		default:
@@ -1526,11 +1532,16 @@ qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem
 
 const char* qdrt_type_name(qd_stack_type type) {
 	switch (type) {
-		case QD_STACK_TYPE_INT: return "int";
-		case QD_STACK_TYPE_FLOAT: return "float";
-		case QD_STACK_TYPE_STR: return "str";
-		case QD_STACK_TYPE_PTR: return "ptr";
-		case QD_STACK_TYPE_F128: return "f128";
+	case QD_STACK_TYPE_INT:
+		return "int";
+	case QD_STACK_TYPE_FLOAT:
+		return "float";
+	case QD_STACK_TYPE_STR:
+		return "str";
+	case QD_STACK_TYPE_PTR:
+		return "ptr";
+	case QD_STACK_TYPE_D128:
+		return "d128";
 	}
 	return "unknown";
 }
@@ -1621,4 +1632,3 @@ int usr_rt_version(qd_context* ctx) {
 int usr_rt_version_api(qd_context* ctx) {
 	return qd_push_i(ctx, qd_version_api());
 }
-

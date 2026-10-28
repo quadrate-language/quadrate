@@ -375,8 +375,8 @@ BUILTIN(clone, "( s -- s2 )", "A new struct of the same type, fields copied. Sha
 /// @example 3.14 cast<i64> // 3
 /// @example 42 cast<f64> // 42.0
 /// @example 42 cast<str> // "42"
-/// @example 42 cast<f128> // 42
-BUILTIN(cast, "( val -- T )", "Converts a value between i64, f64, f128, ptr and str (use with cast<T> syntax).")
+/// @example 42 cast<d128> // 42
+BUILTIN(cast, "( val -- T )", "Converts a value between i64, f64, d128, ptr and str (use with cast<T> syntax).")
 
 // ============================================================================
 // INPUT/OUTPUT

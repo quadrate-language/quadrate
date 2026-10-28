@@ -1,0 +1,4 @@
+// Test: a d128 literal is decimal; a binary spelling with a d is rejected.
+fn main() {
+	0b10d print nl
+}

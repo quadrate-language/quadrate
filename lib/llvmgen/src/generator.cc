@@ -25,7 +25,7 @@ extern "C" {
 static bool isStdlibImport(const std::string& library) {
 	static const char* const stdlibLibs[] = {
 			"librt.a",
-			"libf128.a",
+			"libdecimal.a",
 			"libfmt.a",
 			"libio.a",
 			"libmath.a",
@@ -178,8 +178,8 @@ namespace Qd {
 		// exec_result is just an i32 (0 = success, non-zero = error)
 		execResultTy = i32t;
 
-		// qd_stack_element_t layout: { union(i64, double, ptr, ptr, f128), i32 type, i8 is_error_tainted }. The
-		// union is two words for the f128; an array of i64 rather than an i128 keeps its alignment at a word's,
+		// qd_stack_element_t layout: { union(i64, double, ptr, ptr, d128), i32 type, i8 is_error_tainted }. The
+		// union is two words for the d128; an array of i64 rather than an i128 keeps its alignment at a word's,
 		// as the C union has it.
 		slotValueTy = llvm::ArrayType::get(i64t, 2);
 		stackElementTy =
@@ -297,8 +297,8 @@ namespace Qd {
 		qdStringRetainFn = declareFn(ptrToPtrTy, "qd_string_retain");
 		qdStringDataFn = declareFn(ptrToPtrTy, "qd_string_data");
 
-		// f128 values cross as the two words of their encoding
-		pushF128BitsFn =
+		// d128 values cross as the two words of their encoding
+		pushD128BitsFn =
 				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, i64t, i64t}, false), "qd_push_q_bits");
 
 		// Initialize debug info if enabled
@@ -599,7 +599,7 @@ namespace Qd {
 		// 'cast' has a compile-time path only in its type-parameterised form, and only
 		// f64 conversions make it worth taking; bare 'cast' falls through to qd_cast*.
 		// The path converts between i64 and f64 and nothing else, so only those two targets
-		// qualify; `cast<f128>` builds a boxed value the compile-time stack cannot hold.
+		// qualify; `cast<d128>` builds a boxed value the compile-time stack cannot hold.
 		if (name == "cast") {
 			static const std::set<std::string> NUMERIC_TARGETS = {
 					"i64", "i", "int", "int64", "f64", "f", "float", "float64"};
@@ -675,15 +675,15 @@ namespace Qd {
 					nonIntegerSignatureFunctions.find(identName) != nonIntegerSignatureFunctions.end()) {
 				return false;
 			}
-			// An f128 constant or global is a boxed value, which the compile-time stack has no
+			// A d128 constant or global is a boxed value, which the compile-time stack has no
 			// way to hold.
 			if (localNames.find(identName) == localNames.end()) {
 				auto constIt = moduleConstants.find(identName);
-				if (constIt != moduleConstants.end() && isF128LiteralText(constIt->second)) {
+				if (constIt != moduleConstants.end() && isD128LiteralText(constIt->second)) {
 					return false;
 				}
 				auto globalIt = moduleGlobalVarTypes.find(identName);
-				if (globalIt != moduleGlobalVarTypes.end() && globalIt->second == "f128") {
+				if (globalIt != moduleGlobalVarTypes.end() && globalIt->second == "d128") {
 					return false;
 				}
 			}
@@ -1614,7 +1614,7 @@ namespace Qd {
 						const std::string& typeStr = param->typeString();
 						// Check if this is a struct type (not a primitive type)
 						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
-								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "f128" &&
+								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "d128" &&
 								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
 								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
 							// This is a struct type - mark the parameter name as a struct local
@@ -1714,7 +1714,7 @@ namespace Qd {
 						// Track struct type if applicable
 						const std::string& typeStr = param->typeString();
 						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
-								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "f128" &&
+								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "d128" &&
 								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
 								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
 							localVariableStructTypes[paramName] = extractStructName(typeStr);
@@ -2573,17 +2573,17 @@ namespace Qd {
 				llvm::Type* ty = nullptr;
 				llvm::Constant* init = nullptr;
 
-				// An f128 is held in the global itself, its literal's encoding the initializer:
-				// nothing to run in main. Without one it is zero, as `0q` reads.
-				if (typeName == "f128") {
-					std::string literal = "0q";
+				// A d128 is held in the global itself, its literal's encoding the initializer:
+				// nothing to run in main. Without one it is zero, as `0d` reads.
+				if (typeName == "d128") {
+					std::string literal = "0d";
 					if (auto* lit = dynamic_cast<AstNodeLiteral*>(varNode->initializerNode())) {
 						literal = lit->value();
 					}
 					uint64_t low = 0;
 					uint64_t high = 0;
-					if (!f128LiteralWords(literal, low, high)) {
-						std::cerr << "quadc: error: Invalid f128 literal '" << literal << "'" << std::endl;
+					if (!d128LiteralWords(literal, low, high)) {
+						std::cerr << "quadc: error: Invalid d128 literal '" << literal << "'" << std::endl;
 						compilationFailed = true;
 					}
 					init = llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(slotValueTy),

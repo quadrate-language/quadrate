@@ -1,12 +1,12 @@
 # Common sources
 qdrt_sources = files(
-		'src/f128.c',
+		'src/d128.c',
 		'src/natives.c',
 		'src/runtime.c',
 		'src/runtime_stack.c',
 		'src/runtime_ops.c',
 		'src/runtime_io.c',
-		'src/runtime_f128.c',
+		'src/runtime_d128.c',
 		'src/stack.c',
 		'src/memory.c',
 		'src/qd_string.c',
@@ -55,7 +55,7 @@ version_args = [
 cc = meson.get_compiler('c')
 m_dep = cc.find_library('m', required: false)
 
-# libmpdec does the decimal128 arithmetic behind f128. Always the pinned copy from the
+# libmpdec does the decimal128 arithmetic behind d128. Always the pinned copy from the
 # wrap, never a system one: it is linked whole into the runtime, so a compiled program
 # carries it and needs nothing installed where it runs -- a Raspberry Pi included.
 mpdec_proj = subproject('mpdecimal', default_options: ['default_library=static'])

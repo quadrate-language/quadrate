@@ -65,7 +65,7 @@ struct References {
 
 static bool isPrimitiveTypeName(const std::string& name) {
 	static const std::set<std::string> primitives = {"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64",
-			"f128", "str", "ptr", "any", "bool", "void", "fn", "int", "float", "char", "byte"};
+			"d128", "str", "ptr", "any", "bool", "void", "fn", "int", "float", "char", "byte"};
 	return primitives.count(name) > 0;
 }
 

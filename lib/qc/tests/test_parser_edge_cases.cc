@@ -840,44 +840,44 @@ TEST(FloatLiteralRange) {
 	ASSERT(Qd::readFloatLiteral("1e-400", value) == std::errc() && value == 0.0, "1e-400 underflows to zero");
 }
 
-TEST(F128LiteralSpellings) {
-	const char* accepted[] = {"0.1q", "42q", "-7q", "1e3q", "-1.5e-300q", "0.000q",
-			"9.999999999999999999999999999999999e6144q", "1e-9999q", "123456789012345678901234567890123456789q"};
+TEST(D128LiteralSpellings) {
+	const char* accepted[] = {"0.1d", "42d", "-7d", "1e3d", "-1.5e-300d", "0.000d",
+			"9.999999999999999999999999999999999e6144d", "1e-9999d", "123456789012345678901234567890123456789d"};
 	for (const char* text : accepted) {
 		std::string digits;
-		ASSERT(Qd::readF128Literal(text, digits) == std::errc(), text);
+		ASSERT(Qd::readD128Literal(text, digits) == std::errc(), text);
 	}
 
 	std::string digits;
-	ASSERT(Qd::readF128Literal("-1.5e-3q", digits) == std::errc() && digits == "-1.5e-3",
-			"the digits come back without the q");
+	ASSERT(Qd::readD128Literal("-1.5e-3d", digits) == std::errc() && digits == "-1.5e-3",
+			"the digits come back without the d");
 
-	const char* rejected[] = {"q", ".5q", "5.q", "1e+q", "1.2.3q", "0x10q", "1.5", "1qq", "1_0q"};
+	const char* rejected[] = {"d", ".5d", "5.d", "1e+d", "1.2.3d", "0b10d", "0x10d", "1.5", "1dd", "1_0d"};
 	for (const char* text : rejected) {
 		std::string out;
-		ASSERT(Qd::readF128Literal(text, out) == std::errc::invalid_argument, text);
+		ASSERT(Qd::readD128Literal(text, out) == std::errc::invalid_argument, text);
 	}
 }
 
-TEST(F128LiteralRange) {
+TEST(D128LiteralRange) {
 	std::string digits;
-	ASSERT(Qd::readF128Literal("1e6145q", digits) == std::errc::result_out_of_range, "past the largest exponent");
-	ASSERT(Qd::readF128Literal("10e6144q", digits) == std::errc::result_out_of_range,
+	ASSERT(Qd::readD128Literal("1e6145d", digits) == std::errc::result_out_of_range, "past the largest exponent");
+	ASSERT(Qd::readD128Literal("10e6144d", digits) == std::errc::result_out_of_range,
 			"the leading digit decides, not e");
-	ASSERT(Qd::readF128Literal("0.001e6147q", digits) == std::errc(), "and so it can come back in range");
-	ASSERT(Qd::readF128Literal("9.9999999999999999999999999999999995e6144q", digits) == std::errc::result_out_of_range,
+	ASSERT(Qd::readD128Literal("0.001e6147d", digits) == std::errc(), "and so it can come back in range");
+	ASSERT(Qd::readD128Literal("9.9999999999999999999999999999999995e6144d", digits) == std::errc::result_out_of_range,
 			"34 nines and a 5 round up past the limit");
-	ASSERT(Qd::readF128Literal("9.9999999999999999999999999999999994e6144q", digits) == std::errc(),
+	ASSERT(Qd::readD128Literal("9.9999999999999999999999999999999994e6144d", digits) == std::errc(),
 			"and a 4 rounds down to the largest finite value");
-	ASSERT(Qd::readF128Literal("0e999999q", digits) == std::errc(), "zero has no magnitude to overflow");
+	ASSERT(Qd::readD128Literal("0e999999d", digits) == std::errc(), "zero has no magnitude to overflow");
 }
 
-TEST(F128LiteralTextRecognition) {
-	ASSERT(Qd::isF128LiteralText("1.5q"), "a q makes an f128");
-	ASSERT(Qd::isF128LiteralText("42q"), "an integer spelling too");
-	ASSERT(!Qd::isF128LiteralText("1.5"), "no q, no f128");
-	ASSERT(!Qd::isFloatLiteralText("1.5q"), "and an f128 is not an f64");
-	ASSERT(!Qd::isF128LiteralText("\"1q\""), "a string is a string");
+TEST(D128LiteralTextRecognition) {
+	ASSERT(Qd::isD128LiteralText("1.5d"), "a d makes a d128");
+	ASSERT(Qd::isD128LiteralText("42d"), "an integer spelling too");
+	ASSERT(!Qd::isD128LiteralText("1.5"), "no q, no d128");
+	ASSERT(!Qd::isFloatLiteralText("1.5d"), "and a d128 is not an f64");
+	ASSERT(!Qd::isD128LiteralText("\"1d\""), "a string is a string");
 }
 
 TEST(FloatLiteralTextRecognition) {

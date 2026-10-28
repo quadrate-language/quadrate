@@ -1,0 +1,4 @@
+// Test: d is the only suffix a number takes.
+fn main() {
+	1.5dx print nl
+}

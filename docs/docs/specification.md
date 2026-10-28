@@ -145,19 +145,20 @@ arithmetic does at runtime.
 A leading `-` belongs to the literal, so `10-1` is the two literals `10` and `-1` and not a
 subtraction; §2.4 says what that costs.
 
-**f128 literals:**
+**d128 literals:**
 ```
-f128     := ['-'] digit+ ('.' digit+)? exponent? 'q'
+d128     := ['-'] digit+ ('.' digit+)? exponent? 'd'
 ```
-Examples: `0.1q`, `42q`, `-2.50q`, `1e-40q`, `6.02214076e23q`
+Examples: `0.1d`, `42d`, `-2.50d`, `1e-40d`, `6.02214076e23d`
 
-A decimal integer or float literal written hard against a `q` is an `f128` (§3.1.2). The
-digits are read in decimal, so `0.1q` is exactly one tenth — which `0.1` converted to
-`f128` is not — and the exponent the literal is written with is kept: `2.50q` prints as
+A decimal integer or float literal written hard against a `d` is a `d128` (§3.1.2). The
+digits are read in decimal, so `0.1d` is exactly one tenth — which `0.1` converted to
+`d128` is not — and the exponent the literal is written with is kept: `2.50d` prints as
 `2.50`. A literal with more than 34 significant digits rounds to 34, ties to even. One
-beyond the largest finite `f128`, `9.999999999999999999999999999999999e6144q`, is an error,
-as an out-of-range `f64` literal is; one too small underflows toward zero. `q` is the only
-suffix a number takes, and a hex or binary literal cannot take it.
+beyond the largest finite `d128`, `9.999999999999999999999999999999999e6144d`, is an error,
+as an out-of-range `f64` literal is; one too small underflows toward zero. `d` is the only
+suffix a number takes, and a binary literal cannot take it. A hex literal reads a `d` as a
+digit, so `0x10d` is the integer 269 and not a `d128`.
 
 **String literals:**
 ```
@@ -256,14 +257,14 @@ Implementations MUST support these four primitive types:
 |-------|-------------|------|
 | `i64` | Signed 64-bit integer | 8 bytes |
 | `f64` | IEEE 754 double-precision float | 8 bytes |
-| `f128` | IEEE 754 decimal128 float (§3.1.2) | pointer |
+| `d128` | IEEE 754 decimal128 float (§3.1.2) | pointer |
 | `str` | Immutable UTF-8 string | pointer |
 | `ptr` | Generic pointer | 8 bytes |
 
 **Note**: Every value on the runtime stack MUST be 64-bit. Implementations MUST NOT introduce
 narrower *stack* types; arithmetic, comparison, and all stack operations operate on `i64`,
-`f64` and `f128` only. Narrower widths exist solely as memory-layout annotations — see §3.1.1.
-An `f128` is wider than a slot, so the slot holds a reference to it, as it does for a `str`.
+`f64` and `d128` only. Narrower widths exist solely as memory-layout annotations — see §3.1.1.
+A `d128` is wider than a slot, so the slot holds a reference to it, as it does for a `str`.
 
 **Strings are UTF-8, and their unit is the codepoint.** Every index and length a string
 operation takes or returns MUST count codepoints, not bytes: `"héllo" strings::len` is 5, and
@@ -316,44 +317,44 @@ operators treat it as signed.
 
 
 
-#### 3.1.2 f128
+#### 3.1.2 d128
 
-`f128` is the IEEE 754-2008 decimal128 format: 34 significant decimal digits, exponents from
+`d128` is the IEEE 754-2008 decimal128 format: 34 significant decimal digits, exponents from
 -6143 to +6144 for a normal value and down to -6176 for a subnormal one, signed zeros,
 infinities and NaN. It is decimal so that what a program prints is exactly what it holds:
-`0.1q 0.2q +` is `0.3` and equals `0.3q`, where `0.1 0.2 +` is not `0.3`.
+`0.1d 0.2d +` is `0.3` and equals `0.3d`, where `0.1 0.2 +` is not `0.3`.
 
-Implementations MUST round every `f128` result to the format with roundTiesToEven, as IEEE
-754 requires of each operation. `+ - * /`, `neg` and the comparisons take `f128` operands;
-the remaining IEEE operations and the elementary functions are the `f128` module (§13.9).
+Implementations MUST round every `d128` result to the format with roundTiesToEven, as IEEE
+754 requires of each operation. `+ - * /`, `neg` and the comparisons take `d128` operands;
+the remaining IEEE operations and the elementary functions are the `decimal` module (§13.9).
 
-An `i64` widens to an `f128` exactly, since it has at most 19 of the 34 digits: an arithmetic
-or comparison instruction with one `f128` operand and one `i64` operand is an `f128` operation,
-`2 1.5q +` being `3.5`, and an `i64` argument to an `f128` parameter is widened at the call. An
-`f64` does not mix. An instruction with one `f128` operand and one `f64` operand is a
-compile-time type error, as is an `f64` argument to an `f128` parameter: letting the `f64` in
-would bring back the binary rounding the type exists to keep out. `cast<f128>` converts
-explicitly, and a literal is written with its `q`.
+An `i64` widens to a `d128` exactly, since it has at most 19 of the 34 digits: an arithmetic
+or comparison instruction with one `d128` operand and one `i64` operand is a `d128` operation,
+`2 1.5d +` being `3.5`, and an `i64` argument to a `d128` parameter is widened at the call. An
+`f64` does not mix. An instruction with one `d128` operand and one `f64` operand is a
+compile-time type error, as is an `f64` argument to a `d128` parameter: letting the `f64` in
+would bring back the binary rounding the type exists to keep out. `cast<d128>` converts
+explicitly, and a literal is written with its `d`.
 
 An implementation MAY offer a setting under which a decimal float literal written without a
-`q` is an `f128` literal, as if it had one: `1.5` then means `1.5q`, while integer literals
+`d` is a `d128` literal, as if it had one: `1.5` then means `1.5d`, while integer literals
 stay `i64`. It is for a calculator, where every number typed should be decimal. `quadc
---default-float f128` applies it to the files named on the command line, not to the modules
+--default-float d128` applies it to the files named on the command line, not to the modules
 they import, and an embedder of the interpreter sets it with `qd_interp_set_default_float`.
 
 A value keeps the exponent it was written or computed with, as IEEE decimal arithmetic
-requires: `1.10q 1.20q +` is `2.30`, which equals `2.3q` but prints with its trailing zero.
-`f128::reduce` strips trailing zeros and `f128::quantize` sets a number of decimal places.
+requires: `1.10d 1.20d +` is `2.30`, which equals `2.3d` but prints with its trailing zero.
+`decimal::reduce` strips trailing zeros and `decimal::quantize` sets a number of decimal places.
 
-Division by zero and overflow are defined, as for `f64`: `1q 0q /` is `inf` and `0q 0q /` is
+Division by zero and overflow are defined, as for `f64`: `1d 0d /` is `inf` and `0d 0d /` is
 NaN. NaN compares unequal to everything including itself, so `!=` of a NaN is `1`.
 
-An `f128` prints in the IEEE to-scientific-string form: the digits held, with an exponent
+A `d128` prints in the IEEE to-scientific-string form: the digits held, with an exponent
 once it is positive or the value is smaller than 1e-6 — `1.10`, `1.5e+40`, `1e-7` —
 and infinity and NaN spelled as `f64` spells them, `inf`, `-inf` and `nan`.
 
-`mod`/`%`, `inc` and `dec` are integer and `f64` operations and reject `f128`; `f128::fmod`
-and `f128::remainder` are its remainders.
+`mod`/`%`, `inc` and `dec` are integer and `f64` operations and reject `d128`; `decimal::fmod`
+and `decimal::remainder` are its remainders.
 
 ### 3.2 Composite Types
 
@@ -537,20 +538,20 @@ Explicit casting via `cast<Type>`:
 ```quadrate
 3.14 cast<i64>    // Float to int (truncates toward zero)
 42 cast<f64>      // Int to float
-42 cast<f128>     // Int to f128 (exact)
-0.1 cast<f128>    // f64 to f128: its binary value, 0.1000000000000000055511151231257827
-2.5q cast<f64>    // f128 to the nearest f64
+42 cast<d128>     // Int to d128 (exact)
+0.1 cast<d128>    // f64 to d128: its binary value, 0.1000000000000000055511151231257827
+2.5d cast<f64>    // d128 to the nearest f64
 100 cast<str>     // Any to string
 ```
 
-`cast<i64>` of an `f128` truncates toward zero and, being total, saturates at the `i64`
-limits and turns NaN into `0`. There is no cast between `f128` and `ptr`.
+`cast<i64>` of a `d128` truncates toward zero and, being total, saturates at the `i64`
+limits and turns NaN into `0`. There is no cast between `d128` and `ptr`.
 
 `cast<T>` MUST be total: every conversion it offers always produces a value, so its result
 never needs to be checked. A string MUST NOT be cast to a numeric type -- parsing can fail
 and `cast` has nowhere to report it. Implementations MUST reject `"42" cast<i64>` and
 `"42" cast<f64>` at compile time; `strconv::atoi`, `strconv::parse_int`,
-`strconv::parse_float`, `strconv::parse_f128` and `strconv::parse_bool` are the fallible
+`strconv::parse_float`, `strconv::parse_d128` and `strconv::parse_bool` are the fallible
 conversions.
 
 **Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
@@ -582,10 +583,10 @@ struct qd_stack_element {
         double f;       // Float value
         void* p;        // Pointer value
         qd_string_t* s; // String reference
-        qd_f128_t* q;   // f128 reference
+        qd_d128_t* q;   // d128 reference
     } value;
 
-    qd_stack_type type;      // Type tag: INT=0, FLOAT=1, PTR=2, STR=3, F128=4
+    qd_stack_type type;      // Type tag: INT=0, FLOAT=1, PTR=2, STR=3, D128=4
     bool is_error_tainted;   // Error propagation flag
 };
 ```
@@ -1950,11 +1951,11 @@ Infinity and NaN have no literal spelling — `math::inf` and `math::nan` name t
 `math::is_inf` and `math::is_finite` classify. `mod`/`%` is integer-only and reports a type
 error on float operands; `math::fmod` is the float remainder.
 
-**f128 semantics.** `f128` arithmetic follows IEEE 754-2008 decimal128, with the rules of
+**d128 semantics.** `d128` arithmetic follows IEEE 754-2008 decimal128, with the rules of
 §3.1.2: every result is rounded to 34 digits with roundTiesToEven, the operands of `+ - * /`
-and the comparisons are both `f128` or it is a compile-time error, and division by zero gives
-`inf` or NaN. The exponent of a result is IEEE's preferred exponent, so `1.5q 2q *` is `3.0`
-and `10q 4q /` is `2.5`.
+and the comparisons are both `d128` or it is a compile-time error, and division by zero gives
+`inf` or NaN. The exponent of a result is IEEE's preferred exponent, so `1.5d 2d *` is `3.0`
+and `10d 4d /` is `2.5`.
 
 ### 12.2 Comparison
 
@@ -2141,7 +2142,7 @@ Low-level memory.
 - `set_byte`, `get_byte`, `set_i64`, `get_i64`
 - `copy`, `zero`, `fill`
 
-### 13.9 f128
+### 13.9 d128
 
 IEEE 754-2008 decimal128 operations beyond the operators, and the elementary functions
 (§3.1.2). Every result is rounded to 34 digits with roundTiesToEven; `sqrt`, `exp`, `ln`,
@@ -2240,8 +2241,8 @@ Implementations MUST provide the following runtime functions:
 - `qd_pop_f(ctx, &val)` - Pop float
 - `qd_pop_s(ctx, buf, size)` - Pop string into buffer
 - `qd_pop_p(ctx, &val)` - Pop pointer
-- `qd_push_q(ctx, f128)` - Push f128 (the stack takes a reference of its own)
-- `qd_pop_q(ctx, &val)` - Pop f128 (the caller takes the stack's reference)
+- `qd_push_q(ctx, d128)` - Push d128 (the stack takes a reference of its own)
+- `qd_pop_q(ctx, &val)` - Pop d128 (the caller takes the stack's reference)
 
 **Operations:**
 - `qd_add`, `qd_sub`, `qd_mul`, `qd_div`, `qd_mod` - Arithmetic
@@ -2308,7 +2309,7 @@ expression      = literal | identifier | scoped_id | struct_const | array_lit
 interp_string   = "$\"" { character | "{" expression "}" } "\"" ;
 as_cast         = "as" type ;
 
-literal         = integer | float | f128 | string | "true" | "false" | "Ok" | "Err" | "null" ;
+literal         = integer | float | d128 | string | "true" | "false" | "Ok" | "Err" | "null" ;
 scoped_id       = identifier "::" identifier { "::" identifier } ;  /* mod::Enum::Variant, 5.4.2 */
 struct_const    = identifier [type_args] "{" { field_init } "}" ;
 array_lit       = "[" { expression } "]" ;
@@ -2318,7 +2319,7 @@ local_bind      = "->" identifier ;
 anon_fn         = "fn" signature block ;  /* captures are implicit */
 fn_call         = identifier [ "!" ] ;
 
-type            = "i64" | "f64" | "f128" | "str" | "ptr" | "bool" | sized_int
+type            = "i64" | "f64" | "d128" | "str" | "ptr" | "bool" | sized_int
                 | "[]" type | identifier [type_args] | "*" type ;
 sized_int       = "i8" | "u8" | "i16" | "u16" | "i32" | "u32" | "u64" ;
 type_args       = "<" type { "," type } ">" ;

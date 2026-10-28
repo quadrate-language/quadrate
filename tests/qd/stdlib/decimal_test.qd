@@ -1,0 +1,116 @@
+// Unit tests for the decimal module. Expected values are the exact decimal128 results -- each is
+// the true value correctly rounded to 34 digits -- so an equality is the whole check.
+use decimal
+use testing
+
+test "d128 constants" {
+	decimal::pi 3.141592653589793238462643383279503d testing::assert_eq
+	decimal::e 2.718281828459045235360287471352662d testing::assert_eq
+	decimal::inf decimal::is_inf testing::assert_true
+	decimal::nan decimal::is_nan testing::assert_true
+}
+
+test "decimal::sqrt is correctly rounded" {
+	2d decimal::sqrt 1.414213562373095048801688724209698d testing::assert_eq
+	9d decimal::sqrt 3d testing::assert_eq
+	0.01d decimal::sqrt 0.1d testing::assert_eq
+	-1d decimal::sqrt decimal::is_nan testing::assert_true
+	-0d decimal::sqrt decimal::is_signed testing::assert_true
+}
+
+test "d128 exp, ln, log10 and pow" {
+	1d decimal::exp 2.718281828459045235360287471352662d testing::assert_eq
+	10d decimal::ln 2.302585092994045684017991454684364d testing::assert_eq
+	1000d decimal::log10 3d testing::assert_eq
+	2d 10d decimal::pow 1024d testing::assert_eq
+	2d 0.5d decimal::pow 1.414213562373095048801688724209698d testing::assert_eq
+	0d decimal::ln decimal::is_inf testing::assert_true
+}
+
+test "d128 trigonometry" {
+	1d decimal::sin 0.8414709848078965066525023216302990d testing::assert_eq
+	1d decimal::cos 0.5403023058681397174009366074429766d testing::assert_eq
+	1d decimal::tan 1.557407724654902230506974807458360d testing::assert_eq
+	// sin(1e22) is the classic argument-reduction trap; decimal128's range goes much further
+	1e22d decimal::sin -0.8522008497671888017727058937530294d testing::assert_eq
+	355d decimal::sin -0.00003014435335948844921433028000865010d testing::assert_eq
+	-0d decimal::sin decimal::is_signed testing::assert_true
+	decimal::inf decimal::sin decimal::is_nan testing::assert_true
+}
+
+test "d128 inverse trigonometry" {
+	1d decimal::atan 0.7853981633974483096156608458198757d testing::assert_eq
+	0.5d decimal::asin 0.5235987755982988730771072305465838d testing::assert_eq
+	0.5d decimal::acos 1.047197551196597746154214461093168d testing::assert_eq
+	-1d decimal::acos decimal::pi testing::assert_eq
+	1d decimal::acos 0d testing::assert_eq
+	2d decimal::asin decimal::is_nan testing::assert_true
+	1d -1d decimal::atan2 2.356194490192344928846982537459627d testing::assert_eq
+	-0d -1d decimal::atan2 decimal::pi neg testing::assert_eq
+	0d 0d decimal::atan2 0d testing::assert_eq
+}
+
+test "d128 fma rounds once" {
+	2d 3d 1d decimal::fma 7d testing::assert_eq
+	// (1 + 1e-33)^2 - 1 is 2e-33 + 1e-66: separate rounding of the product loses the 1e-66
+	1.000000000000000000000000000000001d -> x
+	x x -1d decimal::fma 2.000000000000000000000000000000001e-33d testing::assert_eq
+	x x * -1d + 2e-33d testing::assert_eq
+}
+
+test "d128 remainders" {
+	10d 3d decimal::remainder 1d testing::assert_eq
+	11d 3d decimal::remainder -1d testing::assert_eq
+	-7d 2d decimal::fmod -1d testing::assert_eq
+	7.5d 2d decimal::fmod 1.5d testing::assert_eq
+}
+
+test "d128 sign operations" {
+	-2.5d decimal::abs 2.5d testing::assert_eq
+	-0d decimal::abs decimal::is_signed testing::assert_false
+	3d -1d decimal::copysign -3d testing::assert_eq
+	-0d decimal::is_signed testing::assert_true
+	0d decimal::is_signed testing::assert_false
+}
+
+test "d128 min and max prefer a number to NaN" {
+	3d 7d decimal::min 3d testing::assert_eq
+	3d 7d decimal::max 7d testing::assert_eq
+	decimal::nan 1d decimal::min 1d testing::assert_eq
+	1d decimal::nan decimal::max 1d testing::assert_eq
+}
+
+test "d128 rounding to an integer" {
+	2.5d decimal::round_even 2d testing::assert_eq
+	3.5d decimal::round_even 4d testing::assert_eq
+	2.5d decimal::round 3d testing::assert_eq
+	-2.5d decimal::round -3d testing::assert_eq
+	-2.7d decimal::trunc -2d testing::assert_eq
+	-2.1d decimal::floor -3d testing::assert_eq
+	2.1d decimal::ceil 3d testing::assert_eq
+}
+
+test "d128 exponent and digits" {
+	2.34567d 0.01d decimal::quantize cast<str> "2.35" testing::assert_eq
+	1.500d decimal::reduce cast<str> "1.5" testing::assert_eq
+	1.5d 3 decimal::scaleb 1500d testing::assert_eq
+	1234d decimal::logb 3d testing::assert_eq
+	1d decimal::next_up 1.000000000000000000000000000000001d testing::assert_eq
+	1d decimal::next_down 0.9999999999999999999999999999999999d testing::assert_eq
+}
+
+test "d128 classification" {
+	1d decimal::is_finite testing::assert_true
+	1d 0d / decimal::is_finite testing::assert_false
+	-0d decimal::is_zero testing::assert_true
+	1d decimal::is_normal testing::assert_true
+	1e-6150d decimal::is_subnormal testing::assert_true
+	1e-6150d decimal::is_normal testing::assert_false
+}
+
+test "d128 totalOrder" {
+	-0d 0d decimal::total_order -1 testing::assert_eq
+	1.00d 1.0d decimal::total_order -1 testing::assert_eq
+	1d 1d decimal::total_order 0 testing::assert_eq
+	1d decimal::nan decimal::total_order -1 testing::assert_eq
+}

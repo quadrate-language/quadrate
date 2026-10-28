@@ -138,12 +138,12 @@ namespace Qd {
 				   typeName + "'";
 		}
 		return "Invalid type '" + typeStr + "'" + where +
-			   ". Valid types are: i64, f64, f128, str, ptr, any, or a struct name";
+			   ". Valid types are: i64, f64, d128, str, ptr, any, or a struct name";
 	}
 
 	bool SemanticValidator::isValidTypeName(const std::string& typeStr) const {
 		// Primitive types
-		if (typeStr == "i64" || typeStr == "f64" || typeStr == "f128" || typeStr == "str" || typeStr == "ptr" ||
+		if (typeStr == "i64" || typeStr == "f64" || typeStr == "d128" || typeStr == "str" || typeStr == "ptr" ||
 				typeStr == "any") {
 			return true;
 		}
@@ -268,8 +268,8 @@ namespace Qd {
 			return StackValueType::STRING;
 		}
 
-		if (isF128LiteralText(value)) {
-			return StackValueType::F128;
+		if (isD128LiteralText(value)) {
+			return StackValueType::D128;
 		}
 
 		// A point or an exponent makes it a float
@@ -939,8 +939,8 @@ namespace Qd {
 			return "int";
 		case StackValueType::FLOAT:
 			return "float";
-		case StackValueType::F128:
-			return "f128";
+		case StackValueType::D128:
+			return "d128";
 		case StackValueType::STRING:
 			return "string";
 		case StackValueType::PTR:
@@ -1006,8 +1006,8 @@ namespace Qd {
 		if (typeStr == "f64") {
 			return StackValueType::FLOAT;
 		}
-		if (typeStr == "f128") {
-			return StackValueType::F128;
+		if (typeStr == "d128") {
+			return StackValueType::D128;
 		}
 		if (typeStr == "str") {
 			return StackValueType::STRING;

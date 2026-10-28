@@ -1,0 +1,4 @@
+// Test: a d128 has no pointer to cast to.
+fn main() {
+	1.5d cast<ptr> print nl
+}

@@ -151,7 +151,7 @@ namespace Qd {
 
 	// Check if an identifier is a built-in type name (used for unnamed parameter disambiguation)
 	inline bool isTypeName(const std::string& name) {
-		return name == "i64" || name == "f64" || name == "f128" || name == "str" || name == "ptr" || name == "any";
+		return name == "i64" || name == "f64" || name == "d128" || name == "str" || name == "ptr" || name == "any";
 	}
 
 	// Where the first unterminated block comment in the current parse started, or
@@ -384,23 +384,24 @@ namespace Qd {
 		return true;
 	}
 
-	// Whether this parse reads a decimal float written without a `q` as an f128, for
-	// Ast::setDefaultFloatF128. Set by Ast::generate for the length of one parse.
-	inline thread_local bool parseFloatsAsF128 = false;
+	// Whether this parse reads a decimal float written without a `d` as a d128, for
+	// Ast::setDefaultFloatD128. Set by Ast::generate for the length of one parse.
+	inline thread_local bool parseFloatsAsD128 = false;
 
-	// Takes the `q` that makes the number just scanned an f128 literal, as in `0.1q`. Returns
-	// true, having appended the `q` to `text`, when there is one -- or when floats default to
-	// f128 and this is one, which is then spelled as if the `q` had been written. A number run
-	// into some other word -- `1qx` -- is reported and left as it was, as is a hex or binary
-	// one: an f128 is decimal by nature, and `0x10q` would say otherwise.
-	inline bool takeF128Suffix(
+	// Takes the `d` that makes the number just scanned a d128 literal, as in `0.1d`. Returns
+	// true, having appended the `d` to `text`, when there is one -- or when floats default to
+	// d128 and this is one, which is then spelled as if the `d` had been written. A number run
+	// into some other word -- `1dx` -- is reported and left as it was, as is a hex or binary
+	// one: a d128 is decimal by nature, and `0b10d` would say otherwise. A hex number has
+	// taken any `d` as a digit before this sees it: `0x10d` is the integer 269.
+	inline bool takeD128Suffix(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, char32_t token, std::string& text) {
 		if (token != U8T_INTEGER && token != U8T_FLOAT) {
 			return false;
 		}
-		if (peekNextChar(scanner, src) != U'q') {
-			if (parseFloatsAsF128 && token == U8T_FLOAT && !hasRadixPrefix(text)) {
-				text += 'q';
+		if (peekNextChar(scanner, src) != U'd') {
+			if (parseFloatsAsD128 && token == U8T_FLOAT && !hasRadixPrefix(text)) {
+				text += 'd';
 				return true;
 			}
 			return false;
@@ -414,22 +415,22 @@ namespace Qd {
 			const char* word = u8t_scanner_token_text(scanner, &len);
 			suffix.assign(word != nullptr ? word : "", len);
 		}
-		if (suffix != "q") {
+		if (suffix != "d") {
 			const std::string message = "Invalid numeric literal '" + text + suffix +
-										"': the only suffix a number takes is 'q', for an f128";
+										"': the only suffix a number takes is 'd', for a d128";
 			errorReporter->reportError(line, column, message.c_str());
 			return false;
 		}
 		if (hasRadixPrefix(text)) {
-			const std::string message = "Invalid f128 literal '" + text + "q': an f128 literal is written in decimal";
+			const std::string message = "Invalid d128 literal '" + text + "q': a d128 literal is written in decimal";
 			errorReporter->reportError(line, column, message.c_str());
 			return false;
 		}
-		text += 'q';
+		text += 'd';
 		return true;
 	}
 
-	// The literal for the number just scanned, `q` suffix and all: INTEGER, FLOAT or F128.
+	// The literal for the number just scanned, `d` suffix and all: INTEGER, FLOAT or D128.
 	inline AstNodeLiteral* makeNumericLiteral(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, char32_t token, std::string text) {
 		size_t line = 0;
@@ -437,8 +438,8 @@ namespace Qd {
 		tokenPosition(scanner, src, &line, &column);
 		AstNodeLiteral::LiteralType type =
 				token == U8T_FLOAT ? AstNodeLiteral::LiteralType::FLOAT : AstNodeLiteral::LiteralType::INTEGER;
-		if (takeF128Suffix(scanner, errorReporter, src, token, text)) {
-			type = AstNodeLiteral::LiteralType::F128;
+		if (takeD128Suffix(scanner, errorReporter, src, token, text)) {
+			type = AstNodeLiteral::LiteralType::D128;
 		}
 		auto* lit = new AstNodeLiteral(text, type);
 		lit->setPosition(line, column);

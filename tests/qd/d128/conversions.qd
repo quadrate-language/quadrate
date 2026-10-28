@@ -1,0 +1,49 @@
+// cast<d128>, and casting a d128 to the other types.
+use strconv
+
+fn main() {
+	// From an integer: exact, all 64 bits of it
+	42 cast<d128> print nl
+	-9223372036854775807 1 - cast<d128> print nl
+
+	// From an f64: the binary value, correctly rounded to 34 digits -- which is why a d128
+	// literal is written with a d rather than converted from an f64 one
+	0.1 cast<d128> print nl
+	0.5 cast<d128> print nl
+	1.0 cast<d128> print nl
+	1024.0 cast<d128> print nl
+	-0.0 cast<d128> print nl
+
+	// To an integer: toward zero, saturating, and total
+	2.9d cast<i64> print nl
+	-2.9d cast<i64> print nl
+	1e30d cast<i64> print nl
+	-1e30d cast<i64> print nl
+	0d 0d / cast<i64> print nl
+
+	// To an f64: the nearest one
+	0.1d cast<f64> print nl
+	2.5d cast<f64> 2.0 * print nl
+
+	// To a string: the to-scientific-string form
+	1.10d cast<str> print nl
+	1.5e+40d cast<str> print nl
+	0.000001d cast<str> print nl
+	0.0000001d cast<str> print nl
+	1d 0d / cast<str> print nl
+
+	// A d128 is already one
+	7.25d cast<d128> print nl
+
+	// Interpolation spells it the same way
+	19.99d -> price
+	price 2d * -> twice
+	$"price {price}, twice {twice}" print nl
+
+	// Parsing is fallible, and takes the whole string or nothing
+	"0.1" strconv::parse_d128! print nl
+	"-1.5e-3" strconv::parse_d128! print nl
+	"Infinity" strconv::parse_d128! print nl
+	"1.5x" strconv::parse_d128 if { print nl } else { "rejected 1.5x" print nl }
+	" 1" strconv::parse_d128 if { print nl } else { "rejected leading space" print nl }
+}

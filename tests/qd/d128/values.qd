@@ -1,0 +1,113 @@
+// A d128 lives in every place a value can: locals, parameters, struct fields, arrays,
+// closures, globals.
+
+const Rate = 0.05d
+
+var ledger:d128 = 0d
+
+struct Box<T> {
+	value:T
+}
+
+fn wrap<T>(x:T -- b:Box<T>) {
+	Box<T> { value = x }
+}
+
+struct Account {
+	name:str
+	balance:d128
+}
+
+fn (a:Account) deposit(amount:d128 -- ) {
+	a a <<balance amount + >>balance drop
+}
+
+fn interest(balance:d128 -- earned:d128) {
+	balance Rate *
+}
+
+fn total(xs:[]d128 -- sum:d128) {
+	0d -> sum
+	xs len -> n
+	0 n 1 for i {
+		sum xs i nth + -> sum
+	}
+	sum
+}
+
+fn describe(x:d128 -- ) {
+	x switch {
+		0d { "zero" print nl }
+		Rate { "the rate" print nl }
+		1.5d { "one and a half" print nl }
+		_ { "something else" print nl }
+	}
+}
+
+fn show(x:any -- ) {
+	x print nl
+}
+
+fn main() {
+	// Locals, rebinding, and a loop that accumulates
+	0d -> sum
+	0 10 1 for i {
+		sum 0.1d + -> sum
+	}
+	sum print nl
+	sum 1d == print nl
+
+	// Struct fields, methods, and clone
+	Account { name = "savings" balance = 100.00d } -> acc
+	acc 0.10d deposit
+	acc 0.20d deposit
+	acc <<balance print nl
+	acc clone -> copy
+	copy 1d deposit
+	acc <<balance print nl
+	copy <<balance print nl
+	acc <<balance interest print nl
+
+	// Arrays
+	[1.10d 2.20d 3.30d] -> prices
+	prices print nl
+	prices total print nl
+	prices 1 9.99d set
+	prices 4.40d append -> prices
+	prices print nl
+	prices total print nl
+	[3]d128 -> zeros
+	zeros print nl
+	zeros 2 nth 1d + print nl
+	[] 5d append 6d append -> grown
+	grown print nl
+
+	// Closures capture a d128 like any other value
+	1.5d -> factor
+	fn(x:d128 -- r:d128) { x factor * } -> scale
+	2d scale call print nl
+
+	// A global holds its own reference across reassignment
+	ledger 12.5d + -> ledger
+	ledger 0.25d + -> ledger
+	ledger print nl
+
+	// switch compares with IEEE equality: 1.50 matches 1.5
+	0d describe
+	0.050d describe
+	1.50d describe
+	7d describe
+
+	// A generic field carries the d128's tag, and takes and gives back its reference
+	1.25d wrap -> box
+	box <<value 2d * print nl
+	box 7.5d >>value drop
+	box clone -> other
+	other <<value print nl
+
+	// Stack shuffles and an untyped parameter
+	3d 4d swap - print nl
+	5d dup * print nl
+	1d 2d 3d rot print print print nl
+	2.25d show
+}

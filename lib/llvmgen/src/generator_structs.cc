@@ -46,7 +46,7 @@ namespace Qd {
 			return 2;
 		} else if (typeName == "i8" || typeName == "u8") {
 			return 1;
-		} else if (typeName == "f128") {
+		} else if (typeName == "d128") {
 			return 16; // Held in the struct, as in a stack slot
 		} else if (typeName == "str" || typeName.find('*') != std::string::npos) {
 			return 8; // Pointer size
@@ -481,8 +481,8 @@ namespace Qd {
 				llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 				llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 				builder->CreateStore(truncValue, bytePtr);
-			} else if (field.typeName == "f128") {
-				storeSlotValue(loadSlotValue(valuePtr, "f128_val"), bytePtr);
+			} else if (field.typeName == "d128") {
+				storeSlotValue(loadSlotValue(valuePtr, "d128_val"), bytePtr);
 			} else if (field.typeName == "ptr" || field.typeName == "str" ||
 					   field.typeName.find('*') != std::string::npos || isArrayType(field.typeName) ||
 					   isFnType(field.typeName) ||
@@ -650,8 +650,8 @@ namespace Qd {
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			builder->CreateCall(pushStrRefFn, {ctx, ptrValue});
 			lastFieldAccessResultType.clear(); // Not a struct type
-		} else if (matchingField->typeName == "f128") {
-			pushF128At(ctx, bytePtr, "field_value");
+		} else if (matchingField->typeName == "d128") {
+			pushD128At(ctx, bytePtr, "field_value");
 			lastFieldAccessResultType.clear();
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName.find('*') != std::string::npos ||
 				   isArrayType(matchingField->typeName) || isFnType(matchingField->typeName)) {
@@ -703,10 +703,10 @@ namespace Qd {
 			sw->addCase(builder->getInt64(3), strBB);
 			{
 				llvm::IRBuilderBase::InsertPointGuard guard(*builder);
-				auto* f128BB = llvm::BasicBlock::Create(*context, "generic.f128", currentFn);
-				sw->addCase(builder->getInt64(kStackTypeF128), f128BB);
-				builder->SetInsertPoint(f128BB);
-				pushF128At(ctx, bytePtr, "generic");
+				auto* d128BB = llvm::BasicBlock::Create(*context, "generic.d128", currentFn);
+				sw->addCase(builder->getInt64(kStackTypeD128), d128BB);
+				builder->SetInsertPoint(d128BB);
+				pushD128At(ctx, bytePtr, "generic");
 				builder->CreateBr(endBB);
 			}
 
@@ -831,8 +831,8 @@ namespace Qd {
 			llvm::Value* intValue = builder->CreateLoad(int64Ty, valuePtr, "int_val");
 			llvm::Value* truncValue = builder->CreateTrunc(intValue, builder->getInt8Ty(), "int8_val");
 			builder->CreateStore(truncValue, bytePtr);
-		} else if (matchingField->typeName == "f128") {
-			storeSlotValue(loadSlotValue(valuePtr, "f128_val"), bytePtr);
+		} else if (matchingField->typeName == "d128") {
+			storeSlotValue(loadSlotValue(valuePtr, "d128_val"), bytePtr);
 		} else if (matchingField->typeName == "ptr" || matchingField->typeName == "str" ||
 				   matchingField->typeName.find('*') != std::string::npos || isArrayType(matchingField->typeName) ||
 				   (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName))) {
@@ -912,7 +912,7 @@ namespace Qd {
 		if (elemType == "str" || elemType == "string") {
 			return "qd_makes";
 		}
-		if (elemType == "f128") {
+		if (elemType == "d128") {
 			return "qd_makeq";
 		}
 		if (elemType == "ptr" || isArrayType(elemType) || isKnownStruct(elemType)) {
@@ -1091,12 +1091,12 @@ namespace Qd {
 		// created as QD_ARRAY_TYPE_ANY (4) and adopts its element type from the first value
 		// appended, exactly as `[] x append` does, so a nested array yields an array of
 		// pointers without anything here having to work out the element type statically.
-		// An f128 literal goes the same way: the constant path lays out eight-byte elements,
-		// and an f128 array's are sixteen.
+		// A d128 literal goes the same way: the constant path lays out eight-byte elements,
+		// and a d128 array's are sixteen.
 		bool allScalarLiterals = true;
 		for (const auto& elemPtr : elements) {
 			if (elemPtr->type() != IAstNode::Type::LITERAL ||
-					static_cast<AstNodeLiteral*>(elemPtr.get())->literalType() == AstNodeLiteral::LiteralType::F128) {
+					static_cast<AstNodeLiteral*>(elemPtr.get())->literalType() == AstNodeLiteral::LiteralType::D128) {
 				allScalarLiterals = false;
 				break;
 			}

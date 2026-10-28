@@ -378,16 +378,16 @@ namespace Qd {
 		builder->CreateAlignedStore(value, valuePtr, llvm::Align(8));
 	}
 
-	void LlvmGenerator::Impl::pushF128At(llvm::Value* ctx, llvm::Value* valuePtr, const std::string& name) {
-		llvm::Value* words = loadSlotValue(valuePtr, name + "_f128");
-		builder->CreateCall(pushF128BitsFn, {ctx, builder->CreateExtractValue(words, 0, name + "_f128_low"),
-													builder->CreateExtractValue(words, 1, name + "_f128_high")});
+	void LlvmGenerator::Impl::pushD128At(llvm::Value* ctx, llvm::Value* valuePtr, const std::string& name) {
+		llvm::Value* words = loadSlotValue(valuePtr, name + "_d128");
+		builder->CreateCall(pushD128BitsFn, {ctx, builder->CreateExtractValue(words, 0, name + "_d128_low"),
+													builder->CreateExtractValue(words, 1, name + "_d128_high")});
 	}
 
-	bool LlvmGenerator::Impl::f128LiteralWords(const std::string& text, uint64_t& low, uint64_t& high) {
+	bool LlvmGenerator::Impl::d128LiteralWords(const std::string& text, uint64_t& low, uint64_t& high) {
 		std::string digits;
-		qd_f128_t value;
-		if (readF128Literal(text, digits) != std::errc() || !qd_f128_parse(digits.c_str(), &value)) {
+		qd_d128_t value;
+		if (readD128Literal(text, digits) != std::errc() || !qd_d128_parse(digits.c_str(), &value)) {
 			return false;
 		}
 		low = value.w[0];
@@ -395,14 +395,14 @@ namespace Qd {
 		return true;
 	}
 
-	void LlvmGenerator::Impl::addF128PushCase(llvm::SwitchInst* sw, llvm::Value* valuePtr, llvm::Value* ctx,
+	void LlvmGenerator::Impl::addD128PushCase(llvm::SwitchInst* sw, llvm::Value* valuePtr, llvm::Value* ctx,
 			llvm::BasicBlock* endBlock, const std::string& name) {
 		llvm::IRBuilderBase::InsertPointGuard guard(*builder);
 		llvm::BasicBlock* block =
-				llvm::BasicBlock::Create(*context, name + "_push_f128", builder->GetInsertBlock()->getParent());
-		sw->addCase(builder->getInt32(kStackTypeF128), block);
+				llvm::BasicBlock::Create(*context, name + "_push_d128", builder->GetInsertBlock()->getParent());
+		sw->addCase(builder->getInt32(kStackTypeD128), block);
 		builder->SetInsertPoint(block);
-		pushF128At(ctx, valuePtr, name);
+		pushD128At(ctx, valuePtr, name);
 		builder->CreateBr(endBlock);
 	}
 

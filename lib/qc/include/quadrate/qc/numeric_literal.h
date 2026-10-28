@@ -117,40 +117,40 @@ namespace Qd {
 	 * integer reader chokes on the `e`.
 	 */
 	inline bool isFloatLiteralText(std::string_view text) {
-		if (text.empty() || hasRadixPrefix(text) || text.back() == 'q') {
+		if (text.empty() || hasRadixPrefix(text) || text.back() == 'd') {
 			return false;
 		}
 		return text.find('.') != std::string_view::npos || text.find_first_of("eE") != std::string_view::npos;
 	}
 
 	/**
-	 * @brief Whether a numeric literal's spelling makes it an f128: a trailing `q`.
+	 * @brief Whether a numeric literal's spelling makes it a d128: a trailing `d`.
 	 *
 	 * The suffix is kept in the text a literal or constant is stored as, so this is the
 	 * whole rule, as isFloatLiteralText is for f64.
 	 */
-	inline bool isF128LiteralText(std::string_view text) {
-		return text.size() > 1 && text.back() == 'q' && !hasRadixPrefix(text);
+	inline bool isD128LiteralText(std::string_view text) {
+		return text.size() > 1 && text.back() == 'd' && !hasRadixPrefix(text);
 	}
 
 	/**
-	 * @brief Read an f128 literal, reporting why if it will not read.
+	 * @brief Read a d128 literal, reporting why if it will not read.
 	 *
-	 * The spelling is a decimal integer or float literal followed by `q`: `42q`, `0.1q`,
-	 * `-1.5e-300q`. The digits are kept as written -- decimal128 holds them exactly, up to
+	 * The spelling is a decimal integer or float literal followed by `d`: `42d`, `0.1d`,
+	 * `-1.5e-300d`. The digits are kept as written -- decimal128 holds them exactly, up to
 	 * 34 significant digits, and rounds the rest the way arithmetic does -- so `out` is the
-	 * text without its `q`, ready for the runtime to read.
+	 * text without its `d`, ready for the runtime to read.
 	 *
 	 * A magnitude beyond decimal128's largest finite value, 9.99...e6144, is
 	 * `result_out_of_range`, as a too-large f64 literal is. Too small is not an error: it
 	 * rounds toward zero, as arithmetic does.
 	 *
-	 * @param text The literal as written, `q` included.
+	 * @param text The literal as written, `d` included.
 	 * @param out Set to the digits on success, untouched otherwise.
 	 * @return `std::errc()` on success.
 	 */
-	inline std::errc readF128Literal(std::string_view text, std::string& out) {
-		if (!isF128LiteralText(text)) {
+	inline std::errc readD128Literal(std::string_view text, std::string& out) {
+		if (!isD128LiteralText(text)) {
 			return std::errc::invalid_argument;
 		}
 		const std::string_view body = text.substr(0, text.size() - 1);
@@ -229,11 +229,11 @@ namespace Qd {
 	}
 
 	/**
-	 * @brief The digits of an f128 literal, for the places downstream of the validator.
-	 * @see readF128Literal
+	 * @brief The digits of a d128 literal, for the places downstream of the validator.
+	 * @see readD128Literal
 	 */
-	inline std::string f128LiteralDigits(std::string_view text) {
-		return isF128LiteralText(text) ? std::string(text.substr(0, text.size() - 1)) : std::string(text);
+	inline std::string d128LiteralDigits(std::string_view text) {
+		return isD128LiteralText(text) ? std::string(text.substr(0, text.size() - 1)) : std::string(text);
 	}
 
 	/**

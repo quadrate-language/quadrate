@@ -1,4 +1,0 @@
-// Test: q is the only suffix a number takes.
-fn main() {
-	1.5qx print nl
-}

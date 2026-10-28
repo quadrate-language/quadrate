@@ -1,6 +1,6 @@
 {
   "name": "strconv",
-  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - parse_f128: Parse string to f128 - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean doccheck: page-context",
+  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - parse_d128: Parse string to d128 - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean doccheck: page-context",
   "constants": [
 
   ],
@@ -69,14 +69,14 @@
       "examples": ["\"true\" strconv::parse_bool! print  // 1"]
     },
     {
-      "name": "parse_f128",
-      "signature": "(s:str -- value:f128)",
+      "name": "parse_d128",
+      "signature": "(s:str -- value:d128)",
       "failable": true,
-      "description": "Parse string to f128, rounding to 34 digits. Takes an optional sign, digits with an optional point and exponent, or inf, infinity or nan in any case. The whole string must be the number: \" 1\" and \"1x\" are errors.",
+      "description": "Parse string to d128, rounding to 34 digits. Takes an optional sign, digits with an optional point and exponent, or inf, infinity or nan in any case. The whole string must be the number: \" 1\" and \"1x\" are errors.",
       "params": [{"name": "s", "type": "str", "description": "String to parse"}],
-      "returns": [{"name": "value", "type": "f128", "description": "Parsed value"}],
+      "returns": [{"name": "value", "type": "d128", "description": "Parsed value"}],
       "errors": [],
-      "examples": ["\"0.1\" strconv::parse_f128! print  // 0.1"]
+      "examples": ["\"0.1\" strconv::parse_d128! print  // 0.1"]
     },
     {
       "name": "parse_float",

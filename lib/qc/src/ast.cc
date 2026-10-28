@@ -120,8 +120,8 @@ namespace Qd {
 				return "";
 			}
 			std::string valueText = u8t_scanner_token_text(scanner, &n);
-			// A constant keeps its `q`, and so its type: `const Tenth = 0.1q` is an f128.
-			takeF128Suffix(scanner, errorReporter, src, token, valueText);
+			// A constant keeps its `d`, and so its type: `const Tenth = 0.1d` is a d128.
+			takeD128Suffix(scanner, errorReporter, src, token, valueText);
 			return valueText;
 		} else if (token == U8T_STRING) {
 			// Keep quotes so LLVM generator knows it's a string
@@ -174,8 +174,8 @@ namespace Qd {
 		if (!value.empty() && value.front() == '"') {
 			return "str";
 		}
-		if (isF128LiteralText(value)) {
-			return "f128";
+		if (isD128LiteralText(value)) {
+			return "d128";
 		}
 		if (isFloatLiteralText(value)) {
 			return "f64";
@@ -281,7 +281,7 @@ namespace Qd {
 				noteUnterminatedString(scanner, src);
 			}
 			value = u8t_scanner_token_text(scanner, &n);
-			takeF128Suffix(scanner, errorReporter, src, token, value);
+			takeD128Suffix(scanner, errorReporter, src, token, value);
 			sourceExpr = value;
 		} else {
 			errorReporter->reportError(scanner, "Expected literal value or const name after '=' in var initializer");
@@ -305,9 +305,9 @@ namespace Qd {
 			// instruction died of a stack underflow that named the instruction rather than
 			// the read.
 			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::STRING));
-		} else if (typeName == "f128" && isF128LiteralText(value)) {
+		} else if (typeName == "d128" && isD128LiteralText(value)) {
 			// The literal the compiler reads into the global's initial value
-			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::F128));
+			varDecl->setInitializerNode(new AstNodeLiteral(value, AstNodeLiteral::LiteralType::D128));
 		}
 		setNodePosition(varDecl, scanner, src);
 		varDecl->setParent(program);
@@ -318,16 +318,16 @@ namespace Qd {
 		// For this parse only, however it returns
 		struct FloatDefault {
 			explicit FloatDefault(bool on) {
-				parseFloatsAsF128 = on;
+				parseFloatsAsD128 = on;
 			}
 
 			~FloatDefault() {
-				parseFloatsAsF128 = false;
+				parseFloatsAsD128 = false;
 			}
 
 			FloatDefault(const FloatDefault&) = delete;
 			FloatDefault& operator=(const FloatDefault&) = delete;
-		} floatDefault(mDefaultFloatF128);
+		} floatDefault(mDefaultFloatD128);
 
 		u8t_scanner scanner;
 		if (!u8t_scanner_init(&scanner, src)) {

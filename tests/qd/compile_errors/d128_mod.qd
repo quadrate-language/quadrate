@@ -1,0 +1,4 @@
+// Test: mod is integer-only, and the decimal module has both remainders.
+fn main() {
+	7d 2d % print nl
+}

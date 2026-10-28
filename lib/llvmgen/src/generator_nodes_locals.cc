@@ -47,7 +47,7 @@ namespace Qd {
 				if (typeName == "f64") {
 					llvm::Value* v = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_g_f");
 					storeVolatile(v);
-				} else if (typeName == "f128") {
+				} else if (typeName == "d128") {
 					storeVolatile(loadSlotValue(valuePtr, name + "_g_q"));
 				} else if (typeName == "str" || typeName == "ptr" || isKnownStruct(typeName)) {
 					// Struct-typed globals store a pointer just like `ptr`/`str`.

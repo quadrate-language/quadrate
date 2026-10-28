@@ -58,51 +58,51 @@ TEST(Floats) {
 	qd_interp_destroy(interp);
 }
 
-TEST(F128) {
+TEST(D128) {
 	qd_interp* interp = qd_interp_create(256);
 
-	ASSERT(std::strcmp(top(interp, "0.1q 0.2q +"), "0.3") == 0, "0.1q 0.2q + is exactly 0.3");
-	ASSERT(std::strcmp(top(interp, "clear 0.1q 0.2q + 0.3q =="), "1") == 0, "and equals 0.3q");
-	ASSERT(std::strcmp(top(interp, "clear 1.10q 1.20q +"), "2.30") == 0, "the exponent is kept");
-	ASSERT(std::strcmp(top(interp, "clear 1q 3q /"), "0.3333333333333333333333333333333333") == 0,
+	ASSERT(std::strcmp(top(interp, "0.1d 0.2d +"), "0.3") == 0, "0.1d 0.2d + is exactly 0.3");
+	ASSERT(std::strcmp(top(interp, "clear 0.1d 0.2d + 0.3d =="), "1") == 0, "and equals 0.3d");
+	ASSERT(std::strcmp(top(interp, "clear 1.10d 1.20d +"), "2.30") == 0, "the exponent is kept");
+	ASSERT(std::strcmp(top(interp, "clear 1d 3d /"), "0.3333333333333333333333333333333333") == 0,
 			"34 digits, rounded");
-	ASSERT(std::strcmp(top(interp, "clear 2.5q -> x x x *"), "6.25") == 0, "a local holds an f128");
-	ASSERT(std::strcmp(top(interp, "clear 42 cast<f128>"), "42") == 0, "cast<f128> from an integer");
-	ASSERT(std::strcmp(top(interp, "clear [1.5q 2.5q] 1 nth"), "2.5") == 0, "an array of f128");
-	ASSERT(qd_interp_eval(interp, "const Half = 0.5q"), "an f128 constant");
+	ASSERT(std::strcmp(top(interp, "clear 2.5d -> x x x *"), "6.25") == 0, "a local holds a d128");
+	ASSERT(std::strcmp(top(interp, "clear 42 cast<d128>"), "42") == 0, "cast<d128> from an integer");
+	ASSERT(std::strcmp(top(interp, "clear [1.5d 2.5d] 1 nth"), "2.5") == 0, "an array of d128");
+	ASSERT(qd_interp_eval(interp, "const Half = 0.5d"), "a d128 constant");
 	ASSERT(std::strcmp(top(interp, "clear Half Half +"), "1.0") == 0, "keeps its q, and so its type");
 
-	// An i64 widens to an f128 exactly, either side of it
-	ASSERT(std::strcmp(top(interp, "clear 2 1.5q +"), "3.5") == 0, "an i64 under an f128");
-	ASSERT(std::strcmp(top(interp, "clear 1q 3 /"), "0.3333333333333333333333333333333333") == 0, "and over one");
-	ASSERT(std::strcmp(top(interp, "clear 2 2.0q =="), "1") == 0, "and in a comparison");
-	ASSERT(std::strcmp(top(interp, "clear -9223372036854775808 1q -"), "-9223372036854775809") == 0,
+	// An i64 widens to a d128 exactly, either side of it
+	ASSERT(std::strcmp(top(interp, "clear 2 1.5d +"), "3.5") == 0, "an i64 under a d128");
+	ASSERT(std::strcmp(top(interp, "clear 1d 3 /"), "0.3333333333333333333333333333333333") == 0, "and over one");
+	ASSERT(std::strcmp(top(interp, "clear 2 2.0d =="), "1") == 0, "and in a comparison");
+	ASSERT(std::strcmp(top(interp, "clear -9223372036854775808 1d -"), "-9223372036854775809") == 0,
 			"the whole range of an i64, exactly");
-	ASSERT(!qd_interp_eval(interp, "clear 1.5q 0.5 +"), "but an f64 does not mix");
+	ASSERT(!qd_interp_eval(interp, "clear 1.5d 0.5 +"), "but an f64 does not mix");
 
 	qd_interp_value value;
-	ASSERT(qd_interp_eval(interp, "clear 7q") && qd_interp_peek(interp, 0, &value), "peek an f128");
-	ASSERT(value.type == QD_INTERP_VALUE_F128, "and it reads back as one");
+	ASSERT(qd_interp_eval(interp, "clear 7d") && qd_interp_peek(interp, 0, &value), "peek a d128");
+	ASSERT(value.type == QD_INTERP_VALUE_D128, "and it reads back as one");
 
 	qd_interp_destroy(interp);
 }
 
-// A calculator's setting: what someone types is decimal without a `q`
-TEST(DefaultFloatF128) {
+// A calculator's setting: what someone types is decimal without a `d`
+TEST(DefaultFloatD128) {
 	qd_interp* interp = qd_interp_create(256);
 	qd_interp_value value;
 	ASSERT(qd_interp_eval(interp, "1.5") && qd_interp_peek(interp, 0, &value), "by default");
 	ASSERT(value.type == QD_INTERP_VALUE_FLOAT, "1.5 is an f64");
 
-	qd_interp_set_default_float(interp, QD_INTERP_FLOAT_F128);
-	ASSERT(qd_interp_eval(interp, "clear 1.5") && qd_interp_peek(interp, 0, &value), "set to f128");
-	ASSERT(value.type == QD_INTERP_VALUE_F128 && std::strcmp(value.text, "1.5") == 0, "1.5 is an f128");
+	qd_interp_set_default_float(interp, QD_INTERP_FLOAT_D128);
+	ASSERT(qd_interp_eval(interp, "clear 1.5") && qd_interp_peek(interp, 0, &value), "set to d128");
+	ASSERT(value.type == QD_INTERP_VALUE_D128 && std::strcmp(value.text, "1.5") == 0, "1.5 is a d128");
 	ASSERT(std::strcmp(top(interp, "clear 0.1 0.2 +"), "0.3") == 0, "so 0.1 0.2 + is 0.3");
 	ASSERT(qd_interp_eval(interp, "clear 7") && qd_interp_peek(interp, 0, &value) && value.type == QD_INTERP_VALUE_INT,
 			"an integer stays an i64");
 	ASSERT(std::strcmp(top(interp, "clear 7 2.0 /"), "3.5") == 0, "and widens where it meets one");
 	ASSERT(std::strcmp(top(interp, "clear 6.02e23 1e-23 *"), "6.02") == 0, "an exponent makes a float too");
-	ASSERT(std::strcmp(top(interp, "clear 2.5q 2 *"), "5.0") == 0, "a written q still reads");
+	ASSERT(std::strcmp(top(interp, "clear 2.5d 2 *"), "5.0") == 0, "a written q still reads");
 	ASSERT(qd_interp_eval(interp, "clear 0x1F") && qd_interp_peek(interp, 0, &value) &&
 					value.type == QD_INTERP_VALUE_INT,
 			"a hex number is an integer, whatever its letters");

@@ -56,16 +56,16 @@ inline std::string floatLiteralProblem(const std::string& text) {
 	return "Invalid float literal '" + text + "'";
 }
 
-inline std::string f128LiteralProblem(const std::string& text) {
+inline std::string d128LiteralProblem(const std::string& text) {
 	std::string digits;
-	const std::errc ec = readF128Literal(text, digits);
+	const std::errc ec = readD128Literal(text, digits);
 	if (ec == std::errc()) {
 		return "";
 	}
 	if (ec == std::errc::result_out_of_range) {
-		return "f128 literal '" + text + "' is out of range for f128 (the largest is 9.999...e6144q)";
+		return "d128 literal '" + text + "' is out of range for d128 (the largest is 9.999...e6144d)";
 	}
-	return "Invalid f128 literal '" + text + "'";
+	return "Invalid d128 literal '" + text + "'";
 }
 
 // The spelling of a constant's stored value decides how it reads, so a const is where a
@@ -77,8 +77,8 @@ inline std::string numericLiteralProblem(const std::string& text) {
 	if (text.size() <= digitAt || text[digitAt] < '0' || text[digitAt] > '9') {
 		return "";
 	}
-	if (isF128LiteralText(text)) {
-		return f128LiteralProblem(text);
+	if (isD128LiteralText(text)) {
+		return d128LiteralProblem(text);
 	}
 	return isFloatLiteralText(text) ? floatLiteralProblem(text) : integerLiteralProblem(text);
 }
@@ -184,7 +184,7 @@ inline std::string sizedTypeMisuseMessage(const std::string& name, const std::st
 inline bool isReservedKeyword(const std::string& name) {
 	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "loop", "switch", "case", "break",
 			"continue", "return", "fn", "struct", "enum", "type", "const", "pub", "test", "use", "import", "defer",
-			"as", "true", "false", "Ok", "Err", "null", "i64", "f64", "f128", "str", "ptr", "void"};
+			"as", "true", "false", "Ok", "Err", "null", "i64", "f64", "d128", "str", "ptr", "void"};
 	return KEYWORDS.find(name) != KEYWORDS.end();
 }
 
@@ -201,8 +201,8 @@ inline std::string serializeCaseValue(IAstNode* node) {
 			return "int:" + lit->value();
 		case AstNodeLiteral::LiteralType::FLOAT:
 			return "float:" + lit->value();
-		case AstNodeLiteral::LiteralType::F128:
-			return "f128:" + lit->value();
+		case AstNodeLiteral::LiteralType::D128:
+			return "d128:" + lit->value();
 		case AstNodeLiteral::LiteralType::STRING:
 			return "string:" + lit->value();
 		case AstNodeLiteral::LiteralType::NULL_PTR:
@@ -222,8 +222,8 @@ inline const char* stackValueTypeToString(StackValueType type) {
 		return "int";
 	case StackValueType::FLOAT:
 		return "float";
-	case StackValueType::F128:
-		return "f128";
+	case StackValueType::D128:
+		return "d128";
 	case StackValueType::STRING:
 		return "string";
 	case StackValueType::PTR:
@@ -511,8 +511,8 @@ inline const char* qdTypeNameOf(StackValueType t) {
 		return "i64";
 	case StackValueType::FLOAT:
 		return "f64";
-	case StackValueType::F128:
-		return "f128";
+	case StackValueType::D128:
+		return "d128";
 	case StackValueType::STRING:
 		return "str";
 	default:

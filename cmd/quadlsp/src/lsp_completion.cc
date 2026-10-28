@@ -207,7 +207,7 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 	if (isInTypePosition(documentText, line, character)) {
 		// Show built-in types
 		static const char* builtinTypes[] = {
-				"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "f128", "str", "bool", "ptr", "any"};
+				"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "d128", "str", "bool", "ptr", "any"};
 		static const char* typeDescriptions[] = {"64-bit signed integer", "32-bit signed integer (field/mem only)",
 				"16-bit signed integer (field/mem only)", "8-bit signed integer (field/mem only)",
 				"64-bit unsigned integer (field/mem only)", "32-bit unsigned integer (field/mem only)",

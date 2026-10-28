@@ -1,0 +1,432 @@
+{
+  "name": "decimal",
+  "description": "IEEE 754 decimal128 arithmetic beyond the operators.  `d128` is decimal floating point with 34 significant digits, so a value prints as exactly what it holds: `0.1d 0.2d +` is `0.3`. The operators `+ - * /`, `neg` and the comparisons work on d128 directly; this module has the rest of what IEEE 754-2008 asks of a decimal format, and the elementary functions.  Every result is rounded to 34 digits with roundTiesToEven. `sqrt`, `exp`, `ln` and `log10` are correctly rounded, as is `fma`, which rounds once for the product and the sum. The trigonometric functions carry ten guard digits and reduce their argument against 6400 digits of pi, so `sin` of 1e6144 is as accurate as `sin` of 1.  Decimal values keep the exponent they were written or computed with, so `1.10d` and `1.1d` are equal but print differently; `reduce` strips trailing zeros and `quantize` sets them. doccheck: page-context",
+  "constants": [
+
+  ],
+  "structs": [
+
+  ],
+  "functions": [
+    {
+      "name": "abs",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Absolute value. Clears the sign bit, so -0 becomes 0 and NaN stays NaN.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "|x|"}],
+      "errors": [],
+      "examples": ["-2.5d decimal::abs print  // 2.5"]
+    },
+    {
+      "name": "acos",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Arc cosine, in radians.",
+      "params": [{"name": "x", "type": "d128", "description": "Value in [-1, 1]"}],
+      "returns": [{"name": "result", "type": "d128", "description": "acos(x) in [0, pi]"}, {"name": " NaN outside [-1, 1]", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["1d decimal::acos print  // 0"]
+    },
+    {
+      "name": "asin",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Arc sine, in radians.",
+      "params": [{"name": "x", "type": "d128", "description": "Value in [-1, 1]"}],
+      "returns": [{"name": "result", "type": "d128", "description": "asin(x) in [-pi/2, pi/2]"}, {"name": " NaN outside [-1, 1]", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["1d decimal::asin print  // 1.570796326794896619231321691639751"]
+    },
+    {
+      "name": "atan2",
+      "signature": "(y:d128 x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Angle of the point (x, y) from the positive x axis, in radians.",
+      "params": [{"name": "y", "type": "d128", "description": "Y coordinate"}, {"name": "x", "type": "d128", "description": "X coordinate"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Angle in [-pi, pi]"}],
+      "errors": [],
+      "examples": ["1d -1d decimal::atan2 print  // 2.356194490192344928846982537459627"]
+    },
+    {
+      "name": "atan",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Arc tangent, in radians.",
+      "params": [{"name": "x", "type": "d128", "description": "Any value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "atan(x) in [-pi/2, pi/2]"}],
+      "errors": [],
+      "examples": ["1d decimal::atan print  // 0.7853981633974483096156608458198757"]
+    },
+    {
+      "name": "ceil",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Round toward positive infinity to an integral value.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Smallest integer not below x"}],
+      "errors": [],
+      "examples": ["2.1d decimal::ceil print  // 3"]
+    },
+    {
+      "name": "copysign",
+      "signature": "(x:d128 sign:d128 -- result:d128)",
+      "failable": false,
+      "description": "x with the sign of sign.",
+      "params": [{"name": "x", "type": "d128", "description": "Magnitude"}, {"name": "sign", "type": "d128", "description": "Value whose sign is taken"}],
+      "returns": [{"name": "result", "type": "d128", "description": "|x| with sign's sign"}],
+      "errors": [],
+      "examples": ["3d -1d decimal::copysign print  // -3"]
+    },
+    {
+      "name": "cos",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Cosine of an angle in radians.",
+      "params": [{"name": "x", "type": "d128", "description": "Angle in radians"}],
+      "returns": [{"name": "result", "type": "d128", "description": "cos(x)"}],
+      "errors": [],
+      "examples": ["0d decimal::cos print  // 1"]
+    },
+    {
+      "name": "e",
+      "signature": "( -- result:d128)",
+      "failable": false,
+      "description": "Euler's number e, correctly rounded to 34 digits.",
+      "params": [],
+      "returns": [{"name": "result", "type": "d128", "description": "e"}],
+      "errors": [],
+      "examples": ["decimal::e print  // 2.718281828459045235360287471352662"]
+    },
+    {
+      "name": "exp",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "e raised to x, correctly rounded.",
+      "params": [{"name": "x", "type": "d128", "description": "Exponent"}],
+      "returns": [{"name": "result", "type": "d128", "description": "e^x"}],
+      "errors": [],
+      "examples": ["1d decimal::exp print  // 2.718281828459045235360287471352662"]
+    },
+    {
+      "name": "floor",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Round toward negative infinity to an integral value.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Largest integer not above x"}],
+      "errors": [],
+      "examples": ["-2.1d decimal::floor print  // -3"]
+    },
+    {
+      "name": "fma",
+      "signature": "(a:d128 b:d128 c:d128 -- result:d128)",
+      "failable": false,
+      "description": "Fused multiply-add: a*b + c with a single rounding.",
+      "params": [{"name": "a", "type": "d128", "description": "First factor"}, {"name": "b", "type": "d128", "description": "Second factor"}, {"name": "c", "type": "d128", "description": "Addend"}],
+      "returns": [{"name": "result", "type": "d128", "description": "a*b + c, rounded once"}],
+      "errors": [],
+      "examples": ["2d 3d 1d decimal::fma print  // 7"]
+    },
+    {
+      "name": "fmod",
+      "signature": "(x:d128 y:d128 -- result:d128)",
+      "failable": false,
+      "description": "Truncated remainder: x - n*y where n is x/y truncated toward zero. It takes x's sign.",
+      "params": [{"name": "x", "type": "d128", "description": "Dividend"}, {"name": "y", "type": "d128", "description": "Divisor"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Remainder"}],
+      "errors": [],
+      "examples": ["-7d 2d decimal::fmod print  // -1"]
+    },
+    {
+      "name": "inf",
+      "signature": "( -- result:d128)",
+      "failable": false,
+      "description": "Positive infinity, which has no literal spelling.",
+      "params": [],
+      "returns": [{"name": "result", "type": "d128", "description": "inf"}],
+      "errors": [],
+      "examples": ["decimal::inf print  // inf"]
+    },
+    {
+      "name": "is_finite",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x is neither infinite nor NaN.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if finite, 0 otherwise"}],
+      "errors": [],
+      "examples": ["1d decimal::is_finite print  // 1"]
+    },
+    {
+      "name": "is_inf",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x is an infinity of either sign.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if infinite, 0 otherwise"}],
+      "errors": [],
+      "examples": ["1d 0d / decimal::is_inf print  // 1"]
+    },
+    {
+      "name": "is_nan",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x is NaN. NaN is unequal to everything, itself included, so `x x ==` cannot ask.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if NaN, 0 otherwise"}],
+      "errors": [],
+      "examples": ["0d 0d / decimal::is_nan print  // 1"]
+    },
+    {
+      "name": "is_normal",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x is normal: finite, non-zero, and not subnormal.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if normal, 0 otherwise"}],
+      "errors": [],
+      "examples": ["1d decimal::is_normal print  // 1"]
+    },
+    {
+      "name": "is_signed",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x's sign bit is set. True of -0 and of a negative NaN, which `0d <` is not.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if the sign bit is set, 0 otherwise"}],
+      "errors": [],
+      "examples": ["-0d decimal::is_signed print  // 1"]
+    },
+    {
+      "name": "is_subnormal",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x is subnormal: non-zero and below 1e-6143 in magnitude.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if subnormal, 0 otherwise"}],
+      "errors": [],
+      "examples": ["1e-6150d decimal::is_subnormal print  // 1"]
+    },
+    {
+      "name": "is_zero",
+      "signature": "(x:d128 -- result:i64)",
+      "failable": false,
+      "description": "Whether x is zero of either sign.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "1 if zero, 0 otherwise"}],
+      "errors": [],
+      "examples": ["-0d decimal::is_zero print  // 1"]
+    },
+    {
+      "name": "ln",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Natural logarithm, correctly rounded.",
+      "params": [{"name": "x", "type": "d128", "description": "Positive value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "ln(x)"}, {"name": " -inf for 0, NaN for a negative x", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["10d decimal::ln print  // 2.302585092994045684017991454684364"]
+    },
+    {
+      "name": "log10",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Base-10 logarithm, correctly rounded.",
+      "params": [{"name": "x", "type": "d128", "description": "Positive value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "log10(x)"}],
+      "errors": [],
+      "examples": ["1000d decimal::log10 print  // 3"]
+    },
+    {
+      "name": "logb",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Exponent of x's leading digit: floor(log10(|x|)) for a finite non-zero x.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "The exponent"}, {"name": " -inf for 0", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["1234d decimal::logb print  // 3"]
+    },
+    {
+      "name": "max",
+      "signature": "(a:d128 b:d128 -- result:d128)",
+      "failable": false,
+      "description": "IEEE maxNum: the larger of a and b, where a quiet NaN loses to a number.",
+      "params": [{"name": "a", "type": "d128", "description": "First value"}, {"name": "b", "type": "d128", "description": "Second value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Maximum"}],
+      "errors": [],
+      "examples": ["3d 7d decimal::max print  // 7"]
+    },
+    {
+      "name": "min",
+      "signature": "(a:d128 b:d128 -- result:d128)",
+      "failable": false,
+      "description": "IEEE minNum: the smaller of a and b, where a quiet NaN loses to a number.",
+      "params": [{"name": "a", "type": "d128", "description": "First value"}, {"name": "b", "type": "d128", "description": "Second value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Minimum"}],
+      "errors": [],
+      "examples": ["3d 7d decimal::min print  // 3"]
+    },
+    {
+      "name": "nan",
+      "signature": "( -- result:d128)",
+      "failable": false,
+      "description": "A quiet NaN, which has no literal spelling.",
+      "params": [],
+      "returns": [{"name": "result", "type": "d128", "description": "nan"}],
+      "errors": [],
+      "examples": ["decimal::nan decimal::is_nan print  // 1"]
+    },
+    {
+      "name": "next_down",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "The next d128 below x.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Greatest value less than x"}],
+      "errors": [],
+      "examples": ["1d decimal::next_down print  // 0.9999999999999999999999999999999999"]
+    },
+    {
+      "name": "next_up",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "The next d128 above x.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Least value greater than x"}],
+      "errors": [],
+      "examples": ["1d decimal::next_up print  // 1.000000000000000000000000000000001"]
+    },
+    {
+      "name": "pi",
+      "signature": "( -- result:d128)",
+      "failable": false,
+      "description": "Pi, correctly rounded to 34 digits.",
+      "params": [],
+      "returns": [{"name": "result", "type": "d128", "description": "Pi"}],
+      "errors": [],
+      "examples": ["decimal::pi print  // 3.141592653589793238462643383279503"]
+    },
+    {
+      "name": "pow",
+      "signature": "(base:d128 exponent:d128 -- result:d128)",
+      "failable": false,
+      "description": "base raised to exponent.",
+      "params": [{"name": "base", "type": "d128", "description": "Base"}, {"name": "exponent", "type": "d128", "description": "Exponent"}],
+      "returns": [{"name": "result", "type": "d128", "description": "base^exponent"}],
+      "errors": [],
+      "examples": ["2d 10d decimal::pow print  // 1024"]
+    },
+    {
+      "name": "quantize",
+      "signature": "(x:d128 like:d128 -- result:d128)",
+      "failable": false,
+      "description": "x rounded to the exponent of like: to the same number of decimal places.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}, {"name": "like", "type": "d128", "description": "Value whose exponent is taken"}],
+      "returns": [{"name": "result", "type": "d128", "description": "x with like's exponent"}, {"name": " NaN if it will not fit 34 digits", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["2.34567d 0.01d decimal::quantize print  // 2.35"]
+    },
+    {
+      "name": "reduce",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "x without trailing zeros: the same value at the largest exponent that holds it.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "x reduced"}],
+      "errors": [],
+      "examples": ["1.500d decimal::reduce print  // 1.5"]
+    },
+    {
+      "name": "remainder",
+      "signature": "(x:d128 y:d128 -- result:d128)",
+      "failable": false,
+      "description": "IEEE remainder: x - n*y where n is x/y rounded to the nearest integer, ties to even. The result lies in [-|y|/2, |y|/2].",
+      "params": [{"name": "x", "type": "d128", "description": "Dividend"}, {"name": "y", "type": "d128", "description": "Divisor"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Remainder"}],
+      "errors": [],
+      "examples": ["10d 3d decimal::remainder print  // 1"]
+    },
+    {
+      "name": "round_even",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Round to an integral value, ties to even.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Nearest integer"}, {"name": " 2.5 goes to 2", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["2.5d decimal::round_even print  // 2"]
+    },
+    {
+      "name": "round",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Round to an integral value, ties away from zero.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Nearest integer"}, {"name": " 2.5 goes to 3", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["2.5d decimal::round print  // 3"]
+    },
+    {
+      "name": "scaleb",
+      "signature": "(x:d128 n:i64 -- result:d128)",
+      "failable": false,
+      "description": "x times ten to the n.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}, {"name": "n", "type": "i64", "description": "Power of ten"}],
+      "returns": [{"name": "result", "type": "d128", "description": "x * 10^n"}],
+      "errors": [],
+      "examples": ["1.5d 3 decimal::scaleb print  // 1.5e+3"]
+    },
+    {
+      "name": "sin",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Sine of an angle in radians.",
+      "params": [{"name": "x", "type": "d128", "description": "Angle in radians"}],
+      "returns": [{"name": "result", "type": "d128", "description": "sin(x)"}],
+      "errors": [],
+      "examples": ["0d decimal::sin print  // 0"]
+    },
+    {
+      "name": "sqrt",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Square root, correctly rounded.",
+      "params": [{"name": "x", "type": "d128", "description": "Non-negative value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Square root of x"}, {"name": " NaN for a negative x", "type": "", "description": ""}],
+      "errors": [],
+      "examples": ["2d decimal::sqrt print  // 1.414213562373095048801688724209698"]
+    },
+    {
+      "name": "tan",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Tangent of an angle in radians.",
+      "params": [{"name": "x", "type": "d128", "description": "Angle in radians"}],
+      "returns": [{"name": "result", "type": "d128", "description": "tan(x)"}],
+      "errors": [],
+      "examples": ["0d decimal::tan print  // 0"]
+    },
+    {
+      "name": "total_order",
+      "signature": "(a:d128 b:d128 -- result:i64)",
+      "failable": false,
+      "description": "IEEE totalOrder: a total order over every d128, NaNs and signed zeros included. -0 orders before 0, and equal values written with different exponents order by exponent: 1.00d before 1.0d.",
+      "params": [{"name": "a", "type": "d128", "description": "First value"}, {"name": "b", "type": "d128", "description": "Second value"}],
+      "returns": [{"name": "result", "type": "i64", "description": "-1, 0 or 1"}],
+      "errors": [],
+      "examples": ["-0d 0d decimal::total_order print  // -1"]
+    },
+    {
+      "name": "trunc",
+      "signature": "(x:d128 -- result:d128)",
+      "failable": false,
+      "description": "Round toward zero to an integral value.",
+      "params": [{"name": "x", "type": "d128", "description": "Value"}],
+      "returns": [{"name": "result", "type": "d128", "description": "Integer part of x"}],
+      "errors": [],
+      "examples": ["-2.7d decimal::trunc print  // -2"]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
-#include <quadrate/testing/testing.h>
-#include <quadrate/rt/stack.h>
-#include <quadrate/rt/runtime.h>
 #include <quadrate/rt/qd_string.h>
+#include <quadrate/rt/runtime.h>
+#include <quadrate/rt/stack.h>
+#include <quadrate/testing/testing.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,39 +16,45 @@ static void release_element(qd_stack_element_t* elem) {
 // Helper function to print a stack element value
 static void print_element_value(FILE* f, qd_stack_element_t* elem) {
 	switch (elem->type) {
-		case QD_STACK_TYPE_INT:
-			fprintf(f, "%ld", elem->value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			fprintf(f, "%g", elem->value.f);
-			break;
-		case QD_STACK_TYPE_STR:
-			fprintf(f, "\"%s\"", qd_string_data(elem->value.s));
-			break;
-		case QD_STACK_TYPE_PTR:
-			fprintf(f, "ptr(%p)", elem->value.p);
-			break;
-		case QD_STACK_TYPE_F128: {
-			char text[QD_F128_STRING_MAX];
-			qd_f128_format(elem->value.q, text, sizeof text);
-			fprintf(f, "%sq", text);
-			break;
-		}
-		default:
-			fprintf(f, "<unknown>");
-			break;
+	case QD_STACK_TYPE_INT:
+		fprintf(f, "%ld", elem->value.i);
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		fprintf(f, "%g", elem->value.f);
+		break;
+	case QD_STACK_TYPE_STR:
+		fprintf(f, "\"%s\"", qd_string_data(elem->value.s));
+		break;
+	case QD_STACK_TYPE_PTR:
+		fprintf(f, "ptr(%p)", elem->value.p);
+		break;
+	case QD_STACK_TYPE_D128: {
+		char text[QD_D128_STRING_MAX];
+		qd_d128_format(elem->value.d, text, sizeof text);
+		fprintf(f, "%sq", text);
+		break;
+	}
+	default:
+		fprintf(f, "<unknown>");
+		break;
 	}
 }
 
 // Helper function to get type name
 static const char* get_type_name(qd_stack_type type) {
 	switch (type) {
-		case QD_STACK_TYPE_INT: return "i64";
-		case QD_STACK_TYPE_FLOAT: return "f64";
-		case QD_STACK_TYPE_STR: return "str";
-		case QD_STACK_TYPE_PTR: return "ptr";
-		case QD_STACK_TYPE_F128: return "f128";
-		default: return "unknown";
+	case QD_STACK_TYPE_INT:
+		return "i64";
+	case QD_STACK_TYPE_FLOAT:
+		return "f64";
+	case QD_STACK_TYPE_STR:
+		return "str";
+	case QD_STACK_TYPE_PTR:
+		return "ptr";
+	case QD_STACK_TYPE_D128:
+		return "d128";
+	default:
+		return "unknown";
 	}
 }
 
@@ -59,19 +65,19 @@ static int elements_equal(qd_stack_element_t* a, qd_stack_element_t* b) {
 	}
 
 	switch (a->type) {
-		case QD_STACK_TYPE_INT:
-			return a->value.i == b->value.i;
-		case QD_STACK_TYPE_FLOAT:
-			return a->value.f == b->value.f;
-		case QD_STACK_TYPE_STR:
-			return strcmp(qd_string_data(a->value.s), qd_string_data(b->value.s)) == 0;
-		case QD_STACK_TYPE_PTR:
-			return a->value.p == b->value.p;
-		case QD_STACK_TYPE_F128:
-			// IEEE equality, as `==` has it: 1.5 and 1.50 are equal, NaN is equal to nothing.
-			return qd_f128_compare(a->value.q, b->value.q) == 0;
-		default:
-			return 0;
+	case QD_STACK_TYPE_INT:
+		return a->value.i == b->value.i;
+	case QD_STACK_TYPE_FLOAT:
+		return a->value.f == b->value.f;
+	case QD_STACK_TYPE_STR:
+		return strcmp(qd_string_data(a->value.s), qd_string_data(b->value.s)) == 0;
+	case QD_STACK_TYPE_PTR:
+		return a->value.p == b->value.p;
+	case QD_STACK_TYPE_D128:
+		// IEEE equality, as `==` has it: 1.5 and 1.50 are equal, NaN is equal to nothing.
+		return qd_d128_compare(a->value.d, b->value.d) == 0;
+	default:
+		return 0;
 	}
 }
 
@@ -176,24 +182,24 @@ int usr_testing_assert_true(qd_context* ctx) {
 
 	int truthy = 0;
 	switch (v.type) {
-		case QD_STACK_TYPE_INT:
-			truthy = v.value.i != 0;
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			truthy = v.value.f != 0.0;
-			break;
-		case QD_STACK_TYPE_STR:
-			truthy = qd_string_data(v.value.s)[0] != '\0';
-			break;
-		case QD_STACK_TYPE_PTR:
-			truthy = v.value.p != NULL;
-			break;
-		case QD_STACK_TYPE_F128:
-			truthy = !qd_f128_is_zero(v.value.q);
-			break;
-		default:
-			truthy = 0;
-			break;
+	case QD_STACK_TYPE_INT:
+		truthy = v.value.i != 0;
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		truthy = v.value.f != 0.0;
+		break;
+	case QD_STACK_TYPE_STR:
+		truthy = qd_string_data(v.value.s)[0] != '\0';
+		break;
+	case QD_STACK_TYPE_PTR:
+		truthy = v.value.p != NULL;
+		break;
+	case QD_STACK_TYPE_D128:
+		truthy = !qd_d128_is_zero(v.value.d);
+		break;
+	default:
+		truthy = 0;
+		break;
 	}
 
 	if (!truthy) {
@@ -229,24 +235,24 @@ int usr_testing_assert_false(qd_context* ctx) {
 
 	int falsy = 0;
 	switch (v.type) {
-		case QD_STACK_TYPE_INT:
-			falsy = v.value.i == 0;
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			falsy = v.value.f == 0.0;
-			break;
-		case QD_STACK_TYPE_STR:
-			falsy = qd_string_data(v.value.s)[0] == '\0';
-			break;
-		case QD_STACK_TYPE_PTR:
-			falsy = v.value.p == NULL;
-			break;
-		case QD_STACK_TYPE_F128:
-			falsy = qd_f128_is_zero(v.value.q);
-			break;
-		default:
-			falsy = 1;
-			break;
+	case QD_STACK_TYPE_INT:
+		falsy = v.value.i == 0;
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		falsy = v.value.f == 0.0;
+		break;
+	case QD_STACK_TYPE_STR:
+		falsy = qd_string_data(v.value.s)[0] == '\0';
+		break;
+	case QD_STACK_TYPE_PTR:
+		falsy = v.value.p == NULL;
+		break;
+	case QD_STACK_TYPE_D128:
+		falsy = qd_d128_is_zero(v.value.d);
+		break;
+	default:
+		falsy = 1;
+		break;
 	}
 
 	if (!falsy) {
@@ -291,7 +297,7 @@ int usr_testing_fail(qd_context* ctx) {
 		fprintf(stderr, "\n");
 	}
 	qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
+	qd_assertion_failed(ctx);
 
 	release_element(&msg);
 	return (int){1};
@@ -299,8 +305,8 @@ int usr_testing_fail(qd_context* ctx) {
 
 // Helper to pop two strings: ( haystack needle -- )
 // Returns 0 on success, non-zero on failure
-static int pop_two_strings(qd_context* ctx, const char* func_name,
-                           qd_stack_element_t* haystack, qd_stack_element_t* needle) {
+static int pop_two_strings(
+		qd_context* ctx, const char* func_name, qd_stack_element_t* haystack, qd_stack_element_t* needle) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
 		fprintf(stderr, "Assertion error: %s requires 2 strings on stack, have %zu\n", func_name, stack_size);
@@ -320,8 +326,8 @@ static int pop_two_strings(qd_context* ctx, const char* func_name,
 	}
 
 	if (haystack->type != QD_STACK_TYPE_STR || needle->type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Assertion error: %s requires 2 strings, got %s and %s\n",
-				func_name, get_type_name(haystack->type), get_type_name(needle->type));
+		fprintf(stderr, "Assertion error: %s requires 2 strings, got %s and %s\n", func_name,
+				get_type_name(haystack->type), get_type_name(needle->type));
 		qd_print_stack_trace(ctx);
 		qd_assertion_failed(ctx);
 		release_element(haystack);
@@ -420,7 +426,8 @@ int usr_testing_assert_ends_with(qd_context* ctx) {
 int usr_testing_assert_approx_eq(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 3) {
-		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 values on stack (a b epsilon), have %zu\n", stack_size);
+		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 values on stack (a b epsilon), have %zu\n",
+				stack_size);
 		qd_print_stack_trace(ctx);
 		qd_assertion_failed(ctx);
 		return (int){1};
@@ -446,7 +453,8 @@ int usr_testing_assert_approx_eq(qd_context* ctx) {
 	// All three must be floats
 	if (a.type != QD_STACK_TYPE_FLOAT || b.type != QD_STACK_TYPE_FLOAT || epsilon.type != QD_STACK_TYPE_FLOAT) {
 		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 floats\n");
-		fprintf(stderr, "  got: %s, %s, %s\n", get_type_name(a.type), get_type_name(b.type), get_type_name(epsilon.type));
+		fprintf(stderr, "  got: %s, %s, %s\n", get_type_name(a.type), get_type_name(b.type),
+				get_type_name(epsilon.type));
 		qd_print_stack_trace(ctx);
 		qd_assertion_failed(ctx);
 		release_element(&a);

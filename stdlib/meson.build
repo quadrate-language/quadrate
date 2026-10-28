@@ -17,7 +17,7 @@ if get_option('build_tests') and 'http' in stdlib_modules and not ('net' in stdl
 	error('stdlib_modules: http\'s tests need net and tls; add them, or set build_tests=false')
 endif
 
-foreach module : ['f128', 'fmt', 'io', 'math', 'mem', 'net', 'os', 'signal', 'unicode', 'strings', 'strconv', 'testing', 'time', 'thread', 'tty', 'tls', 'http', 'log']
+foreach module : ['decimal', 'fmt', 'io', 'math', 'mem', 'net', 'os', 'signal', 'unicode', 'strings', 'strconv', 'testing', 'time', 'thread', 'tty', 'tls', 'http', 'log']
 	if module in stdlib_modules
 		subdir(module)
 	endif

@@ -36,7 +36,7 @@ typedef enum {
 	/// appended to it. An empty `[]` literal starts this way, as does `make<T>` for a type
 	/// parameter, whose concrete type a generic function cannot know at run time.
 	QD_ARRAY_TYPE_ANY = 4,
-	QD_ARRAY_TYPE_F128 = 5 ///< Decimal128, sixteen bytes to an element
+	QD_ARRAY_TYPE_D128 = 5 ///< Decimal128, sixteen bytes to an element
 } qd_array_type;
 
 /**
@@ -67,7 +67,7 @@ typedef struct qd_array {
 		int64_t* i;	  ///< Integer array data
 		double* f;	  ///< Float array data
 		void** p;	  ///< Pointer array data (includes strings)
-		qd_f128_t* q; ///< Decimal128 array data
+		qd_d128_t* d; ///< Decimal128 array data
 	} data;
 } qd_array_t;
 
@@ -148,10 +148,10 @@ int qd_array_get_float(const qd_array_t* arr, size_t index, double* value);
 int qd_array_get_ptr(const qd_array_t* arr, size_t index, void** value);
 
 /**
- * @brief Get an element of an f128 array
+ * @brief Get an element of a d128 array
  * @return 0 on success, -1 on a wrong type or an index out of bounds
  */
-int qd_array_get_f128(const qd_array_t* arr, size_t index, qd_f128_t* value);
+int qd_array_get_d128(const qd_array_t* arr, size_t index, qd_d128_t* value);
 
 /**
  * @brief Set an integer element in an array
@@ -184,10 +184,10 @@ int qd_array_set_float(qd_array_t* arr, size_t index, double value);
 int qd_array_set_ptr(qd_array_t* arr, size_t index, void* value);
 
 /**
- * @brief Set an element of an f128 array
+ * @brief Set an element of a d128 array
  * @return 0 on success, -1 on a wrong type or an index out of bounds
  */
-int qd_array_set_f128(qd_array_t* arr, size_t index, qd_f128_t value);
+int qd_array_set_d128(qd_array_t* arr, size_t index, qd_d128_t value);
 
 /**
  * @brief Push an integer element to the end of an array
@@ -217,10 +217,10 @@ int qd_array_push_float(qd_array_t* arr, double value);
 int qd_array_push_ptr(qd_array_t* arr, void* value);
 
 /**
- * @brief Append to an f128 array
+ * @brief Append to a d128 array
  * @return 0 on success, -1 on a wrong type or when growing fails
  */
-int qd_array_push_f128(qd_array_t* arr, qd_f128_t value);
+int qd_array_push_d128(qd_array_t* arr, qd_d128_t value);
 
 /**
  * @defgroup ArrayStackOps Array Stack Operations
@@ -308,7 +308,7 @@ int qd_makep(qd_context* ctx);
 int qd_makea(qd_context* ctx);
 
 /**
- * @brief Create an f128 array of n zeros
+ * @brief Create a d128 array of n zeros
  *
  * Stack effect: ( n -- array )
  *

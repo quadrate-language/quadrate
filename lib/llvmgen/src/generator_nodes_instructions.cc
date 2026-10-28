@@ -531,7 +531,7 @@ namespace Qd {
 			sw->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT
 			sw->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR
 			sw->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR
-			addF128PushCase(sw, valuePtr, ctx, endBlock, name);
+			addD128PushCase(sw, valuePtr, ctx, endBlock, name);
 
 			// INT block
 			builder->SetInsertPoint(intBlock);
@@ -709,7 +709,7 @@ namespace Qd {
 				fnName = "qd_casti";
 			} else if (typeParam == "f64" || typeParam == "f32") {
 				fnName = "qd_castf";
-			} else if (typeParam == "f128") {
+			} else if (typeParam == "d128") {
 				fnName = "qd_castq";
 			} else if (typeParam == "str" || typeParam == "string") {
 				fnName = "qd_casts";

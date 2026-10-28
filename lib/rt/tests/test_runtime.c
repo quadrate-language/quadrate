@@ -1,19 +1,19 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include <math.h>
+#include <quadrate/rt/context.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/context.h>
 #include <quadrate/rt/stack.h>
-#include <unit-check/uc.h>
 #include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <stdint.h>
-#include <signal.h>
-#include <stdio.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <unit-check/uc.h>
 
 // Helper to compare floats with tolerance
 static int float_eq(double a, double b) {
@@ -86,7 +86,6 @@ static void printv_empty_stack_child(void) {
 static void neg_empty_stack_child(void) {
 	qd_neg(qd_create_context(64));
 }
-
 
 TEST(MulIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -193,7 +192,6 @@ TEST(MulNegativeTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(AddIntegersTest) {
 	qd_context* ctx = create_test_context();
 
@@ -299,7 +297,6 @@ TEST(AddZeroTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(SubIntegersTest) {
 	qd_context* ctx = create_test_context();
 
@@ -404,7 +401,6 @@ TEST(SubZeroTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(MulTypeErrorTest) {
 	qd_context* ctx = create_test_context();
@@ -1071,7 +1067,6 @@ TEST(StackIsEmptyAfterClearTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(RecoveryIsPerContext) {
 	qd_context* a = qd_create_context(64);
 	qd_context* b = qd_create_context(64);
@@ -1218,7 +1213,10 @@ TEST(NativeRegistryGrowsAndRehashes) {
 
 	// Well past the initial capacity, so the table grows and rehashes several
 	// times; every name must survive every rehash
-	enum { COUNT = 500 };
+	enum {
+		COUNT = 500
+	};
+
 	char name[32];
 
 	for (int i = 0; i < COUNT; i++) {
@@ -1273,7 +1271,6 @@ TEST(NativeRegistryClear) {
 int main(void) {
 	return UC_PrintResults();
 }
-
 
 TEST(PrintPopsStackTest) {
 	qd_context* ctx = create_test_context();
@@ -1464,7 +1461,6 @@ TEST(PrintsMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(DupIntegerTest) {
 	qd_context* ctx = create_test_context();
 
@@ -1570,7 +1566,6 @@ TEST(DupNonDestructiveTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(SwapIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -1680,7 +1675,6 @@ TEST(SwapDoesNotAffectRestOfStackTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(OverIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -1813,7 +1807,6 @@ TEST(OverPreservesRestOfStackTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(NipIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -2141,8 +2134,8 @@ TEST(DepthIncludesItselfTest) {
 	// Verify that depth counts elements BEFORE the depth is pushed
 	qd_push_i(ctx, 1);
 	qd_push_i(ctx, 2);
-	qd_depth(ctx);  // Should push 2, not 3
-	qd_depth(ctx);  // Should push 3 (1, 2, depth_result)
+	qd_depth(ctx); // Should push 2, not 3
+	qd_depth(ctx); // Should push 3 (1, 2, depth_result)
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2297,9 +2290,9 @@ TEST(SwapWithDupTest) {
 
 	// Test combining dup and swap
 	qd_push_i(ctx, 5);
-	qd_dup(ctx);  // Stack: 5, 5
-	qd_push_i(ctx, 10);  // Stack: 5, 5, 10
-	qd_swap(ctx);  // Stack: 5, 10, 5
+	qd_dup(ctx);		// Stack: 5, 5
+	qd_push_i(ctx, 10); // Stack: 5, 5, 10
+	qd_swap(ctx);		// Stack: 5, 10, 5
 
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
@@ -2318,7 +2311,6 @@ TEST(SwapWithDupTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 // qd_eq tests
 TEST(EqIntegersEqualTest) {
@@ -2906,7 +2898,7 @@ TEST(ComparisonPreservesRestOfStackTest) {
 	qd_push_i(ctx, 200);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 5);
-	qd_lt(ctx);  // 3 < 5 = 1
+	qd_lt(ctx); // 3 < 5 = 1
 
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
@@ -2929,10 +2921,10 @@ TEST(ComparisonChainTest) {
 	// Test chaining comparisons: ((3 < 5) == 1) should work
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 5);
-	qd_lt(ctx);  // Result: 1
+	qd_lt(ctx); // Result: 1
 
 	qd_push_i(ctx, 1);
-	qd_eq(ctx);  // Result: 1 == 1 = 1
+	qd_eq(ctx); // Result: 1 == 1 = 1
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -2940,7 +2932,6 @@ TEST(ComparisonChainTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(WithinValueInRangeIntegersTest) {
 	qd_context* ctx = create_test_context();
@@ -3238,9 +3229,9 @@ TEST(WithinPreservesRestOfStackTest) {
 	// Test that within only affects top 3 elements
 	qd_push_i(ctx, 100);
 	qd_push_i(ctx, 200);
-	qd_push_i(ctx, 5);   // value
-	qd_push_i(ctx, 3);   // min
-	qd_push_i(ctx, 10);  // max
+	qd_push_i(ctx, 5);	// value
+	qd_push_i(ctx, 3);	// min
+	qd_push_i(ctx, 10); // max
 	qd_within(ctx);
 
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
@@ -3265,10 +3256,10 @@ TEST(WithinChainedWithComparisonTest) {
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 3);
 	qd_push_i(ctx, 10);
-	qd_within(ctx);  // Result: 1
+	qd_within(ctx); // Result: 1
 
 	qd_push_i(ctx, 1);
-	qd_eq(ctx);  // Result: 1 == 1 = 1
+	qd_eq(ctx); // Result: 1 == 1 = 1
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -3294,7 +3285,6 @@ TEST(WithinInvertedRangeTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(DropIntegerTest) {
 	qd_context* ctx = create_test_context();
@@ -3350,8 +3340,6 @@ TEST(DropFloatTest) {
 	destroy_test_context(ctx);
 }
 
-
-
 TEST(RotTest) {
 	qd_context* ctx = create_test_context();
 
@@ -3406,7 +3394,6 @@ TEST(RotMixedTypesTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(ModPositiveTest) {
 	qd_context* ctx = create_test_context();
 
@@ -3455,7 +3442,6 @@ TEST(ModZeroTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(NegIntegerTest) {
 	qd_context* ctx = create_test_context();
@@ -3511,7 +3497,6 @@ TEST(NegNegativeTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(PickTest) {
 	qd_context* ctx = create_test_context();
@@ -3583,109 +3568,109 @@ TEST(RollTest) {
 // its string handling are pinned here instead.
 
 // Formats v into a static buffer, for comparing against the exact text a value holds
-static const char* f128_text(qd_f128_t v) {
-	static char buf[QD_F128_STRING_MAX];
-	qd_f128_format(v, buf, sizeof buf);
+static const char* d128_text(qd_d128_t v) {
+	static char buf[QD_D128_STRING_MAX];
+	qd_d128_format(v, buf, sizeof buf);
 	return buf;
 }
 
-static qd_f128_t f128_of(const char* text) {
-	qd_f128_t v = qd_f128_nan();
-	qd_f128_parse(text, &v);
+static qd_d128_t d128_of(const char* text) {
+	qd_d128_t v = qd_d128_nan();
+	qd_d128_parse(text, &v);
 	return v;
 }
 
-TEST(F128ParseAndFormat) {
-	qd_f128_t v;
-	ASSERT(qd_f128_parse("1.10", &v), "1.10 reads");
-	ASSERT(strcmp(f128_text(v), "1.10") == 0, "and keeps its trailing zero");
+TEST(D128ParseAndFormat) {
+	qd_d128_t v;
+	ASSERT(qd_d128_parse("1.10", &v), "1.10 reads");
+	ASSERT(strcmp(d128_text(v), "1.10") == 0, "and keeps its trailing zero");
 
-	ASSERT(!qd_f128_parse("1.5x", &v), "trailing junk is not a number");
-	ASSERT(!qd_f128_parse("", &v), "nor is nothing");
-	ASSERT(!qd_f128_parse("sNaN", &v), "a signaling NaN is refused");
+	ASSERT(!qd_d128_parse("1.5x", &v), "trailing junk is not a number");
+	ASSERT(!qd_d128_parse("", &v), "nor is nothing");
+	ASSERT(!qd_d128_parse("sNaN", &v), "a signaling NaN is refused");
 
-	ASSERT(qd_f128_parse("-Infinity", &v) && strcmp(f128_text(v), "-inf") == 0, "infinity is spelled as f64 spells it");
-	ASSERT(strcmp(f128_text(f128_of("1E+3")), "1e+3") == 0, "an exponent past the digits is written as one");
-	ASSERT(strcmp(f128_text(f128_of("0.000001")), "0.000001") == 0, "six places still read plainly");
-	ASSERT(strcmp(f128_text(f128_of("0.0000001")), "1e-7") == 0, "seven do not");
-	ASSERT(strcmp(f128_text(f128_of("-0")), "-0") == 0, "negative zero keeps its sign");
+	ASSERT(qd_d128_parse("-Infinity", &v) && strcmp(d128_text(v), "-inf") == 0, "infinity is spelled as f64 spells it");
+	ASSERT(strcmp(d128_text(d128_of("1E+3")), "1e+3") == 0, "an exponent past the digits is written as one");
+	ASSERT(strcmp(d128_text(d128_of("0.000001")), "0.000001") == 0, "six places still read plainly");
+	ASSERT(strcmp(d128_text(d128_of("0.0000001")), "1e-7") == 0, "seven do not");
+	ASSERT(strcmp(d128_text(d128_of("-0")), "-0") == 0, "negative zero keeps its sign");
 }
 
-// Limbs of nine digits, the top one sharing a head with the exponent (see f128.c)
-TEST(F128EncodingHoldsLimbs) {
-	qd_f128_t v = f128_of("1");
+// Limbs of nine digits, the top one sharing a head with the exponent (see d128.c)
+TEST(D128EncodingHoldsLimbs) {
+	qd_d128_t v = d128_of("1");
 	ASSERT(v.w[1] == 0 && v.w[0] == 1, "1 is a limb of 1 and nothing else");
-	v = f128_of("123456789000000002");
+	v = d128_of("123456789000000002");
 	ASSERT(v.w[1] == 0 && v.w[0] == ((UINT64_C(123456789) << 30) | 2), "a limb each nine digits");
-	v = f128_of("-7.50");
+	v = d128_of("-7.50");
 	ASSERT(v.w[1] == ((UINT64_C(1) << 63) | (UINT64_C(12286) << 26)) && v.w[0] == 750,
 			"the sign, and an exponent of -2 kept modulo 12288");
 
-	const qd_f128_t zero = {{0, 0}};
-	ASSERT(strcmp(f128_text(zero), "0") == 0, "zeroed memory is a plain zero");
-	v = qd_f128_from_i64(0);
+	const qd_d128_t zero = {{0, 0}};
+	ASSERT(strcmp(d128_text(zero), "0") == 0, "zeroed memory is a plain zero");
+	v = qd_d128_from_i64(0);
 	ASSERT(v.w[0] == 0 && v.w[1] == 0, "and from_i64(0) is that zero");
 
 	// Each extreme the head has to hold, there and back
 	const char* edges[] = {"9.999999999999999999999999999999999E+6144", "1E-6176", "-1E-6176",
 			"9999999999999999999999999999999999E-6176", "1E+6111", "0E+6111", "-0E-6176"};
 	for (size_t i = 0; i < sizeof edges / sizeof edges[0]; i++) {
-		qd_f128_t once = f128_of(edges[i]);
-		char text[QD_F128_STRING_MAX];
-		qd_f128_format(once, text, sizeof text);
-		const qd_f128_t twice = f128_of(text);
+		qd_d128_t once = d128_of(edges[i]);
+		char text[QD_D128_STRING_MAX];
+		qd_d128_format(once, text, sizeof text);
+		const qd_d128_t twice = d128_of(text);
 		ASSERT(once.w[0] == twice.w[0] && once.w[1] == twice.w[1], edges[i]);
 	}
 
-	ASSERT(qd_f128_is_inf(qd_f128_inf()) && !qd_f128_is_nan(qd_f128_inf()), "infinity");
-	ASSERT(qd_f128_is_nan(qd_f128_nan()) && !qd_f128_is_finite(qd_f128_nan()), "NaN");
-	const qd_f128_t quiet = qd_f128_nan();
-	v = qd_f128_div(qd_f128_from_i64(0), qd_f128_from_i64(0));
+	ASSERT(qd_d128_is_inf(qd_d128_inf()) && !qd_d128_is_nan(qd_d128_inf()), "infinity");
+	ASSERT(qd_d128_is_nan(qd_d128_nan()) && !qd_d128_is_finite(qd_d128_nan()), "NaN");
+	const qd_d128_t quiet = qd_d128_nan();
+	v = qd_d128_div(qd_d128_from_i64(0), qd_d128_from_i64(0));
 	ASSERT(v.w[0] == quiet.w[0] && v.w[1] == quiet.w[1], "0/0 is that NaN, with no stray payload");
 
 	// Bits that are no value's still read as one
-	const qd_f128_t wide = {{~UINT64_C(0) >> 4, 0}};
-	ASSERT(qd_f128_is_zero(wide), "a limb past 999999999 makes the coefficient zero");
+	const qd_d128_t wide = {{~UINT64_C(0) >> 4, 0}};
+	ASSERT(qd_d128_is_zero(wide), "a limb past 999999999 makes the coefficient zero");
 }
 
-TEST(F128ArithmeticIsDecimal) {
-	ASSERT(qd_f128_compare(qd_f128_add(f128_of("0.1"), f128_of("0.2")), f128_of("0.3")) == 0, "0.1 + 0.2 is 0.3");
-	const qd_f128_t third = qd_f128_div(qd_f128_from_i64(1), qd_f128_from_i64(3));
-	ASSERT(strcmp(f128_text(third), "0.3333333333333333333333333333333333") == 0, "34 digits, rounded");
-	ASSERT(strcmp(f128_text(qd_f128_neg(f128_of("0"))), "-0") == 0, "negation flips the sign even of zero");
+TEST(D128ArithmeticIsDecimal) {
+	ASSERT(qd_d128_compare(qd_d128_add(d128_of("0.1"), d128_of("0.2")), d128_of("0.3")) == 0, "0.1 + 0.2 is 0.3");
+	const qd_d128_t third = qd_d128_div(qd_d128_from_i64(1), qd_d128_from_i64(3));
+	ASSERT(strcmp(d128_text(third), "0.3333333333333333333333333333333333") == 0, "34 digits, rounded");
+	ASSERT(strcmp(d128_text(qd_d128_neg(d128_of("0"))), "-0") == 0, "negation flips the sign even of zero");
 }
 
-TEST(F128ConversionsAreTotal) {
-	const qd_f128_t big = f128_of("1e30");
-	ASSERT(qd_f128_to_i64(big) == INT64_MAX, "too large saturates");
-	ASSERT(qd_f128_to_i64(qd_f128_neg(big)) == INT64_MIN, "too small saturates");
-	ASSERT(qd_f128_to_i64(qd_f128_nan()) == 0, "NaN is zero");
-	ASSERT(qd_f128_to_i64(f128_of("-2.9")) == -2, "truncates toward zero");
+TEST(D128ConversionsAreTotal) {
+	const qd_d128_t big = d128_of("1e30");
+	ASSERT(qd_d128_to_i64(big) == INT64_MAX, "too large saturates");
+	ASSERT(qd_d128_to_i64(qd_d128_neg(big)) == INT64_MIN, "too small saturates");
+	ASSERT(qd_d128_to_i64(qd_d128_nan()) == 0, "NaN is zero");
+	ASSERT(qd_d128_to_i64(d128_of("-2.9")) == -2, "truncates toward zero");
 
-	const qd_f128_t tenth = qd_f128_from_f64(0.1);
-	ASSERT(strcmp(f128_text(tenth), "0.1000000000000000055511151231257827") == 0, "the binary value, rounded");
-	ASSERT(qd_f128_to_f64(tenth) == 0.1, "and back to the same double");
+	const qd_d128_t tenth = qd_d128_from_f64(0.1);
+	ASSERT(strcmp(d128_text(tenth), "0.1000000000000000055511151231257827") == 0, "the binary value, rounded");
+	ASSERT(qd_d128_to_f64(tenth) == 0.1, "and back to the same double");
 }
 
-TEST(F128ComparisonIsIEEE) {
-	const qd_f128_t nan = qd_f128_nan();
-	ASSERT(qd_f128_compare(nan, nan) == 2, "NaN is unordered, even with itself");
-	ASSERT(qd_f128_compare(nan, qd_f128_from_i64(1)) == 2, "and with a number");
-	ASSERT(qd_f128_compare(f128_of("1.0"), f128_of("1.00")) == 0, "1.0 equals 1.00");
-	ASSERT(qd_f128_total_order(f128_of("1.00"), f128_of("1.0")) == -1, "but orders before it");
+TEST(D128ComparisonIsIEEE) {
+	const qd_d128_t nan = qd_d128_nan();
+	ASSERT(qd_d128_compare(nan, nan) == 2, "NaN is unordered, even with itself");
+	ASSERT(qd_d128_compare(nan, qd_d128_from_i64(1)) == 2, "and with a number");
+	ASSERT(qd_d128_compare(d128_of("1.0"), d128_of("1.00")) == 0, "1.0 equals 1.00");
+	ASSERT(qd_d128_total_order(d128_of("1.00"), d128_of("1.0")) == -1, "but orders before it");
 }
 
-TEST(F128LivesInTheSlot) {
+TEST(D128LivesInTheSlot) {
 	qd_context* ctx = create_test_context();
-	ASSERT(qd_push_q(ctx, f128_of("2.5")) == 0, "push succeeds");
+	ASSERT(qd_push_q(ctx, d128_of("2.5")) == 0, "push succeeds");
 	qd_dup(ctx);
 	qd_add(ctx);
-	qd_f128_t result;
+	qd_d128_t result;
 	ASSERT(qd_pop_q(ctx, &result) == 0, "pop succeeds");
-	ASSERT(strcmp(f128_text(result), "5.0") == 0, "2.5 + 2.5 is 5.0");
+	ASSERT(strcmp(d128_text(result), "5.0") == 0, "2.5 + 2.5 is 5.0");
 
 	// Every bit survives the slot, the top word with the sign and exponent included
-	const qd_f128_t wide = f128_of("-9.876543210987654321098765432109876E-4321");
+	const qd_d128_t wide = d128_of("-9.876543210987654321098765432109876E-4321");
 	qd_push_q(ctx, wide);
 	qd_dup(ctx);
 	qd_swap(ctx);
@@ -3694,13 +3679,13 @@ TEST(F128LivesInTheSlot) {
 	destroy_test_context(ctx);
 }
 
-TEST(F128CastsThroughTheStack) {
+TEST(D128CastsThroughTheStack) {
 	qd_context* ctx = create_test_context();
 	qd_push_i(ctx, 42);
 	qd_castq(ctx);
 	qd_casts(ctx);
 	char buf[32];
-	ASSERT(qd_pop_s(ctx, buf, sizeof buf) == 0 && strcmp(buf, "42") == 0, "42 cast<f128> cast<str> is \"42\"");
+	ASSERT(qd_pop_s(ctx, buf, sizeof buf) == 0 && strcmp(buf, "42") == 0, "42 cast<d128> cast<str> is \"42\"");
 
 	qd_push_f(ctx, 0.5);
 	qd_castq(ctx);
@@ -3710,42 +3695,42 @@ TEST(F128CastsThroughTheStack) {
 	destroy_test_context(ctx);
 }
 
-TEST(F128PushedAsTwoWords) {
+TEST(D128PushedAsTwoWords) {
 	qd_context* ctx = create_test_context();
-	const qd_f128_t tenth = f128_of("0.1");
+	const qd_d128_t tenth = d128_of("0.1");
 	ASSERT(qd_push_q_bits(ctx, tenth.w[0], tenth.w[1]) == 0, "push succeeds");
 	const qd_stack_element_t* top = &ctx->st->data[ctx->st->size - 1];
-	ASSERT(qd_f128_matches_bits(top, f128_of("0.10").w[0], f128_of("0.10").w[1]), "0.1 matches 0.10");
-	ASSERT(!qd_f128_matches_bits(top, f128_of("0.2").w[0], f128_of("0.2").w[1]), "and not 0.2");
-	qd_f128_t back;
-	ASSERT(qd_pop_q(ctx, &back) == 0 && strcmp(f128_text(back), "0.1") == 0, "the value is what was pushed");
+	ASSERT(qd_d128_matches_bits(top, d128_of("0.10").w[0], d128_of("0.10").w[1]), "0.1 matches 0.10");
+	ASSERT(!qd_d128_matches_bits(top, d128_of("0.2").w[0], d128_of("0.2").w[1]), "and not 0.2");
+	qd_d128_t back;
+	ASSERT(qd_pop_q(ctx, &back) == 0 && strcmp(d128_text(back), "0.1") == 0, "the value is what was pushed");
 	destroy_test_context(ctx);
 }
 
-TEST(F128ArraysHoldValues) {
-	qd_array_t* arr = qd_array_create(2, QD_ARRAY_TYPE_F128);
-	ASSERT(arr != NULL, "an f128 array");
+TEST(D128ArraysHoldValues) {
+	qd_array_t* arr = qd_array_create(2, QD_ARRAY_TYPE_D128);
+	ASSERT(arr != NULL, "a d128 array");
 	arr->length = 2;
-	qd_f128_t v = qd_f128_nan();
-	ASSERT(qd_array_get_f128(arr, 1, &v) == 0 && strcmp(f128_text(v), "0") == 0, "a fresh slot holds a plain zero");
+	qd_d128_t v = qd_d128_nan();
+	ASSERT(qd_array_get_d128(arr, 1, &v) == 0 && strcmp(d128_text(v), "0") == 0, "a fresh slot holds a plain zero");
 	for (int i = 0; i < 20; i++) {
-		ASSERT(qd_array_push_f128(arr, qd_f128_from_i64(i)) == 0, "appending grows it");
+		ASSERT(qd_array_push_d128(arr, qd_d128_from_i64(i)) == 0, "appending grows it");
 	}
-	ASSERT(qd_array_get_f128(arr, 21, &v) == 0 && strcmp(f128_text(v), "19") == 0, "past several growths");
-	ASSERT(qd_array_set_f128(arr, 0, f128_of("1.5")) == 0 && qd_array_get_f128(arr, 0, &v) == 0 &&
-				   strcmp(f128_text(v), "1.5") == 0,
+	ASSERT(qd_array_get_d128(arr, 21, &v) == 0 && strcmp(d128_text(v), "19") == 0, "past several growths");
+	ASSERT(qd_array_set_d128(arr, 0, d128_of("1.5")) == 0 && qd_array_get_d128(arr, 0, &v) == 0 &&
+					strcmp(d128_text(v), "1.5") == 0,
 			"set and get");
 	qd_array_release(arr);
 
-	// An untyped array widens to f128 on its first value, by append and by set
+	// An untyped array widens to d128 on its first value, by append and by set
 	qd_context* ctx = create_test_context();
 	qd_stack_push_ptr(ctx->st, qd_array_create(4, QD_ARRAY_TYPE_ANY));
-	qd_push_q(ctx, f128_of("2.25"));
+	qd_push_q(ctx, d128_of("2.25"));
 	qd_append(ctx);
 	qd_array_t* grown = (qd_array_t*)ctx->st->data[ctx->st->size - 1].value.p;
-	ASSERT(grown->elemType == QD_ARRAY_TYPE_F128 && qd_array_get_f128(grown, 0, &v) == 0 &&
-				   strcmp(f128_text(v), "2.25") == 0,
-			"append adopts f128");
+	ASSERT(grown->elemType == QD_ARRAY_TYPE_D128 && qd_array_get_d128(grown, 0, &v) == 0 &&
+					strcmp(d128_text(v), "2.25") == 0,
+			"append adopts d128");
 	qd_stack_truncate(ctx, 0);
 
 	qd_push_i(ctx, 3);
@@ -3753,11 +3738,12 @@ TEST(F128ArraysHoldValues) {
 	qd_array_t* sized = (qd_array_t*)ctx->st->data[ctx->st->size - 1].value.p;
 	qd_array_retain(sized);
 	qd_push_i(ctx, 1);
-	qd_push_q(ctx, f128_of("7"));
+	qd_push_q(ctx, d128_of("7"));
 	qd_set(ctx);
-	ASSERT(sized->elemType == QD_ARRAY_TYPE_F128 && qd_array_get_f128(sized, 1, &v) == 0 && strcmp(f128_text(v), "7") == 0,
-			"set adopts f128");
-	ASSERT(qd_array_get_f128(sized, 2, &v) == 0 && strcmp(f128_text(v), "0") == 0, "and its other slots are zero");
+	ASSERT(sized->elemType == QD_ARRAY_TYPE_D128 && qd_array_get_d128(sized, 1, &v) == 0 &&
+					strcmp(d128_text(v), "7") == 0,
+			"set adopts d128");
+	ASSERT(qd_array_get_d128(sized, 2, &v) == 0 && strcmp(d128_text(v), "0") == 0, "and its other slots are zero");
 	qd_array_release(sized);
 	destroy_test_context(ctx);
 }

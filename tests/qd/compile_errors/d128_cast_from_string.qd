@@ -1,0 +1,4 @@
+// Test: a string is not cast to a d128; parsing can fail and cast cannot say so.
+fn main() {
+	"1.5" cast<d128> print nl
+}

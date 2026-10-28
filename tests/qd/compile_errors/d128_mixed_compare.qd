@@ -1,0 +1,5 @@
+// Test: a d128 compares with a d128 or an i64, but not an f64, whose binary value is not
+// the decimal it was written as.
+fn main() {
+	1.5d 2.5 < print nl
+}

@@ -41,8 +41,8 @@ static void printDeduplicatedErrors(const std::string& file, const auto& errors)
 
 // Stdlib modules that have native code and require linking
 // JIT execution doesn't support these - must fall back to disk compilation
-static const std::unordered_set<std::string> nativeStdlibModules = {
-		"f128", "fmt", "io", "math", "mem", "os", "signal", "strings", "strconv", "testing", "thread", "time", "tty"};
+static const std::unordered_set<std::string> nativeStdlibModules = {"decimal", "fmt", "io", "math", "mem", "os",
+		"signal", "strings", "strconv", "testing", "thread", "time", "tty"};
 
 // Check if any of the imported modules are stdlib modules with native code
 static bool hasNativeStdlibImports(const std::vector<std::string>& importedModules) {
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
 
 			// Parse the source
 			auto ast = std::make_unique<Qd::Ast>();
-			ast->setDefaultFloatF128(opts.floatsAreF128);
+			ast->setDefaultFloatD128(opts.floatsAreD128);
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, "<stdin>");
 			if (!root || ast->hasErrors()) {
 				// Print stored parsing errors (deduplicated)
@@ -349,7 +349,7 @@ int main(int argc, char** argv) {
 			// Parse the source
 			// The files named here, not the modules they import: those are written for f64
 			auto ast = std::make_unique<Qd::Ast>();
-			ast->setDefaultFloatF128(opts.floatsAreF128);
+			ast->setDefaultFloatD128(opts.floatsAreD128);
 			auto root = ast->generate(buffer.c_str(), opts.dumpTokens, file.c_str());
 			printTiming("parse");
 			if (!root || ast->hasErrors()) {
@@ -714,7 +714,7 @@ int main(int argc, char** argv) {
 			buildCache.addOption("freestanding:" + std::to_string(opts.freestanding ? 1 : 0));
 			buildCache.addOption("test:" + std::to_string(opts.testMode ? 1 : 0));
 			buildCache.addOption("coverage:" + std::to_string(opts.coverage ? 1 : 0));
-			buildCache.addOption("floats:" + std::string(opts.floatsAreF128 ? "f128" : "f64"));
+			buildCache.addOption("floats:" + std::string(opts.floatsAreD128 ? "d128" : "f64"));
 			// A different quadc can produce different output from identical sources
 			buildCache.addCompilerIdentity();
 			// ...and so can a different runtime or stdlib, which is linked in

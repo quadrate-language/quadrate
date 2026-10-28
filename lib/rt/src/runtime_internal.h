@@ -88,7 +88,7 @@ static inline void qdrt_release_element(qd_stack_element_t* elem) {
 // A slot copied field by field. As one assignment a 24-byte struct is a memcpy call at
 // -Os on some targets -- the ESP32-S3's among them -- and every pop goes through here.
 static inline void qdrt_copy_element(qd_stack_element_t* dst, const qd_stack_element_t* src) {
-	dst->value.q = src->value.q;
+	dst->value.d = src->value.d;
 	dst->type = src->type;
 	dst->is_error_tainted = src->is_error_tainted;
 }
@@ -96,13 +96,13 @@ static inline void qdrt_copy_element(qd_stack_element_t* dst, const qd_stack_ele
 // Push a stack element, taking a reference of its own to what it holds
 qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem);
 
-// Push an f128 result, a full stack being fatal
-void qdrt_push_f128(qd_context* ctx, const char* op, qd_f128_t value);
+// Push a d128 result, a full stack being fatal
+void qdrt_push_d128(qd_context* ctx, const char* op, qd_d128_t value);
 
-// The f128 cases of the arithmetic and comparison instructions. Each takes the stack
-// with its operands on top, both already known to be f128.
-void qdrt_f128_binary(qd_context* ctx, const char* op, qd_f128_t (*fn)(qd_f128_t, qd_f128_t));
-void qdrt_f128_compare(qd_context* ctx, const char* op, bool (*test)(int order));
+// The d128 cases of the arithmetic and comparison instructions. Each takes the stack
+// with its operands on top, both already known to be d128.
+void qdrt_d128_binary(qd_context* ctx, const char* op, qd_d128_t (*fn)(qd_d128_t, qd_d128_t));
+void qdrt_d128_compare(qd_context* ctx, const char* op, bool (*test)(int order));
 
 // Type name of a stack element's tag, as diagnostics spell it
 const char* qdrt_type_name(qd_stack_type type);

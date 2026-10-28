@@ -1,7 +1,0 @@
-// Test: an f64 label can never match an f128 value.
-fn main() {
-	1.5q switch {
-		1.5 { "one and a half" print nl }
-		_ { "other" print nl }
-	}
-}

@@ -750,9 +750,9 @@ public:
 			case QD_STACK_TYPE_PTR:
 				printf("%p", elem.value.p);
 				break;
-			case QD_STACK_TYPE_F128: {
-				char text[QD_F128_STRING_MAX];
-				qd_f128_format(elem.value.q, text, sizeof text);
+			case QD_STACK_TYPE_D128: {
+				char text[QD_D128_STRING_MAX];
+				qd_d128_format(elem.value.d, text, sizeof text);
 				printf("%s", text);
 				break;
 			}
@@ -781,8 +781,8 @@ private:
 			return "str";
 		case QD_STACK_TYPE_PTR:
 			return structType.empty() ? "ptr" : structType;
-		case QD_STACK_TYPE_F128:
-			return "f128";
+		case QD_STACK_TYPE_D128:
+			return "d128";
 		default:
 			return "any";
 		}
@@ -852,11 +852,11 @@ private:
 		case QD_STACK_TYPE_PTR:
 			color = COLOR_MAGENTA;
 			return "ptr";
-		case QD_STACK_TYPE_F128: {
-			char text[QD_F128_STRING_MAX];
-			qd_f128_format(elem.value.q, text, sizeof text);
+		case QD_STACK_TYPE_D128: {
+			char text[QD_D128_STRING_MAX];
+			qd_d128_format(elem.value.d, text, sizeof text);
 			color = COLOR_YELLOW;
-			return std::string(text) + "q";
+			return std::string(text) + "d";
 		}
 		default:
 			color = COLOR_RED;
@@ -1087,8 +1087,8 @@ private:
 			case QD_STACK_TYPE_PTR:
 				printf("%sptr%s\n", COLOR_MAGENTA, COLOR_RESET);
 				break;
-			case QD_STACK_TYPE_F128:
-				printf("%sf128%s\n", COLOR_YELLOW, COLOR_RESET);
+			case QD_STACK_TYPE_D128:
+				printf("%sd128%s\n", COLOR_YELLOW, COLOR_RESET);
 				break;
 			default:
 				printf("%s?%s\n", COLOR_RED, COLOR_RESET);
@@ -1303,7 +1303,7 @@ private:
 	}
 
 	static bool isAnonymousType(const std::string& type) {
-		return type == "i64" || type == "f64" || type == "f128" || type == "str" || type == "ptr" || type == "any";
+		return type == "i64" || type == "f64" || type == "d128" || type == "str" || type == "ptr" || type == "any";
 	}
 
 	std::string buildSource(const std::string& code, const std::vector<std::string>& stackTypes,

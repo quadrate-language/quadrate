@@ -1,4 +1,0 @@
-// Test: an f128 literal past the largest finite decimal128 is an error, as an f64 one is.
-fn main() {
-	1e6145q print nl
-}

@@ -1,0 +1,55 @@
+// An i64 widens to a d128 exactly -- it has at most 19 digits of the 34 -- in arithmetic,
+// in comparisons, and as an argument to a d128 parameter. An f64 does not; see
+// compile_errors/d128_mixed_float.
+
+use decimal
+
+fn half(x:d128 -- y:d128) {
+	x 2 /
+}
+
+// Each argument where it lies: the deepest and the top widen, the middle one stays an i64
+fn mix(a:d128 b:i64 c:d128 -- r:d128) {
+	a b + c *
+}
+
+// The same for f64, whose casts go through the same place. The deepest one used to be
+// swapped to the top and back, which for anything below second place left it uncast:
+// 1 / 2 as integers, 0.
+fn halff(a:f64 b:i64 c:f64 -- r:f64) {
+	a 2 /
+}
+
+fn main() {
+	// Both orders, every operator
+	2 1.5d + print nl
+	1.5d 2 + print nl
+	7 0.5d - print nl
+	0.1d 3 * print nl
+	1 3d / print nl
+	10d 4 / print nl
+
+	// Comparisons
+	2 2.0d == print nl
+	1 1.5d < print nl
+	3d 2 > print nl
+	2 2.000d != print nl
+
+	// The whole range of an i64, exactly
+	9223372036854775807 0d + print nl
+	-9223372036854775808 1d - print nl
+	9223372036854775807 1d + print nl
+
+	// Arguments
+	7 half print nl
+	2 decimal::sqrt print nl
+	1 2 3 mix print nl
+	1 7 3 halff print nl
+
+	// An accumulation that starts from an integer
+	0 -> total
+	1 4 1 for i {
+		total i 0.25d * + -> total
+	}
+	total print nl
+}

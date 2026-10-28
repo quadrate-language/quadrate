@@ -28,8 +28,8 @@ static void push_element(qd_context* ctx, qd_stack_element_t elem) {
 		qd_push_s_ref(ctx, elem.value.s);
 		qd_string_release(elem.value.s);
 		break;
-	case QD_STACK_TYPE_F128:
-		qd_stack_push_f128(ctx->st, elem.value.q);
+	case QD_STACK_TYPE_D128:
+		qd_stack_push_d128(ctx->st, elem.value.d);
 		break;
 	default:
 		qd_push_i(ctx, 0);

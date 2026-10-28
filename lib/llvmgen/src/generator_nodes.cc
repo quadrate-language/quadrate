@@ -136,17 +136,17 @@ namespace Qd {
 		builder->CreateCall(pushIntFn, {ctx, successStatus});
 	}
 
-	// An f128 literal is read here, by the runtime's own reader, so it rounds exactly as
-	// strconv::parse_f128 rounds the same digits, and what is pushed is the encoding as a
+	// A d128 literal is read here, by the runtime's own reader, so it rounds exactly as
+	// strconv::parse_d128 rounds the same digits, and what is pushed is the encoding as a
 	// constant: nothing is read at run time.
-	void LlvmGenerator::Impl::generateF128Literal(const std::string& text, llvm::Value* ctx) {
+	void LlvmGenerator::Impl::generateD128Literal(const std::string& text, llvm::Value* ctx) {
 		uint64_t low = 0;
 		uint64_t high = 0;
-		if (!f128LiteralWords(text, low, high)) {
-			std::cerr << "quadc: error: Invalid f128 literal '" << text << "'" << std::endl;
+		if (!d128LiteralWords(text, low, high)) {
+			std::cerr << "quadc: error: Invalid d128 literal '" << text << "'" << std::endl;
 			compilationFailed = true;
 		}
-		builder->CreateCall(pushF128BitsFn, {ctx, builder->getInt64(low), builder->getInt64(high)});
+		builder->CreateCall(pushD128BitsFn, {ctx, builder->getInt64(low), builder->getInt64(high)});
 	}
 
 	void LlvmGenerator::Impl::generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx) {
@@ -194,8 +194,8 @@ namespace Qd {
 			lastPushedType = LastPushedType::FLOAT;
 			break;
 		}
-		case AstNodeLiteral::LiteralType::F128:
-			generateF128Literal(value, ctx);
+		case AstNodeLiteral::LiteralType::D128:
+			generateD128Literal(value, ctx);
 			lastPushedType = LastPushedType::UNKNOWN;
 			break;
 		case AstNodeLiteral::LiteralType::STRING: {
@@ -334,7 +334,7 @@ namespace Qd {
 			switchInst->addCase(builder->getInt32(1), floatBlock);
 			switchInst->addCase(builder->getInt32(2), ptrBlock);
 			switchInst->addCase(builder->getInt32(3), strBlock);
-			addF128PushCase(switchInst, valuePtr, ctx, endBlock, name + "_cap");
+			addD128PushCase(switchInst, valuePtr, ctx, endBlock, name + "_cap");
 
 			// INT block
 			builder->SetInsertPoint(intBlock);
@@ -452,7 +452,7 @@ namespace Qd {
 			switchInst->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT = 1
 			switchInst->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR = 2
 			switchInst->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR = 3
-			addF128PushCase(switchInst, valuePtr, ctx, endBlock, name);
+			addD128PushCase(switchInst, valuePtr, ctx, endBlock, name);
 
 			// INT block: load i64 and push inline
 			builder->SetInsertPoint(intBlock);
@@ -548,7 +548,7 @@ namespace Qd {
 				// types from `var p = Point { ... }`) is treated as a pointer.
 				bool isFloat = (typeName == "f64");
 				bool isStr = (typeName == "str");
-				bool isF128 = (typeName == "f128");
+				bool isD128 = (typeName == "d128");
 				bool isPtr = (typeName == "ptr") || isKnownStruct(typeName);
 				bool isSizedInt = (typeName == "i64" || typeName == "i32" || typeName == "i16" || typeName == "i8" ||
 								   typeName == "u64" || typeName == "u32" || typeName == "u16" || typeName == "u8");
@@ -556,7 +556,7 @@ namespace Qd {
 				llvm::Type* loadTy = int64Ty;
 				if (isFloat) {
 					loadTy = builder->getDoubleTy();
-				} else if (isF128) {
+				} else if (isD128) {
 					loadTy = slotValueTy;
 				} else if (isStr || isPtr) {
 					loadTy = ptrTy;
@@ -569,9 +569,9 @@ namespace Qd {
 					compileTimeStack.push_back(v);
 				} else if (isFloat) {
 					builder->CreateCall(pushFloatFn, {ctx, v});
-				} else if (isF128) {
+				} else if (isD128) {
 					// A global holds its value from the start, its literal's encoding the initializer
-					builder->CreateCall(pushF128BitsFn, {ctx, builder->CreateExtractValue(v, 0, name + "_g_low"),
+					builder->CreateCall(pushD128BitsFn, {ctx, builder->CreateExtractValue(v, 0, name + "_g_low"),
 																builder->CreateExtractValue(v, 1, name + "_g_high")});
 				} else if (isStr) {
 					// qd_push_s_ref refuses a null string and pushes nothing, returning -2
@@ -651,8 +651,8 @@ namespace Qd {
 				std::string strValue = value.substr(1, value.length() - 2);
 				llvm::Value* strConst = builder->CreateGlobalString(strValue);
 				builder->CreateCall(pushStrFn, {ctx, strConst});
-			} else if (isF128LiteralText(value)) {
-				generateF128Literal(value, ctx);
+			} else if (isD128LiteralText(value)) {
+				generateD128Literal(value, ctx);
 			} else if (isFloatLiteralText(value)) {
 				// Float constant
 				llvm::Value* floatConst = llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0));
@@ -1331,8 +1331,8 @@ namespace Qd {
 			AstNodeLiteral::LiteralType litType;
 			if (!value.empty() && value[0] == '"') {
 				litType = AstNodeLiteral::LiteralType::STRING;
-			} else if (isF128LiteralText(value)) {
-				litType = AstNodeLiteral::LiteralType::F128;
+			} else if (isD128LiteralText(value)) {
+				litType = AstNodeLiteral::LiteralType::D128;
 			} else if (isFloatLiteralText(value)) {
 				litType = AstNodeLiteral::LiteralType::FLOAT;
 			} else {
@@ -1691,24 +1691,24 @@ namespace Qd {
 			return builder->CreateLoad(ptrTy, valuePtr, "switch_str");
 		};
 
-		// An f128 case label: the runtime compares, against a literal it reads once and caches,
-		// as a pushed f128 literal is. Null on the native path, which never holds an f128.
-		auto f128CaseMatch = [&](const std::string& text) -> llvm::Value* {
+		// A d128 case label: the runtime compares, against a literal it reads once and caches,
+		// as a pushed d128 literal is. Null on the native path, which never holds a d128.
+		auto d128CaseMatch = [&](const std::string& text) -> llvm::Value* {
 			if (nativePath) {
 				return nullptr;
 			}
 			uint64_t low = 0;
 			uint64_t high = 0;
-			if (!f128LiteralWords(text, low, high)) {
+			if (!d128LiteralWords(text, low, high)) {
 				return nullptr;
 			}
-			llvm::Function* matchFn = module->getFunction("qd_f128_matches_bits");
+			llvm::Function* matchFn = module->getFunction("qd_d128_matches_bits");
 			if (!matchFn) {
 				matchFn = llvm::Function::Create(llvm::FunctionType::get(int32Ty, {ptrTy, int64Ty, int64Ty}, false),
-						llvm::Function::ExternalLinkage, "qd_f128_matches_bits", module.get());
+						llvm::Function::ExternalLinkage, "qd_d128_matches_bits", module.get());
 			}
 			auto* found = builder->CreateCall(
-					matchFn, {switchElem, builder->getInt64(low), builder->getInt64(high)}, "f128_case");
+					matchFn, {switchElem, builder->getInt64(low), builder->getInt64(high)}, "d128_case");
 			return builder->CreateICmpNE(found, builder->getInt32(0), "case_match");
 		};
 
@@ -1747,8 +1747,8 @@ namespace Qd {
 				return builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
 			}
 
-			if (isF128LiteralText(value)) {
-				return f128CaseMatch(value);
+			if (isD128LiteralText(value)) {
+				return d128CaseMatch(value);
 			}
 
 			if (isFloatLiteralText(value)) {
@@ -1872,8 +1872,8 @@ namespace Qd {
 						auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(lit->value()));
 						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
 					}
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::F128) {
-					matches = f128CaseMatch(lit->value());
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::D128) {
+					matches = d128CaseMatch(lit->value());
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
 					// Get switch string value (qd_string_t*). Null on the native path, which
 					// leaves `matches` null for the diagnostic below.
@@ -2066,8 +2066,8 @@ namespace Qd {
 			case CastDirection::FLOAT_TO_INT:
 				type = 0; // QD_STACK_TYPE_INT
 				break;
-			case CastDirection::INT_TO_F128:
-				type = kStackTypeF128;
+			case CastDirection::INT_TO_D128:
+				type = kStackTypeD128;
 				break;
 			}
 			if (!castFn) {

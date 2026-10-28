@@ -31,7 +31,7 @@ void printHelp() {
 			.option("--coverage", "Print a function coverage report (use with --test)")
 			.option("--target", "<triple>", "Cross-compile for a target (e.g. aarch64-linux-gnu)")
 			.option("--freestanding", "No hosted runtime - emit .o with no libc and no auto-main")
-			.option("--default-float", "<f64|f128>", "The type of a float literal written without 'q' (default: f64)")
+			.option("--default-float", "<f64|d128>", "The type of a float literal written without 'd' (default: f64)")
 			.option("--werror", "Treat warnings as errors")
 			.option("--verbose", "Show detailed compilation steps")
 			.option("--save-temps", "Keep temporary files for debugging")
@@ -135,11 +135,11 @@ bool parseArgs(int argc, char* argv[], Options& opts) {
 				return false;
 			}
 			const std::string type = argv[++i];
-			if (type != "f64" && type != "f128") {
-				qdcli::usageError("quadc", "option '--default-float' takes f64 or f128, not '" + type + "'");
+			if (type != "f64" && type != "d128") {
+				qdcli::usageError("quadc", "option '--default-float' takes f64 or d128, not '" + type + "'");
 				return false;
 			}
-			opts.floatsAreF128 = type == "f128";
+			opts.floatsAreD128 = type == "d128";
 		} else if (arg == "--target") {
 			if (i + 1 >= argc) {
 				qdcli::usageError("quadc", "option '--target' requires an argument");

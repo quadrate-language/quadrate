@@ -56,7 +56,7 @@ complete -c quadc -s r -l run -d 'Compile and run immediately'
 complete -c quadc -l no-jit -d 'Link and execute instead of using the JIT'
 complete -c quadc -l test -d 'Compile and run tests'
 complete -c quadc -l coverage -d 'Print a function coverage report'
-complete -c quadc -l default-float -x -a 'f64 f128' -d "Type of a float literal written without 'q'"
+complete -c quadc -l default-float -x -a 'f64 d128' -d "Type of a float literal written without 'd'"
 complete -c quadc -l target -x -d 'Cross-compile for a target triple'
 complete -c quadc -l freestanding -d 'No hosted runtime: no libc, no auto-main'
 complete -c quadc -l werror -d 'Treat warnings as errors'

@@ -5,8 +5,8 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "runtime_internal.h"
-#include <inttypes.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/qd_struct.h>
@@ -64,11 +64,11 @@ static void print_array_contents(const qd_array_t* arr, int depth) {
 			printf("%s", v ? qd_string_data((qd_string_t*)v) : "");
 			break;
 		}
-		case QD_ARRAY_TYPE_F128: {
-			qd_f128_t v = qd_f128_from_i64(0);
-			qd_array_get_f128(arr, i, &v);
-			char text[QD_F128_STRING_MAX];
-			qd_f128_format(v, text, sizeof text);
+		case QD_ARRAY_TYPE_D128: {
+			qd_d128_t v = qd_d128_from_i64(0);
+			qd_array_get_d128(arr, i, &v);
+			char text[QD_D128_STRING_MAX];
+			qd_d128_format(v, text, sizeof text);
 			printf("%s", text);
 			break;
 		}
@@ -129,9 +129,9 @@ int qd_print(qd_context* ctx) {
 		print_pointer(val.value.p, 0);
 		qd_ptr_release(val.value.p); // The stack held a reference; printing consumes it
 		break;
-	case QD_STACK_TYPE_F128: {
-		char text[QD_F128_STRING_MAX];
-		qd_f128_format(val.value.q, text, sizeof text);
+	case QD_STACK_TYPE_D128: {
+		char text[QD_D128_STRING_MAX];
+		qd_d128_format(val.value.d, text, sizeof text);
 		printf("%s", text);
 		break;
 	}
@@ -181,9 +181,9 @@ int qd_prints(qd_context* ctx) {
 			}
 			break;
 		}
-		case QD_STACK_TYPE_F128: {
-			char text[QD_F128_STRING_MAX];
-			qd_f128_format(val.value.q, text, sizeof text);
+		case QD_STACK_TYPE_D128: {
+			char text[QD_D128_STRING_MAX];
+			qd_d128_format(val.value.d, text, sizeof text);
 			printf("%s", text);
 			break;
 		}
@@ -233,10 +233,10 @@ int qd_printv(qd_context* ctx) {
 		printf("\n");
 		qd_ptr_release(val.value.p);
 		break;
-	case QD_STACK_TYPE_F128: {
-		char text[QD_F128_STRING_MAX];
-		qd_f128_format(val.value.q, text, sizeof text);
-		printf("f128:%s\n", text);
+	case QD_STACK_TYPE_D128: {
+		char text[QD_D128_STRING_MAX];
+		qd_d128_format(val.value.d, text, sizeof text);
+		printf("d128:%s\n", text);
 		break;
 	}
 	default:

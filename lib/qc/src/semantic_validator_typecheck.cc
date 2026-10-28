@@ -50,8 +50,8 @@ namespace Qd {
 			return "i64";
 		case StackValueType::FLOAT:
 			return "f64";
-		case StackValueType::F128:
-			return "f128";
+		case StackValueType::D128:
+			return "d128";
 		case StackValueType::STRING:
 			return "str";
 		case StackValueType::PTR:
@@ -119,8 +119,8 @@ namespace Qd {
 			return StackValueType::INT;
 		case AstNodeLiteral::LiteralType::FLOAT:
 			return StackValueType::FLOAT;
-		case AstNodeLiteral::LiteralType::F128:
-			return StackValueType::F128;
+		case AstNodeLiteral::LiteralType::D128:
+			return StackValueType::D128;
 		case AstNodeLiteral::LiteralType::STRING:
 			return StackValueType::STRING;
 		case AstNodeLiteral::LiteralType::NULL_PTR:
@@ -405,7 +405,7 @@ namespace Qd {
 				} else {
 					StackValueType concrete = stringToStackValueType(typeBaseName(resolved));
 					if (concrete == StackValueType::INT || concrete == StackValueType::FLOAT ||
-							concrete == StackValueType::F128 || concrete == StackValueType::STRING) {
+							concrete == StackValueType::D128 || concrete == StackValueType::STRING) {
 						type = concrete;
 					} else if (concrete == StackValueType::PTR) {
 						type = StackValueType::PTR;
@@ -652,7 +652,7 @@ namespace Qd {
 					}
 					StackValueType concrete = stringToStackValueType(typeBaseName(arg));
 					if (concrete == StackValueType::INT || concrete == StackValueType::FLOAT ||
-							concrete == StackValueType::F128 || concrete == StackValueType::STRING) {
+							concrete == StackValueType::D128 || concrete == StackValueType::STRING) {
 						return concrete;
 					}
 					if (concrete == StackValueType::PTR) {
@@ -1262,8 +1262,8 @@ namespace Qd {
 					return "i64";
 				case AstNodeLiteral::LiteralType::FLOAT:
 					return "f64";
-				case AstNodeLiteral::LiteralType::F128:
-					return "f128";
+				case AstNodeLiteral::LiteralType::D128:
+					return "d128";
 				case AstNodeLiteral::LiteralType::STRING:
 					return "str";
 				default:
@@ -1304,8 +1304,8 @@ namespace Qd {
 					return "i64";
 				case StackValueType::FLOAT:
 					return "f64";
-				case StackValueType::F128:
-					return "f128";
+				case StackValueType::D128:
+					return "d128";
 				case StackValueType::STRING:
 					return "str";
 				default:
@@ -1680,7 +1680,7 @@ namespace Qd {
 		}
 
 		static const char* const kScalarTypes[] = {"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "f32",
-				"f128", "str", "string", "ptr", "bool", "any"};
+				"d128", "str", "string", "ptr", "bool", "any"};
 		for (const char* scalar : kScalarTypes) {
 			if (elem == scalar) {
 				return;
@@ -1783,8 +1783,8 @@ namespace Qd {
 					if (!problem.empty()) {
 						reportError(lit, problem.c_str());
 					}
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::F128) {
-					std::string problem = f128LiteralProblem(lit->value());
+				} else if (lit->literalType() == AstNodeLiteral::LiteralType::D128) {
+					std::string problem = d128LiteralProblem(lit->value());
 					if (!problem.empty()) {
 						reportError(lit, problem.c_str());
 					}
@@ -2162,8 +2162,8 @@ namespace Qd {
 				AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
 				const auto& cases = switchStmt->cases();
 
-				// An f128 matches only f128 labels, and an f128 label matches only an f128. The
-				// other way round the arm could never be taken -- 1.5 and 1.5q are different
+				// A d128 matches only d128 labels, and a d128 label matches only a d128. The
+				// other way round the arm could never be taken -- 1.5 and 1.5d are different
 				// numbers -- and the program would say nothing about it.
 				for (const auto* caseNode : cases) {
 					if (caseNode->isDefault() || caseNode->value() == nullptr) {
@@ -2181,9 +2181,9 @@ namespace Qd {
 					}
 					const bool concreteScrutinee =
 							scrutineeType == StackValueType::INT || scrutineeType == StackValueType::FLOAT ||
-							scrutineeType == StackValueType::F128 || scrutineeType == StackValueType::STRING;
+							scrutineeType == StackValueType::D128 || scrutineeType == StackValueType::STRING;
 					if (labelType == StackValueType::UNKNOWN || !concreteScrutinee ||
-							(labelType == StackValueType::F128) == (scrutineeType == StackValueType::F128)) {
+							(labelType == StackValueType::D128) == (scrutineeType == StackValueType::D128)) {
 						continue;
 					}
 					std::string msg = "Type error in 'switch': the case label is ";
@@ -2191,8 +2191,8 @@ namespace Qd {
 					msg += " but the value switched on is ";
 					msg += typeToString(scrutineeType);
 					reportErrorWithHint(label, msg.c_str(),
-							scrutineeType == StackValueType::F128 ? "write the label as an f128: '1.5q'"
-																  : "an f128 label matches only an f128 value");
+							scrutineeType == StackValueType::D128 ? "write the label as a d128: '1.5d'"
+																  : "a d128 label matches only a d128 value");
 				}
 
 				checkEnumSwitchExhaustive(child, cases);
@@ -3478,10 +3478,10 @@ namespace Qd {
 							continue;
 						}
 
-						// An i64 widens to an f128 parameter exactly, so there is nothing to warn about
-						if (actual == StackValueType::INT && expected == StackValueType::F128) {
-							paramCasts[j] = CastDirection::INT_TO_F128;
-							typeStack[stackIdx] = StackValueType::F128;
+						// An i64 widens to a d128 parameter exactly, so there is nothing to warn about
+						if (actual == StackValueType::INT && expected == StackValueType::D128) {
+							paramCasts[j] = CastDirection::INT_TO_D128;
+							typeStack[stackIdx] = StackValueType::D128;
 							continue;
 						}
 
@@ -3728,7 +3728,7 @@ namespace Qd {
 				std::string fieldStructType;
 				const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
 				if (operandType == StackValueType::INT || operandType == StackValueType::FLOAT ||
-						operandType == StackValueType::F128 || operandType == StackValueType::STRING) {
+						operandType == StackValueType::D128 || operandType == StackValueType::STRING) {
 					std::string msg = "Type error in field access '<<" + fieldName + "': the value on the stack is " +
 									  stackValueTypeToString(operandType) + ", not a struct";
 					reportError(fieldAccess, msg.c_str());
@@ -3937,8 +3937,8 @@ namespace Qd {
 						const std::string& value = selfConstIt->second;
 						if (!value.empty() && value[0] == '"') {
 							typeStack.push_back(StackValueType::STRING);
-						} else if (isF128LiteralText(value)) {
-							typeStack.push_back(StackValueType::F128);
+						} else if (isD128LiteralText(value)) {
+							typeStack.push_back(StackValueType::D128);
 						} else if (isFloatLiteralText(value)) {
 							typeStack.push_back(StackValueType::FLOAT);
 						} else {
@@ -3962,8 +3962,8 @@ namespace Qd {
 							// Infer type from value
 							if (!value.empty() && value[0] == '"') {
 								typeStack.push_back(StackValueType::STRING);
-							} else if (isF128LiteralText(value)) {
-								typeStack.push_back(StackValueType::F128);
+							} else if (isD128LiteralText(value)) {
+								typeStack.push_back(StackValueType::D128);
 							} else if (isFloatLiteralText(value)) {
 								typeStack.push_back(StackValueType::FLOAT);
 							} else {
@@ -4417,10 +4417,10 @@ namespace Qd {
 							continue;
 						}
 
-						// An i64 widens to an f128 parameter exactly, so there is nothing to warn about
-						if (actual == StackValueType::INT && expected == StackValueType::F128) {
-							paramCasts[j] = CastDirection::INT_TO_F128;
-							typeStack[stackIdx] = StackValueType::F128;
+						// An i64 widens to a d128 parameter exactly, so there is nothing to warn about
+						if (actual == StackValueType::INT && expected == StackValueType::D128) {
+							paramCasts[j] = CastDirection::INT_TO_D128;
+							typeStack[stackIdx] = StackValueType::D128;
 							continue;
 						}
 

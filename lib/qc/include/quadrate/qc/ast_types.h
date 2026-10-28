@@ -7,7 +7,7 @@ namespace Qd {
 		NONE,
 		INT_TO_FLOAT, // casti -> castf
 		FLOAT_TO_INT, // castf -> casti
-		INT_TO_F128	  // casti -> castq, exact: every i64 fits in 34 digits
+		INT_TO_D128	  // casti -> castq, exact: every i64 fits in 34 digits
 	};
 }
 

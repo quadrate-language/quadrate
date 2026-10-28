@@ -1,0 +1,279 @@
+/// IEEE 754 decimal128 arithmetic beyond the operators.
+///
+/// `d128` is decimal floating point with 34 significant digits, so a value prints as exactly
+/// what it holds: `0.1d 0.2d +` is `0.3`. The operators `+ - * /`, `neg` and the comparisons
+/// work on d128 directly; this module has the rest of what IEEE 754-2008 asks of a decimal
+/// format, and the elementary functions.
+///
+/// Every result is rounded to 34 digits with roundTiesToEven. `sqrt`, `exp`, `ln` and `log10`
+/// are correctly rounded, as is `fma`, which rounds once for the product and the sum. The
+/// trigonometric functions carry ten guard digits and reduce their argument against 6400
+/// digits of pi, so `sin` of 1e6144 is as accurate as `sin` of 1.
+///
+/// Decimal values keep the exponent they were written or computed with, so `1.10d` and `1.1d`
+/// are equal but print differently; `reduce` strips trailing zeros and `quantize` sets them.
+/// doccheck: page-context
+import "libdecimal.a" as "decimal" {
+	/// Square root, correctly rounded.
+	/// @param x d128 Non-negative value
+	/// @return result d128 Square root of x; NaN for a negative x
+	/// @example 2d decimal::sqrt print  // 1.414213562373095048801688724209698
+	pub fn sqrt(x:d128 -- result:d128)
+
+	/// e raised to x, correctly rounded.
+	/// @param x d128 Exponent
+	/// @return result d128 e^x
+	/// @example 1d decimal::exp print  // 2.718281828459045235360287471352662
+	pub fn exp(x:d128 -- result:d128)
+
+	/// Natural logarithm, correctly rounded.
+	/// @param x d128 Positive value
+	/// @return result d128 ln(x); -inf for 0, NaN for a negative x
+	/// @example 10d decimal::ln print  // 2.302585092994045684017991454684364
+	pub fn ln(x:d128 -- result:d128)
+
+	/// Base-10 logarithm, correctly rounded.
+	/// @param x d128 Positive value
+	/// @return result d128 log10(x)
+	/// @example 1000d decimal::log10 print  // 3
+	pub fn log10(x:d128 -- result:d128)
+
+	/// base raised to exponent.
+	/// @param base d128 Base
+	/// @param exponent d128 Exponent
+	/// @return result d128 base^exponent
+	/// @example 2d 10d decimal::pow print  // 1024
+	pub fn pow(base:d128 exponent:d128 -- result:d128)
+
+	/// Sine of an angle in radians.
+	/// @param x d128 Angle in radians
+	/// @return result d128 sin(x)
+	/// @example 0d decimal::sin print  // 0
+	pub fn sin(x:d128 -- result:d128)
+
+	/// Cosine of an angle in radians.
+	/// @param x d128 Angle in radians
+	/// @return result d128 cos(x)
+	/// @example 0d decimal::cos print  // 1
+	pub fn cos(x:d128 -- result:d128)
+
+	/// Tangent of an angle in radians.
+	/// @param x d128 Angle in radians
+	/// @return result d128 tan(x)
+	/// @example 0d decimal::tan print  // 0
+	pub fn tan(x:d128 -- result:d128)
+
+	/// Arc sine, in radians.
+	/// @param x d128 Value in [-1, 1]
+	/// @return result d128 asin(x) in [-pi/2, pi/2]; NaN outside [-1, 1]
+	/// @example 1d decimal::asin print  // 1.570796326794896619231321691639751
+	pub fn asin(x:d128 -- result:d128)
+
+	/// Arc cosine, in radians.
+	/// @param x d128 Value in [-1, 1]
+	/// @return result d128 acos(x) in [0, pi]; NaN outside [-1, 1]
+	/// @example 1d decimal::acos print  // 0
+	pub fn acos(x:d128 -- result:d128)
+
+	/// Arc tangent, in radians.
+	/// @param x d128 Any value
+	/// @return result d128 atan(x) in [-pi/2, pi/2]
+	/// @example 1d decimal::atan print  // 0.7853981633974483096156608458198757
+	pub fn atan(x:d128 -- result:d128)
+
+	/// Angle of the point (x, y) from the positive x axis, in radians.
+	/// @param y d128 Y coordinate
+	/// @param x d128 X coordinate
+	/// @return result d128 Angle in [-pi, pi]
+	/// @example 1d -1d decimal::atan2 print  // 2.356194490192344928846982537459627
+	pub fn atan2(y:d128 x:d128 -- result:d128)
+
+	/// Fused multiply-add: a*b + c with a single rounding.
+	/// @param a d128 First factor
+	/// @param b d128 Second factor
+	/// @param c d128 Addend
+	/// @return result d128 a*b + c, rounded once
+	/// @example 2d 3d 1d decimal::fma print  // 7
+	pub fn fma(a:d128 b:d128 c:d128 -- result:d128)
+
+	/// Absolute value. Clears the sign bit, so -0 becomes 0 and NaN stays NaN.
+	/// @param x d128 Value
+	/// @return result d128 |x|
+	/// @example -2.5d decimal::abs print  // 2.5
+	pub fn abs(x:d128 -- result:d128)
+
+	/// x with the sign of sign.
+	/// @param x d128 Magnitude
+	/// @param sign d128 Value whose sign is taken
+	/// @return result d128 |x| with sign's sign
+	/// @example 3d -1d decimal::copysign print  // -3
+	pub fn copysign(x:d128 sign:d128 -- result:d128)
+
+	/// IEEE remainder: x - n*y where n is x/y rounded to the nearest integer, ties to even.
+	/// The result lies in [-|y|/2, |y|/2].
+	/// @param x d128 Dividend
+	/// @param y d128 Divisor
+	/// @return result d128 Remainder
+	/// @example 10d 3d decimal::remainder print  // 1
+	pub fn remainder(x:d128 y:d128 -- result:d128)
+
+	/// Truncated remainder: x - n*y where n is x/y truncated toward zero. It takes x's sign.
+	/// @param x d128 Dividend
+	/// @param y d128 Divisor
+	/// @return result d128 Remainder
+	/// @example -7d 2d decimal::fmod print  // -1
+	pub fn fmod(x:d128 y:d128 -- result:d128)
+
+	/// IEEE minNum: the smaller of a and b, where a quiet NaN loses to a number.
+	/// @param a d128 First value
+	/// @param b d128 Second value
+	/// @return result d128 Minimum
+	/// @example 3d 7d decimal::min print  // 3
+	pub fn min(a:d128 b:d128 -- result:d128)
+
+	/// IEEE maxNum: the larger of a and b, where a quiet NaN loses to a number.
+	/// @param a d128 First value
+	/// @param b d128 Second value
+	/// @return result d128 Maximum
+	/// @example 3d 7d decimal::max print  // 7
+	pub fn max(a:d128 b:d128 -- result:d128)
+
+	/// x times ten to the n.
+	/// @param x d128 Value
+	/// @param n i64 Power of ten
+	/// @return result d128 x * 10^n
+	/// @example 1.5d 3 decimal::scaleb print  // 1.5e+3
+	pub fn scaleb(x:d128 n:i64 -- result:d128)
+
+	/// Exponent of x's leading digit: floor(log10(|x|)) for a finite non-zero x.
+	/// @param x d128 Value
+	/// @return result d128 The exponent; -inf for 0
+	/// @example 1234d decimal::logb print  // 3
+	pub fn logb(x:d128 -- result:d128)
+
+	/// The next d128 above x.
+	/// @param x d128 Value
+	/// @return result d128 Least value greater than x
+	/// @example 1d decimal::next_up print  // 1.000000000000000000000000000000001
+	pub fn next_up(x:d128 -- result:d128)
+
+	/// The next d128 below x.
+	/// @param x d128 Value
+	/// @return result d128 Greatest value less than x
+	/// @example 1d decimal::next_down print  // 0.9999999999999999999999999999999999
+	pub fn next_down(x:d128 -- result:d128)
+
+	/// x rounded to the exponent of like: to the same number of decimal places.
+	/// @param x d128 Value
+	/// @param like d128 Value whose exponent is taken
+	/// @return result d128 x with like's exponent; NaN if it will not fit 34 digits
+	/// @example 2.34567d 0.01d decimal::quantize print  // 2.35
+	pub fn quantize(x:d128 like:d128 -- result:d128)
+
+	/// x without trailing zeros: the same value at the largest exponent that holds it.
+	/// @param x d128 Value
+	/// @return result d128 x reduced
+	/// @example 1.500d decimal::reduce print  // 1.5
+	pub fn reduce(x:d128 -- result:d128)
+
+	/// Round to an integral value, ties to even.
+	/// @param x d128 Value
+	/// @return result d128 Nearest integer; 2.5 goes to 2
+	/// @example 2.5d decimal::round_even print  // 2
+	pub fn round_even(x:d128 -- result:d128)
+
+	/// Round to an integral value, ties away from zero.
+	/// @param x d128 Value
+	/// @return result d128 Nearest integer; 2.5 goes to 3
+	/// @example 2.5d decimal::round print  // 3
+	pub fn round(x:d128 -- result:d128)
+
+	/// Round toward zero to an integral value.
+	/// @param x d128 Value
+	/// @return result d128 Integer part of x
+	/// @example -2.7d decimal::trunc print  // -2
+	pub fn trunc(x:d128 -- result:d128)
+
+	/// Round toward negative infinity to an integral value.
+	/// @param x d128 Value
+	/// @return result d128 Largest integer not above x
+	/// @example -2.1d decimal::floor print  // -3
+	pub fn floor(x:d128 -- result:d128)
+
+	/// Round toward positive infinity to an integral value.
+	/// @param x d128 Value
+	/// @return result d128 Smallest integer not below x
+	/// @example 2.1d decimal::ceil print  // 3
+	pub fn ceil(x:d128 -- result:d128)
+
+	/// Whether x is NaN. NaN is unequal to everything, itself included, so `x x ==` cannot ask.
+	/// @param x d128 Value
+	/// @return result i64 1 if NaN, 0 otherwise
+	/// @example 0d 0d / decimal::is_nan print  // 1
+	pub fn is_nan(x:d128 -- result:i64)
+
+	/// Whether x is an infinity of either sign.
+	/// @param x d128 Value
+	/// @return result i64 1 if infinite, 0 otherwise
+	/// @example 1d 0d / decimal::is_inf print  // 1
+	pub fn is_inf(x:d128 -- result:i64)
+
+	/// Whether x is neither infinite nor NaN.
+	/// @param x d128 Value
+	/// @return result i64 1 if finite, 0 otherwise
+	/// @example 1d decimal::is_finite print  // 1
+	pub fn is_finite(x:d128 -- result:i64)
+
+	/// Whether x is zero of either sign.
+	/// @param x d128 Value
+	/// @return result i64 1 if zero, 0 otherwise
+	/// @example -0d decimal::is_zero print  // 1
+	pub fn is_zero(x:d128 -- result:i64)
+
+	/// Whether x is normal: finite, non-zero, and not subnormal.
+	/// @param x d128 Value
+	/// @return result i64 1 if normal, 0 otherwise
+	/// @example 1d decimal::is_normal print  // 1
+	pub fn is_normal(x:d128 -- result:i64)
+
+	/// Whether x is subnormal: non-zero and below 1e-6143 in magnitude.
+	/// @param x d128 Value
+	/// @return result i64 1 if subnormal, 0 otherwise
+	/// @example 1e-6150d decimal::is_subnormal print  // 1
+	pub fn is_subnormal(x:d128 -- result:i64)
+
+	/// Whether x's sign bit is set. True of -0 and of a negative NaN, which `0d <` is not.
+	/// @param x d128 Value
+	/// @return result i64 1 if the sign bit is set, 0 otherwise
+	/// @example -0d decimal::is_signed print  // 1
+	pub fn is_signed(x:d128 -- result:i64)
+
+	/// IEEE totalOrder: a total order over every d128, NaNs and signed zeros included.
+	/// -0 orders before 0, and equal values written with different exponents order by
+	/// exponent: 1.00d before 1.0d.
+	/// @param a d128 First value
+	/// @param b d128 Second value
+	/// @return result i64 -1, 0 or 1
+	/// @example -0d 0d decimal::total_order print  // -1
+	pub fn total_order(a:d128 b:d128 -- result:i64)
+
+	/// Pi, correctly rounded to 34 digits.
+	/// @return result d128 Pi
+	/// @example decimal::pi print  // 3.141592653589793238462643383279503
+	pub fn pi( -- result:d128)
+
+	/// Euler's number e, correctly rounded to 34 digits.
+	/// @return result d128 e
+	/// @example decimal::e print  // 2.718281828459045235360287471352662
+	pub fn e( -- result:d128)
+
+	/// Positive infinity, which has no literal spelling.
+	/// @return result d128 inf
+	/// @example decimal::inf print  // inf
+	pub fn inf( -- result:d128)
+
+	/// A quiet NaN, which has no literal spelling.
+	/// @return result d128 nan
+	/// @example decimal::nan decimal::is_nan print  // 1
+	pub fn nan( -- result:d128)
+}

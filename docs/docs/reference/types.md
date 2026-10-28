@@ -24,17 +24,17 @@ Converts a value to the specified type using the `cast<T>` syntax.
 ```qd
 3.14 cast<i64>   // 3 (truncates toward zero)
 42 cast<f64>     // 42
-42 cast<f128>    // 42 (exact)
-0.1 cast<f128>   // 0.1000000000000000055511151231257827: the f64's binary value
-2.5q cast<f64>   // 2.5
+42 cast<d128>    // 42 (exact)
+0.1 cast<d128>   // 0.1000000000000000055511151231257827: the f64's binary value
+2.5d cast<f64>   // 2.5
 42 cast<str>     // "42"
 ```
 
-**Supported types:** `i64`, `f64`, `f128`, `str`, `ptr`
+**Supported types:** `i64`, `f64`, `d128`, `str`, `ptr`
 
 `cast` performs only conversions that always succeed, so its result never has to be checked.
 A string cannot be cast to a number: parsing can fail and `cast` has nowhere to report it.
-Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::parse_f128` or
+Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::parse_d128` or
 `strconv::parse_bool`, which are fallible.
 
 ---
@@ -47,7 +47,7 @@ Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::par
 |------|-------------|------|
 | `i64` | 64-bit signed integer | 8 bytes |
 | `f64` | 64-bit floating-point | 8 bytes |
-| `f128` | IEEE 754 decimal128: 34 decimal digits, written `0.1q` | 8 bytes (pointer) |
+| `d128` | IEEE 754 decimal128: 34 decimal digits, written `0.1d` | 8 bytes (pointer) |
 | `str` | String | Variable |
 | `ptr` | Pointer | 8 bytes |
 | `[]T` | Typed array (e.g., `[]i64`, `[]f64`, `[]str`) | 8 bytes (pointer) |
@@ -165,7 +165,7 @@ Without `as`, accessing `<<value` on an untyped `ptr` when multiple structs defi
 | Purpose | Convert between primitive types | Narrow ptr to struct type |
 | Runtime cost | Yes (conversion code) | None (compile-time only) |
 | Changes value | Yes | No |
-| Target types | `i64`, `f64`, `f128`, `str`, `ptr` | Any struct type |
+| Target types | `i64`, `f64`, `d128`, `str`, `ptr` | Any struct type |
 
 ### Storing typed locals
 

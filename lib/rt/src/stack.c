@@ -1,8 +1,8 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include <quadrate/rt/stack.h>
-#include <quadrate/rt/qd_string.h>
 #include "runtime_internal.h"
+#include <quadrate/rt/qd_string.h>
+#include <quadrate/rt/stack.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -120,7 +120,7 @@ qd_stack_error qd_stack_push_float(qd_stack* stack, double value) {
 	return QD_STACK_OK;
 }
 
-qd_stack_error qd_stack_push_f128(qd_stack* stack, qd_f128_t value) {
+qd_stack_error qd_stack_push_d128(qd_stack* stack, qd_d128_t value) {
 	if (stack == NULL) {
 		return QD_STACK_ERR_NULL_POINTER;
 	}
@@ -128,8 +128,8 @@ qd_stack_error qd_stack_push_f128(qd_stack* stack, qd_f128_t value) {
 		return QD_STACK_ERR_OVERFLOW;
 	}
 
-	stack->data[stack->size].value.q = value;
-	stack->data[stack->size].type = QD_STACK_TYPE_F128;
+	stack->data[stack->size].value.d = value;
+	stack->data[stack->size].type = QD_STACK_TYPE_D128;
 	stack->data[stack->size].is_error_tainted = false;
 	stack->size++;
 	return QD_STACK_OK;
@@ -364,21 +364,21 @@ void qd_stack_clear_top_taint(qd_stack* stack) {
 
 const char* qd_stack_error_string(qd_stack_error error) {
 	switch (error) {
-		case QD_STACK_OK:
-			return "Success";
-		case QD_STACK_ERR_INVALID_CAPACITY:
-			return "Invalid capacity: must be greater than 0";
-		case QD_STACK_ERR_OVERFLOW:
-			return "Stack overflow: cannot push, stack is full";
-		case QD_STACK_ERR_UNDERFLOW:
-			return "Stack underflow: cannot access empty stack";
-		case QD_STACK_ERR_TYPE_MISMATCH:
-			return "Type mismatch: top element has different type";
-		case QD_STACK_ERR_NULL_POINTER:
-			return "Null pointer provided";
-		case QD_STACK_ERR_ALLOC:
-			return "Memory allocation failed";
-		default:
-			return "Unknown error";
+	case QD_STACK_OK:
+		return "Success";
+	case QD_STACK_ERR_INVALID_CAPACITY:
+		return "Invalid capacity: must be greater than 0";
+	case QD_STACK_ERR_OVERFLOW:
+		return "Stack overflow: cannot push, stack is full";
+	case QD_STACK_ERR_UNDERFLOW:
+		return "Stack underflow: cannot access empty stack";
+	case QD_STACK_ERR_TYPE_MISMATCH:
+		return "Type mismatch: top element has different type";
+	case QD_STACK_ERR_NULL_POINTER:
+		return "Null pointer provided";
+	case QD_STACK_ERR_ALLOC:
+		return "Memory allocation failed";
+	default:
+		return "Unknown error";
 	}
 }

@@ -63,7 +63,7 @@ COMPLETION_LINKS := $(filter-out quad,$(ALL_CMDS))
 TOOLCHAIN_LIBS_WITH_C := rt qd qc interp
 
 # Standard library modules with C components (directory names under stdlib/)
-STDLIB_LIBS_WITH_C := f128 fmt io math mem net os signal strings strconv time thread testing tty tls http log unicode
+STDLIB_LIBS_WITH_C := decimal fmt io math mem net os signal strings strconv time thread testing tty tls http log unicode
 
 LIBS_WITH_C := $(TOOLCHAIN_LIBS_WITH_C) $(STDLIB_LIBS_WITH_C)
 
@@ -256,7 +256,7 @@ fuzz:
 examples: debug
 	@mkdir -p dist/examples
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
-	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy tests/embed/multi-module-test tests/embed/multi-module-test_copy tests/embed/native-functions-test tests/embed/native-functions-test_copy tests/embed/incremental-test tests/embed/incremental-test_copy tests/embed/typed-native-test tests/embed/typed-native-test_copy tests/embed/embed-comprehensive-test tests/embed/embed-comprehensive-test_copy tests/embed/cross-tier-test tests/embed/cross-tier-test_copy examples/ffi/ffi examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/defer/defer examples/donut/donut examples/errors/errors examples/fibonacci/fibonacci examples/modules/modules examples/sha256sum/sha256sum examples/sierpinski/sierpinski examples/stars/stars examples/threading/threading
+	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy tests/embed/multi-module-test tests/embed/multi-module-test_copy tests/embed/native-functions-test tests/embed/native-functions-test_copy tests/embed/incremental-test tests/embed/incremental-test_copy tests/embed/typed-native-test tests/embed/typed-native-test_copy tests/embed/embed-comprehensive-test tests/embed/embed-comprehensive-test_copy tests/embed/cross-tier-test tests/embed/cross-tier-test_copy examples/ffi/ffi examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/decimal/decimal examples/defer/defer examples/donut/donut examples/errors/errors examples/fibonacci/fibonacci examples/modules/modules examples/sha256sum/sha256sum examples/sierpinski/sierpinski examples/stars/stars examples/threading/threading
 	@echo "Copying shared libraries for embed examples..."
 	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
 	@cp -f $(BUILD_DIR_DEBUG)/lib/rt/libqdrt.so dist/lib/

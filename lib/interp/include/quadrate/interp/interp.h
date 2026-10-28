@@ -25,7 +25,7 @@ typedef enum {
 	QD_INTERP_VALUE_FLOAT, ///< Double-precision float
 	QD_INTERP_VALUE_STR,   ///< String
 	QD_INTERP_VALUE_PTR,   ///< Pointer
-	QD_INTERP_VALUE_F128   ///< IEEE 754 decimal128; `text` holds the value exactly
+	QD_INTERP_VALUE_D128   ///< IEEE 754 decimal128; `text` holds the value exactly
 } qd_interp_value_type;
 
 /** @brief Capacity of qd_interp_value::text, including the terminator */
@@ -87,14 +87,14 @@ void qd_interp_set_step_limit(qd_interp* interp, uint64_t limit);
 /** @brief The type a decimal float written without a suffix is read as */
 typedef enum {
 	QD_INTERP_FLOAT_F64,  ///< `1.5` is an f64, as in compiled code by default
-	QD_INTERP_FLOAT_F128, ///< `1.5` is an f128, as if written `1.5q`; integers stay i64
+	QD_INTERP_FLOAT_D128, ///< `1.5` is a d128, as if written `1.5d`; integers stay i64
 } qd_interp_float;
 
 /**
  * @brief Choose what `1.5` means in the source later evaluations read
  *
- * QD_INTERP_FLOAT_F128 is for a calculator, where every number someone types should be
- * decimal. An integer stays an i64, which widens to an f128 exactly where the two meet.
+ * QD_INTERP_FLOAT_D128 is for a calculator, where every number someone types should be
+ * decimal. An integer stays an i64, which widens to a d128 exactly where the two meet.
  */
 void qd_interp_set_default_float(qd_interp* interp, qd_interp_float type);
 

@@ -11,7 +11,7 @@ Functions:
 - atoi: Parse decimal string to integer (shorthand for 10 parse_int)
 - format_float: Format float to string
 - parse_float: Parse string to float
-- parse_f128: Parse string to f128
+- parse_d128: Parse string to d128
 - format_bool: Format boolean to string ("true"/"false")
 - parse_bool: Parse string to boolean
 
@@ -144,11 +144,11 @@ Parse string to boolean. Accepts "true"/"1" as true, "false"/"0" as false (case-
 ```
 ---
 
-### `fn` parse_f128
+### `fn` parse_d128
 
-Parse string to f128, rounding to 34 digits. Takes an optional sign, digits with an optional point and exponent, or inf, infinity or nan in any case. The whole string must be the number: " 1" and "1x" are errors.
+Parse string to d128, rounding to 34 digits. Takes an optional sign, digits with an optional point and exponent, or inf, infinity or nan in any case. The whole string must be the number: " 1" and "1x" are errors.
 
-**Signature:** `(s:str -- value:f128)!`
+**Signature:** `(s:str -- value:d128)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -156,12 +156,12 @@ Parse string to f128, rounding to 34 digits. Takes an optional sign, digits with
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `value` | `f128` | Parsed value |
+| `value` | `d128` | Parsed value |
 
 **Example:**
 
 ```qd
-"0.1" strconv::parse_f128! print  // 0.1
+"0.1" strconv::parse_d128! print  // 0.1
 ```
 ---
 

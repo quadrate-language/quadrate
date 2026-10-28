@@ -9,7 +9,7 @@
 #ifndef QD_QUADRATE_RUNTIME_STACK_H
 #define QD_QUADRATE_RUNTIME_STACK_H
 
-#include <quadrate/rt/f128.h>
+#include <quadrate/rt/d128.h>
 #include <quadrate/rt/qd_string.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -52,7 +52,7 @@ typedef enum {
 	QD_STACK_TYPE_FLOAT, ///< Double-precision floating point
 	QD_STACK_TYPE_PTR,	 ///< Generic pointer
 	QD_STACK_TYPE_STR,	 ///< Null-terminated string
-	QD_STACK_TYPE_F128	 ///< IEEE 754 decimal128, held in the slot itself (see f128.h)
+	QD_STACK_TYPE_D128	 ///< IEEE 754 decimal128, held in the slot itself (see d128.h)
 } qd_stack_type;
 
 /**
@@ -67,7 +67,7 @@ typedef struct {
 		double f;		///< Float value
 		void* p;		///< Pointer value
 		qd_string_t* s; ///< Reference-counted string value (owned by stack)
-		qd_f128_t q;	///< Decimal128 value, sixteen bytes and nothing to release
+		qd_d128_t d;	///< Decimal128 value, sixteen bytes and nothing to release
 	} value;
 
 	qd_stack_type type;	   ///< Type of the stored value
@@ -165,13 +165,13 @@ qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value);
 qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value);
 
 /**
- * @brief Push an f128 onto the stack
+ * @brief Push a d128 onto the stack
  *
  * @param stack Target stack
  * @param value Value to push
  * @return QD_STACK_OK on success, QD_STACK_ERR_OVERFLOW if stack is full
  */
-qd_stack_error qd_stack_push_f128(qd_stack* stack, qd_f128_t value);
+qd_stack_error qd_stack_push_d128(qd_stack* stack, qd_d128_t value);
 
 /**
  * @brief Peek at the top element without removing it

@@ -43,7 +43,7 @@ _quad_option_value() {
             return 0
             ;;
         --default-float)
-            COMPREPLY=( $(compgen -W "f64 f128" -- "$cur") )
+            COMPREPLY=( $(compgen -W "f64 d128" -- "$cur") )
             return 0
             ;;
         -s|--stack-size|-l|--module|--target|--title|--max-nesting|--max-function-lines)
