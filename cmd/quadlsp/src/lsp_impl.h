@@ -44,7 +44,6 @@ bool lspIsReservedName(const std::string& name);
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
 // Get sibling .qd files in the same directory (for directory-based namespaces)
-std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
 
 // Where a symbol's name is spelled in a document, as a byte range on one line
 struct NameOccurrence {
@@ -105,7 +104,7 @@ private:
 	static std::string stripAnsiCodes(const std::string& input);
 
 	// Run quadlint on source content and return warnings
-	std::vector<LintWarning> runQuadlint(const std::string& source);
+	std::vector<LintWarning> runQuadlint(const std::string& source, const std::string& filePath);
 
 	// Diagnostics and formatting
 	void publishDiagnostics(const std::string& uri, const std::string& text);
@@ -234,7 +233,7 @@ private:
 	std::map<std::string, bool> positionAscii_;
 	[[maybe_unused]] int messageId_;
 	bool lintEnabled_ = true;
-	std::string quadlintPath_ = "quadlint";
+	std::string quadlintPath_; // Set by the client; otherwise the one built with this LSP, or PATH's
 	std::string workspaceRoot_;
 };
 

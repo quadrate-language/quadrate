@@ -875,7 +875,7 @@ TEST(D128LiteralRange) {
 TEST(D128LiteralTextRecognition) {
 	ASSERT(Qd::isD128LiteralText("1.5d"), "a d makes a d128");
 	ASSERT(Qd::isD128LiteralText("42d"), "an integer spelling too");
-	ASSERT(!Qd::isD128LiteralText("1.5"), "no q, no d128");
+	ASSERT(!Qd::isD128LiteralText("1.5"), "no d, no d128");
 	ASSERT(!Qd::isFloatLiteralText("1.5d"), "and a d128 is not an f64");
 	ASSERT(!Qd::isD128LiteralText("\"1d\""), "a string is a string");
 }

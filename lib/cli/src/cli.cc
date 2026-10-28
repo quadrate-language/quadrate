@@ -3,7 +3,10 @@
 
 #include "quadrate/cli/cli.h"
 
+#include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 
 #include "version.h"
@@ -70,6 +73,31 @@ namespace qdcli {
 
 	bool noColor() {
 		return std::getenv("NO_COLOR") != nullptr;
+	}
+
+	std::string findTool(const std::string& toolName, const std::string& exeDir) {
+		namespace fs = std::filesystem;
+		std::error_code ec;
+		if (!exeDir.empty()) {
+			for (const fs::path& candidate :
+					{fs::path(exeDir) / toolName, fs::path(exeDir).parent_path() / toolName / toolName}) {
+				if (fs::exists(candidate, ec)) {
+					return candidate.string();
+				}
+			}
+		}
+		const char* pathEnv = std::getenv("PATH");
+		const std::string path = pathEnv != nullptr ? pathEnv : "";
+		size_t start = 0;
+		while (start <= path.size()) {
+			const size_t end = std::min(path.find(':', start), path.size());
+			const fs::path candidate = fs::path(path.substr(start, end - start)) / toolName;
+			if (end > start && fs::exists(candidate, ec)) {
+				return candidate.string();
+			}
+			start = end + 1;
+		}
+		return "";
 	}
 
 } // namespace qdcli

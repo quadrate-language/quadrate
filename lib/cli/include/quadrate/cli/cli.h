@@ -49,6 +49,11 @@ namespace qdcli {
 	// Returns true if colors should be disabled (NO_COLOR env var is set)
 	bool noColor();
 
+	// Finds another of the tools: beside the calling one (exeDir, its own directory), then as
+	// a build lays them out (build/cmd/<tool>/<tool>), then on PATH. Prefers the tool built
+	// with the caller over an older one installed elsewhere. Empty when there is none.
+	std::string findTool(const std::string& toolName, const std::string& exeDir);
+
 } // namespace qdcli
 
 #endif // QDCLI_CLI_H

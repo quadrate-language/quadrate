@@ -216,16 +216,16 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return (int){0};
 }
 
-int qd_push_q(qd_context* ctx, qd_d128_t value) {
+int qd_push_d(qd_context* ctx, qd_d128_t value) {
 	if (qd_stack_push_d128(ctx->st, value) != QD_STACK_OK) {
 		return (int){-2};
 	}
 	return (int){0};
 }
 
-int qd_push_q_bits(qd_context* ctx, uint64_t low, uint64_t high) {
+int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high) {
 	const qd_d128_t value = {{low, high}};
-	return qd_push_q(ctx, value);
+	return qd_push_d(ctx, value);
 }
 
 int qd_d128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64_t high) {
@@ -293,7 +293,7 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size) {
 	return result;
 }
 
-int qd_pop_q(qd_context* ctx, qd_d128_t* value) {
+int qd_pop_d(qd_context* ctx, qd_d128_t* value) {
 	if (!ctx || !value) {
 		return QD_ERR_NULL_POINTER;
 	}

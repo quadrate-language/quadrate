@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <iostream>
 #include <quadrate/cli/cli.h>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/llvmgen/generator.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
@@ -367,7 +368,7 @@ int main(int argc, char** argv) {
 			}
 
 			// Directory-based namespace: collect sibling files before validation
-			std::vector<std::string> siblingFiles = getSiblingQdFiles(file);
+			std::vector<std::string> siblingFiles = qdcli::getSiblingQdFiles(file);
 
 			// Semantic validation - catch errors before LLVM generation
 			Qd::SemanticValidator validator;

@@ -913,7 +913,7 @@ namespace Qd {
 			return "qd_makes";
 		}
 		if (elemType == "d128") {
-			return "qd_makeq";
+			return "qd_maked";
 		}
 		if (elemType == "ptr" || isArrayType(elemType) || isKnownStruct(elemType)) {
 			return "qd_makep";
@@ -1200,12 +1200,7 @@ namespace Qd {
 								pushFloatArrFn, {arrPtr, llvm::ConstantFP::get(builder->getDoubleTy(), val)});
 					}
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
-					// Create string constant
-					std::string strVal = lit->value();
-					// Remove quotes if present
-					if (strVal.size() >= 2 && strVal.front() == '"' && strVal.back() == '"') {
-						strVal = strVal.substr(1, strVal.size() - 2);
-					}
+					const std::string strVal = decodeStringLiteral(lit->value());
 					// Create qd_string and push
 					llvm::Function* createStrFn = module->getFunction("qd_string_create");
 					if (!createStrFn) {

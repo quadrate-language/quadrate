@@ -2241,8 +2241,8 @@ Implementations MUST provide the following runtime functions:
 - `qd_pop_f(ctx, &val)` - Pop float
 - `qd_pop_s(ctx, buf, size)` - Pop string into buffer
 - `qd_pop_p(ctx, &val)` - Pop pointer
-- `qd_push_q(ctx, d128)` - Push d128 (the stack takes a reference of its own)
-- `qd_pop_q(ctx, &val)` - Pop d128 (the caller takes the stack's reference)
+- `qd_push_d(ctx, d128)` - Push d128 (the stack takes a reference of its own)
+- `qd_pop_d(ctx, &val)` - Pop d128 (the caller takes the stack's reference)
 
 **Operations:**
 - `qd_add`, `qd_sub`, `qd_mul`, `qd_div`, `qd_mod` - Arithmetic

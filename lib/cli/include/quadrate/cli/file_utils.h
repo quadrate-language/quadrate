@@ -33,6 +33,13 @@ namespace qdcli {
 	// Returns false if string contains invalid UTF-8 or null bytes
 	bool isValidUtf8(const std::string& source);
 
+	// The .qd files a program's directory adds to it: every one beside filePath that is
+	// neither filePath itself, a *_test.qd, nor a program with its own main(). None for a
+	// file under tests/ (each is standalone) or lib/. Canonical paths, sorted. quadc merges
+	// these into the program and quadlsp checks an open file against them, so both see the
+	// same program.
+	std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
+
 } // namespace qdcli
 
 #endif // QDCLI_FILE_UTILS_H

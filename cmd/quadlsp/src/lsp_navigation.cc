@@ -9,6 +9,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <quadrate/cli/file_utils.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
@@ -1265,7 +1266,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 
 					// If still not found, search sibling files for struct definitions
 					if (json_is_null(result)) {
-						std::vector<std::string> siblings = getSiblingQdFiles(filePath);
+						std::vector<std::string> siblings = qdcli::getSiblingQdFiles(filePath);
 						for (const auto& siblingPath : siblings) {
 							result = findDefinitionInModule(siblingPath, word, "struct");
 							if (!json_is_null(result)) {
@@ -1643,7 +1644,7 @@ void QuadrateLSP::handleRename(
 
 	std::string filePath = lspUriToPath(uri);
 	if (!isLocal && !filePath.empty()) {
-		for (const auto& siblingPath : getSiblingQdFiles(filePath)) {
+		for (const auto& siblingPath : qdcli::getSiblingQdFiles(filePath)) {
 			std::string siblingUri = lspPathToUri(siblingPath);
 			std::string siblingText = getDocumentText(siblingUri);
 			if (siblingText.empty()) {

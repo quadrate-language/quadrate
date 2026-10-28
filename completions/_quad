@@ -77,6 +77,7 @@ _quadlint_opts() {
 		'--check-long-functions[Enable long function detection]' \
 		'--check-naming[Enable naming convention checks]' \
 		'--max-function-lines[Maximum function lines]:lines:' \
+		'--source-path[Lint the file as if it were at this path]:path:_files -g "*.qd"' \
 		$qd_files
 }
 

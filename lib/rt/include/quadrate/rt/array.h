@@ -315,7 +315,7 @@ int qd_makea(qd_context* ctx);
  * @param ctx Execution context
  * @return 0 on success, non-zero on error
  */
-int qd_makeq(qd_context* ctx);
+int qd_maked(qd_context* ctx);
 
 /**
  * @brief Append element to array

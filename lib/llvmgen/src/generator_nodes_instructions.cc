@@ -710,7 +710,7 @@ namespace Qd {
 			} else if (typeParam == "f64" || typeParam == "f32") {
 				fnName = "qd_castf";
 			} else if (typeParam == "d128") {
-				fnName = "qd_castq";
+				fnName = "qd_castd";
 			} else if (typeParam == "str" || typeParam == "string") {
 				fnName = "qd_casts";
 			} else if (typeParam == "ptr") {
@@ -731,49 +731,10 @@ namespace Qd {
 
 		// Handle sizeof<T> instruction (compile-time type size)
 		if (name == "sizeof" && inst->hasTypeParam()) {
-			const std::string& typeParam = inst->typeParam();
-			int64_t size = 0;
-
-			// Check primitive types
-			if (typeParam == "i64" || typeParam == "u64" || typeParam == "f64" || typeParam == "ptr") {
-				size = 8;
-			} else if (typeParam == "i32" || typeParam == "u32" || typeParam == "f32") {
-				size = 4;
-			} else if (typeParam == "i16" || typeParam == "u16") {
-				size = 2;
-			} else if (typeParam == "i8" || typeParam == "u8") {
-				size = 1;
-			} else if (typeParam == "str") {
-				size = 8; // str is a pointer
-			} else {
-				// Check if it's a struct type
-				auto it = structDefinitions.find(typeParam);
-				if (it != structDefinitions.end()) {
-					size = static_cast<int64_t>(it->second.totalSize);
-				} else {
-					// Try with current module prefix
-					std::string qualifiedName = currentModuleName + "::" + typeParam;
-					auto qualIt = structDefinitions.find(qualifiedName);
-					if (qualIt != structDefinitions.end()) {
-						size = static_cast<int64_t>(qualIt->second.totalSize);
-					} else {
-						// Unknown type - default to pointer size
-						size = 8;
-					}
-				}
-			}
-
-			// Push the size as an integer
-			generateInlinePushInt(ctx, size);
-			return;
-		}
-
-		// Handle sizeof instruction without type parameter (runtime - pops value, pushes its size)
-		if (name == "sizeof" && !inst->hasTypeParam()) {
-			// All stack elements are 8 bytes (union of i64/f64/ptr)
-			// Pop the value and push 8
-			generateInlineDrop(ctx);
-			generateInlinePushInt(ctx, 8);
+			// A struct is its inline size; anything else is what a field of that type holds
+			const StructLayout* layout = findStructDefinition(inst->typeParam());
+			const size_t size = layout != nullptr ? layout->totalSize : getTypeSize(inst->typeParam());
+			generateInlinePushInt(ctx, static_cast<int64_t>(size));
 			return;
 		}
 

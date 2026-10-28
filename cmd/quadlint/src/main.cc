@@ -50,6 +50,9 @@ struct LintOptions {
 	// Output options
 	bool jsonOutput = false;
 	bool quiet = false;
+	// Where the one file linted really lives, when it is a copy: an editor's unsaved
+	// buffer. Its neighbours there are the ones that may call its functions.
+	std::string sourcePath;
 };
 
 struct LintIssue {
@@ -137,6 +140,8 @@ void printHelp() {
 			.option("--check-long-functions", "Enable long function detection")
 			.option("--check-naming", "Enable naming convention checks")
 			.option("--max-function-lines", "<N>", "Maximum function lines (default: 50)")
+			.section("Editors")
+			.option("--source-path", "<PATH>", "Lint the one file given as if it were at PATH, among PATH's neighbours")
 			.section("Inline suppression")
 			.text("Add //nolint on a line to suppress all warnings on that line, or")
 			.text("//nolint:rule1,rule2 to suppress specific rules. Rule names are:")
@@ -965,7 +970,7 @@ std::vector<LintIssue> lintFile(
 		}
 
 		FileSymbols symbols = collectFileSymbols(root);
-		mergeSiblingSymbols(filename, symbols, cache);
+		mergeSiblingSymbols(opts.sourcePath.empty() ? filename : opts.sourcePath, symbols, cache);
 
 		// Check for unused functions
 		if (!opts.noUnusedFunctions) {
@@ -1271,6 +1276,14 @@ int main(int argc, char* argv[]) {
 			}
 			return true;
 		}
+		if (strcmp(arg, "--source-path") == 0) {
+			if (i + 1 >= ac) {
+				base.optionError = "option '--source-path' requires an argument";
+				return false;
+			}
+			opts.sourcePath = av[++i];
+			return true;
+		}
 		if (strcmp(arg, "--max-function-lines") == 0) {
 			if (i + 1 >= ac) {
 				base.optionError = "option '--max-function-lines' requires an argument";
@@ -1309,6 +1322,11 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (!qdcli::checkPathsExist(base.paths, "quadlint")) {
+		return 1;
+	}
+
+	if (!opts.sourcePath.empty() && (base.paths.size() != 1 || std::filesystem::is_directory(base.paths.front()))) {
+		qdcli::error("quadlint", "--source-path names where one file lives; give exactly one file");
 		return 1;
 	}
 

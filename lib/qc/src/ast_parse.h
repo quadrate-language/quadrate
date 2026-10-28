@@ -422,7 +422,7 @@ namespace Qd {
 			return false;
 		}
 		if (hasRadixPrefix(text)) {
-			const std::string message = "Invalid d128 literal '" + text + "q': a d128 literal is written in decimal";
+			const std::string message = "Invalid d128 literal '" + text + "d': a d128 literal is written in decimal";
 			errorReporter->reportError(line, column, message.c_str());
 			return false;
 		}

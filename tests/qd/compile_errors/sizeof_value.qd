@@ -1,0 +1,4 @@
+// Test: sizeof takes a type; a value's size is not something it measures.
+fn main() {
+	5 sizeof print nl
+}

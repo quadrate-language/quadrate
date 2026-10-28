@@ -65,3 +65,10 @@ examples/kernel/*.o
 examples/kernel/*.elf
 examples/kernel/*.iso
 examples/kernel/isodir/
+
+# quaddoc writes to docs/ by default; the manual's source is docs/docs/
+/docs/*.html
+/docs/style.css
+
+# Images examples render (the raytracer writes a .ppm)
+examples/*/*.ppm

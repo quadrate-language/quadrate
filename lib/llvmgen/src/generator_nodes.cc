@@ -199,73 +199,7 @@ namespace Qd {
 			lastPushedType = LastPushedType::UNKNOWN;
 			break;
 		case AstNodeLiteral::LiteralType::STRING: {
-			// Extract string content (remove surrounding quotes)
-			std::string content = value;
-			if (value.size() >= 2 && value.front() == '"' && value.back() == '"') {
-				content = value.substr(1, value.size() - 2);
-			}
-
-			// Process escape sequences
-			std::string processed;
-			for (size_t i = 0; i < content.size(); i++) {
-				if (content[i] == '\\' && i + 1 < content.size()) {
-					switch (content[i + 1]) {
-					case 'n':
-						processed += '\n';
-						i++;
-						break;
-					case 't':
-						processed += '\t';
-						i++;
-						break;
-					case 'r':
-						processed += '\r';
-						i++;
-						break;
-					case '\\':
-						processed += '\\';
-						i++;
-						break;
-					case '"':
-						processed += '"';
-						i++;
-						break;
-					case '0':
-						processed += '\0';
-						i++;
-						break;
-					case 'e':
-						// ANSI escape character (ESC = 0x1B)
-						processed += '\x1b';
-						i++;
-						break;
-					case 'x':
-						// Hex escape sequence: \xNN
-						if (i + 3 < content.size() && isxdigit(static_cast<unsigned char>(content[i + 2])) &&
-								isxdigit(static_cast<unsigned char>(content[i + 3]))) {
-							// Valid hex digits
-							int val = 0;
-							char c1 = content[i + 2];
-							char c2 = content[i + 3];
-							val = (isdigit(c1) ? c1 - '0' : tolower(c1) - 'a' + 10) * 16 +
-								  (isdigit(c2) ? c2 - '0' : tolower(c2) - 'a' + 10);
-							processed += static_cast<char>(val);
-							i += 3; // Skip \xNN
-						} else {
-							// Invalid hex sequence, keep as-is
-							processed += content[i];
-						}
-						break;
-					default:
-						processed += content[i];
-						break;
-					}
-				} else {
-					processed += content[i];
-				}
-			}
-
-			auto strValue = builder->CreateGlobalString(processed, ".str");
+			auto strValue = builder->CreateGlobalString(decodeStringLiteral(value), ".str");
 			builder->CreateCall(pushStrFn, {ctx, strValue});
 			lastPushedType = LastPushedType::STRING;
 			break;
@@ -647,9 +581,7 @@ namespace Qd {
 
 			// Determine the type of the constant and push it
 			if (!value.empty() && value.size() >= 2 && value.front() == '"' && value.back() == '"') {
-				// String literal - create global string and push
-				std::string strValue = value.substr(1, value.length() - 2);
-				llvm::Value* strConst = builder->CreateGlobalString(strValue);
+				llvm::Value* strConst = builder->CreateGlobalString(decodeStringLiteral(value));
 				builder->CreateCall(pushStrFn, {ctx, strConst});
 			} else if (isD128LiteralText(value)) {
 				generateD128Literal(value, ctx);
@@ -1712,6 +1644,24 @@ namespace Qd {
 			return builder->CreateICmpNE(found, builder->getInt32(0), "case_match");
 		};
 
+		// Compare the scrutinee against a string label, as written: null on the native path,
+		// where there is no string to compare
+		auto stringCaseMatch = [&](const std::string& literal) -> llvm::Value* {
+			auto switchStrPtr = switchValueStr();
+			if (!switchStrPtr) {
+				return nullptr;
+			}
+			auto strcmpFn = module->getFunction("strcmp");
+			if (!strcmpFn) {
+				auto strcmpTy = llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, false);
+				strcmpFn = llvm::Function::Create(strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
+			}
+			auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
+			auto caseStr = builder->CreateGlobalString(decodeStringLiteral(literal));
+			auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
+			return builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
+		};
+
 		// Compare the scrutinee against a named constant or enum variant. Shared by the scoped
 		// (module::Name, Enum::Variant) and unqualified (bare const) case-label forms. Returns
 		// null when the name does not resolve, so the caller can diagnose it.
@@ -1724,27 +1674,7 @@ namespace Qd {
 
 			// Determine the type from the value string
 			if (!value.empty() && value[0] == '"') {
-				// String constant
-				auto switchStrPtr = switchValueStr();
-				if (!switchStrPtr) {
-					return nullptr;
-				}
-
-				auto strcmpFn = module->getFunction("strcmp");
-				if (!strcmpFn) {
-					auto charPtrTy = ptrTy;
-					auto strcmpTy = llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
-					strcmpFn =
-							llvm::Function::Create(strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
-				}
-
-				// Call qd_string_data to get const char*
-				auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
-
-				// Create case string constant (strip quotes)
-				auto caseStr = builder->CreateGlobalString(value.substr(1, value.length() - 2));
-				auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
-				return builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
+				return stringCaseMatch(value);
 			}
 
 			if (isD128LiteralText(value)) {
@@ -1875,30 +1805,8 @@ namespace Qd {
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::D128) {
 					matches = d128CaseMatch(lit->value());
 				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
-					// Get switch string value (qd_string_t*). Null on the native path, which
-					// leaves `matches` null for the diagnostic below.
-					auto switchStrPtr = switchValueStr();
-					if (switchStrPtr) {
-						// Compare strings using strcmp
-						auto strcmpFn = module->getFunction("strcmp");
-						if (!strcmpFn) {
-							// Declare strcmp if not already declared
-							auto charPtrTy = ptrTy;
-							auto strcmpTy = llvm::FunctionType::get(int32Ty, {charPtrTy, charPtrTy}, false);
-							strcmpFn = llvm::Function::Create(
-									strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
-						}
-
-						// Call qd_string_data to get const char*
-						auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
-
-						// Create case string constant
-						auto caseStr = builder->CreateGlobalString(lit->value().substr(1, lit->value().length() - 2));
-
-						// Call strcmp
-						auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
-						matches = builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
-					}
+					// Null on the native path, which leaves `matches` null for the diagnostic below
+					matches = stringCaseMatch(lit->value());
 				}
 			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 				// Handle scoped constants and enum variants (module::ConstName, Enum::Variant)

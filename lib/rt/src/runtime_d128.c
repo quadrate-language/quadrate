@@ -59,12 +59,12 @@ void qdrt_d128_compare(qd_context* ctx, const char* op, bool (*test)(int order))
 	}
 }
 
-int qd_castq(qd_context* ctx) {
-	QDRT_CHECK_STACK(ctx, "castq", 1);
+int qd_castd(qd_context* ctx) {
+	QDRT_CHECK_STACK(ctx, "castd", 1);
 
 	qd_stack_element_t elem;
 	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "castq", "Failed to pop value");
+		QDRT_FATAL(ctx, "castd", "Failed to pop value");
 	}
 
 	qd_d128_t result;
@@ -80,9 +80,9 @@ int qd_castq(qd_context* ctx) {
 		break;
 	default:
 		qdrt_release_element(&elem);
-		QDRT_FATAL(ctx, "castq", "Cannot cast %s to d128", qdrt_type_name(elem.type));
+		QDRT_FATAL(ctx, "castd", "Cannot cast %s to d128", qdrt_type_name(elem.type));
 	}
-	qdrt_push_d128(ctx, "castq", result);
+	qdrt_push_d128(ctx, "castd", result);
 	return (int){0};
 }
 

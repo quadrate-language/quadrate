@@ -747,22 +747,22 @@ int qd_makep(qd_context* ctx) {
 
 /* Creates an array whose element type is decided by the first value appended to it. Used for
  * `make<T>` inside a generic function, where T is erased at run time. */
-// makeq - a d128 array of n zeros
-int qd_makeq(qd_context* ctx) {
+// maked - a d128 array of n zeros
+int qd_maked(qd_context* ctx) {
 	qd_stack_element_t sizeElem;
 	if (!ctx || !ctx->st || qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "makeq: stack underflow\n");
+		fprintf(stderr, "maked: stack underflow\n");
 		return -1;
 	}
 	if (sizeElem.type != QD_STACK_TYPE_INT || sizeElem.value.i < 0) {
-		fprintf(stderr, "makeq: expected a non-negative integer size\n");
+		fprintf(stderr, "maked: expected a non-negative integer size\n");
 		qdrt_release_element(&sizeElem);
 		return -1;
 	}
 
 	qd_array_t* arr = qd_array_create((size_t)sizeElem.value.i, QD_ARRAY_TYPE_D128);
 	if (!arr) {
-		fprintf(stderr, "makeq: allocation failed\n");
+		fprintf(stderr, "maked: allocation failed\n");
 		return -1;
 	}
 	arr->length = (size_t)sizeElem.value.i;

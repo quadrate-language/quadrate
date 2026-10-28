@@ -374,18 +374,36 @@ should_run_test() {
     return 0
 }
 
-# Run C++ tests via meson.
-# Keep this in sync with the C++ test binaries meson defines: `make tests` and CI
-# run this list, not `meson test`, so a binary that is missing here is one nobody
-# runs. test_semantic_validator_extended, test_parser_edge_cases and test_semver
-# were all built, all registered with meson, and all invisible to CI.
-run_cpp_tests() {
-    local tests=("test_ast" "test_semantic_validator" "test_semantic_validator_extended" "test_parser_edge_cases" "test_interp" "test_semver" "test_runtime" "test_llvmgen" "test_mem" "test_options" "test_math" "test_strings" "test_io" "test_os" "test_strconv" "test_time" "test_signal" "test_log" "test_fmt" "test_tty" "test_net" "test_thread" "test_testing" "test_http" "test_file_utils")
-    local suite="cpp"
+# The test binaries meson registers outside a suite. `meson test --list` prints them as
+# quadrate:<name> and a suite's members as "<suite> - quadrate:<name>". Reading the list
+# rather than keeping one here means a binary is run the day it is registered: a hand-kept
+# list once left test_semantic_validator_extended, test_parser_edge_cases, test_semver,
+# test_decimal_register and test_math_register built, registered and never run.
+meson_unit_tests() {
+    meson test -C "$PROJECT_ROOT/$BUILD_DIR" --list 2>/dev/null | sed -n 's/^quadrate:\(test_[A-Za-z0-9_]*\)$/\1/p'
+}
 
-    # Filter tests first
+cpp_test_names() {
+    meson_unit_tests | grep -v '^test_lsp'
+}
+
+lsp_test_names() {
+    # The stress and robustness tests are too slow under valgrind
+    if [[ $USE_VALGRIND -eq 1 ]]; then
+        meson_unit_tests | grep '^test_lsp' | grep -v -e '^test_lsp_stress$' -e '^test_lsp_robustness$'
+    else
+        meson_unit_tests | grep '^test_lsp'
+    fi
+}
+
+# Run each named meson test binary as one test of the suite
+run_meson_tests() {
+    local suite="$1"
+    local title="$2"
+    shift 2
+
     local -a filtered_tests=()
-    for test in "${tests[@]}"; do
+    for test in "$@"; do
         if should_run_test "$suite" "$test"; then
             filtered_tests+=("$test")
         fi
@@ -393,10 +411,12 @@ run_cpp_tests() {
 
     [[ ${#filtered_tests[@]} -eq 0 ]] && return
 
+    local valgrind_opt=""
     if [[ $USE_VALGRIND -eq 1 ]]; then
-        print_header "C++ Tests ${DIM}(valgrind)${NC}"
+        print_header "$title ${DIM}(valgrind)${NC}"
+        valgrind_opt="--setup=valgrind"
     else
-        print_header "C++ Tests"
+        print_header "$title"
     fi
 
     CURRENT_TEST_TOTAL=${#filtered_tests[@]}
@@ -407,10 +427,6 @@ run_cpp_tests() {
 
         local output
         local exit_code
-        local valgrind_opt=""
-        if [[ $USE_VALGRIND -eq 1 ]]; then
-            valgrind_opt="--setup=valgrind"
-        fi
         output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt --print-errorlogs "$test" 2>&1)
         exit_code=$?
 
@@ -425,57 +441,16 @@ run_cpp_tests() {
     CURRENT_TEST_TOTAL=0
 }
 
-# Run LSP tests via meson
+run_cpp_tests() {
+    local -a tests
+    mapfile -t tests < <(cpp_test_names)
+    run_meson_tests "cpp" "C++ Tests" "${tests[@]}"
+}
+
 run_lsp_tests() {
-    # Skip stress test under valgrind (too slow)
-    local tests
-    if [[ $USE_VALGRIND -eq 1 ]]; then
-        tests=("test_lsp" "test_lsp_extended" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion")
-    else
-        tests=("test_lsp" "test_lsp_extended" "test_lsp_stress" "test_lsp_features" "test_lsp_comprehensive" "test_lsp_completion" "test_lsp_robustness")
-    fi
-    local suite="lsp"
-
-    # Filter tests first
-    local -a filtered_tests=()
-    for test in "${tests[@]}"; do
-        if should_run_test "$suite" "$test"; then
-            filtered_tests+=("$test")
-        fi
-    done
-
-    [[ ${#filtered_tests[@]} -eq 0 ]] && return
-
-    if [[ $USE_VALGRIND -eq 1 ]]; then
-        print_header "LSP Tests ${DIM}(valgrind)${NC}"
-    else
-        print_header "LSP Tests"
-    fi
-
-    CURRENT_TEST_TOTAL=${#filtered_tests[@]}
-    CURRENT_TEST_NUM=0
-
-    for test in "${filtered_tests[@]}"; do
-        CURRENT_TEST_NUM=$((CURRENT_TEST_NUM + 1))
-
-        local output
-        local exit_code
-        local valgrind_opt=""
-        if [[ $USE_VALGRIND -eq 1 ]]; then
-            valgrind_opt="--setup=valgrind"
-        fi
-        output=$(meson test -C "$PROJECT_ROOT/$BUILD_DIR" $valgrind_opt --print-errorlogs "$test" 2>&1)
-        exit_code=$?
-
-        if [[ $exit_code -eq 0 ]]; then
-            log_pass "$suite" "$test"
-        else
-            local error_msg=$(echo "$output" | tail -80)
-            log_fail "$suite" "$test" "test failed" "$error_msg"
-        fi
-    done
-
-    CURRENT_TEST_TOTAL=0
+    local -a tests
+    mapfile -t tests < <(lsp_test_names)
+    run_meson_tests "lsp" "LSP Tests" "${tests[@]}"
 }
 
 # Run a single QD test
@@ -860,6 +835,16 @@ run_formatter_tests() {
             log_fail "$suite" "$test_name" "output mismatch" "$diff_output"
         fi
     done
+
+    # How quadfmt fails: missing files, unknown options, source that will not parse
+    if should_run_test "$suite" "errors"; then
+        local errors_output
+        if errors_output=$(QUADFMT="$QUADFMT" bash "$test_dir/test_errors.sh" 2>&1); then
+            log_pass "$suite" "errors"
+        else
+            log_fail "$suite" "errors" "test failed" "$(echo "$errors_output" | grep FAIL)"
+        fi
+    fi
 
     CURRENT_TEST_TOTAL=0
 }
@@ -1926,15 +1911,11 @@ list_all_tests() {
     echo ""
 
     echo "C++ Tests (suite: cpp):"
-    for test in test_ast test_semantic_validator test_interp test_runtime test_llvmgen test_mem test_options test_math test_strings test_io test_os test_strconv test_time test_signal test_log test_fmt test_tty test_net test_thread test_testing test_http test_file_utils; do
-        echo "  $test"
-    done
+    cpp_test_names | sed 's/^/  /'
     echo ""
 
     echo "LSP Tests (suite: lsp):"
-    for test in test_lsp test_lsp_extended test_lsp_stress test_lsp_features test_lsp_comprehensive test_lsp_completion; do
-        echo "  $test"
-    done
+    lsp_test_names | sed 's/^/  /'
     echo ""
 
     echo "Language Tests (suite: qd):"

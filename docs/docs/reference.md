@@ -400,7 +400,7 @@ q 42 >>x drop // p is untouched
 | [`gt`](#gt) | `( a b -- bool )` | Returns 1 if a is greater than b, 0 otherwise. |
 | [`>=`](#gteq) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
 | [`gte`](#gte) | `( a b -- bool )` | Returns 1 if a is greater than or equal to b, 0 otherwise. |
-| [`within`](#within) | `( val low high -- bool )` | Returns 1 if val is in [low, high), 0 otherwise. |
+| [`within`](#within) | `( val low high -- bool )` | Returns 1 if val is in [low, high], both ends included, 0 otherwise. |
 
 #### ==
 
@@ -536,7 +536,7 @@ Returns 1 if a is greater than or equal to b, 0 otherwise.
 
 #### within
 
-Returns 1 if val is in [low, high), 0 otherwise.
+Returns 1 if val is in [low, high], both ends included, 0 otherwise.
 
 **Signature:** `( val low high -- bool )`
 
@@ -552,11 +552,11 @@ Returns 1 if val is in [low, high), 0 otherwise.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`cast`](#cast) | `( val -- T )` | Converts a value between i64, f64, ptr and str (use with cast<T> syntax). |
+| [`cast`](#cast) | `( val -- T )` | Converts a value between i64, f64, d128, ptr and str (use with cast<T> syntax). |
 
 #### cast
 
-Converts a value between i64, f64, ptr and str (use with cast<T> syntax).
+Converts a value between i64, f64, d128, ptr and str (use with cast<T> syntax).
 
 **Signature:** `( val -- T )`
 
@@ -566,6 +566,7 @@ Converts a value between i64, f64, ptr and str (use with cast<T> syntax).
 3.14 cast<i64> // 3
 42 cast<f64> // 42.0
 42 cast<str> // "42"
+42 cast<d128> // 42
 ```
 
 ---
@@ -1119,19 +1120,19 @@ Pushes the number of values on the stack.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| [`err`](#err) | `( -- code )` | Pushes the error code from the last fallible function call. |
+| [`err`](#err) | `( -- msg code )` | Pushes the message and code of the last failed call, and clears them. |
 | [`panic`](#panic) | `( msg code -- )` | Signals an error and returns from the fallible function. |
 
 #### err
 
-Pushes the error code from the last fallible function call.
+Pushes the message and code of the last failed call, and clears them.
 
-**Signature:** `( -- code )`
+**Signature:** `( -- msg code )`
 
 **Example:**
 
 ```qd
-err print nl  // prints error code from last fallible call
+err print nl print nl  // the code, then the message, of the last failed call
 ```
 
 ---

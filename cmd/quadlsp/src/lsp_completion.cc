@@ -206,19 +206,31 @@ void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri
 	// Check if we're in a type position (after : in function signature, struct field, etc.)
 	if (isInTypePosition(documentText, line, character)) {
 		// Show built-in types
-		static const char* builtinTypes[] = {
-				"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "d128", "str", "bool", "ptr", "any"};
-		static const char* typeDescriptions[] = {"64-bit signed integer", "32-bit signed integer (field/mem only)",
-				"16-bit signed integer (field/mem only)", "8-bit signed integer (field/mem only)",
-				"64-bit unsigned integer (field/mem only)", "32-bit unsigned integer (field/mem only)",
-				"16-bit unsigned integer (field/mem only)", "8-bit unsigned integer (field/mem only)",
-				"64-bit floating point", "String type", "Boolean type", "Pointer type", "Any type (dynamic)"};
+		static const struct {
+			const char* name;
+			const char* description;
+		} builtinTypes[] = {
+				{"i64", "64-bit signed integer"},
+				{"i32", "32-bit signed integer (field/mem only)"},
+				{"i16", "16-bit signed integer (field/mem only)"},
+				{"i8", "8-bit signed integer (field/mem only)"},
+				{"u64", "64-bit unsigned integer (field/mem only)"},
+				{"u32", "32-bit unsigned integer (field/mem only)"},
+				{"u16", "16-bit unsigned integer (field/mem only)"},
+				{"u8", "8-bit unsigned integer (field/mem only)"},
+				{"f64", "64-bit floating point"},
+				{"d128", "Decimal floating point, 34 digits"},
+				{"str", "String type"},
+				{"bool", "Boolean type"},
+				{"ptr", "Pointer type"},
+				{"any", "Any type (dynamic)"},
+		};
 
-		for (size_t i = 0; i < sizeof(builtinTypes) / sizeof(builtinTypes[0]); i++) {
+		for (const auto& type : builtinTypes) {
 			json_t* item = json_object();
-			json_object_set_new(item, "label", json_string(builtinTypes[i]));
+			json_object_set_new(item, "label", json_string(type.name));
 			json_object_set_new(item, "kind", json_integer(25)); // TypeParameter kind
-			json_object_set_new(item, "detail", json_string(typeDescriptions[i]));
+			json_object_set_new(item, "detail", json_string(type.description));
 			json_array_append_new(items, item);
 		}
 

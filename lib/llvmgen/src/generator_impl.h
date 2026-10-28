@@ -83,6 +83,7 @@
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/numeric_literal.h>
+#include <quadrate/qc/string_literal.h>
 
 #include <algorithm>
 #include <cstring>
@@ -486,7 +487,7 @@ namespace Qd {
 		// A d128 is sixteen bytes held in the slot itself (QD_STACK_TYPE_D128): a slot's value
 		// is two words, of which every other type uses the first. Moving a value whose type is
 		// not known here therefore moves both, and a d128 crosses into the runtime as its two
-		// words, qd_push_q_bits, since a sixteen-byte struct argument is lowered differently on
+		// words, qd_push_d_bits, since a sixteen-byte struct argument is lowered differently on
 		// every target.
 		static constexpr uint32_t kStackTypeD128 = 4;
 		// A generic struct field: the value, two words as in a slot, then the tag

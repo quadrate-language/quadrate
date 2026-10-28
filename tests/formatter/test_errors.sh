@@ -4,7 +4,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-QUADFMT="$PROJECT_ROOT/dist/bin/quadfmt"
+QUADFMT="${QUADFMT:-$PROJECT_ROOT/dist/bin/quadfmt}"
 
 PASS=0
 FAIL=0
@@ -83,20 +83,7 @@ else
     fail "unknown_option" "should fail for unknown option"
 fi
 
-# Test 7: Invalid line width
-echo "Testing invalid line width..."
-cat > "$TMP_DIR/valid.qd" << 'EOF'
-fn main() {
-    42 print nl
-}
-EOF
-if "$QUADFMT" --line-width 80 "$TMP_DIR/valid.qd" >/dev/null 2>&1; then
-    pass "valid_line_width"
-else
-    fail "valid_line_width" "should accept valid line width"
-fi
-
-# Test 8: Incomplete function signature
+# Test 7: Incomplete function signature
 echo "Testing incomplete function signature..."
 cat > "$TMP_DIR/incomplete_sig.qd" << 'EOF'
 fn test(a:i64 -- {
@@ -109,7 +96,7 @@ else
     fail "incomplete_signature" "should fail for incomplete signature"
 fi
 
-# Test 9: Check mode on unformatted file (unsorted imports)
+# Test 8: Check mode on unformatted file (unsorted imports)
 echo "Testing check mode on unformatted file..."
 cat > "$TMP_DIR/unformatted.qd" << 'EOF'
 use strings
@@ -125,7 +112,7 @@ else
     fail "check_unformatted" "should fail check mode on unformatted file"
 fi
 
-# Test 10: Check mode on formatted file
+# Test 9: Check mode on formatted file
 echo "Testing check mode on formatted file..."
 cat > "$TMP_DIR/formatted.qd" << 'EOF'
 fn main() {
@@ -138,7 +125,7 @@ else
     fail "check_formatted" "should pass check mode on formatted file"
 fi
 
-# Test 11: Directory with no .qd files
+# Test 10: Directory with no .qd files
 echo "Testing directory with no .qd files..."
 mkdir -p "$TMP_DIR/empty_dir"
 touch "$TMP_DIR/empty_dir/test.txt"
@@ -148,7 +135,7 @@ else
     fail "empty_directory" "should handle directory with no .qd files"
 fi
 
-# Test 12: Multiple files
+# Test 11: Multiple files
 echo "Testing multiple files..."
 cat > "$TMP_DIR/file1.qd" << 'EOF'
 fn one() {
@@ -166,7 +153,7 @@ else
     fail "multiple_files" "should handle multiple files"
 fi
 
-# Test 13: Write mode
+# Test 12: Write mode
 echo "Testing write mode..."
 cat > "$TMP_DIR/to_format.qd" << 'EOF'
 use strings

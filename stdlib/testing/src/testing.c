@@ -31,7 +31,7 @@ static void print_element_value(FILE* f, qd_stack_element_t* elem) {
 	case QD_STACK_TYPE_D128: {
 		char text[QD_D128_STRING_MAX];
 		qd_d128_format(elem->value.d, text, sizeof text);
-		fprintf(f, "%sq", text);
+		fprintf(f, "%sd", text);
 		break;
 	}
 	default:

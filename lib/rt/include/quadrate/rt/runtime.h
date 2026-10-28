@@ -108,7 +108,7 @@ int qd_push_p(qd_context* ctx, void* value);
  * @param value Value to push
  * @return Execution result (0 on success)
  */
-int qd_push_q(qd_context* ctx, qd_d128_t value);
+int qd_push_d(qd_context* ctx, qd_d128_t value);
 
 /**
  * @brief Push a d128 given as the two words of its encoding
@@ -119,12 +119,12 @@ int qd_push_q(qd_context* ctx, qd_d128_t value);
  *
  * @return Execution result (0 on success)
  */
-int qd_push_q_bits(qd_context* ctx, uint64_t low, uint64_t high);
+int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high);
 
 /**
  * @brief Whether a stack element is a d128 equal to a literal, for `switch`
  *
- * The literal arrives as qd_push_q_bits() takes it.
+ * The literal arrives as qd_push_d_bits() takes it.
  *
  * @return 1 if `subject` is a d128 comparing equal to the literal, 0 otherwise
  */
@@ -188,7 +188,7 @@ int qd_pop_p(qd_context* ctx, void** value);
  * @param[out] value Receives the value
  * @return 0 on success, non-zero on error (underflow or type mismatch)
  */
-int qd_pop_q(qd_context* ctx, qd_d128_t* value);
+int qd_pop_d(qd_context* ctx, qd_d128_t* value);
 
 /** @} */ // end of StackPop group
 
@@ -650,7 +650,7 @@ int qd_castp(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-int qd_castq(qd_context* ctx);
+int qd_castd(qd_context* ctx);
 
 /**
  * @brief Convert a function argument in place, for the casts a call implies

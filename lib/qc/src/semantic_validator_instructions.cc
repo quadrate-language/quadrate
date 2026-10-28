@@ -543,30 +543,15 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Type size introspection: sizeof<T> or sizeof (on value)
+		// sizeof<T>: the size of a type, known at compile time
 		else if (strcmp(name, "sizeof") == 0) {
-			if (node->type() == IAstNode::Type::INSTRUCTION) {
-				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(node);
-				if (instr->hasTypeParam()) {
-					// sizeof<T> - compile-time, just push an int
-					typeStack.push_back(StackValueType::INT);
-					structTypeStack.push_back("");
-				} else {
-					// sizeof on value - pop value, push int
-					if (typeStack.empty()) {
-						reportErrorConditional(
-								node, "Type error in 'sizeof': Stack underflow (requires 1 value)", reportErrors);
-						return;
-					}
-					typeStack.pop_back();
-					if (!structTypeStack.empty()) {
-						structTypeStack.pop_back();
-					}
-					typeStack.push_back(StackValueType::INT);
-					structTypeStack.push_back("");
-					return;
-				}
+			if (node->type() == IAstNode::Type::INSTRUCTION &&
+					!static_cast<AstNodeInstruction*>(node)->hasTypeParam()) {
+				reportErrorConditional(node, "'sizeof' takes a type, not a value: write 'sizeof<i64>'", reportErrors);
+				return;
 			}
+			typeStack.push_back(StackValueType::INT);
+			structTypeStack.push_back("");
 			return;
 		}
 		// Raw memory stores: __st8/__st16/__st32/__st64

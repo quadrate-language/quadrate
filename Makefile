@@ -160,31 +160,26 @@ define gen_quadmcp_version
 		"$$(date '+%b %e %Y')" > $(1)/cmd/quadmcp/version.qd
 endef
 
+# quadmcp is written in Quadrate, so it is built by the quad just built: $(1) is the
+# build directory, $(2) the optimisation flag. A source subset without it skips it.
+define build_quadmcp
+	$(if $(wildcard cmd/quadmcp/server.qd),
+	@echo "Building quadmcp..."
+	@mkdir -p $(1)/modules $(1)/cmd/quadmcp
+	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(1)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
+	$(call gen_quadmcp_version,$(1))
+	@cat cmd/quadmcp/core.qd $(1)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(1)/cmd/quadmcp/quadmcp.qd
+	cd $(1)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(1)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build $(2) quadmcp.qd -o quadmcp
+	cp $(1)/cmd/quadmcp/quadmcp dist/bin/)
+endef
+
 debug:
 	$(call do_build,$(BUILD_DIR_DEBUG),debug,Debug build complete - static libraries ready)
-ifneq ($(wildcard cmd/quadmcp/server.qd),)
-	@echo "Building quadmcp..."
-	@mkdir -p $(BUILD_DIR_DEBUG)/modules
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
-	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	$(call gen_quadmcp_version,$(BUILD_DIR_DEBUG))
-	@cat cmd/quadmcp/core.qd $(BUILD_DIR_DEBUG)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
-	cd $(BUILD_DIR_DEBUG)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build quadmcp.qd -o quadmcp
-	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
-endif
+	$(call build_quadmcp,$(BUILD_DIR_DEBUG),)
 
 release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
-ifneq ($(wildcard cmd/quadmcp/server.qd),)
-	@echo "Building quadmcp..."
-	@mkdir -p $(BUILD_DIR_RELEASE)/modules
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
-	@mkdir -p $(BUILD_DIR_RELEASE)/cmd/quadmcp
-	$(call gen_quadmcp_version,$(BUILD_DIR_RELEASE))
-	@cat cmd/quadmcp/core.qd $(BUILD_DIR_RELEASE)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp.qd
-	cd $(BUILD_DIR_RELEASE)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_RELEASE)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 quadmcp.qd -o quadmcp
-	cp $(BUILD_DIR_RELEASE)/cmd/quadmcp/quadmcp dist/bin/
-endif
+	$(call build_quadmcp,$(BUILD_DIR_RELEASE),-O3)
 	@echo "Stripping binaries..."
 	@for cmd in $(ALL_CMDS); do \
 		if [ -f dist/bin/$$cmd ]; then strip dist/bin/$$cmd && echo "  $$cmd"; fi; \
@@ -273,16 +268,8 @@ fmtcheck: release
 docscheck: debug
 	LD_LIBRARY_PATH=$(CURDIR)/dist/lib python3 tools/check_docs.py --run
 
-# Build quadmcp (MCP server for AI assistants)
+# Build quadmcp (MCP server for AI assistants): debug builds it
 quadmcp: debug
-	@echo "Building quadmcp (MCP server)..."
-	@mkdir -p $(BUILD_DIR_DEBUG)/modules
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
-	@mkdir -p $(BUILD_DIR_DEBUG)/cmd/quadmcp
-	@cat cmd/quadmcp/core.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(BUILD_DIR_DEBUG)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build -O3 $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp.qd -o $(CURDIR)/$(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp
-	cp $(BUILD_DIR_DEBUG)/cmd/quadmcp/quadmcp dist/bin/
-	@echo "  quadmcp built successfully"
 
 # Build playground (web-based REPL) - requires Go and Docker
 playground: release

@@ -22,6 +22,7 @@
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/numeric_literal.h>
+#include <quadrate/qc/string_literal.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/stack.h>
@@ -285,69 +286,6 @@ namespace {
 		return true;
 	}
 
-	// Strip quotes and decode escapes as generator_nodes.cc does, so both tiers
-	// agree what a literal means.
-	std::string decodeString(const std::string& literal) {
-		std::string body = literal;
-		if (body.size() >= 2 && body.front() == '"' && body.back() == '"') {
-			body = body.substr(1, body.size() - 2);
-		}
-
-		std::string out;
-		out.reserve(body.size());
-
-		for (size_t i = 0; i < body.size(); i++) {
-			if (body[i] != '\\' || i + 1 >= body.size()) {
-				out += body[i];
-				continue;
-			}
-
-			switch (body[i + 1]) {
-			case 'n':
-				out += '\n';
-				i++;
-				break;
-			case 't':
-				out += '\t';
-				i++;
-				break;
-			case 'r':
-				out += '\r';
-				i++;
-				break;
-			case '\\':
-				out += '\\';
-				i++;
-				break;
-			case '"':
-				out += '"';
-				i++;
-				break;
-			case '0':
-				out += '\0';
-				i++;
-				break;
-			case 'e':
-				out += '\x1b';
-				i++;
-				break;
-			case 'x':
-				if (i + 3 < body.size() && isxdigit(static_cast<unsigned char>(body[i + 2])) != 0 &&
-						isxdigit(static_cast<unsigned char>(body[i + 3])) != 0) {
-					out += static_cast<char>(std::strtol(body.substr(i + 2, 2).c_str(), nullptr, 16));
-					i += 3;
-				} else {
-					out += body[i];
-				}
-				break;
-			default:
-				out += body[i];
-				break;
-			}
-		}
-		return out;
-	}
-
 	// This tier does not run the validator, so a literal that will not read is refused here
 	bool readInteger(qd_interp* interp, const std::string& text, int64_t& out) {
 		if (Qd::parseIntegerLiteral(text, out)) {
@@ -365,7 +303,7 @@ namespace {
 			interp->error = "cannot read the d128 literal '" + text + "'";
 			return false;
 		}
-		return qd_push_q(interp->ctx, value) == 0;
+		return qd_push_d(interp->ctx, value) == 0;
 	}
 
 	bool pushLiteral(qd_interp* interp, const Qd::AstNodeLiteral* literal) {
@@ -381,7 +319,7 @@ namespace {
 		case Qd::AstNodeLiteral::LiteralType::D128:
 			return pushD128Text(interp, text);
 		case Qd::AstNodeLiteral::LiteralType::STRING:
-			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
+			return qd_push_s(interp->ctx, Qd::decodeStringLiteral(text).c_str()) == 0;
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
 			// 'true' and 'Ok' are 1, 'false' and 'Err' are 0
 			return qd_push_i(interp->ctx, (text == "true" || text == "Ok") ? 1 : 0) == 0;
@@ -423,7 +361,7 @@ namespace {
 	// rule the compiled tier applies in generateIdentifier.
 	bool pushConstantValue(qd_interp* interp, const std::string& text) {
 		if (text.size() >= 2 && text.front() == '"') {
-			return qd_push_s(interp->ctx, decodeString(text).c_str()) == 0;
+			return qd_push_s(interp->ctx, Qd::decodeStringLiteral(text).c_str()) == 0;
 		}
 		if (Qd::isD128LiteralText(text)) {
 			return pushD128Text(interp, text);
@@ -513,7 +451,7 @@ namespace {
 		case QD_STACK_TYPE_STR:
 			return qd_push_s(interp->ctx, value.s.c_str()) == 0;
 		case QD_STACK_TYPE_D128:
-			return qd_push_q(interp->ctx, value.d) == 0;
+			return qd_push_d(interp->ctx, value.d) == 0;
 		}
 		return false;
 	}
@@ -783,7 +721,7 @@ namespace {
 					interp->error = "an array literal holds one type; this element is a string";
 					return false;
 				}
-				qd_string_t* held = qd_string_create(decodeString(text).c_str());
+				qd_string_t* held = qd_string_create(Qd::decodeStringLiteral(text).c_str());
 				if (held == nullptr) {
 					qd_array_release(array);
 					interp->error = "could not allocate the array element";
@@ -856,7 +794,7 @@ namespace {
 			return qd_casts;
 		}
 		if (typeParam == "d128") {
-			return qd_castq;
+			return qd_castd;
 		}
 		if (typeParam == "ptr" || typeParam == "p" || typeParam == "pointer") {
 			return qd_castp;
@@ -887,7 +825,7 @@ namespace {
 			// same way the compiler refuses it: parsing can fail and there is nowhere to say
 			// so, and the old answer for a failure was the value 0. This tier can be exact
 			// about it -- the operand's type is right there on the stack.
-			if (cast.fn == qd_casti || cast.fn == qd_castf || cast.fn == qd_castq) {
+			if (cast.fn == qd_casti || cast.fn == qd_castf || cast.fn == qd_castd) {
 				qd_stack_element_t top;
 				if (qd_stack_size(interp->ctx->st) > 0 && qd_stack_peek(interp->ctx->st, &top) == QD_STACK_OK &&
 						top.type == QD_STACK_TYPE_STR) {
@@ -1181,7 +1119,7 @@ namespace {
 				return false;
 			}
 			const char* held = qd_string_data(subject.value.s);
-			return held != nullptr && decodeString(text) == held;
+			return held != nullptr && Qd::decodeStringLiteral(text) == held;
 		}
 		if (Qd::isD128LiteralText(text)) {
 			return d128Matches(text, subject);
@@ -1240,7 +1178,7 @@ namespace {
 				return false;
 			}
 			const char* held = qd_string_data(subject.value.s);
-			return held != nullptr && decodeString(text) == held;
+			return held != nullptr && Qd::decodeStringLiteral(text) == held;
 		}
 
 		default:

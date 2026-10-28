@@ -281,7 +281,7 @@ BUILTIN(gte, "( a b -- bool )", "Returns 1 if a is greater than or equal to b, 0
 /// Range check.
 /// @signature ( val low high -- bool )
 /// @example 5 0 10 within // 1
-BUILTIN(within, "( val low high -- bool )", "Returns 1 if val is in [low, high), 0 otherwise.")
+BUILTIN(within, "( val low high -- bool )", "Returns 1 if val is in [low, high], both ends included, 0 otherwise.")
 
 // ============================================================================
 // LOGICAL OPERATIONS
@@ -406,10 +406,10 @@ BUILTIN(nl, "()", "Prints a newline character to stdout.")
 // ERROR HANDLING
 // ============================================================================
 
-/// Get last error code.
-/// @signature ( -- code )
-/// @example err print nl  // prints error code from last fallible call
-BUILTIN(err, "( -- code )", "Pushes the error code from the last fallible function call.")
+/// Get the last error's message and code.
+/// @signature ( -- msg code )
+/// @example err print nl print nl  // the code, then the message, of the last failed call
+BUILTIN(err, "( -- msg code )", "Pushes the message and code of the last failed call, and clears them.")
 
 /// Panic with error message and code.
 /// @signature ( msg code -- )

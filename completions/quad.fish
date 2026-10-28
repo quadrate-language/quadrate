@@ -89,6 +89,7 @@ complete -c quadlint -l check-magic-numbers -d 'Enable magic number detection'
 complete -c quadlint -l check-long-functions -d 'Enable long function detection'
 complete -c quadlint -l check-naming -d 'Enable naming convention checks'
 complete -c quadlint -l max-function-lines -x -d 'Maximum function lines'
+complete -c quadlint -l source-path -r -F -d 'Lint the file as if it were at this path'
 
 # --- quaduses ---------------------------------------------------------------
 complete -c quaduses -f -a '(__quad_qd_files)'

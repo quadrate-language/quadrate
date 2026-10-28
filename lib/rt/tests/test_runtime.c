@@ -3662,33 +3662,33 @@ TEST(D128ComparisonIsIEEE) {
 
 TEST(D128LivesInTheSlot) {
 	qd_context* ctx = create_test_context();
-	ASSERT(qd_push_q(ctx, d128_of("2.5")) == 0, "push succeeds");
+	ASSERT(qd_push_d(ctx, d128_of("2.5")) == 0, "push succeeds");
 	qd_dup(ctx);
 	qd_add(ctx);
 	qd_d128_t result;
-	ASSERT(qd_pop_q(ctx, &result) == 0, "pop succeeds");
+	ASSERT(qd_pop_d(ctx, &result) == 0, "pop succeeds");
 	ASSERT(strcmp(d128_text(result), "5.0") == 0, "2.5 + 2.5 is 5.0");
 
 	// Every bit survives the slot, the top word with the sign and exponent included
 	const qd_d128_t wide = d128_of("-9.876543210987654321098765432109876E-4321");
-	qd_push_q(ctx, wide);
+	qd_push_d(ctx, wide);
 	qd_dup(ctx);
 	qd_swap(ctx);
-	ASSERT(qd_pop_q(ctx, &result) == 0 && result.w[0] == wide.w[0] && result.w[1] == wide.w[1], "the copy");
-	ASSERT(qd_pop_q(ctx, &result) == 0 && result.w[0] == wide.w[0] && result.w[1] == wide.w[1], "and the original");
+	ASSERT(qd_pop_d(ctx, &result) == 0 && result.w[0] == wide.w[0] && result.w[1] == wide.w[1], "the copy");
+	ASSERT(qd_pop_d(ctx, &result) == 0 && result.w[0] == wide.w[0] && result.w[1] == wide.w[1], "and the original");
 	destroy_test_context(ctx);
 }
 
 TEST(D128CastsThroughTheStack) {
 	qd_context* ctx = create_test_context();
 	qd_push_i(ctx, 42);
-	qd_castq(ctx);
+	qd_castd(ctx);
 	qd_casts(ctx);
 	char buf[32];
 	ASSERT(qd_pop_s(ctx, buf, sizeof buf) == 0 && strcmp(buf, "42") == 0, "42 cast<d128> cast<str> is \"42\"");
 
 	qd_push_f(ctx, 0.5);
-	qd_castq(ctx);
+	qd_castd(ctx);
 	qd_castf(ctx);
 	double d = 0.0;
 	ASSERT(qd_pop_f(ctx, &d) == 0 && d == 0.5, "0.5 survives the round trip");
@@ -3698,12 +3698,12 @@ TEST(D128CastsThroughTheStack) {
 TEST(D128PushedAsTwoWords) {
 	qd_context* ctx = create_test_context();
 	const qd_d128_t tenth = d128_of("0.1");
-	ASSERT(qd_push_q_bits(ctx, tenth.w[0], tenth.w[1]) == 0, "push succeeds");
+	ASSERT(qd_push_d_bits(ctx, tenth.w[0], tenth.w[1]) == 0, "push succeeds");
 	const qd_stack_element_t* top = &ctx->st->data[ctx->st->size - 1];
 	ASSERT(qd_d128_matches_bits(top, d128_of("0.10").w[0], d128_of("0.10").w[1]), "0.1 matches 0.10");
 	ASSERT(!qd_d128_matches_bits(top, d128_of("0.2").w[0], d128_of("0.2").w[1]), "and not 0.2");
 	qd_d128_t back;
-	ASSERT(qd_pop_q(ctx, &back) == 0 && strcmp(d128_text(back), "0.1") == 0, "the value is what was pushed");
+	ASSERT(qd_pop_d(ctx, &back) == 0 && strcmp(d128_text(back), "0.1") == 0, "the value is what was pushed");
 	destroy_test_context(ctx);
 }
 
@@ -3725,7 +3725,7 @@ TEST(D128ArraysHoldValues) {
 	// An untyped array widens to d128 on its first value, by append and by set
 	qd_context* ctx = create_test_context();
 	qd_stack_push_ptr(ctx->st, qd_array_create(4, QD_ARRAY_TYPE_ANY));
-	qd_push_q(ctx, d128_of("2.25"));
+	qd_push_d(ctx, d128_of("2.25"));
 	qd_append(ctx);
 	qd_array_t* grown = (qd_array_t*)ctx->st->data[ctx->st->size - 1].value.p;
 	ASSERT(grown->elemType == QD_ARRAY_TYPE_D128 && qd_array_get_d128(grown, 0, &v) == 0 &&
@@ -3738,7 +3738,7 @@ TEST(D128ArraysHoldValues) {
 	qd_array_t* sized = (qd_array_t*)ctx->st->data[ctx->st->size - 1].value.p;
 	qd_array_retain(sized);
 	qd_push_i(ctx, 1);
-	qd_push_q(ctx, d128_of("7"));
+	qd_push_d(ctx, d128_of("7"));
 	qd_set(ctx);
 	ASSERT(sized->elemType == QD_ARRAY_TYPE_D128 && qd_array_get_d128(sized, 1, &v) == 0 &&
 					strcmp(d128_text(v), "7") == 0,

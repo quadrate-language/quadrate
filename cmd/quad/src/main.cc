@@ -92,46 +92,9 @@ fs::path getExecutableDir() {
 	return fs::path();
 }
 
-// Find a tool by name, first in the same directory as quad, then in PATH
+// Find a tool by name: beside quad, as a build lays them out, then on PATH
 std::string findTool(const std::string& toolName) {
-	// First, check in the same directory as the quad binary
-	fs::path execDir = getExecutableDir();
-	if (!execDir.empty()) {
-		fs::path toolPath = execDir / toolName;
-		if (fs::exists(toolPath)) {
-			return toolPath.string();
-		}
-		// Also check sibling directory pattern (for build directory structure)
-		// e.g., build/debug/cmd/quad/quad -> build/debug/cmd/quadc/quadc
-		toolPath = execDir.parent_path() / toolName / toolName;
-		if (fs::exists(toolPath)) {
-			return toolPath.string();
-		}
-	}
-
-	// Fall back to PATH lookup
-	const char* pathEnv = std::getenv("PATH");
-	if (pathEnv) {
-		std::string pathStr(pathEnv);
-		size_t start = 0;
-		size_t end;
-		while ((end = pathStr.find(':', start)) != std::string::npos) {
-			std::string dir = pathStr.substr(start, end - start);
-			fs::path toolPath = fs::path(dir) / toolName;
-			if (fs::exists(toolPath)) {
-				return toolPath.string();
-			}
-			start = end + 1;
-		}
-		// Check last segment
-		std::string dir = pathStr.substr(start);
-		fs::path toolPath = fs::path(dir) / toolName;
-		if (fs::exists(toolPath)) {
-			return toolPath.string();
-		}
-	}
-
-	return "";
+	return qdcli::findTool(toolName, getExecutableDir().string());
 }
 
 // Execute a tool with the given arguments

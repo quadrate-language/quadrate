@@ -1,0 +1,36 @@
+// A string's escapes mean the same wherever the literal is written
+const Tabbed = "a\tb"
+
+var greeting:str = "hi\tthere"
+
+struct Label {
+	text: str = "x\ty"
+}
+
+fn main() {
+	"a\tb" print nl
+	Tabbed print nl
+	["a\tb" "\x41\"q\""] 0 nth print nl
+	["a\tb" "\x41\"q\""] 1 nth print nl
+	greeting print nl
+	Label {} -> l
+	l <<text print nl
+
+	"a\tb" -> s
+	s switch {
+		"a\tb" {
+			"switch matched" print nl
+		}
+		_ {
+			"switch missed" print nl
+		}
+	}
+	s switch {
+		Tabbed {
+			"const label matched" print nl
+		}
+		_ {
+			"const label missed" print nl
+		}
+	}
+}

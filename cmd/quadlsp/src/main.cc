@@ -2,6 +2,7 @@
 // Main file containing core LSP class implementation
 
 #include "lsp_impl.h"
+#include "src/platform/exe_path_platform.h"
 #include "src/platform/process_platform.h"
 #include "version.h"
 #include <algorithm>
@@ -42,47 +43,6 @@ std::string expandTilde(const std::string& path) {
 		}
 	}
 	return path;
-}
-
-// Get sibling .qd files in the same directory (for directory-based namespaces)
-std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
-	std::vector<std::string> siblings;
-
-	try {
-		std::filesystem::path p(filePath);
-		std::filesystem::path dir = p.parent_path();
-		std::string filename = p.filename().string();
-
-		if (dir.empty() || !std::filesystem::exists(dir)) {
-			return siblings;
-		}
-
-		for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-			if (!entry.is_regular_file()) {
-				continue;
-			}
-			std::string name = entry.path().filename().string();
-			// Skip the file itself
-			if (name == filename) {
-				continue;
-			}
-			// Only .qd files
-			if (name.size() > 3 && name.substr(name.size() - 3) == ".qd") {
-				// Exclude test files
-				if (name.size() > 8 && name.substr(name.size() - 8) == "_test.qd") {
-					continue;
-				}
-				siblings.push_back(entry.path().string());
-			}
-		}
-
-		// Sort for consistent ordering
-		std::sort(siblings.begin(), siblings.end());
-	} catch (...) {
-		// Ignore errors
-	}
-
-	return siblings;
 }
 
 // Load dependencies from qd.json and return include paths
@@ -1110,11 +1070,61 @@ std::string QuadrateLSP::stripAnsiCodes(const std::string& input) {
 	return result;
 }
 
-std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string& source) {
+// One word for /bin/sh, whatever the path holds
+static std::string shellQuote(const std::string& text) {
+	std::string quoted = "'";
+	for (const char c : text) {
+		quoted += c == '\'' ? std::string("'\\''") : std::string(1, c);
+	}
+	return quoted + "'";
+}
+
+// Lints the editor's buffer, not the file on disk. The buffer is written to a directory of
+// its own, so nothing else gets linted with it, and quadlint is told the file it stands for,
+// so the neighbours that may call its functions are the real ones. The directory is removed
+// however this returns.
+std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string& source, const std::string& filePath) {
 	std::vector<LintWarning> warnings;
 
-	// Write source to temp file so quadlint sees current editor content
-	std::string tempPath = "/tmp/quadlsp_lint_" + std::to_string(process_platform_getpid()) + ".qd";
+	if (quadlintPath_.empty()) {
+		char exePath[4096];
+		const int len = exe_path_platform_get(exePath, sizeof exePath);
+		const bool known = len > 0 && static_cast<size_t>(len) < sizeof exePath;
+		quadlintPath_ = qdcli::findTool("quadlint", known ? std::filesystem::path(exePath).parent_path().string() : "");
+		if (quadlintPath_.empty()) {
+			lintEnabled_ = false;
+			return warnings;
+		}
+	}
+
+	std::error_code ec;
+	const std::filesystem::path base = std::filesystem::temp_directory_path(ec);
+	if (ec) {
+		return warnings;
+	}
+	std::filesystem::path dir;
+	for (int attempt = 0; attempt < 100 && dir.empty(); attempt++) {
+		std::filesystem::path candidate =
+				base / ("quadlsp_lint_" + std::to_string(process_platform_getpid()) + "_" + std::to_string(attempt));
+		if (std::filesystem::create_directory(candidate, ec)) {
+			dir = candidate;
+		}
+	}
+	if (dir.empty()) {
+		return warnings;
+	}
+
+	struct RemoveOnExit {
+		std::filesystem::path path;
+
+		~RemoveOnExit() {
+			std::error_code ignored;
+			std::filesystem::remove_all(path, ignored);
+		}
+	} removeOnExit{dir};
+
+	const std::string name = filePath.empty() ? "untitled.qd" : std::filesystem::path(filePath).filename().string();
+	const std::string tempPath = (dir / name).string();
 	{
 		std::ofstream tempFile(tempPath);
 		if (!tempFile.good()) {
@@ -1123,8 +1133,8 @@ std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string
 		tempFile << source;
 	}
 
-	// Build command
-	std::string command = quadlintPath_ + " \"" + tempPath + "\" 2>&1";
+	const std::string sourcePath = filePath.empty() ? "" : " --source-path " + shellQuote(filePath);
+	const std::string command = shellQuote(quadlintPath_) + sourcePath + " " + shellQuote(tempPath) + " 2>&1";
 
 	// Execute command and capture output
 	char outputBuffer[65536];
@@ -1194,9 +1204,6 @@ std::vector<QuadrateLSP::LintWarning> QuadrateLSP::runQuadlint(const std::string
 			// Ignore parse errors
 		}
 	}
-
-	// Clean up temp file
-	std::remove(tempPath.c_str());
 
 	return warnings;
 }
@@ -1277,7 +1284,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 		}
 
 		// Directory-based namespace: load sibling .qd files
-		std::vector<std::string> siblingFiles = getSiblingQdFiles(filePath);
+		std::vector<std::string> siblingFiles = qdcli::getSiblingQdFiles(filePath);
 		if (!siblingFiles.empty()) {
 			validator.setSiblingFiles(siblingFiles);
 		}
@@ -1332,7 +1339,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 	}
 
 	if (lintEnabled_ && !isExternalModule && root && !ast.hasErrors()) {
-		std::vector<LintWarning> warnings = runQuadlint(text);
+		std::vector<LintWarning> warnings = runQuadlint(text, filePath);
 
 		for (const auto& warning : warnings) {
 			json_t* diag = json_object();
@@ -2131,7 +2138,7 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 
 		// Extract struct names from sibling files (same directory namespace)
 		if (!filePath.empty()) {
-			std::vector<std::string> siblings = getSiblingQdFiles(filePath);
+			std::vector<std::string> siblings = qdcli::getSiblingQdFiles(filePath);
 			for (const auto& siblingPath : siblings) {
 				std::ifstream file(siblingPath);
 				if (file.good()) {

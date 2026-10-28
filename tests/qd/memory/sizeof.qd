@@ -1,0 +1,17 @@
+// sizeof<T>: a primitive is the size a field of it takes, a struct its inline size
+struct Point {
+	x: i64
+	y: i64
+}
+
+fn main() {
+	sizeof<i64> print nl
+	sizeof<f64> print nl
+	sizeof<d128> print nl
+	sizeof<str> print nl
+	sizeof<ptr> print nl
+	sizeof<i32> print nl
+	sizeof<u16> print nl
+	sizeof<i8> print nl
+	sizeof<Point> print nl
+}

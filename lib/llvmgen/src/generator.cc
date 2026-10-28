@@ -299,7 +299,7 @@ namespace Qd {
 
 		// d128 values cross as the two words of their encoding
 		pushD128BitsFn =
-				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, i64t, i64t}, false), "qd_push_q_bits");
+				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, i64t, i64t}, false), "qd_push_d_bits");
 
 		// Initialize debug info if enabled
 		if (debugInfoEnabled) {

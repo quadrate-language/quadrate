@@ -47,11 +47,6 @@ std::vector<std::string> findModuleFiles(const std::string& moduleName, const st
 // Returns the list of include paths found
 std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
-// Get all sibling .qd files in the same directory as the given file
-// Excludes the given file itself and test files (*_test.qd)
-// Used for directory-based namespace collection
-std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
-
 // Find a namespace directory and return all its .qd files
 // Searches relative to sourceDir, include paths, etc.
 // Returns empty vector if namespace not found
