@@ -9,439 +9,129 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "platform/tls_platform.h"
+#include <inttypes.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/stack.h>
 #include <quadrate/tls/tls.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
-/** Helper to safely set error message (handles strdup failure) */
-static void set_error_msg(qd_context* ctx, const char* msg) {
-	if (ctx->error_msg) {
-		free(ctx->error_msg);
+#define TLS_MAX_RECEIVE (1024 * 1024)
+
+// The platform's codes are the module's: TLS_ERR_CONNECT is tls::ErrConnect, and so on
+static int fail(qd_context* ctx, const char* op, tls_error_t err) {
+	const char* detail = tls_platform_error_detail();
+	if (detail[0] != '\0') {
+		return qd_fail(ctx, (int)err, "%s: %s: %s", op, tls_platform_error_string(err), detail);
 	}
-	ctx->error_msg = strdup(msg);
-	// If strdup fails, error_msg will be NULL, which is acceptable
-	// (error_code still indicates the error condition)
+	return qd_fail(ctx, (int)err, "%s: %s", op, tls_platform_error_string(err));
 }
 
-// Stack signature: ( socket:i hostname:s -- tls_conn:ptr )
-// Fallible function - pushes error code
+static int push_conn(qd_context* ctx, const char* op, tls_error_t err, tls_conn_t conn) {
+	if (err != TLS_OK) {
+		return fail(ctx, op, err);
+	}
+	qd_push_p(ctx, conn);
+	return qd_push_i(ctx, TLS_OK);
+}
+
+// Stack signature: ( socket:i64 hostname:str -- conn:ptr )!
 int usr_tls_connect(qd_context* ctx) {
-	// Pop hostname
-	qd_stack_element_t hostname_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &hostname_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::connect: stack underflow\n");
-		abort();
-	}
-
-	// Pop socket
-	qd_stack_element_t socket_elem;
-	err = qd_stack_pop(ctx->st, &socket_elem);
-	if (err != QD_STACK_OK) {
-		if (hostname_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(hostname_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect: stack underflow\n");
-		abort();
-	}
-
-	// Type checks
-	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (hostname_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(hostname_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect: socket must be an integer\n");
-		abort();
-	}
-
-	if (hostname_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in tls::connect: hostname must be a string\n");
-		abort();
-	}
-
-	int socket_fd = (int)socket_elem.value.i;
-	const char* hostname = qd_string_data(hostname_elem.value.s);
-
-	// Perform TLS connect
+	int64_t fd;
+	qd_string_t* hostname;
+	qd_args(ctx, "tls::connect", "is", &fd, &hostname);
 	tls_conn_t conn = TLS_CONN_INVALID;
-	tls_error_t tls_err = tls_platform_connect(socket_fd, hostname, &conn);
-
-	qd_string_release(hostname_elem.value.s);
-
-	if (tls_err != TLS_OK) {
-		// On failure: set error and push only error code
-		ctx->error_code = (int)tls_err;
-		set_error_msg(ctx, tls_platform_error_string(tls_err));
-		qd_push_i(ctx, (int64_t)tls_err);
-		return (int){(int)tls_err};
-	}
-
-	// On success: push result, then Ok
-	qd_push_p(ctx, conn);
-	qd_push_i(ctx, TLS_OK);
-	return 0;
+	const tls_error_t err = tls_platform_connect((int)fd, qd_string_data(hostname), &conn);
+	qd_string_release(hostname);
+	return push_conn(ctx, "tls::connect", err, conn);
 }
 
-// Stack signature: ( socket:i hostname:s cert_path:s key_path:s -- tls_conn:ptr )
-// Fallible function - pushes error code
+// Stack signature: ( socket:i64 hostname:str cert_path:str key_path:str -- conn:ptr )!
 int usr_tls_connect_mtls(qd_context* ctx) {
-	// Pop key_path
-	qd_stack_element_t key_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &key_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
-		abort();
-	}
-
-	// Pop cert_path
-	qd_stack_element_t cert_elem;
-	err = qd_stack_pop(ctx->st, &cert_elem);
-	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
-		abort();
-	}
-
-	// Pop hostname
-	qd_stack_element_t hostname_elem;
-	err = qd_stack_pop(ctx->st, &hostname_elem);
-	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		if (cert_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(cert_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
-		abort();
-	}
-
-	// Pop socket
-	qd_stack_element_t socket_elem;
-	err = qd_stack_pop(ctx->st, &socket_elem);
-	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		if (cert_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(cert_elem.value.s);
-		}
-		if (hostname_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(hostname_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect_mtls: stack underflow\n");
-		abort();
-	}
-
-	// Type checks
-	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		if (cert_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(cert_elem.value.s);
-		}
-		if (hostname_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(hostname_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect_mtls: socket must be an integer\n");
-		abort();
-	}
-
-	if (hostname_elem.type != QD_STACK_TYPE_STR) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		if (cert_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(cert_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::connect_mtls: hostname must be a string\n");
-		abort();
-	}
-
-	if (cert_elem.type != QD_STACK_TYPE_STR) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		qd_string_release(hostname_elem.value.s);
-		fprintf(stderr, "Fatal error in tls::connect_mtls: cert_path must be a string\n");
-		abort();
-	}
-
-	if (key_elem.type != QD_STACK_TYPE_STR) {
-		qd_string_release(cert_elem.value.s);
-		qd_string_release(hostname_elem.value.s);
-		fprintf(stderr, "Fatal error in tls::connect_mtls: key_path must be a string\n");
-		abort();
-	}
-
-	int socket_fd = (int)socket_elem.value.i;
-	const char* hostname = qd_string_data(hostname_elem.value.s);
-	const char* cert_path = qd_string_data(cert_elem.value.s);
-	const char* key_path = qd_string_data(key_elem.value.s);
-
-	// Perform TLS connect with client certificate
+	int64_t fd;
+	qd_string_t* hostname;
+	qd_string_t* cert;
+	qd_string_t* key;
+	qd_args(ctx, "tls::connect_mtls", "isss", &fd, &hostname, &cert, &key);
 	tls_conn_t conn = TLS_CONN_INVALID;
-	tls_error_t tls_err = tls_platform_connect_mtls(socket_fd, hostname, cert_path, key_path, &conn);
-
-	qd_string_release(hostname_elem.value.s);
-	qd_string_release(cert_elem.value.s);
-	qd_string_release(key_elem.value.s);
-
-	if (tls_err != TLS_OK) {
-		// On failure: set error and push only error code
-		ctx->error_code = (int)tls_err;
-		set_error_msg(ctx, tls_platform_error_string(tls_err));
-		qd_push_i(ctx, (int64_t)tls_err);
-		return (int){(int)tls_err};
-	}
-
-	// On success: push result, then Ok
-	qd_push_p(ctx, conn);
-	qd_push_i(ctx, TLS_OK);
-	return 0;
+	const tls_error_t err = tls_platform_connect_mtls(
+			(int)fd, qd_string_data(hostname), qd_string_data(cert), qd_string_data(key), &conn);
+	qd_string_release(hostname);
+	qd_string_release(cert);
+	qd_string_release(key);
+	return push_conn(ctx, "tls::connect_mtls", err, conn);
 }
 
-// Stack signature: ( socket:i cert_path:s key_path:s -- tls_conn:ptr )
-// Fallible function - pushes error code
+// Stack signature: ( socket:i64 cert_path:str key_path:str -- conn:ptr )!
 int usr_tls_accept(qd_context* ctx) {
-	// Pop key_path
-	qd_stack_element_t key_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &key_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::accept: stack underflow\n");
-		abort();
-	}
-
-	// Pop cert_path
-	qd_stack_element_t cert_elem;
-	err = qd_stack_pop(ctx->st, &cert_elem);
-	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::accept: stack underflow\n");
-		abort();
-	}
-
-	// Pop socket
-	qd_stack_element_t socket_elem;
-	err = qd_stack_pop(ctx->st, &socket_elem);
-	if (err != QD_STACK_OK) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		if (cert_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(cert_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::accept: stack underflow\n");
-		abort();
-	}
-
-	// Type checks
-	if (socket_elem.type != QD_STACK_TYPE_INT) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		if (cert_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(cert_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::accept: socket must be an integer\n");
-		abort();
-	}
-
-	if (cert_elem.type != QD_STACK_TYPE_STR) {
-		if (key_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(key_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::accept: cert_path must be a string\n");
-		abort();
-	}
-
-	if (key_elem.type != QD_STACK_TYPE_STR) {
-		qd_string_release(cert_elem.value.s);
-		fprintf(stderr, "Fatal error in tls::accept: key_path must be a string\n");
-		abort();
-	}
-
-	int socket_fd = (int)socket_elem.value.i;
-	const char* cert_path = qd_string_data(cert_elem.value.s);
-	const char* key_path = qd_string_data(key_elem.value.s);
-
-	// Perform TLS accept
+	int64_t fd;
+	qd_string_t* cert;
+	qd_string_t* key;
+	qd_args(ctx, "tls::accept", "iss", &fd, &cert, &key);
 	tls_conn_t conn = TLS_CONN_INVALID;
-	tls_error_t tls_err = tls_platform_accept(socket_fd, cert_path, key_path, &conn);
-
-	qd_string_release(cert_elem.value.s);
-	qd_string_release(key_elem.value.s);
-
-	if (tls_err != TLS_OK) {
-		// On failure: set error and push only error code
-		ctx->error_code = (int)tls_err;
-		set_error_msg(ctx, tls_platform_error_string(tls_err));
-		qd_push_i(ctx, (int64_t)tls_err);
-		return (int){(int)tls_err};
-	}
-
-	// On success: push result, then Ok
-	qd_push_p(ctx, conn);
-	qd_push_i(ctx, TLS_OK);
-	return 0;
+	const tls_error_t err = tls_platform_accept((int)fd, qd_string_data(cert), qd_string_data(key), &conn);
+	qd_string_release(cert);
+	qd_string_release(key);
+	return push_conn(ctx, "tls::accept", err, conn);
 }
 
-// Stack signature: ( tls_conn:ptr data:s -- bytes_sent:i )
-// Fallible function - pushes error code
+// Stack signature: ( conn:ptr data:str -- bytes_sent:i64 )!
+// Sends all of `data`
 int usr_tls_send(qd_context* ctx) {
-	// Pop data
-	qd_stack_element_t data_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &data_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::send: stack underflow\n");
-		abort();
+	void* conn;
+	qd_string_t* data;
+	qd_args(ctx, "tls::send", "ps", &conn, &data);
+	const char* bytes = qd_string_data(data);
+	const size_t len = qd_string_length(data);
+	size_t off = 0;
+	tls_error_t err = TLS_OK;
+	while (off < len && err == TLS_OK) {
+		int sent = 0;
+		err = tls_platform_send(conn, bytes + off, len - off, &sent);
+		off += err == TLS_OK ? (size_t)sent : 0;
 	}
-
-	// Pop connection
-	qd_stack_element_t conn_elem;
-	err = qd_stack_pop(ctx->st, &conn_elem);
-	if (err != QD_STACK_OK) {
-		if (data_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(data_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::send: stack underflow\n");
-		abort();
+	qd_string_release(data);
+	if (err != TLS_OK) {
+		return fail(ctx, "tls::send", err);
 	}
-
-	// Type checks
-	if (conn_elem.type != QD_STACK_TYPE_PTR) {
-		if (data_elem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(data_elem.value.s);
-		}
-		fprintf(stderr, "Fatal error in tls::send: connection must be a pointer\n");
-		abort();
-	}
-
-	if (data_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in tls::send: data must be a string\n");
-		abort();
-	}
-
-	tls_conn_t conn = conn_elem.value.p;
-	const char* data = qd_string_data(data_elem.value.s);
-	size_t len = strlen(data);
-
-	// Send data
-	int bytes_sent = 0;
-	tls_error_t tls_err = tls_platform_send(conn, data, len, &bytes_sent);
-
-	qd_string_release(data_elem.value.s);
-
-	if (tls_err != TLS_OK) {
-		// On failure: set error and push only error code
-		ctx->error_code = (int)tls_err;
-		set_error_msg(ctx, tls_platform_error_string(tls_err));
-		qd_push_i(ctx, (int64_t)tls_err);
-		return (int){(int)tls_err};
-	}
-
-	// On success: push result, then Ok
-	qd_push_i(ctx, (int64_t)bytes_sent);
-	qd_push_i(ctx, TLS_OK);
-	return 0;
+	qd_push_i(ctx, (int64_t)len);
+	return qd_push_i(ctx, TLS_OK);
 }
 
-// Stack signature: ( tls_conn:ptr max_bytes:i -- data:s bytes_read:i )
-// Fallible function - pushes error code
+// Stack signature: ( conn:ptr max_bytes:i64 -- data:str bytes_read:i64 )!
+// The peer closing the session cleanly is the end of the data, as it is for net::receive:
+// "" and 0, not ErrClosed.
 int usr_tls_receive(qd_context* ctx) {
-	// Pop max_bytes
-	qd_stack_element_t max_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &max_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::receive: stack underflow\n");
-		abort();
+	void* conn;
+	int64_t max_bytes;
+	qd_args(ctx, "tls::receive", "pi", &conn, &max_bytes);
+	if (max_bytes <= 0 || max_bytes > TLS_MAX_RECEIVE) {
+		return qd_fail(ctx, TLS_ERR_INVALID_ARG, "tls::receive: max_bytes %" PRId64 " is not between 1 and %d",
+				max_bytes, TLS_MAX_RECEIVE);
 	}
-
-	// Pop connection
-	qd_stack_element_t conn_elem;
-	err = qd_stack_pop(ctx->st, &conn_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::receive: stack underflow\n");
-		abort();
+	char* buffer = malloc((size_t)max_bytes);
+	if (!buffer) {
+		qd_fatal_raise(ctx, "tls::receive", "Out of memory");
 	}
-
-	// Type checks
-	if (conn_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in tls::receive: connection must be a pointer\n");
-		abort();
-	}
-
-	if (max_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in tls::receive: max_bytes must be an integer\n");
-		abort();
-	}
-
-	tls_conn_t conn = conn_elem.value.p;
-	int max_bytes = (int)max_elem.value.i;
-
-	if (max_bytes <= 0 || max_bytes > 1048576) { // Max 1MB
-		fprintf(stderr, "Fatal error in tls::receive: max_bytes must be between 1 and 1048576\n");
-		abort();
-	}
-
-	// Allocate buffer
-	char* buffer = malloc((size_t)max_bytes + 1);
-	if (buffer == NULL) {
-		fprintf(stderr, "Fatal error in tls::receive: failed to allocate buffer\n");
-		abort();
-	}
-
-	// Receive data
 	int bytes_read = 0;
-	tls_error_t tls_err = tls_platform_receive(conn, buffer, (size_t)max_bytes, &bytes_read);
-
-	buffer[bytes_read > 0 ? bytes_read : 0] = '\0';
-
-	if (tls_err != TLS_OK) {
-		// On failure: set error and push only error code
+	const tls_error_t err = tls_platform_receive(conn, buffer, (size_t)max_bytes, &bytes_read);
+	if (err != TLS_OK && err != TLS_ERR_CLOSED) {
 		free(buffer);
-		ctx->error_code = (int)tls_err;
-		set_error_msg(ctx, tls_platform_error_string(tls_err));
-		qd_push_i(ctx, (int64_t)tls_err);
-		return (int){(int)tls_err};
+		return fail(ctx, "tls::receive", err);
 	}
-
-	// On success: push results (data, bytes_read), then Ok
-	qd_push_s(ctx, buffer);
-	qd_push_i(ctx, (int64_t)bytes_read);
-	qd_push_i(ctx, TLS_OK);
-
+	// All of it: the data may hold a NUL byte, which ended the string here before
+	qd_string_t* data = qd_string_create_with_length(buffer, err == TLS_OK ? (size_t)bytes_read : 0);
 	free(buffer);
-	return 0;
+	qd_push_s_ref(ctx, data);
+	qd_string_release(data);
+	qd_push_i(ctx, err == TLS_OK ? (int64_t)bytes_read : 0);
+	return qd_push_i(ctx, TLS_OK);
 }
 
-// Stack signature: ( tls_conn:ptr -- )
+// Stack signature: ( conn:ptr -- )
 int usr_tls_close(qd_context* ctx) {
-	// Pop connection
-	qd_stack_element_t conn_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &conn_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in tls::close: stack underflow\n");
-		abort();
-	}
-
-	if (conn_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in tls::close: connection must be a pointer\n");
-		abort();
-	}
-
-	tls_conn_t conn = conn_elem.value.p;
+	void* conn;
+	qd_args(ctx, "tls::close", "p", &conn);
 	if (conn != TLS_CONN_INVALID) {
 		tls_platform_close(conn);
 	}
-
 	return 0;
 }

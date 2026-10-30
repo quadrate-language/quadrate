@@ -1,6 +1,7 @@
 // Unit tests for the mem module
 use bits
 use mem
+use strings
 use testing
 
 fn test_alloc_and_free( -- result:i64) {
@@ -203,5 +204,31 @@ test "a zeroed slot reads as zero" {
 	buf 2 mem::AnySize * mem::zero
 	buf 0 mem::get_any 0 testing::assert_eq
 	buf mem::AnySize mem::get_any 0 testing::assert_eq
+	buf mem::free
+}
+
+// A d128 is sixteen bytes and was copied over the slot's tag, reading back as its coefficient
+test "mem::set_any keeps a d128" {
+	mem::AnySize mem::alloc! -> slot
+	slot mem::AnySize mem::zero
+	1.25d slot 0 mem::set_any
+	slot 0 mem::get_any 1.25d testing::assert_eq
+	2.5d slot 0 mem::set_any
+	slot 0 mem::get_any 2.5d testing::assert_eq
+	slot 0 mem::clear_any
+	slot mem::free
+}
+
+test "mem::to_string and from_string keep a NUL byte" {
+	3 mem::alloc! -> raw
+	97 raw 0 mem::set_byte
+	0 raw 1 mem::set_byte
+	98 raw 2 mem::set_byte
+	raw 3 mem::to_string -> s
+	raw mem::free
+	s strings::len 3 testing::assert_eq
+	s mem::from_string -> n -> buf
+	n 3 testing::assert_eq
+	buf 2 mem::get_byte 98 testing::assert_eq
 	buf mem::free
 }

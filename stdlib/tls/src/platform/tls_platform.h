@@ -113,6 +113,13 @@ void tls_platform_close(tls_conn_t conn);
  */
 const char* tls_platform_error_string(tls_error_t err);
 
+/**
+ * @brief Why the last failed call on this thread failed, in OpenSSL's words
+ * @return A string owned by the platform layer, valid until the next call on this thread,
+ *         such as "certificate has expired"; "" when there is nothing to add
+ */
+const char* tls_platform_error_detail(void);
+
 #ifdef __cplusplus
 }
 #endif

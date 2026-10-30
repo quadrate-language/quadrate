@@ -85,16 +85,19 @@ define do_build
 	meson setup $(1) --buildtype=$(2) $(MESON_FLAGS)
 	meson compile -C $(1)
 	@mkdir -p dist/bin dist/lib/quadrate dist/include/quadrate
-	@cp -f $(1)/lib/rt/libqdrt.so dist/lib/
-	@cp -f $(1)/lib/qd/libqd.so dist/lib/
+	@# `install`, not `cp -f`: it replaces the file rather than writing over it, so a quadc
+	@# still running from the old one (a test or docscheck run) keeps it intact. Writing a
+	@# library in place under a quadc that has it loaded crashed it at exit.
+	@install -m 755 $(1)/lib/rt/libqdrt.so dist/lib/
+	@install -m 755 $(1)/lib/qd/libqd.so dist/lib/
 	@for cmd in $(CMDS); do \
-		cp -f $(1)/cmd/$$cmd/$$cmd dist/bin/; \
+		install -m 755 $(1)/cmd/$$cmd/$$cmd dist/bin/; \
 		if command -v patchelf >/dev/null 2>&1; then \
 			patchelf --set-rpath '$$ORIGIN/../lib' dist/bin/$$cmd 2>/dev/null || true; \
 		fi; \
 	done
 	@if [ -f $(1)/cmd/quadrepl/quadrepl ]; then \
-		cp -f $(1)/cmd/quadrepl/quadrepl dist/bin/; \
+		install -m 755 $(1)/cmd/quadrepl/quadrepl dist/bin/; \
 		if command -v patchelf >/dev/null 2>&1; then \
 			patchelf --set-rpath '$$ORIGIN/../lib' dist/bin/quadrepl 2>/dev/null || true; \
 		fi; \
@@ -170,7 +173,7 @@ define build_quadmcp
 	$(call gen_quadmcp_version,$(1))
 	@cat cmd/quadmcp/core.qd $(1)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(1)/cmd/quadmcp/quadmcp.qd
 	cd $(1)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(1)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build $(2) quadmcp.qd -o quadmcp
-	cp $(1)/cmd/quadmcp/quadmcp dist/bin/)
+	install -m 755 $(1)/cmd/quadmcp/quadmcp dist/bin/)
 endef
 
 debug:
@@ -253,8 +256,8 @@ examples: debug
 	meson setup $(BUILD_DIR_DEBUG) --buildtype=debug --reconfigure -Dbuild_examples=true $(MESON_FLAGS)
 	meson compile -C $(BUILD_DIR_DEBUG) examples/embed/embed examples/embed/embed_copy tests/embed/multi-module-test tests/embed/multi-module-test_copy tests/embed/native-functions-test tests/embed/native-functions-test_copy tests/embed/incremental-test tests/embed/incremental-test_copy tests/embed/typed-native-test tests/embed/typed-native-test_copy tests/embed/embed-comprehensive-test tests/embed/embed-comprehensive-test_copy tests/embed/cross-tier-test tests/embed/cross-tier-test_copy examples/ffi/ffi examples/hello-world/hello-world examples/hello-world-c/hello-world-c examples/bmi/bmi examples/dc/dc examples/decimal/decimal examples/defer/defer examples/donut/donut examples/errors/errors examples/fibonacci/fibonacci examples/modules/modules examples/sha256sum/sha256sum examples/sierpinski/sierpinski examples/stars/stars examples/threading/threading
 	@echo "Copying shared libraries for embed examples..."
-	@cp -f $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
-	@cp -f $(BUILD_DIR_DEBUG)/lib/rt/libqdrt.so dist/lib/
+	@install -m 755 $(BUILD_DIR_DEBUG)/lib/qd/libqd.so dist/lib/
+	@install -m 755 $(BUILD_DIR_DEBUG)/lib/rt/libqdrt.so dist/lib/
 
 format: debug
 	find cmd lib stdlib examples -type f \( -name '*.cc' -o -name '*.h' \) -exec clang-format -i {} +

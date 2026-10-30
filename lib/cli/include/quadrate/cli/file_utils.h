@@ -5,6 +5,7 @@
 #define QDCLI_FILE_UTILS_H
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace qdcli {
@@ -33,12 +34,19 @@ namespace qdcli {
 	// Returns false if string contains invalid UTF-8 or null bytes
 	bool isValidUtf8(const std::string& source);
 
+	// The file names of the .qd files `filePath` imports with `use "name.qd"`
+	std::unordered_set<std::string> qdFileImports(const std::string& filePath);
+
 	// The .qd files a program's directory adds to it: every one beside filePath that is
-	// neither filePath itself, a *_test.qd, nor a program with its own main(). None for a
-	// file under tests/ (each is standalone) or lib/. Canonical paths, sorted. quadc merges
-	// these into the program and quadlsp checks an open file against them, so both see the
-	// same program.
+	// neither filePath itself, a *_test.qd, a program with its own main(), nor a file linked
+	// to filePath by a `use`, which brings it in already. Canonical paths, sorted. quadc
+	// merges these into the program and quadlsp checks an open file against them, so both
+	// see the same program.
 	std::vector<std::string> getSiblingQdFiles(const std::string& filePath);
+
+	// The module search paths the qd.json in `directory` adds: each local dependency's
+	// directory, and each git dependency quadpm has installed. Empty without a qd.json.
+	std::vector<std::string> manifestIncludePaths(const std::string& directory);
 
 } // namespace qdcli
 

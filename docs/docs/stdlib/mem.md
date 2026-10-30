@@ -19,7 +19,8 @@
 Low-level memory allocation and manipulation.
 
 SAFETY: These are unsafe operations with no bounds checking.
-Improper use can cause segmentation faults and memory corruption.
+Improper use can cause segmentation faults and memory corruption. A null address, or a
+negative size, is a runtime error.
 
 Allocation failure is reported as ErrAlloc, so a program with something useful to do when
 memory runs out can handle it like any other error. The standard library does not: its own
@@ -432,7 +433,7 @@ buf 2048 mem::realloc!  // buf
 
 ### `fn` set_any
 
-Store a value of any type, with its type, in the slot at offset.  The slot takes over the reference the value came with, and gives it back when the slot is overwritten or cleared, so a string or a struct kept in one stays alive as long as the slot does. The region must be zeroed before first use -- `mem::zero` does it, and a zeroed slot reads back as the integer 0.
+Store a value of any type, with its type, in the slot at offset.  The slot takes over the reference the value came with, and gives it back when the slot is overwritten or cleared, so a string or a struct kept in one stays alive as long as the slot does. A d128, sixteen bytes, is kept in a copy of its own that the slot owns. The region must be zeroed before first use -- `mem::zero` does it, and a zeroed slot reads back as the integer 0.
 
 **Signature:** `(value:any address:ptr offset:i64 -- )`
 

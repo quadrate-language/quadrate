@@ -21,7 +21,7 @@ qdhttp_static = static_library('http',
 	qdhttp_sources,
 	http_register_c,
 	include_directories: qdhttp_inc,
-	dependencies: [qdrt_static_dep],
+	dependencies: [qdrt_static_dep, qdtls_dep],
 	c_args: ['-ffunction-sections', '-fdata-sections'],
 	install: false
 )

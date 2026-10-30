@@ -1,0 +1,25 @@
+// Test: an `any` argument to a method that shares a builtin's name is checked at the call,
+// as one to any other method is. The instruction form of a method call checked no argument
+// types at all.
+struct Slot {
+	v: i64
+}
+
+fn (s:Slot) set(n:i64 -- s2:Slot) {
+	Slot {
+		v = n
+	}
+}
+
+fn relay(s:Slot a:any -- r:Slot) {
+	s a set
+}
+
+fn main() {
+	Slot {
+		v = 0
+	} -> s
+	s 5 relay <<v print nl
+	s "five" relay <<v print nl
+	"FAIL: should not be reached" print nl
+}

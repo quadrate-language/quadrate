@@ -4,23 +4,10 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <dirent.h>
 #include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <unistd.h>
-
-// glibc's limits.h defines it; newlib's, as on ESP-IDF, does not
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
-// Platform abstractions
-extern "C" {
-#include "src/platform/exe_path_platform.h"
-}
-#include "src/platform/platform_paths.h"
 
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
@@ -47,6 +34,7 @@ extern "C" {
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/module_resolver.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <sstream>
@@ -58,170 +46,20 @@ namespace Qd {
 
 #include "semantic_validator_internal.h"
 
-	// Helper: Get the modules directory path
-	static std::string getPackagesDirectory() {
-		const char* quadratePath = std::getenv("QUADRATE_PATH");
-		if (quadratePath) {
-			return quadratePath;
-		}
-		const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
-		if (xdgDataHome) {
-			return std::string(xdgDataHome) + "/quadrate/modules";
-		}
-		const char* home = std::getenv("HOME");
-		if (home) {
-			return std::string(home) + "/quadrate/modules";
-		}
-		return "";
-	}
-
-	// Helper: Check if a module name is a full path import (contains host/path)
-	// e.g., "github.com/klahr/collections" or "github.com/user/repo"
-	static bool isFullPathImport(const std::string& moduleName) {
-		// Full path imports contain '/' but don't start with '.', '~', or '/'
-		if (moduleName.empty()) {
-			return false;
-		}
-		// Skip relative paths, absolute paths, or home-relative paths
-		if (moduleName[0] == '.' || moduleName[0] == '~' || moduleName[0] == '/') {
-			return false;
-		}
-		// Skip .qd file imports
-		if (moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd") {
-			return false;
-		}
-		// Must contain at least one slash to be a full path
-		return moduleName.find('/') != std::string::npos;
-	}
-
-	// Helper: Parse namespace from qd.json file
-	// Returns the namespace value, or empty string if not found
-	static std::string parseNamespaceFromQdJson(const std::string& qdJsonPath) {
-		std::ifstream file(qdJsonPath);
-		if (!file.is_open()) {
-			return "";
-		}
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string content = buffer.str();
-		file.close();
-
-		// Simple JSON parsing for "namespace" field
-		size_t pos = content.find("\"namespace\"");
-		if (pos == std::string::npos) {
-			return "";
-		}
-		// Find colon after key
-		size_t colonPos = content.find(':', pos + 11);
-		if (colonPos == std::string::npos) {
-			return "";
-		}
-		// Find opening quote of value
-		size_t valueStart = content.find('"', colonPos + 1);
-		if (valueStart == std::string::npos) {
-			return "";
-		}
-		// Find closing quote
-		size_t valueEnd = content.find('"', valueStart + 1);
-		if (valueEnd == std::string::npos) {
-			return "";
-		}
-		return content.substr(valueStart + 1, valueEnd - valueStart - 1);
-	}
-
-	// Helper: Find all installed packages that claim a given namespace
-	// Returns list of package paths that have namespace field matching the given namespace
-	static std::vector<std::string> findPackagesWithNamespace(
-			const std::string& packagesDir, const std::string& namespaceName) {
-		std::vector<std::string> result;
-		std::string cacheDir = packagesDir + "/cache";
-
-		if (!std::filesystem::exists(cacheDir)) {
-			return result;
-		}
-
-		// Recursively scan cache directory for qd.json files
-		try {
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(cacheDir)) {
-				if (entry.is_regular_file() && entry.path().filename() == "qd.json") {
-					std::string ns = parseNamespaceFromQdJson(entry.path().string());
-					if (ns == namespaceName) {
-						// Get the package directory (parent of qd.json)
-						result.push_back(entry.path().parent_path().string());
-					}
-				}
-			}
-		} catch (const std::filesystem::filesystem_error&) {
-			// Ignore filesystem errors
-		}
-
-		return result;
-	}
-
-	// Helper: Resolve a symlink to its target path
-	static std::string resolveSymlink(const std::string& symlinkPath) {
-		char resolved[PATH_MAX];
-		ssize_t len = readlink(symlinkPath.c_str(), resolved, sizeof(resolved) - 1);
-		if (len != -1) {
-			resolved[len] = '\0';
-			// If the target is relative, make it absolute based on symlink location
-			std::string target(resolved);
-			if (!target.empty() && target[0] != '/') {
-				std::filesystem::path symlinkDir = std::filesystem::path(symlinkPath).parent_path();
-				target = (symlinkDir / target).string();
-			}
-			// Normalize the path
-			try {
-				return std::filesystem::canonical(target).string();
-			} catch (const std::filesystem::filesystem_error&) {
-				return target;
-			}
-		}
-		return "";
-	}
-
 	// Check if a type string is a known struct name (local or imported)
 	// Supports both unqualified names (Response) and qualified names (http::Response)
 
-	// Helper: Try to load a module from a directory
-	// First tries module.qd (backwards compat), then falls back to globbing all .qd files
-	// Returns true if module was found and loaded, false otherwise
-	bool SemanticValidator::tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName) {
-		// First try module.qd (backwards compatibility)
-		std::string modulePath = moduleDir + "/module.qd";
-		std::ifstream file(modulePath);
-		if (file.good()) {
-			mModuleDirectories[moduleName] = moduleDir;
-			std::stringstream buffer;
-			buffer << file.rdbuf();
-			std::string source = buffer.str();
-			file.close();
-			parseModuleAndCollectFunctions(moduleName, source, modulePath);
-			return true;
-		}
-		file.close();
-
-		// Fallback: glob all .qd files in the directory
-		std::vector<std::string> qdFiles = globQdFiles(moduleDir);
-		if (qdFiles.empty()) {
-			return false;
-		}
-
+	// Every source file of a module directory, under one namespace: the files quadc compiles
+	void SemanticValidator::loadModuleDirectory(const std::string& moduleDir, const std::string& moduleName) {
 		mModuleDirectories[moduleName] = moduleDir;
-		// Parse all files and merge into the same namespace
-		for (const auto& qdFile : qdFiles) {
-			file.open(qdFile);
+		for (const auto& qdFile : moduleFiles(moduleDir)) {
+			std::ifstream file(qdFile);
 			if (file.good()) {
 				std::stringstream buffer;
 				buffer << file.rdbuf();
-				std::string source = buffer.str();
-				file.close();
-				parseModuleAndCollectFunctions(moduleName, source, qdFile);
-			} else {
-				file.close();
+				parseModuleAndCollectFunctions(moduleName, buffer.str(), qdFile);
 			}
 		}
-		return true;
 	}
 
 	void SemanticValidator::loadModuleDefinitions(const std::string& moduleName, const std::string& currentPackage,
@@ -308,421 +146,51 @@ namespace Qd {
 			effectiveModuleName = moduleName;
 		}
 
-		std::string modulePath;
-		std::ifstream file;
+		Qd::ModuleSearch search;
+		search.sourceDir = mSourceDirectory;
+		search.includePaths = mIncludePaths;
+		search.versionPins = mModuleVersionPins;
 
 		if (isDirectFile) {
-			// Direct file import: look for file.qd
-			// Expand tilde (~) in the path if present
-			std::string expandedModuleName = expandTilde(moduleName);
-
-			// Check if it's an absolute path (starts with / or was expanded from ~)
-			if (!expandedModuleName.empty() && expandedModuleName[0] == '/') {
-				// Absolute path - use directly
-				file.open(expandedModuleName);
-				if (file.good()) {
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					// Parse and add to effective module namespace
-					parseModuleAndCollectFunctions(effectiveModuleName, source, expandedModuleName, mergeIntoMain);
-					return;
-				}
-				file.close();
-				// Absolute path doesn't exist - will fail below
-			} else {
-				// Relative path - search in parent module's directory
-				// First check if we have a directory for the current package (parent module)
-				std::string searchDir = mSourceDirectory;
-				if (mModuleDirectories.count(currentPackage)) {
-					searchDir = mModuleDirectories[currentPackage];
-				}
-
-				// Try 1: Directory of the file that wrote the `use`, then the parent module's
-				// directory. The importer's own directory has to come first: a file reached as
-				// `use "qd/r_sky.qd"` from a main file one level up writes `use "tables.qd"`
-				// meaning its sibling, not a `tables.qd` next to main. Resolving only against
-				// mSourceDirectory silently dropped the import (nested loads report no errors),
-				// and every constant it defined then read as an undefined identifier.
-				std::vector<std::string> searchDirs;
-				if (!importerDirectory.empty()) {
-					searchDirs.push_back(importerDirectory);
-				}
-				if (searchDirs.empty() || searchDirs[0] != searchDir) {
-					searchDirs.push_back(searchDir);
-				}
-
-				for (const auto& dir : searchDirs) {
-					modulePath = dir + "/" + moduleName;
-					file.open(modulePath);
-					if (file.good()) {
-						std::stringstream buffer;
-						buffer << file.rdbuf();
-						std::string source = buffer.str();
-						file.close();
-						// Parse and add to effective module namespace
-						parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
-						return;
-					}
-					file.close();
-					file.clear();
-				}
-			}
-
-			// If not found in same directory, try standard paths
-			// Try 2: Third-party modules directory (installed via quadpm)
-			// Get modules directory
-			std::string packagesDir;
-			const char* quadratePath = std::getenv("QUADRATE_PATH");
-			if (quadratePath) {
-				packagesDir = quadratePath;
-			} else {
-				const char* xdgDataHome = std::getenv("XDG_DATA_HOME");
-				if (xdgDataHome) {
-					packagesDir = std::string(xdgDataHome) + "/quadrate/modules";
-				} else {
-					const char* pkgHome = std::getenv("HOME");
-					if (pkgHome) {
-						packagesDir = std::string(pkgHome) + "/quadrate/modules";
-					}
-				}
-			}
-
-			if (!packagesDir.empty() && std::filesystem::exists(packagesDir)) {
-				// Look for directories matching moduleName@*
-				try {
-					for (const auto& entry : std::filesystem::directory_iterator(packagesDir)) {
-						if (!entry.is_directory()) {
-							continue;
-						}
-						std::string dirName = entry.path().filename().string();
-						std::string prefix = moduleName + "@";
-						if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
-							// Found a matching package
-							modulePath = entry.path().string() + "/module.qd";
-							file.open(modulePath);
-							if (file.good()) {
-								mModuleDirectories[moduleName] = entry.path().string();
-								std::stringstream buffer;
-								buffer << file.rdbuf();
-								std::string source = buffer.str();
-								file.close();
-								parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
-								return;
-							}
-							file.close();
-							break; // Only try first matching version
-						}
-					}
-				} catch (const std::filesystem::filesystem_error&) {
-					// Ignore errors iterating directory
-				}
-			}
-
-			// Try 3: QUADRATE_ROOT
-			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
-			if (quadrateRoot) {
-				modulePath = std::string(quadrateRoot) + "/" + moduleName;
-				file.open(modulePath);
-				if (file.good()) {
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
-					return;
-				}
-				file.close();
-			}
-
-			// Try 3: $HOME/quadrate
-			const char* home = std::getenv("HOME");
-			if (home) {
-				modulePath = std::string(home) + "/quadrate/" + moduleName;
-				file.open(modulePath);
-				if (file.good()) {
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					parseModuleAndCollectFunctions(effectiveModuleName, source, modulePath, mergeIntoMain);
-					return;
-				}
-				file.close();
-			}
-		} else {
-			// Module directory import: use moduleName (looks for moduleName/module.qd or moduleName/*.qd)
-			// Try 1: Local path (relative to source file)
-			if (tryLoadModuleFromDirectory(mSourceDirectory + "/" + moduleName, moduleName)) {
-				return;
-			}
-
-			// Try 2: Include paths from -I flags
-			for (const auto& includePath : mIncludePaths) {
-				std::string expandedPath = expandTilde(includePath);
-
-				// Check if the include path IS the module directory
-				// and qd.json name matches the module name we're looking for
-				std::string manifestPath = expandedPath + "/qd.json";
-				if (std::filesystem::exists(manifestPath)) {
-					std::ifstream manifestFile(manifestPath);
-					if (manifestFile.is_open()) {
-						// Simple JSON name extraction - look for "name": "value"
-						std::stringstream manifestBuffer;
-						manifestBuffer << manifestFile.rdbuf();
-						std::string manifestContent = manifestBuffer.str();
-						manifestFile.close();
-
-						// Find "name" key
-						size_t nameKeyPos = manifestContent.find("\"name\"");
-						if (nameKeyPos != std::string::npos) {
-							// Find colon after key
-							size_t colonPos = manifestContent.find(':', nameKeyPos + 6);
-							if (colonPos != std::string::npos) {
-								// Find opening quote of value
-								size_t valueStart = manifestContent.find('"', colonPos + 1);
-								if (valueStart != std::string::npos) {
-									// Find closing quote
-									size_t valueEnd = manifestContent.find('"', valueStart + 1);
-									if (valueEnd != std::string::npos) {
-										std::string nameValue =
-												manifestContent.substr(valueStart + 1, valueEnd - valueStart - 1);
-										if (nameValue == moduleName) {
-											// Name matches - try to load from this directory
-											if (tryLoadModuleFromDirectory(expandedPath, moduleName)) {
-												return;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-
-				// Check for module as subdirectory of include path
-				if (tryLoadModuleFromDirectory(expandedPath + "/" + moduleName, moduleName)) {
-					return;
-				}
-			}
-
-			// Try 3: Third-party packages directory (installed via quadpm)
-			// Supports both full path imports (e.g., "use github.com/klahr/collections")
-			// and namespace resolution via _namespaces/ symlinks
-			std::string packagesDir = getPackagesDirectory();
-
-			if (!packagesDir.empty() && std::filesystem::exists(packagesDir)) {
-				std::string cacheDir = packagesDir + "/cache";
-				std::string namespacesDir = packagesDir + "/_namespaces";
-
-				// Check if this is a full path import (e.g., "github.com/klahr/collections")
-				if (isFullPathImport(moduleName)) {
-					// Full path import - look in cache/{hostPath}@*/module.qd
-					// Extract the namespace from qd.json to use as the effective module name
-					if (std::filesystem::exists(cacheDir)) {
-						try {
-							// Look for directories matching moduleName@*
-							for (const auto& entry : std::filesystem::recursive_directory_iterator(cacheDir)) {
-								if (!entry.is_directory()) {
-									continue;
-								}
-								std::string dirPath = entry.path().string();
-								// Check if this directory matches moduleName@version pattern
-								std::string relativePath = dirPath.substr(cacheDir.length() + 1);
-								size_t atPos = relativePath.find('@');
-								if (atPos != std::string::npos) {
-									std::string hostPath = relativePath.substr(0, atPos);
-									if (hostPath == moduleName) {
-										// Found matching package
-										modulePath = dirPath + "/module.qd";
-										if (std::filesystem::exists(modulePath)) {
-											// Get namespace from qd.json (defaults to module name)
-											std::string qdJsonPath = dirPath + "/qd.json";
-											std::string effectiveNamespace = parseNamespaceFromQdJson(qdJsonPath);
-											if (effectiveNamespace.empty()) {
-												// No namespace in qd.json - extract from module name
-												size_t lastSlash = moduleName.find_last_of('/');
-												effectiveNamespace = (lastSlash != std::string::npos)
-																			 ? moduleName.substr(lastSlash + 1)
-																			 : moduleName;
-											}
-
-											file.open(modulePath);
-											if (file.good()) {
-												mModuleDirectories[effectiveNamespace] = dirPath;
-												// Register the namespace in imported modules so mylib::foo works
-												mImportedModules.insert(effectiveNamespace);
-												std::stringstream buffer;
-												buffer << file.rdbuf();
-												std::string source = buffer.str();
-												file.close();
-												parseModuleAndCollectFunctions(effectiveNamespace, source, modulePath);
-												return;
-											}
-											file.close();
-										}
-									}
-								}
-							}
-						} catch (const std::filesystem::filesystem_error&) {
-							// Ignore filesystem errors
-						}
-					}
-				} else {
-					// Short module name - first check _namespaces/ symlink
-					std::string nsSymlink = namespacesDir + "/" + moduleName;
-					if (std::filesystem::exists(nsSymlink)) {
-						// Check for ambiguous namespace (multiple packages claiming same namespace)
-						std::vector<std::string> conflictingPackages =
-								findPackagesWithNamespace(packagesDir, moduleName);
-						if (conflictingPackages.size() > 1 && reportErrors) {
-							// Multiple packages claim this namespace - error
-							std::string errorMsg = "Ambiguous module '";
-							errorMsg += moduleName;
-							errorMsg += "': multiple installed packages claim this namespace.\n";
-							errorMsg += "Use full path import to disambiguate:\n";
-							for (const auto& pkg : conflictingPackages) {
-								// Extract hostPath from cache path
-								std::string relativePath = pkg.substr(cacheDir.length() + 1);
-								size_t atPos = relativePath.find('@');
-								if (atPos != std::string::npos) {
-									errorMsg += "  use ";
-									errorMsg += relativePath.substr(0, atPos);
-									errorMsg += "\n";
-								}
-							}
-							reportError(errorMsg.c_str());
-							return;
-						}
-
-						// Resolve symlink to get package directory
-						std::string targetPath = resolveSymlink(nsSymlink);
-						if (!targetPath.empty()) {
-							if (tryLoadModuleFromDirectory(targetPath, moduleName)) {
-								return;
-							}
-						}
-					}
-
-					// Fallback: Look for directories matching moduleName@* in cache (legacy format)
-					if (std::filesystem::exists(cacheDir)) {
-						try {
-							for (const auto& entry : std::filesystem::directory_iterator(cacheDir)) {
-								if (!entry.is_directory()) {
-									continue;
-								}
-								std::string dirName = entry.path().filename().string();
-								std::string prefix = moduleName + "@";
-								if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
-									// Found a matching package
-									if (tryLoadModuleFromDirectory(entry.path().string(), moduleName)) {
-										return;
-									}
-									break; // Only try first matching version
-								}
-							}
-						} catch (const std::filesystem::filesystem_error&) {
-							// Ignore errors iterating directory
-						}
-					}
-				}
-			}
-
-			// Try 3: QUADRATE_ROOT environment variable
-			const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
-			if (quadrateRoot) {
-				if (tryLoadModuleFromDirectory(std::string(quadrateRoot) + "/" + moduleName, moduleName)) {
-					return;
-				}
-			}
-
-			// Try 4: QUADRATE_LIBDIR environment variable (for development/dist)
-			// Standard library modules are at $QUADRATE_LIBDIR/std<module>qd/qd/<module>/module.qd
-			const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR");
-			if (quadrateLibDir) {
-				modulePath = std::string(quadrateLibDir) + "/std" + moduleName + "qd/qd/" + moduleName + "/module.qd";
-				file.open(modulePath);
-				if (file.good()) {
-					// Store the module directory
-					mModuleDirectories[moduleName] =
-							std::string(quadrateLibDir) + "/std" + moduleName + "qd/qd/" + moduleName;
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string source = buffer.str();
-					file.close();
-					parseModuleAndCollectFunctions(moduleName, source, modulePath);
-					return;
-				}
-				file.close();
-			}
-
-			// Try 5: Standard library directories relative to current directory (for development)
-			std::string stdLibPath = "lib/qd" + moduleName + "/qd/" + moduleName + "/module.qd";
-			file.open(stdLibPath);
-			if (file.good()) {
-				// Store the module directory
-				mModuleDirectories[moduleName] = "lib/qd" + moduleName + "/qd/" + moduleName;
+			// A file is found beside the file that wrote the `use` first, then beside the module
+			// that file belongs to. The importer's own directory has to come first: a file
+			// reached as `use "qd/r_sky.qd"` from a main file one level up writes
+			// `use "tables.qd"` meaning its sibling, not a `tables.qd` next to main.
+			const std::string parentDir =
+					mModuleDirectories.count(currentPackage) ? mModuleDirectories[currentPackage] : mSourceDirectory;
+			search.sourceDir = importerDirectory.empty() ? parentDir : importerDirectory;
+			search.fileSearchDirs = {parentDir};
+			const std::string path = findModuleFile(moduleName, search);
+			if (!path.empty()) {
+				std::ifstream file(path);
 				std::stringstream buffer;
 				buffer << file.rdbuf();
-				std::string source = buffer.str();
-				file.close();
-				parseModuleAndCollectFunctions(moduleName, source, stdLibPath);
+				parseModuleAndCollectFunctions(effectiveModuleName, buffer.str(), path, mergeIntoMain);
 				return;
 			}
-			file.close();
-
-			// Try 6: Standard library relative to executable (for installed binaries)
-			// Get executable path and look for ../<data>/quadrate/<module>/
-			// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
-			{
-				char exePathBuf[4096];
-				int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-				if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
-					try {
-						std::filesystem::path exePath = std::filesystem::canonical(exePathBuf);
-						std::filesystem::path exeDir = exePath.parent_path();
-						std::filesystem::path shareDir = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName;
-						if (tryLoadModuleFromDirectory(shareDir.string(), moduleName)) {
-							return;
-						}
-					} catch (const std::filesystem::filesystem_error&) {
-						// Ignore errors reading executable path
+		} else {
+			const Qd::ModuleLocation location = findModule(moduleName, search);
+			if (!location.ambiguous.empty()) {
+				if (reportErrors) {
+					const std::string packages = packagesDirectory();
+					std::string errorMsg = "Ambiguous module '" + moduleName +
+										   "': multiple installed packages claim this namespace.\n"
+										   "Use full path import to disambiguate:\n";
+					for (const auto& claim : location.ambiguous) {
+						std::string relative = std::filesystem::path(claim).lexically_relative(packages).string();
+						errorMsg += "  use " + relative.substr(0, relative.find('@')) + "\n";
 					}
+					reportError(errorMsg.c_str());
 				}
+				return;
 			}
-
-			// Try 7: $HOME/quadrate directory
-			const char* home = std::getenv("HOME");
-			if (home) {
-				if (tryLoadModuleFromDirectory(std::string(home) + "/quadrate/" + moduleName, moduleName)) {
-					return;
+			if (!location.directory.empty()) {
+				// A full-path import's words go under the namespace its qd.json declares
+				if (location.namespaceName != moduleName) {
+					mImportedModules.insert(location.namespaceName);
 				}
-
-				// Try 7b: quadpm's modules/_namespaces directory (symlinks to installed modules)
-				std::string namespacePath =
-						std::string(home) + "/quadrate/modules/_namespaces/" + moduleName + "/module.qd";
-				if (std::filesystem::exists(namespacePath)) {
-					try {
-						// Resolve symlink to get canonical path
-						std::string canonicalPath = std::filesystem::canonical(namespacePath).string();
-						file.open(canonicalPath);
-						if (file.good()) {
-							// Store the canonical module directory
-							std::filesystem::path modDir = std::filesystem::path(canonicalPath).parent_path();
-							mModuleDirectories[moduleName] = modDir.string();
-							std::stringstream buffer;
-							buffer << file.rdbuf();
-							std::string source = buffer.str();
-							file.close();
-							parseModuleAndCollectFunctions(moduleName, source, canonicalPath);
-							return;
-						}
-						file.close();
-					} catch (const std::filesystem::filesystem_error&) {
-						// Ignore errors resolving symlink
-					}
-				}
+				loadModuleDirectory(location.directory, location.namespaceName);
+				return;
 			}
 		}
 
@@ -736,38 +204,19 @@ namespace Qd {
 				errorMsg += "': No such file or directory";
 				reportError(errorMsg.c_str());
 			} else {
-				// Check if a directory with the module name exists but doesn't contain module.qd
+				// A directory of that name with no .qd files in it is found but not a module
 				bool foundDirectoryWithoutModuleFile = false;
 				std::string directoryPath;
-
-				// Check local path
-				std::string localDir = mSourceDirectory + "/" + moduleName;
-				if (std::filesystem::exists(localDir) && std::filesystem::is_directory(localDir)) {
-					foundDirectoryWithoutModuleFile = true;
-					directoryPath = localDir;
+				std::vector<std::string> candidates = {mSourceDirectory + "/" + moduleName};
+				for (const auto& root : moduleRoots()) {
+					candidates.push_back(root + "/" + moduleName);
 				}
-
-				// Check QUADRATE_ROOT
-				if (!foundDirectoryWithoutModuleFile) {
-					const char* quadrateRoot = std::getenv("QUADRATE_ROOT");
-					if (quadrateRoot) {
-						std::string rootDir = std::string(quadrateRoot) + "/" + moduleName;
-						if (std::filesystem::exists(rootDir) && std::filesystem::is_directory(rootDir)) {
-							foundDirectoryWithoutModuleFile = true;
-							directoryPath = rootDir;
-						}
-					}
-				}
-
-				// Check $HOME/quadrate
-				if (!foundDirectoryWithoutModuleFile) {
-					const char* home = std::getenv("HOME");
-					if (home) {
-						std::string homeDir = std::string(home) + "/quadrate/" + moduleName;
-						if (std::filesystem::exists(homeDir) && std::filesystem::is_directory(homeDir)) {
-							foundDirectoryWithoutModuleFile = true;
-							directoryPath = homeDir;
-						}
+				for (const auto& candidate : candidates) {
+					std::error_code ec;
+					if (std::filesystem::is_directory(candidate, ec)) {
+						foundDirectoryWithoutModuleFile = true;
+						directoryPath = candidate;
+						break;
 					}
 				}
 
@@ -1352,10 +801,9 @@ namespace Qd {
 			return;
 		}
 
-		// Analyze each function definition in the module to determine its stack effect
+		// Each function's signature, from what it declares
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			std::vector<StackValueType> typeStack;
 
 			// Set current type params for generic functions
 			mCurrentTypeParams = func->typeParams();
@@ -1370,81 +818,23 @@ namespace Qd {
 				}
 			}
 
-			// Initialize type stack with input parameters
-			// Input parameters are on the stack when the function starts
-			for (size_t i = 0; i < func->inputParameters().size(); i++) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
-				const std::string& typeStr = param->typeString();
-
-				// Validate type name
-				if (!isValidTypeName(typeStr)) {
-					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
+			for (const auto& paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+				if (!isValidTypeName(param->typeString())) {
+					reportError(param, invalidTypeMessage(param->typeString(), parameterSuffix(param)).c_str());
 				}
-
-				if (typeStr == "i64") {
-					typeStack.push_back(StackValueType::INT);
-				} else if (typeStr == "f64") {
-					typeStack.push_back(StackValueType::FLOAT);
-				} else if (typeStr == "d128") {
-					typeStack.push_back(StackValueType::D128);
-				} else if (typeStr == "str") {
-					typeStack.push_back(StackValueType::STRING);
-				} else if (typeStr == "ptr" || isStructTypeName(typeStr)) {
-					typeStack.push_back(StackValueType::PTR);
-				} else {
-					// Untyped or unknown - treat as ANY
-					typeStack.push_back(StackValueType::ANY);
-				}
-			}
-
-			// Analyze the function body in isolation
-			if (func->body()) {
-				analyzeBlockInIsolation(func->body(), typeStack);
 			}
 
 			// Store the signature with qualified name: moduleName::functionName
 			FunctionSignature sig;
+			// An unqualified struct name in a module's signature is that module's struct, unless
+			// the module is merged into the program, where the names stay as the program sees them
+			const std::string qualifyIn = (moduleName == "main" || mergeIntoMain) ? "" : moduleName;
 
 			// Build consumes list from input parameters
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
-				const std::string& typeStr = param->typeString();
-				sig.parameterTypeNames[i] = typeStr;
-
-				StackValueType scalar = stringToStackValueType(typeStr);
-				if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
-						scalar == StackValueType::D128 || scalar == StackValueType::STRING ||
-						scalar == StackValueType::TYPEVAR) {
-					// i64 and the sized integers, f64, d128, str, or a generic type parameter
-					sig.consumes.push_back(scalar);
-				} else if (typeStr == "ptr") {
-					sig.consumes.push_back(StackValueType::PTR);
-				} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
-					// Array type - treat as PTR but track the array type
-					sig.consumes.push_back(StackValueType::PTR);
-					sig.parameterStructTypes[i] = typeStr;
-				} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
-					// Function pointer type - treat as PTR but track the fn type
-					sig.consumes.push_back(StackValueType::PTR);
-					sig.parameterStructTypes[i] = typeStr;
-				} else if (isStructTypeName(typeStr)) {
-					// Struct type - treat as PTR but track the struct type
-					sig.consumes.push_back(StackValueType::PTR);
-					// Qualify struct type with module name if not already qualified
-					// For "main" namespace or merged modules, keep unqualified to match local struct definitions
-					if (typeStr.find("::") == std::string::npos) {
-						if (moduleName == "main" || mergeIntoMain) {
-							sig.parameterStructTypes[i] = typeStr;
-						} else {
-							sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
-						}
-					} else {
-						sig.parameterStructTypes[i] = typeStr;
-					}
-				} else {
-					// Untyped or unknown - use ANY
-					sig.consumes.push_back(StackValueType::ANY);
-				}
+				addSignatureInput(sig, param->typeString(), qualifyIn);
 			}
 
 			// Build produces list: prefer declared output parameters, fall back to body analysis
@@ -1452,41 +842,7 @@ namespace Qd {
 			if (!func->outputParameters().empty()) {
 				for (size_t i = 0; i < func->outputParameters().size(); i++) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(func->outputParameters()[i].get());
-					const std::string& typeStr = param->typeString();
-					sig.producesTypeNames[i] = typeStr;
-
-					StackValueType scalar = stringToStackValueType(typeStr);
-					if (scalar == StackValueType::INT || scalar == StackValueType::FLOAT ||
-							scalar == StackValueType::D128 || scalar == StackValueType::STRING ||
-							scalar == StackValueType::TYPEVAR) {
-						// i64 and the sized integers, f64, d128, str, or a generic type parameter
-						sig.produces.push_back(scalar);
-					} else if (typeStr == "ptr") {
-						sig.produces.push_back(StackValueType::PTR);
-					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
-						// Array type
-						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[i] = typeStr;
-					} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
-						// Function pointer type
-						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[i] = typeStr;
-					} else if (isStructTypeName(typeStr)) {
-						sig.produces.push_back(StackValueType::PTR);
-						// Qualify struct type with module name if not already qualified
-						// For "main" namespace or merged modules, keep unqualified to match local struct definitions
-						if (typeStr.find("::") == std::string::npos) {
-							if (moduleName == "main" || mergeIntoMain) {
-								sig.producesStructTypes[i] = typeStr;
-							} else {
-								sig.producesStructTypes[i] = moduleName + "::" + typeStr;
-							}
-						} else {
-							sig.producesStructTypes[i] = typeStr;
-						}
-					} else {
-						sig.produces.push_back(StackValueType::ANY);
-					}
+					addSignatureOutput(sig, param->typeString(), qualifyIn);
 				}
 			}
 			// A function that declares no outputs produces nothing. The residual of the isolated
@@ -1564,42 +920,7 @@ namespace Qd {
 						reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 					}
 
-					if (typeStr == "i64") {
-						sig.consumes.push_back(StackValueType::INT);
-					} else if (typeStr == "f64") {
-						sig.consumes.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "d128") {
-						sig.consumes.push_back(StackValueType::D128);
-					} else if (typeStr == "str") {
-						sig.consumes.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr") {
-						sig.consumes.push_back(StackValueType::PTR);
-					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
-						// Array type
-						sig.consumes.push_back(StackValueType::PTR);
-						sig.parameterStructTypes[i] = typeStr;
-					} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
-						// Function pointer type
-						sig.consumes.push_back(StackValueType::PTR);
-						sig.parameterStructTypes[i] = typeStr;
-					} else if (isStructTypeName(typeStr)) {
-						// Struct type - treat as PTR but track the struct type
-						sig.consumes.push_back(StackValueType::PTR);
-						// Qualify struct type with module name if not already qualified
-						// For merged modules, keep unqualified to match local struct definitions
-						if (typeStr.find("::") == std::string::npos) {
-							if (mergeIntoMain) {
-								sig.parameterStructTypes[i] = typeStr;
-							} else {
-								sig.parameterStructTypes[i] = moduleName + "::" + typeStr;
-							}
-						} else {
-							sig.parameterStructTypes[i] = typeStr;
-						}
-					} else {
-						// Untyped or unknown - treat as ANY
-						sig.consumes.push_back(StackValueType::ANY);
-					}
+					addSignatureInput(sig, typeStr, mergeIntoMain ? "" : moduleName);
 				}
 
 				// Build produces list from output parameters
@@ -1612,41 +933,7 @@ namespace Qd {
 						reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 					}
 
-					if (typeStr == "i64") {
-						sig.produces.push_back(StackValueType::INT);
-					} else if (typeStr == "f64") {
-						sig.produces.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "d128") {
-						sig.produces.push_back(StackValueType::D128);
-					} else if (typeStr == "str") {
-						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr") {
-						sig.produces.push_back(StackValueType::PTR);
-					} else if (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') {
-						// Array type
-						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[i] = typeStr;
-					} else if (typeStr.size() > 3 && typeStr.substr(0, 3) == "fn(") {
-						// Function pointer type
-						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[i] = typeStr;
-					} else if (isStructTypeName(typeStr)) {
-						sig.produces.push_back(StackValueType::PTR);
-						// Qualify struct type with module name if not already qualified
-						// For merged modules, keep unqualified to match local struct definitions
-						if (typeStr.find("::") == std::string::npos) {
-							if (mergeIntoMain) {
-								sig.producesStructTypes[i] = typeStr;
-							} else {
-								sig.producesStructTypes[i] = moduleName + "::" + typeStr;
-							}
-						} else {
-							sig.producesStructTypes[i] = typeStr;
-						}
-					} else {
-						// Untyped or unknown - treat as ANY
-						sig.produces.push_back(StackValueType::ANY);
-					}
+					addSignatureOutput(sig, typeStr, mergeIntoMain ? "" : moduleName);
 				}
 
 				// Store the signature with qualified name: moduleName::functionName

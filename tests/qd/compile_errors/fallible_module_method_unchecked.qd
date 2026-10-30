@@ -1,0 +1,9 @@
+// A bare fallible method called as `module::method` must be checked, as one called by
+// its bare name must. It was let through, and the status it left surfaced as a
+// stack-depth error somewhere else.
+use flag
+
+fn main(args:[]str --) {
+	args flag::parse -> f
+	f "--name" flag::string drop
+}

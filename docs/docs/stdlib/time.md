@@ -565,7 +565,7 @@ time::now  // start
 
 ### `fn` parse
 
-Parse string to timestamp using strptime format string.
+Parse string to timestamp using strptime format string. The whole input must match.
 
 **Signature:** `(input:str format:str -- timestamp:i64)!`
 
@@ -634,7 +634,7 @@ time::unix time::second print
 
 ### `fn` sleep
 
-Sleep for duration in nanoseconds.
+Sleep for duration in nanoseconds. A signal does not cut it short.
 
 **Signature:** `(duration:i64 -- )`
 

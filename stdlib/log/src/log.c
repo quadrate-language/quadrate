@@ -161,7 +161,8 @@ int64_t qdlog_add_file_rotate(qdlog_logger_t* logger, const char* path,
 	// Determine initial file path
 	char actual_path[1024];
 	time_t now = time(NULL);
-	struct tm* tm = localtime(&now);
+	struct tm tm_now;
+	struct tm* tm = localtime_r(&now, &tm_now);
 
 	if (mode == QDLOG_ROTATE_DAILY || mode == QDLOG_ROTATE_HOURLY) {
 		get_time_rotated_path(actual_path, sizeof(actual_path), path, mode, tm);
@@ -195,7 +196,8 @@ static void check_and_rotate(qdlog_file_t* f) {
 	if (f->rotate_mode == QDLOG_ROTATE_NONE) return;
 
 	time_t now = time(NULL);
-	struct tm* tm = localtime(&now);
+	struct tm tm_now;
+	struct tm* tm = localtime_r(&now, &tm_now);
 	int need_rotate = 0;
 
 	if (f->rotate_mode == QDLOG_ROTATE_SIZE) {
@@ -266,18 +268,18 @@ static void write_json_string(FILE* out, const char* str) {
 }
 
 // Write log entry to a file handle
-static int write_log_entry(FILE* out, qdlog_format_t format, qdlog_level_t level,
+static void write_log_entry(FILE* out, qdlog_format_t format, qdlog_level_t level,
                            const char* message, const char** pairs, int64_t pairs_count) {
 	time_t now = time(NULL);
-	struct tm* tm = localtime(&now);
-	int written = 0;
+	struct tm tm_now;
+	struct tm* tm = localtime_r(&now, &tm_now);
 
 	if (format == QDLOG_FORMAT_JSON) {
 		// JSON format: {"time":"...","level":"...","msg":"...","key":"val",...}
-		written += fprintf(out, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d\",",
+		fprintf(out, "{\"time\":\"%04d-%02d-%02dT%02d:%02d:%02d\",",
 		                   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		                   tm->tm_hour, tm->tm_min, tm->tm_sec);
-		written += fprintf(out, "\"level\":\"%s\",\"msg\":", level_names_lower[level]);
+		fprintf(out, "\"level\":\"%s\",\"msg\":", level_names_lower[level]);
 		write_json_string(out, message);
 
 		// Add key-value pairs
@@ -292,10 +294,10 @@ static int write_log_entry(FILE* out, qdlog_format_t format, qdlog_level_t level
 			}
 		}
 
-		written += fprintf(out, "}\n");
+		fprintf(out, "}\n");
 	} else {
 		// Text format: 2025-01-15T10:30:00 [INFO] message key=val key=val
-		written += fprintf(out, "%04d-%02d-%02dT%02d:%02d:%02d [%-5s] %s",
+		fprintf(out, "%04d-%02d-%02dT%02d:%02d:%02d [%-5s] %s",
 		                   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		                   tm->tm_hour, tm->tm_min, tm->tm_sec,
 		                   level_names[level], message);
@@ -305,14 +307,12 @@ static int write_log_entry(FILE* out, qdlog_format_t format, qdlog_level_t level
 			const char* key = pairs[i * 2];
 			const char* val = pairs[i * 2 + 1];
 			if (key && val) {
-				written += fprintf(out, " %s=%s", key, val);
+				fprintf(out, " %s=%s", key, val);
 			}
 		}
 
-		written += fprintf(out, "\n");
+		fprintf(out, "\n");
 	}
-
-	return written;
 }
 
 void qdlog_log(qdlog_logger_t* logger, qdlog_level_t level, const char* message) {
@@ -335,10 +335,14 @@ void qdlog_log_kv(qdlog_logger_t* logger, qdlog_level_t level, const char* messa
 	// Write to files
 	for (int i = 0; i < logger->file_count; i++) {
 		if (logger->files[i].file) {
-			int written = write_log_entry(logger->files[i].file, logger->format,
-			                              level, message, pairs, pairs_count);
-			logger->files[i].current_size += written;
+			write_log_entry(logger->files[i].file, logger->format, level, message, pairs, pairs_count);
 			fflush(logger->files[i].file);
+			// The file's own size: counting fprintf's results missed what write_json_string
+			// wrote, so a JSON log grew to twice its max_size before it rotated
+			const long size = ftell(logger->files[i].file);
+			if (size >= 0) {
+				logger->files[i].current_size = size;
+			}
 		}
 	}
 }

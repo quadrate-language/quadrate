@@ -19,8 +19,8 @@ Error codes: Ok=1 (success), specific errors start at 2
 | Name | Value | Description |
 |------|-------|-------------|
 | `ErrAccept` | `4` | TLS handshake failed (server mode). |
-| `ErrCertificate` | `5` | Certificate validation or loading error. |
-| `ErrClosed` | `8` | Connection closed by peer. |
+| `ErrCertificate` | `5` | The peer's certificate did not verify, or ours could not be loaded. |
+| `ErrClosed` | `8` | Connection closed by peer, on a send. A receive reports a clean close as "" and 0. |
 | `ErrConnect` | `3` | TLS handshake failed (client mode). |
 | `ErrInit` | `2` | TLS initialization failed. |
 | `ErrInvalidArg` | `10` | Invalid argument provided. |
@@ -96,7 +96,7 @@ sock "api.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls! 
 
 ### `fn` connect
 
-Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and certificate verification.
+Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and certificate verification, against the system's CA certificates or those the SSL_CERT_FILE and SSL_CERT_DIR environment variables name.
 
 **Signature:** `(socket:i64 hostname:str -- conn:ptr)!`
 
@@ -109,6 +109,11 @@ Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and 
 |--------|------|-------------|
 | `conn` | `ptr` | TLS connection handle |
 
+| Error | Description |
+|-------|-------------|
+| `tls::ErrCertificate` | The certificate is untrusted, expired, or for another name |
+| `tls::ErrConnect` | The handshake failed for another reason |
+
 **Example:**
 
 ```qd
@@ -118,30 +123,34 @@ Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and 
 
 ### `fn` receive
 
-Receive data from TLS connection. Data is decrypted after reception.
+Receive data from TLS connection. Data is decrypted after reception. When the peer has closed the session cleanly, the data is "" and bytes_read 0, as for net::receive.
 
 **Signature:** `(conn:ptr max_bytes:i64 -- data:str bytes_read:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `conn` | `ptr` | TLS connection handle |
-| `max_bytes` | `i64` | Maximum bytes to receive |
+| `max_bytes` | `i64` | Maximum bytes to receive, from 1 to 1048576 |
 
 | Output | Type | Description |
 |--------|------|-------------|
 | `data` | `str` | Received and decrypted data |
 | `bytes_read` | `i64` | Actual bytes received |
 
+| Error | Description |
+|-------|-------------|
+| `tls::ErrRead` | The read failed, or the connection ended without a TLS close |
+
 **Example:**
 
 ```qd
-conn 4096 tls::receive! -> data  // n
+conn 4096 tls::receive! -> n  // data
 ```
 ---
 
 ### `fn` send
 
-Send data over TLS connection. Data is encrypted before transmission.
+Send data over TLS connection. Data is encrypted before transmission. All of it is sent; a peer that has gone fails the send rather than ending the program with SIGPIPE.
 
 **Signature:** `(conn:ptr data:str -- bytes_sent:i64)!`
 

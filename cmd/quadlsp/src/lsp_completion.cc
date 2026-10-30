@@ -2,6 +2,8 @@
 // Split from main.cc for maintainability
 
 #include "lsp_impl.h"
+#include <cctype>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <quadrate/qc/ast.h>
@@ -13,6 +15,8 @@
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/reference.h>
+#include <quadrate/qc/type_names.h>
 #include <sstream>
 
 // Check if cursor is at top level (not inside a function body)
@@ -159,632 +163,367 @@ static bool isInTypePosition(const std::string& text, size_t line, size_t charac
 	return false;
 }
 
+// The CompletionItemKind values used here, as the LSP specification numbers them
+enum CompletionKind {
+	KindMethod = 2,
+	KindFunction = 3,
+	KindField = 5,
+	KindModule = 9,
+	KindKeyword = 14,
+	KindConstant = 21,
+	KindStruct = 22,
+	KindTypeParameter = 25
+};
+
+static json_t* completionItem(const std::string& label, int kind) {
+	json_t* item = json_object();
+	json_object_set_new(item, "label", json_stringn(label.data(), label.size()));
+	json_object_set_new(item, "kind", json_integer(kind));
+	return item;
+}
+
+static void setDetail(json_t* item, const std::string& detail) {
+	json_object_set_new(item, "detail", json_stringn(detail.data(), detail.size()));
+}
+
+static void setMarkdown(json_t* item, const std::string& text) {
+	json_t* documentation = json_object();
+	json_object_set_new(documentation, "kind", json_string("markdown"));
+	json_object_set_new(documentation, "value", json_stringn(text.data(), text.size()));
+	json_object_set_new(item, "documentation", documentation);
+}
+
+static std::string joinNames(const std::vector<std::string>& names, const char* separator) {
+	std::string joined;
+	for (size_t i = 0; i < names.size(); i++) {
+		joined += (i > 0 ? separator : "") + names[i];
+	}
+	return joined;
+}
+
+// "<T, U>" for a generic declaration, nothing otherwise
+static std::string typeParamSuffix(bool isGeneric, const std::vector<std::string>& typeParams) {
+	return isGeneric ? "<" + joinNames(typeParams, ", ") + ">" : "";
+}
+
+// A function or method, from the current document (`module` empty) or from a module
+static json_t* functionItem(const FunctionInfo& func, const std::string& module) {
+	json_t* item = completionItem(
+			func.name + typeParamSuffix(func.isGeneric, func.typeParams), func.isMethod ? KindMethod : KindFunction);
+	json_object_set_new(item, "insertTextFormat", json_integer(2)); // Snippet
+	json_object_set_new(item, "insertText", json_string(func.snippet.c_str()));
+	setDetail(item, func.signature);
+
+	std::ostringstream doc;
+	if (!module.empty()) {
+		doc << "**Module:** `" << module << "`\n\n";
+	}
+	if (func.isMethod) {
+		doc << "**Method on:** `" << func.receiverType
+			<< typeParamSuffix(!func.receiverTypeParams.empty(), func.receiverTypeParams) << "`\n\n";
+	}
+	if (func.isGeneric) {
+		doc << "**Type parameters:** `" << typeParamSuffix(true, func.typeParams) << "`\n\n";
+	}
+	doc << "**Signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
+	if (!func.inputParams.empty()) {
+		doc << "**Stack before call:** " << joinNames(func.inputParams, ", ") << "\n";
+	}
+	if (!func.outputParams.empty()) {
+		doc << "**Stack after call:** " << joinNames(func.outputParams, ", ");
+	}
+	setMarkdown(item, doc.str());
+	return item;
+}
+
+// A struct to construct, from the current document (`module` empty) or from a module
+static json_t* structItem(const StructInfo& info, const std::string& module) {
+	const std::string label = info.name + typeParamSuffix(info.isGeneric, info.typeParams);
+	json_t* item = completionItem(label, KindStruct);
+
+	std::ostringstream doc;
+	if (!module.empty()) {
+		doc << "**Module:** `" << module << "`\n\n";
+	}
+	doc << "**Struct:** `" << label << "`\n\n";
+	if (info.isGeneric) {
+		doc << "**Type parameters:** `" << typeParamSuffix(true, info.typeParams) << "`\n\n";
+	}
+	doc << "**Fields:**\n";
+	for (const auto& field : info.fields) {
+		doc << "- `" << field.first << ": " << field.second << "`\n";
+	}
+	setMarkdown(item, doc.str());
+	return item;
+}
+
+// A struct named in a type annotation, where a generic one is offered as `Name<>`
+static json_t* structTypeItem(const StructInfo& info, const std::string& module) {
+	json_t* item = completionItem(
+			(module.empty() ? "" : module + "::") + info.name + (info.isGeneric ? "<>" : ""), KindStruct);
+	setDetail(item, module.empty() ? "User-defined struct" : "Struct from " + module);
+	return item;
+}
+
+// The modules a document names in `use` statements. Incomplete code still has its
+// imports, so a parse with errors is read as far as it got.
+static std::vector<std::string> usedModules(Qd::IAstNode* root) {
+	std::vector<std::string> modules;
+	if (!root || root->type() != Qd::IAstNode::Type::PROGRAM) {
+		return modules;
+	}
+	for (size_t i = 0; i < root->childCount(); i++) {
+		Qd::IAstNode* child = root->child(i);
+		if (child && child->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+			modules.push_back(static_cast<Qd::AstNodeUse*>(child)->module());
+		}
+	}
+	return modules;
+}
+
+// The FFI import declaring `namespaceName`, or null
+static Qd::AstNodeImport* findImport(Qd::IAstNode* root, const std::string& namespaceName) {
+	if (!root || root->type() != Qd::IAstNode::Type::PROGRAM) {
+		return nullptr;
+	}
+	for (size_t i = 0; i < root->childCount(); i++) {
+		Qd::IAstNode* child = root->child(i);
+		if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+			auto* importNode = static_cast<Qd::AstNodeImport*>(child);
+			if (importNode->namespaceName() == namespaceName) {
+				return importNode;
+			}
+		}
+	}
+	return nullptr;
+}
+
+// Every .qd file of the module whose entry file is `modulePath`: a module is its whole
+// directory. Just the entry file if the directory cannot be read.
+static std::vector<std::string> moduleFiles(const std::string& modulePath) {
+	std::vector<std::string> files;
+	try {
+		for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::path(modulePath).parent_path())) {
+			if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+				files.push_back(entry.path().string());
+			}
+		}
+	} catch (const std::filesystem::filesystem_error&) {
+		files = {modulePath};
+	}
+	return files;
+}
+
 void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri, size_t line, size_t character) {
-	static const char* instructions[] = {"add", "sub", "mul", "div", "dup", "swap", "drop", "over", "rot", "print",
-			"prints", "eq", "neq", "lt", "gt", "lte", "gte", "and", "or", "not", "inc", "dec", "abs", "sqrt", "sq",
-			"sin", "cos", "tan", "asin", "acos", "atan", "ln", "log10", "pow", "min", "max", "ceil", "floor", "round",
-			"if", "for", "loop", "while", "switch", "case", "default", "break", "continue", "defer", "free", "struct",
-			"pub", "as"};
+	const std::string documentText = getDocumentText(uri);
+
+	// Module paths resolve from the document's own directory
+	std::string sourceDir;
+	const std::string filePath = lspUriToPath(uri);
+	if (size_t lastSlash = filePath.rfind('/'); lastSlash != std::string::npos) {
+		sourceDir = filePath.substr(0, lastSlash);
+	}
+
+	// What is being completed is usually not finished, so the parse is used as far as it got
+	Qd::Ast ast;
+	Qd::IAstNode* root = documentText.empty() ? nullptr : ast.generate(documentText.c_str(), false, nullptr);
+
+	json_t* items = json_array();
+	if (isInTypePosition(documentText, line, character)) {
+		addTypeCompletions(items, documentText, root, sourceDir);
+	} else if (std::string variable = getFieldAccessVariableAtPosition(documentText, line, character);
+			!variable.empty()) {
+		addFieldCompletions(items, documentText, root, variable, line, sourceDir);
+	} else if (std::string module = getModulePrefixAtPosition(documentText, line, character); !module.empty()) {
+		addModuleCompletions(items, root, module, sourceDir);
+	} else {
+		addBodyCompletions(items, documentText, root, isAtTopLevel(documentText, line, character));
+	}
+
+	json_t* result = json_object();
+	json_object_set_new(result, "isIncomplete", json_false());
+	json_object_set_new(result, "items", items);
 
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
-
-	json_t* result = json_object();
-	json_object_set_new(result, "isIncomplete", json_false());
-
-	json_t* items = json_array();
-
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		// Try to read file from disk if it's a file:// URI
-		std::string filePath = lspUriToPath(uri);
-		if (!filePath.empty()) {
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
-
-	// Get source directory for module resolution
-	std::string sourceDir;
-	std::string filePath = lspUriToPath(uri);
-	if (!filePath.empty()) {
-		size_t lastSlash = filePath.rfind('/');
-		if (lastSlash != std::string::npos) {
-			sourceDir = filePath.substr(0, lastSlash);
-		}
-	}
-
-	// Check if we're in a type position (after : in function signature, struct field, etc.)
-	if (isInTypePosition(documentText, line, character)) {
-		// Show built-in types
-		static const struct {
-			const char* name;
-			const char* description;
-		} builtinTypes[] = {
-				{"i64", "64-bit signed integer"},
-				{"i32", "32-bit signed integer (field/mem only)"},
-				{"i16", "16-bit signed integer (field/mem only)"},
-				{"i8", "8-bit signed integer (field/mem only)"},
-				{"u64", "64-bit unsigned integer (field/mem only)"},
-				{"u32", "32-bit unsigned integer (field/mem only)"},
-				{"u16", "16-bit unsigned integer (field/mem only)"},
-				{"u8", "8-bit unsigned integer (field/mem only)"},
-				{"f64", "64-bit floating point"},
-				{"d128", "Decimal floating point, 34 digits"},
-				{"str", "String type"},
-				{"bool", "Boolean type"},
-				{"ptr", "Pointer type"},
-				{"any", "Any type (dynamic)"},
-		};
-
-		for (const auto& type : builtinTypes) {
-			json_t* item = json_object();
-			json_object_set_new(item, "label", json_string(type.name));
-			json_object_set_new(item, "kind", json_integer(25)); // TypeParameter kind
-			json_object_set_new(item, "detail", json_string(type.description));
-			json_array_append_new(items, item);
-		}
-
-		// Add user-defined struct types from current document
-		std::vector<StructInfo> localStructs = extractStructs(documentText);
-		for (const auto& structInfo : localStructs) {
-			json_t* item = json_object();
-			std::string label = structInfo.name;
-			if (structInfo.isGeneric) {
-				label += "<>";
-			}
-			json_object_set_new(item, "label", json_string(label.c_str()));
-			json_object_set_new(item, "kind", json_integer(22)); // Struct kind
-			json_object_set_new(item, "detail", json_string("User-defined struct"));
-			json_array_append_new(items, item);
-		}
-
-		// Add struct types from imported modules
-		if (!documentText.empty()) {
-			Qd::Ast modAst;
-			Qd::IAstNode* modRoot = modAst.generate(documentText.c_str(), false, nullptr);
-			if (modRoot && modRoot->type() == Qd::IAstNode::Type::PROGRAM) {
-				for (size_t i = 0; i < modRoot->childCount(); i++) {
-					Qd::IAstNode* child = modRoot->child(i);
-					if (child && child->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-						Qd::AstNodeUse* useNode = static_cast<Qd::AstNodeUse*>(child);
-						std::string moduleName = useNode->module();
-
-						std::string modulePath = resolveModulePath(moduleName, sourceDir);
-						if (!modulePath.empty()) {
-							// Scan all .qd files in module directory
-							std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
-							try {
-								for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
-									if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-										std::vector<StructInfo> moduleStructs =
-												extractModuleStructs(entry.path().string());
-										for (const auto& structInfo : moduleStructs) {
-											json_t* item = json_object();
-											std::string label = moduleName + "::" + structInfo.name;
-											if (structInfo.isGeneric) {
-												label += "<>";
-											}
-											json_object_set_new(item, "label", json_string(label.c_str()));
-											json_object_set_new(item, "kind", json_integer(22)); // Struct kind
-
-											std::ostringstream detail;
-											detail << "Struct from " << moduleName;
-											json_object_set_new(item, "detail", json_string(detail.str().c_str()));
-											json_array_append_new(items, item);
-										}
-									}
-								}
-							} catch (...) {
-								// Ignore directory iteration errors
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	// Check if we're completing after field access (e.g., "v<<")
-	else if (std::string fieldAccessVar = getFieldAccessVariableAtPosition(documentText, line, character);
-			!fieldAccessVar.empty() && !documentText.empty()) {
-		// Field access completion - need to find the struct type and show its fields
-		Qd::Ast ast;
-		Qd::IAstNode* root = ast.generate(documentText.c_str(), false, nullptr);
-
-		if (root && !ast.hasErrors()) {
-			std::string structType = findStructTypeOfVariable(root, fieldAccessVar, line);
-			if (!structType.empty()) {
-				std::vector<std::pair<std::string, std::string>> fields =
-						findStructFields(structType, documentText, sourceDir);
-
-				for (const auto& field : fields) {
-					json_t* item = json_object();
-					json_object_set_new(item, "label", json_string(field.first.c_str()));
-					json_object_set_new(item, "kind", json_integer(5)); // Field kind
-
-					// Add type as detail
-					json_object_set_new(item, "detail", json_string(field.second.c_str()));
-
-					// Build documentation
-					std::ostringstream docStream;
-					docStream << "**Field:** `" << field.first << "`\n\n";
-					docStream << "**Type:** `" << field.second << "`\n\n";
-					docStream << "**Struct:** `" << structType << "`";
-
-					json_t* documentation = json_object();
-					json_object_set_new(documentation, "kind", json_string("markdown"));
-					json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-					json_object_set_new(item, "documentation", documentation);
-
-					json_array_append_new(items, item);
-				}
-			}
-		}
-	}
-	// Check if we're completing after a module prefix (e.g., "math::")
-	else if (std::string modulePrefix = getModulePrefixAtPosition(documentText, line, character);
-			!modulePrefix.empty()) {
-		// Module-qualified completion - only show functions from that module
-		// First, check for FFI imports (import "lib.a" as "namespace" { ... })
-		bool foundFfiImport = false;
-		if (!documentText.empty()) {
-			Qd::Ast ffiAst;
-			Qd::IAstNode* ffiRoot = ffiAst.generate(documentText.c_str(), false, nullptr);
-			// Don't check hasErrors() - we want to find imports even in incomplete code
-			if (ffiRoot && ffiRoot->type() == Qd::IAstNode::Type::PROGRAM) {
-				for (size_t i = 0; i < ffiRoot->childCount(); i++) {
-					Qd::IAstNode* child = ffiRoot->child(i);
-					if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
-						Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
-						if (importNode->namespaceName() == modulePrefix) {
-							foundFfiImport = true;
-							// Add functions from FFI import block
-							for (const auto& func : importNode->functions()) {
-								json_t* item = json_object();
-								json_object_set_new(item, "label", json_string(func->name.c_str()));
-								json_object_set_new(item, "kind", json_integer(3)); // Function
-
-								// Use plain text insert to avoid editor adding ()
-								json_object_set_new(item, "insertTextFormat", json_integer(1)); // PlainText
-								json_object_set_new(item, "insertText", json_string(func->name.c_str()));
-
-								// Build signature
-								std::ostringstream sigStream;
-								sigStream << "fn " << func->name << "(";
-								for (size_t j = 0; j < func->inputParameters.size(); j++) {
-									if (j > 0) {
-										sigStream << " ";
-									}
-									sigStream << func->inputParameters[j]->name() << ":"
-											  << func->inputParameters[j]->typeString();
-								}
-								if (!func->inputParameters.empty() || !func->outputParameters.empty()) {
-									sigStream << " -- ";
-								}
-								for (size_t j = 0; j < func->outputParameters.size(); j++) {
-									if (j > 0) {
-										sigStream << " ";
-									}
-									sigStream << func->outputParameters[j]->name() << ":"
-											  << func->outputParameters[j]->typeString();
-								}
-								sigStream << ")";
-
-								json_object_set_new(item, "detail", json_string(sigStream.str().c_str()));
-
-								// Build documentation
-								std::ostringstream docStream;
-								docStream << "**FFI Function (from " << modulePrefix << ")**\n\n";
-								docStream << "```quadrate\n" << sigStream.str() << "\n```";
-
-								json_t* documentation = json_object();
-								json_object_set_new(documentation, "kind", json_string("markdown"));
-								json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-								json_object_set_new(item, "documentation", documentation);
-
-								json_array_append_new(items, item);
-							}
-							break;
-						}
-					}
-				}
-			}
-		}
-
-		std::string modulePath = resolveModulePath(modulePrefix, sourceDir);
-		if (!foundFfiImport && !modulePath.empty()) {
-			// Scan ALL .qd files in the module directory for functions and structs
-			std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
-			std::vector<FunctionInfo> functions;
-			std::vector<StructInfo> structs;
-			std::vector<ConstantInfo> constants;
-
-			try {
-				for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
-					if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-						std::vector<FunctionInfo> fileFunctions = extractModuleFunctions(entry.path().string());
-						functions.insert(functions.end(), fileFunctions.begin(), fileFunctions.end());
-
-						std::vector<StructInfo> fileStructs = extractModuleStructs(entry.path().string());
-						structs.insert(structs.end(), fileStructs.begin(), fileStructs.end());
-
-						std::vector<ConstantInfo> fileConstants = extractModuleConstants(entry.path().string());
-						constants.insert(constants.end(), fileConstants.begin(), fileConstants.end());
-					}
-				}
-			} catch (...) {
-				// Fallback to single file if directory iteration fails
-				functions = extractModuleFunctions(modulePath);
-				structs = extractModuleStructs(modulePath);
-				constants = extractModuleConstants(modulePath);
-			}
-
-			// Add functions from module
-
-			for (const auto& func : functions) {
-				json_t* item = json_object();
-
-				// Build label with generic type params if applicable
-				std::string label = func.name;
-				if (func.isGeneric) {
-					label += "<";
-					for (size_t i = 0; i < func.typeParams.size(); i++) {
-						if (i > 0) {
-							label += ", ";
-						}
-						label += func.typeParams[i];
-					}
-					label += ">";
-				}
-				json_object_set_new(item, "label", json_string(label.c_str()));
-				json_object_set_new(item, "kind", json_integer(func.isMethod ? 2 : 3)); // Method=2, Function=3
-
-				// Add snippet with placeholders
-				json_object_set_new(item, "insertTextFormat", json_integer(2)); // Snippet format
-				json_object_set_new(item, "insertText", json_string(func.snippet.c_str()));
-
-				// Add signature as detail
-				json_object_set_new(item, "detail", json_string(func.signature.c_str()));
-
-				// Build documentation
-				std::ostringstream docStream;
-				docStream << "**Module:** `" << modulePrefix << "`\n\n";
-				if (func.isMethod) {
-					docStream << "**Method on:** `" << func.receiverType;
-					if (!func.receiverTypeParams.empty()) {
-						docStream << "<";
-						for (size_t i = 0; i < func.receiverTypeParams.size(); i++) {
-							if (i > 0) {
-								docStream << ", ";
-							}
-							docStream << func.receiverTypeParams[i];
-						}
-						docStream << ">";
-					}
-					docStream << "`\n\n";
-				}
-				if (func.isGeneric) {
-					docStream << "**Type parameters:** `<";
-					for (size_t i = 0; i < func.typeParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << func.typeParams[i];
-					}
-					docStream << ">`\n\n";
-				}
-				docStream << "**Signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
-				if (!func.inputParams.empty()) {
-					docStream << "**Stack before call:** ";
-					for (size_t i = 0; i < func.inputParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << func.inputParams[i];
-					}
-					docStream << "\n";
-				}
-				if (!func.outputParams.empty()) {
-					docStream << "**Stack after call:** ";
-					for (size_t i = 0; i < func.outputParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << func.outputParams[i];
-					}
-				}
-
-				json_t* documentation = json_object();
-				json_object_set_new(documentation, "kind", json_string("markdown"));
-				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-				json_object_set_new(item, "documentation", documentation);
-
-				json_array_append_new(items, item);
-			}
-
-			// Add structs from module (already collected from all files above)
-			for (const auto& structInfo : structs) {
-				json_t* item = json_object();
-
-				// Build label with generic type params if applicable
-				std::string structLabel = structInfo.name;
-				if (structInfo.isGeneric) {
-					structLabel += "<";
-					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
-						if (i > 0) {
-							structLabel += ", ";
-						}
-						structLabel += structInfo.typeParams[i];
-					}
-					structLabel += ">";
-				}
-				json_object_set_new(item, "label", json_string(structLabel.c_str()));
-				json_object_set_new(item, "kind", json_integer(22)); // Struct kind
-
-				// Build documentation showing struct fields
-				std::ostringstream docStream;
-				docStream << "**Module:** `" << modulePrefix << "`\n\n";
-				docStream << "**Struct:** `" << structLabel << "`\n\n";
-				if (structInfo.isGeneric) {
-					docStream << "**Type parameters:** `<";
-					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << structInfo.typeParams[i];
-					}
-					docStream << ">`\n\n";
-				}
-				docStream << "**Fields:**\n";
-				for (const auto& field : structInfo.fields) {
-					docStream << "- `" << field.first << ": " << field.second << "`\n";
-				}
-
-				json_t* documentation = json_object();
-				json_object_set_new(documentation, "kind", json_string("markdown"));
-				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-				json_object_set_new(item, "documentation", documentation);
-
-				json_array_append_new(items, item);
-			}
-
-			// Add constants from module (already collected from all files above)
-			for (const auto& constInfo : constants) {
-				json_t* item = json_object();
-				json_object_set_new(item, "label", json_string(constInfo.name.c_str()));
-				json_object_set_new(item, "kind", json_integer(21)); // Constant kind
-
-				// Build documentation
-				std::ostringstream docStream;
-				docStream << "**Module:** `" << modulePrefix << "`\n\n";
-				docStream << "**Constant:** `" << constInfo.name << " = " << constInfo.value << "`";
-
-				json_t* documentation = json_object();
-				json_object_set_new(documentation, "kind", json_string("markdown"));
-				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-				json_object_set_new(item, "documentation", documentation);
-
-				json_array_append_new(items, item);
-			}
-		}
-	} else {
-		// Regular completion - context-aware based on position
-
-		bool topLevel = isAtTopLevel(documentText, line, character);
-
-		if (topLevel) {
-			// At top level - show only declaration keywords
-			static const char* topLevelKeywords[] = {
-					"use", "fn", "test", "struct", "packed", "enum", "type", "const", "var", "pub", "inline", "stack"};
-			static const char* topLevelDescriptions[] = {"Import a module", "Declare a function",
-					"Declare a test function", "Declare a struct type",
-					"Modifier for packed struct layout (packed struct ...)", "Declare an enum type",
-					"Declare a type alias", "Declare a constant", "Declare a mutable global", "Make declaration public",
-					"Inline the function at call sites (inline fn ...)",
-					"Leave the arguments on the stack instead of binding them (stack fn ...)"};
-
-			for (size_t i = 0; i < sizeof(topLevelKeywords) / sizeof(topLevelKeywords[0]); i++) {
-				json_t* item = json_object();
-				json_object_set_new(item, "label", json_string(topLevelKeywords[i]));
-				json_object_set_new(item, "kind", json_integer(14)); // Keyword
-				json_object_set_new(item, "detail", json_string(topLevelDescriptions[i]));
-				json_array_append_new(items, item);
-			}
-		} else {
-			// Inside function body - show built-in instructions
-			for (size_t i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++) {
-				json_t* item = json_object();
-				json_object_set_new(item, "label", json_string(instructions[i]));
-				json_object_set_new(item, "kind", json_integer(3)); // Function
-				json_object_set_new(item, "detail", json_string("Built-in instruction"));
-				json_array_append_new(items, item);
-			}
-		}
-
-		// Add user-defined functions from the current document (only inside function bodies)
-		if (!topLevel && !documentText.empty()) {
-			std::vector<FunctionInfo> functions = extractFunctions(documentText);
-
-			for (const auto& func : functions) {
-				json_t* item = json_object();
-
-				// Build label with generic type params if applicable
-				std::string label = func.name;
-				if (func.isGeneric) {
-					label += "<";
-					for (size_t i = 0; i < func.typeParams.size(); i++) {
-						if (i > 0) {
-							label += ", ";
-						}
-						label += func.typeParams[i];
-					}
-					label += ">";
-				}
-				json_object_set_new(item, "label", json_string(label.c_str()));
-				json_object_set_new(item, "kind", json_integer(func.isMethod ? 2 : 3)); // Method=2, Function=3
-
-				// Add snippet with placeholders
-				json_object_set_new(item, "insertTextFormat", json_integer(2)); // Snippet format
-				json_object_set_new(item, "insertText", json_string(func.snippet.c_str()));
-
-				// Add signature as detail and documentation
-				json_object_set_new(item, "detail", json_string(func.signature.c_str()));
-
-				// Build documentation showing what needs to be on the stack
-				std::ostringstream docStream;
-				if (func.isMethod) {
-					docStream << "**Method on:** `" << func.receiverType;
-					if (!func.receiverTypeParams.empty()) {
-						docStream << "<";
-						for (size_t i = 0; i < func.receiverTypeParams.size(); i++) {
-							if (i > 0) {
-								docStream << ", ";
-							}
-							docStream << func.receiverTypeParams[i];
-						}
-						docStream << ">";
-					}
-					docStream << "`\n\n";
-				}
-				if (func.isGeneric) {
-					docStream << "**Type parameters:** `<";
-					for (size_t i = 0; i < func.typeParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << func.typeParams[i];
-					}
-					docStream << ">`\n\n";
-				}
-				docStream << "**Signature:**\n```quadrate\n" << func.signature << "\n```\n\n";
-				if (!func.inputParams.empty()) {
-					docStream << "**Stack before call:** ";
-					for (size_t i = 0; i < func.inputParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << func.inputParams[i];
-					}
-					docStream << "\n";
-				}
-				if (!func.outputParams.empty()) {
-					docStream << "**Stack after call:** ";
-					for (size_t i = 0; i < func.outputParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << func.outputParams[i];
-					}
-				}
-
-				json_t* documentation = json_object();
-				json_object_set_new(documentation, "kind", json_string("markdown"));
-				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-				json_object_set_new(item, "documentation", documentation);
-
-				json_array_append_new(items, item);
-			}
-		}
-
-		// Add imported modules (from use statements) - only inside function bodies
-		if (!topLevel && !documentText.empty()) {
-			Qd::Ast modAst;
-			Qd::IAstNode* modRoot = modAst.generate(documentText.c_str(), false, nullptr);
-			// Don't check hasErrors() - we want to find imports even in incomplete code
-			if (modRoot && modRoot->type() == Qd::IAstNode::Type::PROGRAM) {
-				for (size_t i = 0; i < modRoot->childCount(); i++) {
-					Qd::IAstNode* child = modRoot->child(i);
-					if (child && child->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-						Qd::AstNodeUse* useNode = static_cast<Qd::AstNodeUse*>(child);
-						std::string moduleName = useNode->module();
-
-						json_t* item = json_object();
-						json_object_set_new(item, "label", json_string(moduleName.c_str()));
-						json_object_set_new(item, "kind", json_integer(9)); // Module kind
-
-						// Insert module name followed by :: for easy access to module members
-						std::string insertText = moduleName + "::";
-						json_object_set_new(item, "insertText", json_string(insertText.c_str()));
-
-						// Build documentation
-						std::ostringstream docStream;
-						docStream << "**Module:** `" << moduleName << "`\n\n";
-						docStream << "Type `" << moduleName << "::` to access functions, structs, and constants.";
-
-						json_t* documentation = json_object();
-						json_object_set_new(documentation, "kind", json_string("markdown"));
-						json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-						json_object_set_new(item, "documentation", documentation);
-
-						json_array_append_new(items, item);
-					}
-				}
-			}
-		}
-
-		// Add struct completions (only inside function bodies for construction)
-		if (!topLevel) {
-			std::vector<StructInfo> structs = extractStructs(documentText);
-			for (const auto& structInfo : structs) {
-				json_t* item = json_object();
-
-				// Build label with generic type params if applicable
-				std::string structLabel = structInfo.name;
-				if (structInfo.isGeneric) {
-					structLabel += "<";
-					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
-						if (i > 0) {
-							structLabel += ", ";
-						}
-						structLabel += structInfo.typeParams[i];
-					}
-					structLabel += ">";
-				}
-				json_object_set_new(item, "label", json_string(structLabel.c_str()));
-				json_object_set_new(item, "kind", json_integer(22)); // Struct kind
-
-				// Build documentation showing struct fields
-				std::ostringstream docStream;
-				docStream << "**Struct:** `" << structLabel << "`\n\n";
-				if (structInfo.isGeneric) {
-					docStream << "**Type parameters:** `<";
-					for (size_t i = 0; i < structInfo.typeParams.size(); i++) {
-						if (i > 0) {
-							docStream << ", ";
-						}
-						docStream << structInfo.typeParams[i];
-					}
-					docStream << ">`\n\n";
-				}
-				docStream << "**Fields:**\n";
-				for (const auto& field : structInfo.fields) {
-					docStream << "- `" << field.first << ": " << field.second << "`\n";
-				}
-
-				json_t* documentation = json_object();
-				json_object_set_new(documentation, "kind", json_string("markdown"));
-				json_object_set_new(documentation, "value", json_string(docStream.str().c_str()));
-				json_object_set_new(item, "documentation", documentation);
-
-				json_array_append_new(items, item);
-			}
-		}
-	}
-
-	json_object_set_new(result, "items", items);
 	json_object_set_new(response, "result", result);
-
 	sendMessage(response);
 	json_decref(response);
+}
+
+// After `name:` in a signature, a struct field or a declaration: the built-in types and
+// every struct in reach
+void QuadrateLSP::addTypeCompletions(
+		json_t* items, const std::string& documentText, Qd::IAstNode* root, const std::string& sourceDir) {
+	std::vector<Qd::BuiltinType> builtinTypes(std::begin(Qd::PRIMITIVE_TYPES), std::end(Qd::PRIMITIVE_TYPES));
+	builtinTypes.insert(builtinTypes.end(), std::begin(Qd::SIZED_INT_TYPES), std::end(Qd::SIZED_INT_TYPES));
+	for (const auto& alias : Qd::BUILTIN_TYPE_ALIASES) {
+		builtinTypes.push_back({alias.name, alias.description});
+	}
+	for (const auto& type : builtinTypes) {
+		json_t* item = completionItem(std::string(type.name), KindTypeParameter);
+		setDetail(item, std::string(type.description));
+		json_array_append_new(items, item);
+	}
+
+	for (const auto& info : extractStructs(documentText)) {
+		json_array_append_new(items, structTypeItem(info, ""));
+	}
+
+	for (const auto& module : usedModules(root)) {
+		const std::string modulePath = resolveModulePath(module, sourceDir);
+		if (modulePath.empty()) {
+			continue;
+		}
+		for (const auto& file : moduleFiles(modulePath)) {
+			for (const auto& info : extractModuleStructs(file)) {
+				json_array_append_new(items, structTypeItem(info, module));
+			}
+		}
+	}
+}
+
+// After `variable <<`: the fields of the struct the variable holds
+void QuadrateLSP::addFieldCompletions(json_t* items, const std::string& documentText, Qd::IAstNode* root,
+		const std::string& variable, size_t line, const std::string& sourceDir) {
+	if (!root) {
+		return;
+	}
+	const std::string structType = findStructTypeOfVariable(root, variable, line);
+	if (structType.empty()) {
+		return;
+	}
+	for (const auto& field : findStructFields(structType, documentText, sourceDir)) {
+		json_t* item = completionItem(field.first, KindField);
+		setDetail(item, field.second);
+		setMarkdown(item, "**Field:** `" + field.first + "`\n\n**Type:** `" + field.second + "`\n\n**Struct:** `" +
+								  structType + "`");
+		json_array_append_new(items, item);
+	}
+}
+
+// After `module::`: what an FFI import of that name declares, or else everything the
+// module declares
+void QuadrateLSP::addModuleCompletions(
+		json_t* items, Qd::IAstNode* root, const std::string& module, const std::string& sourceDir) {
+	if (Qd::AstNodeImport* importNode = findImport(root, module)) {
+		for (const auto& func : importNode->functions()) {
+			std::vector<std::string> inputs;
+			for (const auto& param : func->inputParameters) {
+				inputs.push_back(param->name() + ":" + param->typeString());
+			}
+			std::vector<std::string> outputs;
+			for (const auto& param : func->outputParameters) {
+				outputs.push_back(param->name() + ":" + param->typeString());
+			}
+			std::string signature = "fn " + func->name + "(" + joinNames(inputs, " ");
+			if (!inputs.empty() || !outputs.empty()) {
+				signature += " -- ";
+			}
+			signature += joinNames(outputs, " ") + ")";
+
+			json_t* item = completionItem(func->name, KindFunction);
+			// Plain text, so that the editor does not add ()
+			json_object_set_new(item, "insertTextFormat", json_integer(1));
+			json_object_set_new(item, "insertText", json_string(func->name.c_str()));
+			setDetail(item, signature);
+			setMarkdown(item, "**FFI Function (from " + module + ")**\n\n```quadrate\n" + signature + "\n```");
+			json_array_append_new(items, item);
+		}
+		return;
+	}
+
+	const std::string modulePath = resolveModulePath(module, sourceDir);
+	if (modulePath.empty()) {
+		return;
+	}
+	const std::vector<std::string> files = moduleFiles(modulePath);
+	for (const auto& file : files) {
+		for (const auto& func : extractModuleFunctions(file)) {
+			json_array_append_new(items, functionItem(func, module));
+		}
+	}
+	for (const auto& file : files) {
+		for (const auto& info : extractModuleStructs(file)) {
+			json_array_append_new(items, structItem(info, module));
+		}
+	}
+	for (const auto& file : files) {
+		for (const auto& constant : extractModuleConstants(file)) {
+			json_t* item = completionItem(constant.name, KindConstant);
+			setMarkdown(item,
+					"**Module:** `" + module + "`\n\n**Constant:** `" + constant.name + " = " + constant.value + "`");
+			json_array_append_new(items, item);
+		}
+	}
+}
+
+// Anywhere else: declaration keywords at top level; inside a function body, the
+// builtins and keywords, the document's functions and structs and the modules it uses
+void QuadrateLSP::addBodyCompletions(
+		json_t* items, const std::string& documentText, Qd::IAstNode* root, bool topLevel) {
+	struct Declaration {
+		const char* keyword;
+		const char* description;
+	};
+
+	static const Declaration declarations[] = {{"use", "Import a module"}, {"fn", "Declare a function"},
+			{"test", "Declare a test function"}, {"struct", "Declare a struct type"},
+			{"packed", "Modifier for packed struct layout (packed struct ...)"}, {"enum", "Declare an enum type"},
+			{"type", "Declare a type alias"}, {"const", "Declare a constant"}, {"var", "Declare a mutable global"},
+			{"pub", "Make declaration public"}, {"inline", "Inline the function at call sites (inline fn ...)"},
+			{"stack", "Leave the arguments on the stack instead of binding them (stack fn ...)"}};
+
+	if (topLevel) {
+		for (const auto& declaration : declarations) {
+			json_t* item = completionItem(declaration.keyword, KindKeyword);
+			setDetail(item, declaration.description);
+			json_array_append_new(items, item);
+		}
+		return;
+	}
+
+	// Every builtin and keyword with a name to type -- not `+` or `->` -- with its
+	// signature and description from reference.def. The declaration keywords belong
+	// at top level.
+	auto isDeclarationKeyword = [](const char* name) {
+		if (strcmp(name, "import") == 0) {
+			return true;
+		}
+		for (const auto& declaration : declarations) {
+			if (strcmp(name, declaration.keyword) == 0) {
+				return true;
+			}
+		}
+		return false;
+	};
+	for (const auto& entry : Qd::REFERENCE) {
+		if (std::isalpha(static_cast<unsigned char>(entry.name[0])) == 0 || isDeclarationKeyword(entry.name)) {
+			continue;
+		}
+		json_t* item = completionItem(entry.name, entry.signature != nullptr ? KindFunction : KindKeyword);
+		setDetail(item, entry.signature != nullptr ? entry.signature : "Keyword");
+		setMarkdown(item, entry.description);
+		json_array_append_new(items, item);
+	}
+
+	for (const auto& func : extractFunctions(documentText)) {
+		json_array_append_new(items, functionItem(func, ""));
+	}
+
+	for (const auto& module : usedModules(root)) {
+		json_t* item = completionItem(module, KindModule);
+		// The module name and `::`, ready for one of its members
+		json_object_set_new(item, "insertText", json_string((module + "::").c_str()));
+		setMarkdown(item,
+				"**Module:** `" + module + "`\n\nType `" + module + "::` to access functions, structs, and constants.");
+		json_array_append_new(items, item);
+	}
+
+	for (const auto& info : extractStructs(documentText)) {
+		json_array_append_new(items, structItem(info, ""));
+	}
 }
 
 std::string QuadrateLSP::getModulePrefixAtPosition(const std::string& text, size_t line, size_t character) {
@@ -861,10 +600,13 @@ std::string QuadrateLSP::getFieldAccessVariableAtPosition(const std::string& tex
 
 	// Now check if we have "<<" before that
 	if (pos >= 2 && targetLine[pos - 1] == '<' && targetLine[pos - 2] == '<') {
-		// Found "<<", now extract the variable name before it
-		size_t opPos = pos - 2;
-		size_t varEnd = opPos;
-		size_t varStart = opPos;
+		// Found "<<", now extract the variable name before it: `p <<x` is how a field
+		// read is written, so there may be space between them
+		size_t varEnd = pos - 2;
+		while (varEnd > 0 && isspace(static_cast<unsigned char>(targetLine[varEnd - 1]))) {
+			varEnd--;
+		}
+		size_t varStart = varEnd;
 
 		// Move back to find start of variable name
 		while (varStart > 0 && (isalnum(targetLine[varStart - 1]) || targetLine[varStart - 1] == '_')) {

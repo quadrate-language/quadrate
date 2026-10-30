@@ -53,6 +53,26 @@ static bool isStdlibImport(const std::string& library) {
 	return false;
 }
 
+// The C symbol an `import` binds `name` to: the stdlib and quadpm libraries (libqd*.a) export
+// it as usr_<namespace>_<name>, any other library under its own name
+static std::string importedSymbol(
+		const std::string& library, const std::string& namespaceName, const std::string& name) {
+	const bool quadrateLibrary =
+			(library.rfind("libqd", 0) == 0 && library.find(".a") != std::string::npos) || isStdlibImport(library);
+	return quadrateLibrary ? "usr_" + namespaceName + "_" + name : name;
+}
+
+// The written types of a parameter list, in order
+template <typename Param>
+static std::vector<std::string> parameterTypes(const std::vector<std::unique_ptr<Param>>& params) {
+	std::vector<std::string> types;
+	for (const auto& param : params) {
+		const auto* node = dynamic_cast<const Qd::AstNodeParameter*>(param.get());
+		types.push_back(node ? node->typeString() : "");
+	}
+	return types;
+}
+
 static bool isValidDynamicLibraryName(const std::string& name) {
 	if (name.empty() || name[0] == '-' || name[0] == '.') {
 		return false;
@@ -279,10 +299,12 @@ namespace Qd {
 
 		// Error handling functions
 		auto ptrPtrToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy, ptrTy}, false);
-		// Use _exit(1) instead of abort() — abort() raises SIGABRT which
-		// triggers Haiku's debug_server, hanging or interfering with output.
-		auto i32ToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
-		exitFn = declareFn(i32ToVoidTy, "_exit");
+		// qdrt_fatal_exit, the runtime's own way out: it flushes stdio, then _exit(1)s.
+		// Not abort(), whose SIGABRT triggers Haiku's debug_server, hanging or interfering
+		// with output; and not a bare _exit(1), which lost whatever the program had printed
+		// to a pipe or file before the failure.
+		exitFn = declareFn(llvm::FunctionType::get(builder->getVoidTy(), {}, false), "qdrt_fatal_exit");
+		exitFn->setDoesNotReturn();
 		printStackTraceFn = declareFn(ctxToVoidTy, "qd_print_stack_trace");
 		installCrashHandlerFn =
 				declareFn(llvm::FunctionType::get(builder->getVoidTy(), {}, false), "qd_install_crash_handler");
@@ -599,9 +621,7 @@ namespace Qd {
 		// The path converts between i64 and f64 and nothing else, so only those two targets
 		// qualify; `cast<d128>` builds a boxed value the compile-time stack cannot hold.
 		if (name == "cast") {
-			static const std::set<std::string> NUMERIC_TARGETS = {
-					"i64", "i", "int", "int64", "f64", "f", "float", "float64"};
-			return allowFloat && inst->hasTypeParam() && NUMERIC_TARGETS.count(inst->typeParam()) != 0;
+			return allowFloat && inst->hasTypeParam() && (inst->typeParam() == "i64" || inst->typeParam() == "f64");
 		}
 		return HANDLED.find(name) != HANDLED.end();
 	}
@@ -714,9 +734,7 @@ namespace Qd {
 	// site can spell it with. analyzeIsBodyNativeEligible reads this to keep a caller out of the
 	// integer-only fast paths, which have no retain and no release in them.
 	void LlvmGenerator::Impl::collectNonIntegerSignatureFunctions(IAstNode* root) {
-		auto isIntegerTypeName = [](const std::string& typeStr) {
-			return typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i";
-		};
+		auto isIntegerTypeName = [this](const std::string& typeStr) { return valueKind(typeStr) == ValueKind::Int; };
 
 		// The program's own functions are in root, the imported ones in moduleASTs -- the same
 		// two places demoteNonNativeFunctions reads.
@@ -953,823 +971,854 @@ namespace Qd {
 			}
 		}
 
-		llvm::Function* fn = nullptr;
 		currentFunctionIsMain = isMain;
 
 		if (isMain) {
-			// Create main function: i32 @main(i32 %argc, i8** %argv)
-			auto mainFnTy = llvm::FunctionType::get(int32Ty, {int32Ty, ptrTy}, false);
-			fn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
+			return generateMainEntry(funcNode, namePrefix, funcDebugFile);
+		}
 
-			// Add debug info for main function
-			if (debugInfoEnabled && debugBuilder) {
-				auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
-				auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
-						funcNode->name(),									// Name
-						"main",												// Linkage name
-						funcDebugFile,										// File
-						static_cast<unsigned>(funcNode->line()),			// Line number
-						funcType,											// Type
-						static_cast<unsigned>(funcNode->line()),			// Scope line
-						llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
-				fn->setSubprogram(subprogram);
-				debugScopeStack.push_back(subprogram);
-
-				// Emit function start location
-				auto loc = llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, subprogram);
-				builder->SetCurrentDebugLocation(loc);
+		// User-defined function: int usr_<prefix>_<name>(qd_context* ctx)
+		// For methods: int usr_<prefix>_<ReceiverType>_<name>(qd_context* ctx)
+		std::string fnName;
+		if (funcNode->hasReceiver()) {
+			fnName = "usr_" + namePrefix + "_" + funcNode->receiverType() + "_" + funcNode->name();
+		} else {
+			fnName = "usr_" + namePrefix + "_" + funcNode->name();
+		}
+		// Check if function was already declared in pre-pass (for forward references)
+		llvm::Function* fn = module->getFunction(fnName);
+		if (!fn) {
+			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+			// Use InternalLinkage for user functions unless in export mode (shared library compilation)
+			// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
+			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+			fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
+			fn->addParamAttr(0, llvm::Attribute::NonNull);
+			fn->addParamAttr(0, llvm::Attribute::NoAlias);
+			fn->addFnAttr(llvm::Attribute::NoUnwind);
+			if (funcNode->isInline()) {
+				fn->addFnAttr(llvm::Attribute::AlwaysInline);
 			}
+		}
 
-			// Create entry basic block
-			auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
-			builder->SetInsertPoint(entryBB);
+		// Add debug info for user function
+		if (debugInfoEnabled && debugBuilder) {
+			auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
+			auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
+					funcNode->name(),									// Name
+					fnName.c_str(),										// Linkage name
+					funcDebugFile,										// File
+					static_cast<unsigned>(funcNode->line()),			// Line number
+					funcType,											// Type
+					static_cast<unsigned>(funcNode->line()),			// Scope line
+					llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+			fn->setSubprogram(subprogram);
+			debugScopeStack.push_back(subprogram);
 
-			// Create Quadrate context
-			auto stackSizeVal = builder->getInt64(stackSize);
-			auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
-			builder->CreateCall(installCrashHandlerFn, {});
+			// Emit function start location
+			auto loc = llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, subprogram);
+			builder->SetCurrentDebugLocation(loc);
+		}
 
-			// Create alloca for ctx so debugger can reliably access it
-			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
-			builder->CreateStore(ctx, ctxAlloca);
-
-			// Store argc and argv in the context
-			// Context layout: {qd_stack*, int64_t error_code, char* error_msg, int argc, char** argv, ...}
-			auto argcArg = fn->getArg(0); // i32 argc
-			auto argvArg = fn->getArg(1); // i8** argv
-
-			// Store argc (field index 3)
-			auto argcPtr = builder->CreateStructGEP(contextStructTy, ctx, 3, "argc.ptr");
-			builder->CreateStore(argcArg, argcPtr);
-
-			// Store argv (field index 4)
-			auto argvPtr = builder->CreateStructGEP(contextStructTy, ctx, 4, "argv.ptr");
-			builder->CreateStore(argvArg, argvPtr);
-
-			// Add debug info for ctx local variable in main
-			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
-				// contextDebugType is already qd_context* (pointer), so use it directly
-				auto ctxPtrType = contextDebugType;
-
-				// Create local variable for ctx
-				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (main function)
-						"ctx",															 // Name
-						funcDebugFile,													 // File
-						static_cast<unsigned>(funcNode->line()),						 // Line
-						ctxPtrType,														 // Type
-						true															 // Always preserve
-				);
-
-				// Insert declare to make it visible in debugger (use alloca, not SSA value)
-				debugBuilder->insertDeclare(ctxAlloca,	  // Storage (alloca, not SSA)
-						localVar,						  // Variable
-						debugBuilder->createExpression(), // Expression
-						llvm::DILocation::get(
-								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
-						builder->GetInsertBlock());
+		// Register the function with appropriate scope
+		// For methods, register with mangled name: module::ReceiverType::methodName
+		std::string registerName;
+		if (funcNode->hasReceiver()) {
+			// Qualify struct type with module prefix for methods from modules
+			std::string qualifiedReceiverType = funcNode->receiverType();
+			if (namePrefix != "main" && qualifiedReceiverType.find("::") == std::string::npos) {
+				qualifiedReceiverType = namePrefix + "::" + qualifiedReceiverType;
 			}
+			registerName = qualifiedReceiverType + "::" + funcNode->name();
 
-			// Push "main::main" onto call stack for debugging
-			std::string fullFuncName = namePrefix + "::" + funcNode->name();
-			auto funcNameStr = builder->CreateGlobalString(fullFuncName);
+			// Also register with unqualified struct type for intra-module method calls
+			std::string unqualifiedRegisterName = funcNode->receiverType() + "::" + funcNode->name();
+			if (unqualifiedRegisterName != registerName) {
+				userFunctions[unqualifiedRegisterName] = fn;
+				fallibleFunctions[unqualifiedRegisterName] = funcNode->throws();
+			}
+		} else {
+			registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
+
+			// For merged modules (local file imports), also register with unqualified name
+			// This allows calling functions without the module prefix
+			if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
+				userFunctions[funcNode->name()] = fn;
+				fallibleFunctions[funcNode->name()] = funcNode->throws();
+			}
+		}
+		userFunctions[registerName] = fn;
+		fallibleFunctions[registerName] = funcNode->throws();
+
+		// Create basic blocks
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
+		auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+
+		builder->SetInsertPoint(entryBB);
+
+		// Get context parameter
+		llvm::Value* ctx = fn->getArg(0);
+		ctx->setName("ctx");
+
+		// Create alloca for ctx parameter for debug info
+		// Store the parameter value to it so debugger can always find it
+		llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
+		builder->CreateStore(ctx, ctxAlloca);
+
+		// Add debug info for ctx parameter (treat as local variable, not parameter)
+		if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
+			// contextDebugType is already qd_context* (pointer), so use it directly
+			auto ctxPtrType = contextDebugType;
+
+			// Create local variable for ctx (not a parameter variable)
+			// This prevents LLVM from tracking the parameter value flow
+			auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
+					"ctx",															 // Name
+					funcDebugFile,													 // File
+					static_cast<unsigned>(funcNode->line()),						 // Line
+					ctxPtrType,														 // Type
+					true															 // Always preserve
+			);
+
+			// Insert declare on the alloca so debugger can always find it
+			// Use DW_OP_deref since the alloca is a pointer to where the value is stored
+			// No deref needed - ctxAlloca stores the pointer value directly
+			debugBuilder->insertDeclare(ctxAlloca,	  // Storage (the alloca)
+					localVar,						  // Variable
+					debugBuilder->createExpression(), // Empty expression (no deref)
+					llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
+					builder->GetInsertBlock());
+		}
+
+		// Set the return target for this function
+		currentFunctionReturnBlock = returnBB;
+		currentFunctionIsFallible = funcNode->throws();
+
+		currentFunctionIsIntegerOnly = isIntegerOnlyFunction(funcNode);
+		llvm::Function* nativeFn = settledNativeVersion(funcNode, registerName);
+		if (nativeFn && nativeFn->empty()) {
+			generateNativeBody(funcNode, nativeFn, registerName, ctx, entryBB, returnBB);
+			return true;
+		}
+		return generateStackBody(funcNode, namePrefix, ctx, returnBB);
+	}
+
+	// The C `main`: sets up the runtime context, runs the program's main, and tears down
+	bool LlvmGenerator::Impl::generateMainEntry(
+			AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix, llvm::DIFile* funcDebugFile) {
+		// Create main function: i32 @main(i32 %argc, i8** %argv)
+		auto mainFnTy = llvm::FunctionType::get(int32Ty, {int32Ty, ptrTy}, false);
+		llvm::Function* fn = llvm::Function::Create(mainFnTy, llvm::Function::ExternalLinkage, "main", *module);
+
+		// Add debug info for main function
+		if (debugInfoEnabled && debugBuilder) {
+			auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
+			auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
+					funcNode->name(),									// Name
+					"main",												// Linkage name
+					funcDebugFile,										// File
+					static_cast<unsigned>(funcNode->line()),			// Line number
+					funcType,											// Type
+					static_cast<unsigned>(funcNode->line()),			// Scope line
+					llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
+			fn->setSubprogram(subprogram);
+			debugScopeStack.push_back(subprogram);
+
+			// Emit function start location
+			auto loc = llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, subprogram);
+			builder->SetCurrentDebugLocation(loc);
+		}
+
+		// Create entry basic block
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
+		builder->SetInsertPoint(entryBB);
+
+		// Create Quadrate context
+		auto stackSizeVal = builder->getInt64(stackSize);
+		auto ctx = builder->CreateCall(createContextFn, {stackSizeVal}, "ctx");
+		builder->CreateCall(installCrashHandlerFn, {});
+
+		// Create alloca for ctx so debugger can reliably access it
+		llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
+		builder->CreateStore(ctx, ctxAlloca);
+
+		// Store argc and argv in the context
+		// Context layout: {qd_stack*, int64_t error_code, char* error_msg, int argc, char** argv, ...}
+		auto argcArg = fn->getArg(0); // i32 argc
+		auto argvArg = fn->getArg(1); // i8** argv
+
+		// Store argc (field index 3)
+		auto argcPtr = builder->CreateStructGEP(contextStructTy, ctx, 3, "argc.ptr");
+		builder->CreateStore(argcArg, argcPtr);
+
+		// Store argv (field index 4)
+		auto argvPtr = builder->CreateStructGEP(contextStructTy, ctx, 4, "argv.ptr");
+		builder->CreateStore(argvArg, argvPtr);
+
+		// Add debug info for ctx local variable in main
+		if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
+			// contextDebugType is already qd_context* (pointer), so use it directly
+			auto ctxPtrType = contextDebugType;
+
+			// Create local variable for ctx
+			auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (main function)
+					"ctx",															 // Name
+					funcDebugFile,													 // File
+					static_cast<unsigned>(funcNode->line()),						 // Line
+					ctxPtrType,														 // Type
+					true															 // Always preserve
+			);
+
+			// Insert declare to make it visible in debugger (use alloca, not SSA value)
+			debugBuilder->insertDeclare(ctxAlloca,	  // Storage (alloca, not SSA)
+					localVar,						  // Variable
+					debugBuilder->createExpression(), // Expression
+					llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
+					builder->GetInsertBlock());
+		}
+
+		// Push "main::main" onto call stack for debugging
+		std::string fullFuncName = namePrefix + "::" + funcNode->name();
+		auto funcNameStr = builder->CreateGlobalString(fullFuncName);
+		std::string sourceFile;
+		auto srcIt = moduleSourceFiles.find(namePrefix);
+		if (srcIt != moduleSourceFiles.end()) {
+			sourceFile = srcIt->second;
+		}
+		// Use cached source file string
+		auto sourceFileStr = getOrCreateGlobalString(sourceFile);
+		auto lineNum = builder->getInt64(funcNode->line());
+		builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
+
+		// Module global init: run each pending heap initializer -- a struct
+		// construction or a string literal -- and store the resulting pointer into
+		// its LLVM global, so user code sees a fully constructed value. Uses the
+		// runtime stack path explicitly (useCompileTimeStack is still false here).
+		for (auto& pending : pendingHeapGlobalInits) {
+			llvm::GlobalVariable* gv = pending.first;
+			IAstNode* initNode = pending.second;
+			generateNode(initNode, ctx);
+
+			// Pop the just-pushed struct pointer and store into the global.
+			llvm::Value* initStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
+			llvm::Value* initStackPtr = builder->CreateLoad(ptrTy, initStackPtrPtr, "init_stack_ptr");
+			llvm::AllocaInst* initTmp = builder->CreateAlloca(stackElementTy, nullptr, "init_tmp");
+			builder->CreateCall(stackPopFn, {initStackPtr, initTmp});
+			llvm::Value* initVp = builder->CreateStructGEP(stackElementTy, initTmp, 0, "init_vp");
+			llvm::Value* initV = builder->CreateLoad(ptrTy, initVp, "init_ptr");
+			auto* initStore = builder->CreateStore(initV, gv);
+			initStore->setVolatile(true);
+		}
+
+		// Detect if main function body only uses integers (for type specialization)
+		currentFunctionIsIntegerOnly = true;
+		std::set<std::string> mainLocalNames;
+		collectLocalNames(funcNode, mainLocalNames);
+		for (auto* child : funcNode->children()) {
+			if (!analyzeIsBodyNativeEligible(child, mainLocalNames, false)) {
+				currentFunctionIsIntegerOnly = false;
+				break;
+			}
+		}
+
+		// Create return basic block for defer execution
+		auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+
+		// Set the return target so `return` works in main. Without this,
+		// currentFunctionReturnBlock stayed null here — every other function path assigns
+		// it — and generateNode's RETURN_STATEMENT case, which is guarded on it being
+		// non-null, silently emitted nothing. `return` in main was a no-op, so the
+		// guard-clause idiom fell straight through to the code it was guarding against.
+		// Reaching returnBB also runs main's defers and local cleanup, which an early
+		// return previously skipped along with everything else.
+		currentFunctionReturnBlock = returnBB;
+
+		// Initialize defer scope stack for this function
+		deferScopeStack.clear();
+		pushDeferScope();
+
+		// Scan for captured variables to enable escaped closures
+		// Variables captured by closures need heap allocation so they survive function return
+		auto body = funcNode->body();
+		if (body) {
+			collectAllCapturesFromAST(body, heapAllocatedCaptures);
+		}
+
+		// Generate function body
+		if (body) {
+			generateNode(body, ctx);
+		}
+
+		// Branch to return block if no terminator
+		if (!isTerminated(builder->GetInsertBlock())) {
+			builder->CreateBr(returnBB);
+		}
+
+		// Generate return block - this is where function-level defers execute
+		builder->SetInsertPoint(returnBB);
+
+		// Execute function-level defer scope
+		executeDeferScope(ctx);
+
+		// Clean up local variables (free strings)
+		generateLocalCleanup();
+
+		// Pop from call stack
+		builder->CreateCall(popCallFn, {ctx});
+
+		// Free context
+		builder->CreateCall(freeContextFn, {ctx});
+
+		// Return 0
+		builder->CreateRet(builder->getInt32(0));
+
+		currentFunctionReturnBlock = nullptr;
+
+		// Pop debug scope for main function
+		if (debugInfoEnabled && !debugScopeStack.empty()) {
+			debugScopeStack.pop_back();
+		}
+		return true;
+	}
+
+	// Whether a function can take the integer fast paths: every typed parameter an i64, and a
+	// body the native path handles without floats, strings or module calls
+	bool LlvmGenerator::Impl::isIntegerOnlyFunction(AstNodeFunctionDeclaration* funcNode) {
+		for (const auto& types :
+				{parameterTypes(funcNode->inputParameters()), parameterTypes(funcNode->outputParameters())}) {
+			for (const std::string& typeStr : types) {
+				if (!typeStr.empty() && valueKind(typeStr) != ValueKind::Int) {
+					return false;
+				}
+			}
+		}
+		std::set<std::string> funcLocalNames;
+		collectLocalNames(funcNode, funcLocalNames);
+		for (auto* child : funcNode->children()) {
+			if (!analyzeIsBodyNativeEligible(child, funcLocalNames, false)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// The native version to generate for the function registered as `registerName`, or null
+	// when it has none, or had one that calls a function without, which is dropped here
+	llvm::Function* LlvmGenerator::Impl::settledNativeVersion(
+			AstNodeFunctionDeclaration* funcNode, const std::string& registerName) {
+		auto nativeIt = nativeFunctions.find(registerName);
+		// Verify all callee user functions also have native versions
+		bool calleesAllNative = true;
+		if (nativeIt != nativeFunctions.end()) {
+			auto body = funcNode->body();
+			if (body) {
+				for (auto* child : body->children()) {
+					if (!analyzeCalleesAllNative(child)) {
+						calleesAllNative = false;
+						break;
+					}
+				}
+			}
+		}
+		// If callees aren't all native, remove the native function declaration
+		if (nativeIt != nativeFunctions.end() && !calleesAllNative) {
+			// Backstop: demoteNonNativeFunctions has already settled the native set before any
+			// body existed, so reaching here means a shape it did not cover. Drop every name
+			// pointing at this function, and only erase it if nothing references it yet -
+			// erasing a Function that call instructions still point at is what left the module
+			// with dangling operands and crashed LLVM's own verifier.
+			auto* erasedFn = nativeIt->second;
+			for (auto it = nativeFunctions.begin(); it != nativeFunctions.end();) {
+				if (it->second == erasedFn) {
+					nativeFuncInfo.erase(it->first);
+					it = nativeFunctions.erase(it);
+				} else {
+					++it;
+				}
+			}
+			if (erasedFn->use_empty()) {
+				erasedFn->eraseFromParent();
+			}
+			currentFunctionIsIntegerOnly = false;
+			return nullptr;
+		}
+		return nativeIt != nativeFunctions.end() ? nativeIt->second : nullptr;
+	}
+
+	// The native version's body, and the stack wrapper the stack-based callers reach it by
+	void LlvmGenerator::Impl::generateNativeBody(AstNodeFunctionDeclaration* funcNode, llvm::Function* nativeFn,
+			const std::string& registerName, llvm::Value* ctx, llvm::BasicBlock* entryBB, llvm::BasicBlock* returnBB) {
+		// === NATIVE CALLING CONVENTION PATH ===
+		// Generate two functions:
+		// 1. Native function: direct i64 params/return, compile-time stack
+		// 2. Stack wrapper: pops from runtime stack, calls native, pushes result
+		// Skip if native function already has a body (merged/local modules)
+
+		auto& info = nativeFuncInfo[registerName];
+
+		// --- Generate native function body ---
+		auto nativeEntryBB = llvm::BasicBlock::Create(*context, "entry", nativeFn);
+		builder->SetInsertPoint(nativeEntryBB);
+
+		// Save and reset state for native body generation
+		auto savedLocalVars = localVariables;
+		auto savedLocalVarStructTypes = localVariableStructTypes;
+		auto savedLocalArrayVars = localArrayVariables;
+		auto savedNativeLocalVars = nativeLocalVariables;
+		auto savedReturnBlock = currentFunctionReturnBlock;
+		auto savedIsFallible = currentFunctionIsFallible;
+		auto savedIsIntegerOnly = currentFunctionIsIntegerOnly;
+		auto savedIteratorVars = iteratorVars;
+		auto savedIteratorFloatVars = iteratorFloatVars;
+
+		localVariables.clear();
+		localVariableStructTypes.clear();
+		localArrayVariables.clear();
+		nativeLocalVariables.clear();
+		iteratorVars.clear();
+		iteratorFloatVars.clear();
+		currentFunctionIsIntegerOnly = true;
+		currentFunctionIsFallible = false;
+
+		// Get ctx parameter (arg 0)
+		llvm::Value* nativeCtx = nativeFn->getArg(0);
+		nativeCtx->setName("ctx");
+
+		// Set up compile-time stack with function parameters
+		useCompileTimeStack = true;
+		compileTimeStack.clear();
+		for (size_t i = 0; i < info.inputCount; i++) {
+			llvm::Value* param = nativeFn->getArg(static_cast<unsigned>(i + 1));
+			// Name the parameter after the input parameter name
+			if (i < funcNode->inputParameters().size()) {
+				auto* paramNode = static_cast<AstNodeParameter*>(funcNode->inputParameters()[i].get());
+				param->setName(paramNode->name());
+			}
+			compileTimeStack.push_back(param);
+		}
+
+		// Auto-bind named input parameters as local variables (native path)
+		// For native functions, params are LLVM function args on the compileTimeStack.
+		// Bind named params to nativeLocalVariables so they can be referenced by name.
+		// Values stay on the compileTimeStack too (native codegen uses them positionally).
+		{
+			const auto& inputs = funcNode->inputParameters();
+			for (size_t i = 0; !funcNode->isStack() && i < inputs.size() && i < compileTimeStack.size(); i++) {
+				const auto* paramNode = static_cast<const AstNodeParameter*>(inputs[i].get());
+				if (!paramNode->hasName()) {
+					continue;
+				}
+				const std::string& paramName = paramNode->name();
+				llvm::Value* val = compileTimeStack[i];
+
+				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
+				auto* alloca = tmpBuilder.CreateAlloca(val->getType(), nullptr, paramName);
+				nativeLocalVariables[paramName] = alloca;
+				builder->CreateStore(val, alloca);
+			}
+		}
+
+		// Create return value alloca in entry block (LLVM mem2reg will promote to SSA)
+		nativeReturnAlloca = nullptr;
+		if (info.outputCount == 1) {
+			llvm::Type* retTy = (info.outputType == NativeParamType::F64) ? builder->getDoubleTy() : int64Ty;
+			nativeReturnAlloca = builder->CreateAlloca(retTy, nullptr, "retval");
+			llvm::Value* retInit =
+					retTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
+										: static_cast<llvm::Value*>(builder->getInt64(0));
+			builder->CreateStore(retInit, nativeReturnAlloca);
+		}
+
+		// Create return block for native function
+		auto nativeReturnBB = llvm::BasicBlock::Create(*context, "return", nativeFn);
+		currentFunctionReturnBlock = nativeReturnBB;
+
+		// Initialize defer scope
+		deferScopeStack.clear();
+		pushDeferScope();
+
+		// Generate body using compile-time stack
+		auto body = funcNode->body();
+		if (body) {
+			generateNode(body, nativeCtx);
+		}
+
+		// Before branching to return, store the return value
+		llvm::BasicBlock* nativeBodyBlock = builder->GetInsertBlock();
+		if (nativeBodyBlock != nullptr && !isTerminated(nativeBodyBlock)) {
+			if (info.outputCount == 1 && !compileTimeStack.empty()) {
+				builder->CreateStore(compileTimeStack.back(), nativeReturnAlloca);
+			}
+			builder->CreateBr(nativeReturnBB);
+		}
+
+		// Generate return block
+		builder->SetInsertPoint(nativeReturnBB);
+
+		if (info.outputCount == 1) {
+			llvm::Value* retVal =
+					builder->CreateLoad(nativeReturnAlloca->getAllocatedType(), nativeReturnAlloca, "retval_load");
+			builder->CreateRet(retVal);
+		} else {
+			builder->CreateRetVoid();
+		}
+
+		// Clean up native mode
+		useCompileTimeStack = false;
+		compileTimeStack.clear();
+		nativeReturnAlloca = nullptr;
+
+		// Restore state
+		localVariables = savedLocalVars;
+		localVariableStructTypes = savedLocalVarStructTypes;
+		localArrayVariables = savedLocalArrayVars;
+		nativeLocalVariables = savedNativeLocalVars;
+		currentFunctionReturnBlock = savedReturnBlock;
+		currentFunctionIsFallible = savedIsFallible;
+		currentFunctionIsIntegerOnly = savedIsIntegerOnly;
+		iteratorVars = savedIteratorVars;
+		iteratorFloatVars = savedIteratorFloatVars;
+
+		// --- Generate stack wrapper body ---
+		// The wrapper pops args from runtime stack, calls native, pushes result
+		builder->SetInsertPoint(entryBB);
+
+		// Pop arguments from runtime stack (in reverse order)
+		std::vector<llvm::Value*> nativeArgs;
+		nativeArgs.push_back(ctx); // First arg is always ctx
+		// Pop N args (they come off stack in reverse parameter order)
+		std::vector<llvm::Value*> poppedArgs;
+		for (size_t i = 0; i < info.inputCount; i++) {
+			// Pop in reverse order, so pop index is (inputCount - 1 - i)
+			size_t popIdx = info.inputCount - 1 - i;
+			if (popIdx < info.inputTypes.size() && info.inputTypes[popIdx] == NativeParamType::F64) {
+				poppedArgs.push_back(generateInlinePopFloat(ctx));
+			} else {
+				poppedArgs.push_back(generateInlinePopInt(ctx));
+			}
+		}
+		// Reverse to get correct parameter order
+		for (auto it = poppedArgs.rbegin(); it != poppedArgs.rend(); ++it) {
+			nativeArgs.push_back(*it);
+		}
+
+		// Call native function and push result to runtime stack
+		if (info.outputCount == 1) {
+			llvm::Value* nativeResult = builder->CreateCall(nativeFn, nativeArgs, "result");
+			if (info.outputType == NativeParamType::F64) {
+				generateInlinePushFloatValue(ctx, nativeResult);
+			} else {
+				generateInlinePushIntValue(ctx, nativeResult);
+			}
+		} else {
+			builder->CreateCall(nativeFn, nativeArgs);
+		}
+
+		// Branch to return
+		builder->CreateBr(returnBB);
+
+		// Generate return block for wrapper
+		builder->SetInsertPoint(returnBB);
+		builder->CreateRet(builder->getInt32(0));
+
+		// Clear function context
+		currentFunctionReturnBlock = nullptr;
+		currentFunctionIsFallible = false;
+		currentFunctionIsIntegerOnly = false;
+
+		// Pop debug scope
+		if (debugInfoEnabled && !debugScopeStack.empty()) {
+			debugScopeStack.pop_back();
+		}
+	}
+
+	// The stack-based body: arguments and results on the Quadrate stack
+	bool LlvmGenerator::Impl::generateStackBody(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix,
+			llvm::Value* ctx, llvm::BasicBlock* returnBB) {
+		// === NORMAL (NON-NATIVE) PATH ===
+
+		// If this function was considered integer-only but ended up here
+		// (e.g., fallible function, or callees not all native), clear the flag
+		// so auto-binding, call tracking, and type checking are not skipped.
+		currentFunctionIsIntegerOnly = false;
+
+		// Push function name onto call stack for debugging
+		std::string fullFuncName = namePrefix + "::" + funcNode->name();
+		llvm::Value* funcNameStr = nullptr;
+		if (!currentFunctionIsIntegerOnly) {
+			funcNameStr = builder->CreateGlobalString(fullFuncName);
 			std::string sourceFile;
 			auto srcIt = moduleSourceFiles.find(namePrefix);
 			if (srcIt != moduleSourceFiles.end()) {
 				sourceFile = srcIt->second;
 			}
-			// Use cached source file string
+			// Use cached source file string since all functions in a module share the same path
 			auto sourceFileStr = getOrCreateGlobalString(sourceFile);
 			auto lineNum = builder->getInt64(funcNode->line());
 			builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
+		}
 
-			// Module global init: run each pending heap initializer -- a struct
-			// construction or a string literal -- and store the resulting pointer into
-			// its LLVM global, so user code sees a fully constructed value. Uses the
-			// runtime stack path explicitly (useCompileTimeStack is still false here).
-			for (auto& pending : pendingHeapGlobalInits) {
-				llvm::GlobalVariable* gv = pending.first;
-				IAstNode* initNode = pending.second;
-				generateNode(initNode, ctx);
+		// Coverage instrumentation: emit qd_coverage_mark(idx) at the
+		// start of every user function body. The matching
+		// qd_coverage_register call is emitted in the test runner main
+		// in the same order, so compile-time idx = runtime idx.
+		// Only the main module's functions are tracked, since stdlib
+		// functions don't have meaningful "covered by test" semantics.
+		if (coverageMode && testMode && namePrefix == mainModuleName) {
+			uint32_t covIdx = static_cast<uint32_t>(coverageFunctionNames.size());
+			coverageFunctionNames.push_back(fullFuncName);
+			auto markFnTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
+			auto markFn = module->getOrInsertFunction("qd_coverage_mark", markFnTy);
+			builder->CreateCall(markFn, {builder->getInt32(covIdx)});
+		}
 
-				// Pop the just-pushed struct pointer and store into the global.
-				llvm::Value* initStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
-				llvm::Value* initStackPtr = builder->CreateLoad(ptrTy, initStackPtrPtr, "init_stack_ptr");
-				llvm::AllocaInst* initTmp = builder->CreateAlloca(stackElementTy, nullptr, "init_tmp");
-				builder->CreateCall(stackPopFn, {initStackPtr, initTmp});
-				llvm::Value* initVp = builder->CreateStructGEP(stackElementTy, initTmp, 0, "init_vp");
-				llvm::Value* initV = builder->CreateLoad(ptrTy, initVp, "init_ptr");
-				auto* initStore = builder->CreateStore(initV, gv);
-				initStore->setVolatile(true);
-			}
-
-			// Detect if main function body only uses integers (for type specialization)
-			currentFunctionIsIntegerOnly = true;
-			std::set<std::string> mainLocalNames;
-			collectLocalNames(funcNode, mainLocalNames);
-			for (auto* child : funcNode->children()) {
-				if (!analyzeIsBodyNativeEligible(child, mainLocalNames, false)) {
-					currentFunctionIsIntegerOnly = false;
+		// Generate type check for input parameters
+		// Skip for integer-only functions - semantic validator has already verified types
+		if (!funcNode->inputParameters().empty() && !currentFunctionIsIntegerOnly) {
+			// Create array of types
+			std::vector<llvm::Constant*> typeValues;
+			for (const auto& paramNode : funcNode->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+				// The tag the argument must carry; QD_STACK_TYPE_PTR leaves it unchecked, which
+				// a ptr, a struct, an array or an any parameter has to be
+				uint32_t typeValue = 2; // QD_STACK_TYPE_PTR
+				switch (valueKind(param->typeString())) {
+				case ValueKind::Int:
+					typeValue = 0; // QD_STACK_TYPE_INT
+					break;
+				case ValueKind::Float:
+					typeValue = 1; // QD_STACK_TYPE_FLOAT
+					break;
+				case ValueKind::Str:
+					typeValue = 3; // QD_STACK_TYPE_STR
+					break;
+				case ValueKind::D128:
+					typeValue = 4; // QD_STACK_TYPE_D128
+					break;
+				case ValueKind::Ptr:
+				case ValueKind::Any:
 					break;
 				}
+				typeValues.push_back(builder->getInt32(typeValue));
+			}
+			// A method's receiver sits above its arguments, and is not checked here
+			if (funcNode->hasReceiver()) {
+				typeValues.push_back(builder->getInt32(2)); // QD_STACK_TYPE_PTR
 			}
 
-			// Create return basic block for defer execution
-			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+			// Create global array constant
+			auto arrayType = llvm::ArrayType::get(int32Ty, typeValues.size());
+			auto arrayInit = llvm::ConstantArray::get(arrayType, typeValues);
+			auto globalArray = new llvm::GlobalVariable(
+					*module, arrayType, true, llvm::GlobalValue::PrivateLinkage, arrayInit, "input_types");
 
-			// Set the return target so `return` works in main. Without this,
-			// currentFunctionReturnBlock stayed null here — every other function path assigns
-			// it — and generateNode's RETURN_STATEMENT case, which is guarded on it being
-			// non-null, silently emitted nothing. `return` in main was a no-op, so the
-			// guard-clause idiom fell straight through to the code it was guarding against.
-			// Reaching returnBB also runs main's defers and local cleanup, which an early
-			// return previously skipped along with everything else.
-			currentFunctionReturnBlock = returnBB;
+			// Call qd_check_stack(ctx, count, types, func_name)
+			auto arrayPtr = builder->CreateBitCast(globalArray, ptrTy);
+			builder->CreateCall(checkStackFn, {ctx, builder->getInt64(typeValues.size()), arrayPtr, funcNameStr});
+		}
 
-			// Initialize defer scope stack for this function
-			deferScopeStack.clear();
-			pushDeferScope();
+		// Initialize defer scope stack for this function
+		deferScopeStack.clear();
+		pushDeferScope();
 
-			// Scan for captured variables to enable escaped closures
-			// Variables captured by closures need heap allocation so they survive function return
-			auto body = funcNode->body();
-			if (body) {
-				collectAllCapturesFromAST(body, heapAllocatedCaptures);
+		// Pre-register struct-typed parameters so they get released at cleanup
+		// Parameters with struct type annotations will be stored via `-> name` in the body
+		for (const auto& paramNode : funcNode->inputParameters()) {
+			if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode.get())) {
+				const std::string& typeStr = param->typeString();
+				// A struct (or an array, or a function): not a scalar and not a bare ptr
+				if (valueKind(typeStr) == ValueKind::Ptr && resolveTypeName(typeStr) != "ptr") {
+					// This is a struct type - mark the parameter name as a struct local
+					// so it gets released at function cleanup (use full qualified name)
+					if (!param->name().empty()) {
+						localVariableStructTypes[param->name()] = typeStr;
+					}
+				}
 			}
+		}
 
-			// Generate function body
-			if (body) {
-				generateNode(body, ctx);
+		// Fallible functions remember the depth the caller expects on failure. A failed call
+		// produces nothing, so on the failure exit the stack must be exactly what it was
+		// before the call minus the declared inputs and the receiver -- whatever the body
+		// pushed, or left unconsumed when it panicked, is dropped in the return block. This
+		// is what makes the validator's model of a failure arm ("the pre-call stack") exact
+		// for every callee body, not only for those that bind their inputs before panicking.
+		// Computed here, before the receiver and any named parameters are popped.
+		llvm::Value* failTarget = nullptr;
+		if (funcNode->throws()) {
+			llvm::Value* entryStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "entry_stack_ptr");
+			llvm::Value* entryStackPtr = builder->CreateLoad(ptrTy, entryStackPtrPtr, "entry_stack");
+			llvm::Value* entryDepth = builder->CreateCall(stackSizeFn, {entryStackPtr}, "entry_depth");
+			uint64_t consumed = funcNode->inputParameters().size() + (funcNode->hasReceiver() ? 1 : 0);
+			failTarget = builder->CreateSub(entryDepth, builder->getInt64(consumed), "fail_target");
+		}
+
+		// Scan for captured variables to enable escaped closures
+		// Variables captured by closures need heap allocation so they survive function return
+		auto body = funcNode->body();
+		if (body) {
+			collectAllCapturesFromAST(body, heapAllocatedCaptures);
+		}
+
+		// For methods, pop the receiver from the stack and bind it as a local variable
+		// The receiver is implicitly passed and must be bound before the body executes
+		if (funcNode->hasReceiver()) {
+			const std::string& receiverName = funcNode->receiverName();
+			const std::string& receiverType = funcNode->receiverType();
+
+			bindParameter(receiverName, ctx);
+			// Qualify receiver type with module prefix if not already qualified. The
+			// test is against mainModuleName, not the literal "main": the program's own
+			// module is named after whatever was handed to generate(), which for a file
+			// compiled directly is its path. Comparing with "main" qualified the
+			// receiver as `<path>::Bbb`, which findStructDefinition resolves to nothing,
+			// so `b <<x` in a method fell through to the by-name search over every
+			// struct and took whichever one declares a field of that name.
+			std::string qualifiedReceiverType = receiverType;
+			if (receiverType.find("::") == std::string::npos && currentModulePrefix != mainModuleName) {
+				qualifiedReceiverType = currentModulePrefix + "::" + receiverType;
 			}
+			localVariableStructTypes[receiverName] = qualifiedReceiverType;
+		}
 
-			// Branch to return block if no terminator
-			if (!isTerminated(builder->GetInsertBlock())) {
-				builder->CreateBr(returnBB);
+		// Auto-bind named input parameters as local variables
+		// Pop from stack in reverse order (stack is LIFO: last param on top)
+		// A `stack fn` binds nothing: its arguments stay on the stack for the body
+		if (!currentFunctionIsIntegerOnly) {
+			const auto& inputs = funcNode->inputParameters();
+			const bool bindParams = !funcNode->isStack();
+			for (int paramIdx = static_cast<int>(inputs.size()) - 1; bindParams && paramIdx >= 0; paramIdx--) {
+				const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
+				const std::string& paramName = param->name();
+				bindParameter(paramName, ctx);
+
+				// Track struct type if applicable
+				const std::string& typeStr = param->typeString();
+				if (valueKind(typeStr) == ValueKind::Ptr && resolveTypeName(typeStr) != "ptr") {
+					localVariableStructTypes[paramName] = typeStr;
+				}
 			}
+		}
 
-			// Generate return block - this is where function-level defers execute
-			builder->SetInsertPoint(returnBB);
+		// Generate function body
+		if (body) {
+			generateNode(body, ctx);
+		}
 
-			// Execute function-level defer scope
-			executeDeferScope(ctx);
+		// Clear return target (but save integer-only flag for return block)
+		currentFunctionReturnBlock = nullptr;
+		currentFunctionIsFallible = false;
+		bool wasIntegerOnly = currentFunctionIsIntegerOnly;
+		currentFunctionIsIntegerOnly = false;
 
-			// Clean up local variables (free strings)
-			generateLocalCleanup();
+		// If the block doesn't end with a terminator, branch to return block
+		llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
+		if (funcBodyBlock != nullptr && !isTerminated(funcBodyBlock)) {
+			builder->CreateBr(returnBB);
+		}
 
-			// Pop from call stack
+		// Generate return block - this is where function-level defers execute
+		builder->SetInsertPoint(returnBB);
+
+		// Execute function-level defer scope
+		executeDeferScope(ctx);
+
+		// Clean up local variables (free strings)
+		generateLocalCleanup();
+
+		// Failure exit of a fallible function: leave the stack as the caller expects it.
+		if (failTarget) {
+			ErrorState exitState = generateReadErrorState(ctx, "fail_exit");
+			llvm::Function* thisFn = builder->GetInsertBlock()->getParent();
+			auto truncBB = llvm::BasicBlock::Create(*context, "fail_truncate", thisFn);
+			auto afterBB = llvm::BasicBlock::Create(*context, "fail_done", thisFn);
+			builder->CreateCondBr(exitState.failed, truncBB, afterBB);
+			builder->SetInsertPoint(truncBB);
+			builder->CreateCall(stackTruncateFn, {ctx, failTarget});
+			builder->CreateBr(afterBB);
+			builder->SetInsertPoint(afterBB);
+		}
+
+		// Pop function from call stack before returning
+		// Skip for integer-only functions (we didn't push in that case)
+		if (!wasIntegerOnly) {
 			builder->CreateCall(popCallFn, {ctx});
+		}
 
-			// Free context
-			builder->CreateCall(freeContextFn, {ctx});
+		// Return success
+		builder->CreateRet(builder->getInt32(0));
 
-			// Return 0
-			builder->CreateRet(builder->getInt32(0));
-
-			currentFunctionReturnBlock = nullptr;
-
-			// Pop debug scope for main function
-			if (debugInfoEnabled && !debugScopeStack.empty()) {
-				debugScopeStack.pop_back();
-			}
-		} else {
-			// User-defined function: int usr_<prefix>_<name>(qd_context* ctx)
-			// For methods: int usr_<prefix>_<ReceiverType>_<name>(qd_context* ctx)
-			std::string fnName;
-			if (funcNode->hasReceiver()) {
-				fnName = "usr_" + namePrefix + "_" + funcNode->receiverType() + "_" + funcNode->name();
-			} else {
-				fnName = "usr_" + namePrefix + "_" + funcNode->name();
-			}
-			// Check if function was already declared in pre-pass (for forward references)
-			fn = module->getFunction(fnName);
-			if (!fn) {
-				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-				// Use InternalLinkage for user functions unless in export mode (shared library compilation)
-				// InternalLinkage allows LLVM to eliminate unused functions via GlobalDCE
-				auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
-				fn = llvm::Function::Create(fnTy, linkage, fnName, *module);
-				fn->addParamAttr(0, llvm::Attribute::NonNull);
-				fn->addParamAttr(0, llvm::Attribute::NoAlias);
-				fn->addFnAttr(llvm::Attribute::NoUnwind);
-				if (funcNode->isInline()) {
-					fn->addFnAttr(llvm::Attribute::AlwaysInline);
-				}
-			}
-
-			// Add debug info for user function
-			if (debugInfoEnabled && debugBuilder) {
-				auto funcType = debugBuilder->createSubroutineType(debugBuilder->getOrCreateTypeArray({}));
-				auto subprogram = debugBuilder->createFunction(compileUnit, // Scope
-						funcNode->name(),									// Name
-						fnName.c_str(),										// Linkage name
-						funcDebugFile,										// File
-						static_cast<unsigned>(funcNode->line()),			// Line number
-						funcType,											// Type
-						static_cast<unsigned>(funcNode->line()),			// Scope line
-						llvm::DINode::FlagPrototyped, llvm::DISubprogram::SPFlagDefinition);
-				fn->setSubprogram(subprogram);
-				debugScopeStack.push_back(subprogram);
-
-				// Emit function start location
-				auto loc = llvm::DILocation::get(*context, static_cast<unsigned>(funcNode->line()), 0, subprogram);
-				builder->SetCurrentDebugLocation(loc);
-			}
-
-			// Register the function with appropriate scope
-			// For methods, register with mangled name: module::ReceiverType::methodName
-			std::string registerName;
-			if (funcNode->hasReceiver()) {
-				// Qualify struct type with module prefix for methods from modules
-				std::string qualifiedReceiverType = funcNode->receiverType();
-				if (namePrefix != "main" && qualifiedReceiverType.find("::") == std::string::npos) {
-					qualifiedReceiverType = namePrefix + "::" + qualifiedReceiverType;
-				}
-				registerName = qualifiedReceiverType + "::" + funcNode->name();
-
-				// Also register with unqualified struct type for intra-module method calls
-				std::string unqualifiedRegisterName = funcNode->receiverType() + "::" + funcNode->name();
-				if (unqualifiedRegisterName != registerName) {
-					userFunctions[unqualifiedRegisterName] = fn;
-					fallibleFunctions[unqualifiedRegisterName] = funcNode->throws();
-				}
-			} else {
-				registerName = (namePrefix == "main") ? funcNode->name() : (namePrefix + "::" + funcNode->name());
-
-				// For merged modules (local file imports), also register with unqualified name
-				// This allows calling functions without the module prefix
-				if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
-					userFunctions[funcNode->name()] = fn;
-					fallibleFunctions[funcNode->name()] = funcNode->throws();
-				}
-			}
-			userFunctions[registerName] = fn;
-			fallibleFunctions[registerName] = funcNode->throws();
-
-			// Create basic blocks
-			auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
-			auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
-
-			builder->SetInsertPoint(entryBB);
-
-			// Get context parameter
-			llvm::Value* ctx = fn->getArg(0);
-			ctx->setName("ctx");
-
-			// Create alloca for ctx parameter for debug info
-			// Store the parameter value to it so debugger can always find it
-			llvm::AllocaInst* ctxAlloca = builder->CreateAlloca(ctx->getType(), nullptr, "ctx.addr");
-			builder->CreateStore(ctx, ctxAlloca);
-
-			// Add debug info for ctx parameter (treat as local variable, not parameter)
-			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && contextDebugType) {
-				// contextDebugType is already qd_context* (pointer), so use it directly
-				auto ctxPtrType = contextDebugType;
-
-				// Create local variable for ctx (not a parameter variable)
-				// This prevents LLVM from tracking the parameter value flow
-				auto localVar = debugBuilder->createAutoVariable(debugScopeStack.back(), // Scope (current function)
-						"ctx",															 // Name
-						funcDebugFile,													 // File
-						static_cast<unsigned>(funcNode->line()),						 // Line
-						ctxPtrType,														 // Type
-						true															 // Always preserve
-				);
-
-				// Insert declare on the alloca so debugger can always find it
-				// Use DW_OP_deref since the alloca is a pointer to where the value is stored
-				// No deref needed - ctxAlloca stores the pointer value directly
-				debugBuilder->insertDeclare(ctxAlloca,	  // Storage (the alloca)
-						localVar,						  // Variable
-						debugBuilder->createExpression(), // Empty expression (no deref)
-						llvm::DILocation::get(
-								*context, static_cast<unsigned>(funcNode->line()), 0, debugScopeStack.back()),
-						builder->GetInsertBlock());
-			}
-
-			// Set the return target for this function
-			currentFunctionReturnBlock = returnBB;
-			currentFunctionIsFallible = funcNode->throws();
-
-			// Detect if function only uses numeric types (for type specialization)
-			// Do this BEFORE generating call tracking so we can skip it for numeric-only functions
-			// A function is "integer-only" if all typed parameters are i64
-			// AND the body contains no floats, strings, or module calls.
-			// This enables fast inline integer operations (no type checking needed).
-			currentFunctionIsIntegerOnly = true;
-			for (const auto& param : funcNode->inputParameters()) {
-				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
-					const std::string& typeStr = paramNode->typeString();
-					if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-							typeStr != "i") {
-						currentFunctionIsIntegerOnly = false;
-						break;
-					}
-				}
-			}
-			if (currentFunctionIsIntegerOnly) {
-				for (const auto& param : funcNode->outputParameters()) {
-					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
-						const std::string& typeStr = paramNode->typeString();
-						if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-								typeStr != "i") {
-							currentFunctionIsIntegerOnly = false;
-							break;
-						}
-					}
-				}
-			}
-
-			// Also check the function body for non-numeric types (strings, module calls)
-			if (currentFunctionIsIntegerOnly) {
-				// Scan the function body to ensure it only uses numerics
-				std::set<std::string> funcLocalNames;
-				collectLocalNames(funcNode, funcLocalNames);
-				for (auto* child : funcNode->children()) {
-					if (!analyzeIsBodyNativeEligible(child, funcLocalNames, false)) {
-						currentFunctionIsIntegerOnly = false;
-						break;
-					}
-				}
-			}
-
-			// Check if this function has a native version (compile-time stack optimization)
-			auto nativeIt = nativeFunctions.find(registerName);
-			// Verify all callee user functions also have native versions
-			bool calleesAllNative = true;
-			if (nativeIt != nativeFunctions.end()) {
-				auto body = funcNode->body();
-				if (body) {
-					for (auto* child : body->children()) {
-						if (!analyzeCalleesAllNative(child)) {
-							calleesAllNative = false;
-							break;
-						}
-					}
-				}
-			}
-			// If callees aren't all native, remove the native function declaration
-			if (nativeIt != nativeFunctions.end() && !calleesAllNative) {
-				// Backstop: demoteNonNativeFunctions has already settled the native set before any
-				// body existed, so reaching here means a shape it did not cover. Drop every name
-				// pointing at this function, and only erase it if nothing references it yet -
-				// erasing a Function that call instructions still point at is what left the module
-				// with dangling operands and crashed LLVM's own verifier.
-				auto* erasedFn = nativeIt->second;
-				for (auto it = nativeFunctions.begin(); it != nativeFunctions.end();) {
-					if (it->second == erasedFn) {
-						nativeFuncInfo.erase(it->first);
-						it = nativeFunctions.erase(it);
-					} else {
-						++it;
-					}
-				}
-				if (erasedFn->use_empty()) {
-					erasedFn->eraseFromParent();
-				}
-				nativeIt = nativeFunctions.end(); // Invalidate iterator
-				currentFunctionIsIntegerOnly = false;
-			}
-			if (nativeIt != nativeFunctions.end() && !debugInfoEnabled && nativeIt->second->empty()) {
-				// === NATIVE CALLING CONVENTION PATH ===
-				// Generate two functions:
-				// 1. Native function: direct i64 params/return, compile-time stack
-				// 2. Stack wrapper: pops from runtime stack, calls native, pushes result
-				// Skip if native function already has a body (merged/local modules)
-
-				llvm::Function* nativeFn = nativeIt->second;
-				auto& info = nativeFuncInfo[registerName];
-
-				// --- Generate native function body ---
-				auto nativeEntryBB = llvm::BasicBlock::Create(*context, "entry", nativeFn);
-				builder->SetInsertPoint(nativeEntryBB);
-
-				// Save and reset state for native body generation
-				auto savedLocalVars = localVariables;
-				auto savedLocalVarStructTypes = localVariableStructTypes;
-				auto savedLocalArrayVars = localArrayVariables;
-				auto savedNativeLocalVars = nativeLocalVariables;
-				auto savedReturnBlock = currentFunctionReturnBlock;
-				auto savedIsFallible = currentFunctionIsFallible;
-				auto savedIsIntegerOnly = currentFunctionIsIntegerOnly;
-				auto savedIteratorVars = iteratorVars;
-				auto savedIteratorFloatVars = iteratorFloatVars;
-
-				localVariables.clear();
-				localVariableStructTypes.clear();
-				localArrayVariables.clear();
-				nativeLocalVariables.clear();
-				iteratorVars.clear();
-				iteratorFloatVars.clear();
-				currentFunctionIsIntegerOnly = true;
-				currentFunctionIsFallible = false;
-
-				// Get ctx parameter (arg 0)
-				llvm::Value* nativeCtx = nativeFn->getArg(0);
-				nativeCtx->setName("ctx");
-
-				// Set up compile-time stack with function parameters
-				useCompileTimeStack = true;
-				compileTimeStack.clear();
-				for (size_t i = 0; i < info.inputCount; i++) {
-					llvm::Value* param = nativeFn->getArg(static_cast<unsigned>(i + 1));
-					// Name the parameter after the input parameter name
-					if (i < funcNode->inputParameters().size()) {
-						auto* paramNode = static_cast<AstNodeParameter*>(funcNode->inputParameters()[i].get());
-						param->setName(paramNode->name());
-					}
-					compileTimeStack.push_back(param);
-				}
-
-				// Auto-bind named input parameters as local variables (native path)
-				// For native functions, params are LLVM function args on the compileTimeStack.
-				// Bind named params to nativeLocalVariables so they can be referenced by name.
-				// Values stay on the compileTimeStack too (native codegen uses them positionally).
-				{
-					const auto& inputs = funcNode->inputParameters();
-					for (size_t i = 0; !funcNode->isStack() && i < inputs.size() && i < compileTimeStack.size(); i++) {
-						const auto* paramNode = static_cast<const AstNodeParameter*>(inputs[i].get());
-						if (!paramNode->hasName()) {
-							continue;
-						}
-						const std::string& paramName = paramNode->name();
-						llvm::Value* val = compileTimeStack[i];
-
-						llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-						llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-						auto* alloca = tmpBuilder.CreateAlloca(val->getType(), nullptr, paramName);
-						nativeLocalVariables[paramName] = alloca;
-						builder->CreateStore(val, alloca);
-					}
-				}
-
-				// Create return value alloca in entry block (LLVM mem2reg will promote to SSA)
-				nativeReturnAlloca = nullptr;
-				if (info.outputCount == 1) {
-					llvm::Type* retTy = (info.outputType == NativeParamType::F64) ? builder->getDoubleTy() : int64Ty;
-					nativeReturnAlloca = builder->CreateAlloca(retTy, nullptr, "retval");
-					llvm::Value* retInit =
-							retTy->isDoubleTy()
-									? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
-									: static_cast<llvm::Value*>(builder->getInt64(0));
-					builder->CreateStore(retInit, nativeReturnAlloca);
-				}
-
-				// Create return block for native function
-				auto nativeReturnBB = llvm::BasicBlock::Create(*context, "return", nativeFn);
-				currentFunctionReturnBlock = nativeReturnBB;
-
-				// Initialize defer scope
-				deferScopeStack.clear();
-				pushDeferScope();
-
-				// Generate body using compile-time stack
-				auto body = funcNode->body();
-				if (body) {
-					generateNode(body, nativeCtx);
-				}
-
-				// Before branching to return, store the return value
-				llvm::BasicBlock* nativeBodyBlock = builder->GetInsertBlock();
-				if (nativeBodyBlock != nullptr && !isTerminated(nativeBodyBlock)) {
-					if (info.outputCount == 1 && !compileTimeStack.empty()) {
-						builder->CreateStore(compileTimeStack.back(), nativeReturnAlloca);
-					}
-					builder->CreateBr(nativeReturnBB);
-				}
-
-				// Generate return block
-				builder->SetInsertPoint(nativeReturnBB);
-
-				if (info.outputCount == 1) {
-					llvm::Value* retVal = builder->CreateLoad(
-							nativeReturnAlloca->getAllocatedType(), nativeReturnAlloca, "retval_load");
-					builder->CreateRet(retVal);
-				} else {
-					builder->CreateRetVoid();
-				}
-
-				// Clean up native mode
-				useCompileTimeStack = false;
-				compileTimeStack.clear();
-				nativeReturnAlloca = nullptr;
-
-				// Restore state
-				localVariables = savedLocalVars;
-				localVariableStructTypes = savedLocalVarStructTypes;
-				localArrayVariables = savedLocalArrayVars;
-				nativeLocalVariables = savedNativeLocalVars;
-				currentFunctionReturnBlock = savedReturnBlock;
-				currentFunctionIsFallible = savedIsFallible;
-				currentFunctionIsIntegerOnly = savedIsIntegerOnly;
-				iteratorVars = savedIteratorVars;
-				iteratorFloatVars = savedIteratorFloatVars;
-
-				// --- Generate stack wrapper body ---
-				// The wrapper pops args from runtime stack, calls native, pushes result
-				builder->SetInsertPoint(entryBB);
-
-				// Pop arguments from runtime stack (in reverse order)
-				std::vector<llvm::Value*> nativeArgs;
-				nativeArgs.push_back(ctx); // First arg is always ctx
-				// Pop N args (they come off stack in reverse parameter order)
-				std::vector<llvm::Value*> poppedArgs;
-				for (size_t i = 0; i < info.inputCount; i++) {
-					// Pop in reverse order, so pop index is (inputCount - 1 - i)
-					size_t popIdx = info.inputCount - 1 - i;
-					if (popIdx < info.inputTypes.size() && info.inputTypes[popIdx] == NativeParamType::F64) {
-						poppedArgs.push_back(generateInlinePopFloat(ctx));
-					} else {
-						poppedArgs.push_back(generateInlinePopInt(ctx));
-					}
-				}
-				// Reverse to get correct parameter order
-				for (auto it = poppedArgs.rbegin(); it != poppedArgs.rend(); ++it) {
-					nativeArgs.push_back(*it);
-				}
-
-				// Call native function and push result to runtime stack
-				if (info.outputCount == 1) {
-					llvm::Value* nativeResult = builder->CreateCall(nativeFn, nativeArgs, "result");
-					if (info.outputType == NativeParamType::F64) {
-						generateInlinePushFloatValue(ctx, nativeResult);
-					} else {
-						generateInlinePushIntValue(ctx, nativeResult);
-					}
-				} else {
-					builder->CreateCall(nativeFn, nativeArgs);
-				}
-
-				// Branch to return
-				builder->CreateBr(returnBB);
-
-				// Generate return block for wrapper
-				builder->SetInsertPoint(returnBB);
-				builder->CreateRet(builder->getInt32(0));
-
-				// Clear function context
-				currentFunctionReturnBlock = nullptr;
-				currentFunctionIsFallible = false;
-				currentFunctionIsIntegerOnly = false;
-
-				// Pop debug scope
-				if (debugInfoEnabled && !debugScopeStack.empty()) {
-					debugScopeStack.pop_back();
-				}
-			} else {
-				// === NORMAL (NON-NATIVE) PATH ===
-
-				// If this function was considered integer-only but ended up here
-				// (e.g., fallible function, or callees not all native), clear the flag
-				// so auto-binding, call tracking, and type checking are not skipped.
-				currentFunctionIsIntegerOnly = false;
-
-				// Push function name onto call stack for debugging
-				std::string fullFuncName = namePrefix + "::" + funcNode->name();
-				llvm::Value* funcNameStr = nullptr;
-				if (!currentFunctionIsIntegerOnly) {
-					funcNameStr = builder->CreateGlobalString(fullFuncName);
-					std::string sourceFile;
-					auto srcIt = moduleSourceFiles.find(namePrefix);
-					if (srcIt != moduleSourceFiles.end()) {
-						sourceFile = srcIt->second;
-					}
-					// Use cached source file string since all functions in a module share the same path
-					auto sourceFileStr = getOrCreateGlobalString(sourceFile);
-					auto lineNum = builder->getInt64(funcNode->line());
-					builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
-				}
-
-				// Coverage instrumentation: emit qd_coverage_mark(idx) at the
-				// start of every user function body. The matching
-				// qd_coverage_register call is emitted in the test runner main
-				// in the same order, so compile-time idx = runtime idx.
-				// Only the main module's functions are tracked, since stdlib
-				// functions don't have meaningful "covered by test" semantics.
-				if (coverageMode && testMode && namePrefix == mainModuleName) {
-					uint32_t covIdx = static_cast<uint32_t>(coverageFunctionNames.size());
-					coverageFunctionNames.push_back(fullFuncName);
-					auto markFnTy = llvm::FunctionType::get(builder->getVoidTy(), {int32Ty}, false);
-					auto markFn = module->getOrInsertFunction("qd_coverage_mark", markFnTy);
-					builder->CreateCall(markFn, {builder->getInt32(covIdx)});
-				}
-
-				// Generate type check for input parameters
-				// Skip for integer-only functions - semantic validator has already verified types
-				if (!funcNode->inputParameters().empty() && !currentFunctionIsIntegerOnly) {
-					// Create array of types
-					std::vector<llvm::Constant*> typeValues;
-					for (const auto& paramNode : funcNode->inputParameters()) {
-						AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
-						std::string typeStr = param->typeString();
-						uint32_t typeValue;
-						if (typeStr.empty()) {
-							typeValue = 2; // QD_STACK_TYPE_PTR - untyped
-						} else if (typeStr == "i") {
-							typeValue = 0; // QD_STACK_TYPE_INT
-						} else if (typeStr == "f") {
-							typeValue = 1; // QD_STACK_TYPE_FLOAT
-						} else if (typeStr == "s") {
-							typeValue = 3; // QD_STACK_TYPE_STR
-						} else if (typeStr == "p") {
-							typeValue = 2; // QD_STACK_TYPE_PTR
-						} else {
-							typeValue = 2; // QD_STACK_TYPE_PTR - unknown type
-						}
-						typeValues.push_back(builder->getInt32(typeValue));
-					}
-
-					// Create global array constant
-					auto arrayType = llvm::ArrayType::get(int32Ty, typeValues.size());
-					auto arrayInit = llvm::ConstantArray::get(arrayType, typeValues);
-					auto globalArray = new llvm::GlobalVariable(
-							*module, arrayType, true, llvm::GlobalValue::PrivateLinkage, arrayInit, "input_types");
-
-					// Call qd_check_stack(ctx, count, types, func_name)
-					auto arrayPtr = builder->CreateBitCast(globalArray, ptrTy);
-					builder->CreateCall(checkStackFn,
-							{ctx, builder->getInt64(funcNode->inputParameters().size()), arrayPtr, funcNameStr});
-				}
-
-				// Initialize defer scope stack for this function
-				deferScopeStack.clear();
-				pushDeferScope();
-
-				// Pre-register struct-typed parameters so they get released at cleanup
-				// Parameters with struct type annotations will be stored via `-> name` in the body
-				for (const auto& paramNode : funcNode->inputParameters()) {
-					if (const auto* param = dynamic_cast<const AstNodeParameter*>(paramNode.get())) {
-						const std::string& typeStr = param->typeString();
-						// Check if this is a struct type (not a primitive type)
-						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
-								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "d128" &&
-								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
-								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
-							// This is a struct type - mark the parameter name as a struct local
-							// so it gets released at function cleanup (use full qualified name)
-							if (!param->name().empty()) {
-								localVariableStructTypes[param->name()] = typeStr;
-							}
-						}
-					}
-				}
-
-				// Fallible functions remember the depth the caller expects on failure. A failed call
-				// produces nothing, so on the failure exit the stack must be exactly what it was
-				// before the call minus the declared inputs and the receiver -- whatever the body
-				// pushed, or left unconsumed when it panicked, is dropped in the return block. This
-				// is what makes the validator's model of a failure arm ("the pre-call stack") exact
-				// for every callee body, not only for those that bind their inputs before panicking.
-				// Computed here, before the receiver and any named parameters are popped.
-				llvm::Value* failTarget = nullptr;
-				if (funcNode->throws()) {
-					llvm::Value* entryStackPtrPtr =
-							builder->CreateStructGEP(contextStructTy, ctx, 0, "entry_stack_ptr");
-					llvm::Value* entryStackPtr = builder->CreateLoad(ptrTy, entryStackPtrPtr, "entry_stack");
-					llvm::Value* entryDepth = builder->CreateCall(stackSizeFn, {entryStackPtr}, "entry_depth");
-					uint64_t consumed = funcNode->inputParameters().size() + (funcNode->hasReceiver() ? 1 : 0);
-					failTarget = builder->CreateSub(entryDepth, builder->getInt64(consumed), "fail_target");
-				}
-
-				// For methods, pop the receiver from the stack and bind it as a local variable
-				// The receiver is implicitly passed and must be bound before the body executes
-				if (funcNode->hasReceiver()) {
-					const std::string& receiverName = funcNode->receiverName();
-					const std::string& receiverType = funcNode->receiverType();
-
-					// Create alloca for the receiver variable
-					llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-					llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-					llvm::AllocaInst* receiverAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, receiverName);
-
-					// Initialize type field
-					llvm::Value* typePtr =
-							tmpBuilder.CreateStructGEP(stackElementTy, receiverAlloca, 1, receiverName + "_init_type");
-					tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
-
-					// Store in local variables map
-					localVariables[receiverName] = receiverAlloca;
-					// Qualify receiver type with module prefix if not already qualified. The
-					// test is against mainModuleName, not the literal "main": the program's own
-					// module is named after whatever was handed to generate(), which for a file
-					// compiled directly is its path. Comparing with "main" qualified the
-					// receiver as `<path>::Bbb`, which findStructDefinition resolves to nothing,
-					// so `b <<x` in a method fell through to the by-name search over every
-					// struct and took whichever one declares a field of that name.
-					std::string qualifiedReceiverType = receiverType;
-					if (receiverType.find("::") == std::string::npos && currentModulePrefix != mainModuleName) {
-						qualifiedReceiverType = currentModulePrefix + "::" + receiverType;
-					}
-					localVariableStructTypes[receiverName] = qualifiedReceiverType;
-
-					// Pop the receiver from the stack
-					llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-					llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-					builder->CreateCall(stackPopFn, {stackPtr, receiverAlloca});
-				}
-
-				// Scan for captured variables to enable escaped closures
-				// Variables captured by closures need heap allocation so they survive function return
-				auto body = funcNode->body();
-				if (body) {
-					collectAllCapturesFromAST(body, heapAllocatedCaptures);
-				}
-
-				// Auto-bind named input parameters as local variables
-				// Pop from stack in reverse order (stack is LIFO: last param on top)
-				// A `stack fn` binds nothing: its arguments stay on the stack for the body
-				if (!currentFunctionIsIntegerOnly) {
-					const auto& inputs = funcNode->inputParameters();
-					const bool bindParams = !funcNode->isStack();
-					for (int paramIdx = static_cast<int>(inputs.size()) - 1; bindParams && paramIdx >= 0; paramIdx--) {
-						const auto* param =
-								static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
-						const std::string& paramName = param->name();
-
-						// Create alloca in entry block
-						llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-						llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-						llvm::AllocaInst* paramAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, paramName);
-
-						// Initialize type field to -1 (uninitialized marker)
-						llvm::Value* typePtr =
-								tmpBuilder.CreateStructGEP(stackElementTy, paramAlloca, 1, paramName + "_init_type");
-						tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
-
-						// Store in local variables map
-						localVariables[paramName] = paramAlloca;
-
-						// Track struct type if applicable
-						const std::string& typeStr = param->typeString();
-						if (!typeStr.empty() && typeStr != "i" && typeStr != "i64" && typeStr != "int" &&
-								typeStr != "int64" && typeStr != "f" && typeStr != "f64" && typeStr != "d128" &&
-								typeStr != "float" && typeStr != "s" && typeStr != "str" && typeStr != "string" &&
-								typeStr != "p" && typeStr != "ptr" && typeStr != "pointer") {
-							localVariableStructTypes[paramName] = typeStr;
-						}
-
-						// Pop from runtime stack
-						llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
-						llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-						builder->CreateCall(stackPopFn, {stackPtr, paramAlloca});
-					}
-				}
-
-				// Generate function body
-				if (body) {
-					generateNode(body, ctx);
-				}
-
-				// Clear return target (but save integer-only flag for return block)
-				currentFunctionReturnBlock = nullptr;
-				currentFunctionIsFallible = false;
-				bool wasIntegerOnly = currentFunctionIsIntegerOnly;
-				currentFunctionIsIntegerOnly = false;
-
-				// If the block doesn't end with a terminator, branch to return block
-				llvm::BasicBlock* funcBodyBlock = builder->GetInsertBlock();
-				if (funcBodyBlock != nullptr && !isTerminated(funcBodyBlock)) {
-					builder->CreateBr(returnBB);
-				}
-
-				// Generate return block - this is where function-level defers execute
-				builder->SetInsertPoint(returnBB);
-
-				// Execute function-level defer scope
-				executeDeferScope(ctx);
-
-				// Clean up local variables (free strings)
-				generateLocalCleanup();
-
-				// Failure exit of a fallible function: leave the stack as the caller expects it.
-				if (failTarget) {
-					ErrorState exitState = generateReadErrorState(ctx, "fail_exit");
-					llvm::Function* thisFn = builder->GetInsertBlock()->getParent();
-					auto truncBB = llvm::BasicBlock::Create(*context, "fail_truncate", thisFn);
-					auto afterBB = llvm::BasicBlock::Create(*context, "fail_done", thisFn);
-					builder->CreateCondBr(exitState.failed, truncBB, afterBB);
-					builder->SetInsertPoint(truncBB);
-					builder->CreateCall(stackTruncateFn, {ctx, failTarget});
-					builder->CreateBr(afterBB);
-					builder->SetInsertPoint(afterBB);
-				}
-
-				// Pop function from call stack before returning
-				// Skip for integer-only functions (we didn't push in that case)
-				if (!wasIntegerOnly) {
-					builder->CreateCall(popCallFn, {ctx});
-				}
-
-				// Return success
-				builder->CreateRet(builder->getInt32(0));
-
-				// Pop debug scope for user function
-				if (debugInfoEnabled && !debugScopeStack.empty()) {
-					debugScopeStack.pop_back();
-				}
-
-			} // end else (non-native path)
+		// Pop debug scope for user function
+		if (debugInfoEnabled && !debugScopeStack.empty()) {
+			debugScopeStack.pop_back();
 		}
 
 		return true;
+	}
+
+	// The struct a function returns: the first struct-typed output, or when it declares none
+	// (a ptr), the last struct its body constructs. Empty when it returns no struct.
+	std::string LlvmGenerator::Impl::returnStructType(AstNodeFunctionDeclaration* funcNode) {
+		for (const auto& outParam : funcNode->outputParameters()) {
+			if (auto* param = dynamic_cast<AstNodeParameter*>(outParam.get())) {
+				if (looksLikeStructType(param->typeString())) {
+					return param->typeString();
+				}
+			}
+		}
+		return funcNode->body() ? findLastStructConstruction(funcNode->body()) : "";
+	}
+
+	// Declares `<fnName>_native`, the version of the function that takes and returns its values
+	// as i64 and double instead of on the stack, when it can have one: no receiver, cannot fail,
+	// at least one input and at most one output, all i64 or f64, and a body the native path
+	// handles, and no debug info asked for. Null, with `info` untouched, when it cannot.
+	llvm::Function* LlvmGenerator::Impl::declareNativeVersion(AstNodeFunctionDeclaration* funcNode,
+			const std::string& fnName, llvm::GlobalValue::LinkageTypes linkage, NativeFuncInfo& info) {
+		const size_t inputCount = funcNode->inputParameters().size();
+		const size_t outputCount = funcNode->outputParameters().size();
+		// With debug info every function keeps its stack-based body, which the debugger can show
+		if (debugInfoEnabled || funcNode->hasReceiver() || funcNode->throws() || inputCount == 0 || outputCount > 1) {
+			return nullptr;
+		}
+		std::vector<NativeParamType> inputTypes;
+		NativeParamType outputType = NativeParamType::I64;
+		if (!nativeSignatureTypes(parameterTypes(funcNode->inputParameters()),
+					parameterTypes(funcNode->outputParameters()), inputTypes, outputType)) {
+			return nullptr;
+		}
+		std::set<std::string> funcLocalNames;
+		collectLocalNames(funcNode, funcLocalNames);
+		for (auto* child : funcNode->children()) {
+			if (!analyzeIsBodyNativeEligible(child, funcLocalNames)) {
+				return nullptr;
+			}
+		}
+
+		// Already there when a merged module's function is declared a second time
+		const std::string nativeName = fnName + "_native";
+		llvm::Function* nativeFn = module->getFunction(nativeName);
+		if (!nativeFn) {
+			auto* doubleTy = builder->getDoubleTy();
+			std::vector<llvm::Type*> nativeParams;
+			nativeParams.push_back(contextPtrTy); // ctx still needed for print/etc
+			for (NativeParamType type : inputTypes) {
+				nativeParams.push_back(type == NativeParamType::F64 ? doubleTy : int64Ty);
+			}
+			llvm::Type* nativeRetTy = (outputCount == 0) ? builder->getVoidTy()
+														 : (outputType == NativeParamType::F64 ? doubleTy : int64Ty);
+			nativeFn = llvm::Function::Create(
+					llvm::FunctionType::get(nativeRetTy, nativeParams, false), linkage, nativeName, *module);
+			nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
+			nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
+			nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
+			if (funcNode->isInline()) {
+				nativeFn->addFnAttr(llvm::Attribute::AlwaysInline);
+			}
+		}
+		info = {inputCount, outputCount, inputTypes, outputType};
+		return nativeFn;
 	}
 
 	bool LlvmGenerator::Impl::declareFunction(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix) {
@@ -1832,93 +1881,15 @@ namespace Qd {
 		userFunctions[registerName] = fn;
 		fallibleFunctions[registerName] = funcNode->throws();
 
-		// Check if this function qualifies for native calling convention
-		// Requirements: non-receiver, non-fallible, all params i64/f64, body is native-eligible
-		if (!funcNode->hasReceiver() && !funcNode->throws()) {
-			bool allParamsNumeric = true;
-			std::vector<NativeParamType> inputTypes;
-			for (const auto& param : funcNode->inputParameters()) {
-				if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
-					const std::string& typeStr = paramNode->typeString();
-					if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
-						inputTypes.push_back(NativeParamType::F64);
-					} else if (typeStr.empty() || typeStr == "i64" || typeStr == "int" || typeStr == "int64" ||
-							   typeStr == "i") {
-						inputTypes.push_back(NativeParamType::I64);
-					} else {
-						allParamsNumeric = false;
-						break;
-					}
-				}
-			}
-			NativeParamType outputType = NativeParamType::I64;
-			if (allParamsNumeric) {
-				for (const auto& param : funcNode->outputParameters()) {
-					if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
-						const std::string& typeStr = paramNode->typeString();
-						if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
-							outputType = NativeParamType::F64;
-						} else if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" && typeStr != "int64" &&
-								   typeStr != "i") {
-							allParamsNumeric = false;
-							break;
-						}
-					}
-				}
-			}
-			if (allParamsNumeric) {
-				// Check body is native-eligible
-				std::set<std::string> funcLocalNames;
-				collectLocalNames(funcNode, funcLocalNames);
-				bool bodyOk = true;
-				for (auto* child : funcNode->children()) {
-					if (!analyzeIsBodyNativeEligible(child, funcLocalNames)) {
-						bodyOk = false;
-						break;
-					}
-				}
-				if (bodyOk) {
-					size_t inputCount = funcNode->inputParameters().size();
-					size_t outputCount = funcNode->outputParameters().size();
-					// Require at least 1 typed input parameter and at most 1 output
-					if (inputCount > 0 && outputCount <= 1) {
-						std::string nativeName = fnName + "_native";
-
-						// Check if native function already exists (can happen for merged/local modules)
-						llvm::Function* nativeFn = module->getFunction(nativeName);
-						if (!nativeFn) {
-							auto* doubleTy = builder->getDoubleTy();
-							std::vector<llvm::Type*> nativeParams;
-							nativeParams.push_back(contextPtrTy); // ctx still needed for print/etc
-							for (size_t i = 0; i < inputCount; i++) {
-								nativeParams.push_back(inputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
-							}
-							llvm::Type* nativeRetTy =
-									(outputCount == 0) ? builder->getVoidTy()
-													   : (outputType == NativeParamType::F64 ? doubleTy : int64Ty);
-							auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
-							auto linkage =
-									exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
-							nativeFn = llvm::Function::Create(nativeFnTy, linkage, nativeName, *module);
-							nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
-							nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
-							nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
-							if (funcNode->isInline()) {
-								nativeFn->addFnAttr(llvm::Attribute::AlwaysInline);
-							}
-						}
-
-						// Register native function by all names the stack-based version is registered under
-						nativeFunctions[registerName] = nativeFn;
-						nativeFuncInfo[registerName] = {inputCount, outputCount, inputTypes, outputType};
-
-						// Also register with unqualified name for merged modules
-						if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
-							nativeFunctions[funcNode->name()] = nativeFn;
-							nativeFuncInfo[funcNode->name()] = {inputCount, outputCount, inputTypes, outputType};
-						}
-					}
-				}
+		NativeFuncInfo info;
+		auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+		if (llvm::Function* nativeFn = declareNativeVersion(funcNode, fnName, linkage, info)) {
+			// Under every name the stack-based version is registered with
+			nativeFunctions[registerName] = nativeFn;
+			nativeFuncInfo[registerName] = info;
+			if (namePrefix != "main" && mergedModules.count(namePrefix) > 0) {
+				nativeFunctions[funcNode->name()] = nativeFn;
+				nativeFuncInfo[funcNode->name()] = info;
 			}
 		}
 
@@ -1932,6 +1903,9 @@ namespace Qd {
 		localArrayVariables.clear();
 		lastStructConstructed.clear();
 		lastFieldAccessResultType.clear();
+		heapAllocatedCaptures.clear();
+		indirectLocalVariables.clear();
+		closureVariables.clear();
 
 		currentModulePrefix = namePrefix;
 
@@ -1989,9 +1963,11 @@ namespace Qd {
 		auto lineNum = builder->getInt64(testNode->line());
 		builder->CreateCall(pushCallFn, {ctx, funcNameStr, sourceFileStr, lineNum});
 
-		// Generate test body
+		// A variable a closure in the test captures lives in a block, as in a function, so the
+		// closure's release has a refcount to give back
 		auto body = testNode->body();
 		if (body) {
+			collectAllCapturesFromAST(body, heapAllocatedCaptures);
 			generateNode(body, ctx);
 		}
 
@@ -2079,7 +2055,16 @@ namespace Qd {
 		builder->CreateCall(printfFn, {headerStr});
 
 		// Run each test
-		for (const auto& [funcName, displayName] : testNamesWithDisplay) {
+		for (const auto& [funcName, testName] : testNamesWithDisplay) {
+			// The line goes to printf as its format, so a '%' in the name has to be doubled:
+			// "keeps a long %s whole" printed "(null)" for the %s, and could crash
+			std::string displayName;
+			for (char c : testName) {
+				displayName += c;
+				if (c == '%') {
+					displayName += '%';
+				}
+			}
 			// Get the test function
 			auto testFn = userFunctions[funcName];
 			if (!testFn) {
@@ -2160,24 +2145,162 @@ namespace Qd {
 		return true;
 	}
 
-	bool LlvmGenerator::Impl::generateProgram(IAstNode* root) {
-		// Timing helper - only active when QUADC_TIMING is set
-		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
-		auto timeLast = std::chrono::steady_clock::now();
-		auto printTiming = [&](const char* label) {
-			if (timing) {
-				auto now = std::chrono::steady_clock::now();
-				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
-				std::cerr << "[TIMING]   irGeneration/" << label << ": " << ms << "ms" << std::endl;
-				timeLast = now;
+	// Declares an `import` block's C functions under every name a call can use: the library's
+	// own symbol, namespace::name, and for a module's public import module::name too, with a
+	// native bridge where the signature allows one. `moduleName` is empty for the program's own.
+	void LlvmGenerator::Impl::declareImport(AstNodeImport* importNode, const std::string& moduleName) {
+		// Process import: create external function declarations
+		const std::string& namespaceName = importNode->namespaceName();
+		const std::string& library = importNode->library();
+
+		// Track library for linking
+		importedLibraries.insert(library);
+
+		for (const auto& func : importNode->functions()) {
+			// The first struct a function returns, qualified with the module that declares it
+			auto recordReturnStruct = [&](const std::string& callName) {
+				for (const auto& outParam : func->outputParameters) {
+					const std::string& typeStr = outParam->typeString();
+					if (looksLikeStructType(typeStr)) {
+						const bool qualify = !moduleName.empty() && typeStr.find("::") == std::string::npos;
+						functionReturnStructType[callName] = qualify ? moduleName + "::" + typeStr : typeStr;
+						return;
+					}
+				}
+			};
+			const std::string mangledName = importedSymbol(library, namespaceName, func->name);
+
+			// Check if function already exists
+			llvm::Function* fn = module->getFunction(mangledName);
+			if (!fn) {
+				// Create function type: int function(qd_context*)
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
 			}
-		};
 
-		if (!root) {
-			std::cerr << "Error: Root node is null" << std::endl;
-			return false;
+			// Register fallibility for this imported function
+			std::string fullName = namespaceName + "::" + func->name;
+			fallibleFunctions[fullName] = func->throws;
+			// Mark as imported C function (handles its own success status)
+			importedCFunctions.insert(fullName);
+
+			recordReturnStruct(fullName);
+
+			// Also register this function in userFunctions with the scoped name
+			// so that namespace::function calls work
+			std::string scopedName = "usr_" + namespaceName + "_" + func->name;
+			if (scopedName != mangledName && !module->getFunction(scopedName)) {
+				// Create alias with usr_ prefix that calls the actual function
+				auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+				auto aliasFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, scopedName, *module);
+				createForwardingWrapperBody(aliasFn, fn);
+			}
+
+			// If this is a public imported function, make it available for cross-module access
+			if (func->isPublic && !moduleName.empty()) {
+				// Register for cross-module access as module::funcname
+				std::string crossModuleName = moduleName + "::" + func->name;
+
+				// Also register fallibility under the module name
+				fallibleFunctions[crossModuleName] = func->throws;
+				importedCFunctions.insert(crossModuleName);
+
+				recordReturnStruct(crossModuleName);
+
+				// Create wrapper function accessible as usr_modulename_funcname
+				std::string moduleScoped = "usr_" + moduleName + "_" + func->name;
+				if (!module->getFunction(moduleScoped)) {
+					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+					auto wrapperFn =
+							llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, moduleScoped, *module);
+					createForwardingWrapperBody(wrapperFn, fn);
+				}
+			}
+
+			// Create native bridge wrapper for qualifying imported C functions.
+			// This allows functions calling these imports to use native calling convention.
+			if (!func->throws) {
+				std::vector<NativeParamType> bridgeInputTypes;
+				NativeParamType bridgeOutputType = NativeParamType::I64;
+				const size_t bridgeOutputCount = func->outputParameters.size();
+				const bool allNumeric = nativeSignatureTypes(parameterTypes(func->inputParameters),
+						parameterTypes(func->outputParameters), bridgeInputTypes, bridgeOutputType);
+				if (allNumeric && bridgeInputTypes.size() > 0 && bridgeOutputCount <= 1) {
+					size_t bridgeInputCount = bridgeInputTypes.size();
+					std::string nativeName = mangledName + "_native";
+
+					// Build native function type: (ctx, typed_params...) -> typed_result
+					auto* doubleTy = builder->getDoubleTy();
+					std::vector<llvm::Type*> nativeParams;
+					nativeParams.push_back(contextPtrTy);
+					for (size_t i = 0; i < bridgeInputCount; i++) {
+						nativeParams.push_back(bridgeInputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
+					}
+					llvm::Type* nativeRetTy = (bridgeOutputCount == 0)
+													  ? builder->getVoidTy()
+													  : (bridgeOutputType == NativeParamType::F64 ? doubleTy : int64Ty);
+					auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
+					auto nativeFn =
+							llvm::Function::Create(nativeFnTy, llvm::Function::InternalLinkage, nativeName, *module);
+					nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
+					nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
+					nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
+
+					// Generate bridge body: push args to runtime stack, call C func, pop result
+					auto bridgeEntryBB = llvm::BasicBlock::Create(*context, "entry", nativeFn);
+					auto savedInsertPoint = builder->GetInsertBlock();
+					auto savedInsertPos = builder->GetInsertPoint();
+					builder->SetInsertPoint(bridgeEntryBB);
+
+					auto bridgeCtx = nativeFn->getArg(0);
+					// Push each typed arg to the runtime stack
+					for (size_t i = 0; i < bridgeInputCount; i++) {
+						auto arg = nativeFn->getArg(static_cast<unsigned>(i + 1));
+						if (bridgeInputTypes[i] == NativeParamType::F64) {
+							generateInlinePushFloatValue(bridgeCtx, arg);
+						} else {
+							generateInlinePushIntValue(bridgeCtx, arg);
+						}
+					}
+					// Call the C function
+					builder->CreateCall(fn, {bridgeCtx});
+					// Pop result if any
+					if (bridgeOutputCount == 1) {
+						llvm::Value* result;
+						if (bridgeOutputType == NativeParamType::F64) {
+							result = generateInlinePopFloat(bridgeCtx);
+						} else {
+							result = generateInlinePopInt(bridgeCtx);
+						}
+						builder->CreateRet(result);
+					} else {
+						builder->CreateRetVoid();
+					}
+
+					// Restore insert point
+					if (savedInsertPoint) {
+						builder->SetInsertPoint(savedInsertPoint, savedInsertPos);
+					}
+
+					// Register under the namespace::name key
+					std::string bridgeFullName = namespaceName + "::" + func->name;
+					nativeFunctions[bridgeFullName] = nativeFn;
+					nativeFuncInfo[bridgeFullName] = {
+							bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
+
+					// Also register under moduleName::name for cross-module access
+					if (func->isPublic && !moduleName.empty() && moduleName != namespaceName) {
+						std::string crossName = moduleName + "::" + func->name;
+						nativeFunctions[crossName] = nativeFn;
+						nativeFuncInfo[crossName] = {
+								bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
+					}
+				}
+			}
 		}
+	}
 
+	void LlvmGenerator::Impl::applyTargetLayout() {
 		// Set target triple and data layout early so codegen generates correct
 		// struct layouts and alignments for the target (especially i386 vs x86_64).
 		// writeObject() sets these again with the full target machine; this is for
@@ -2225,10 +2348,26 @@ namespace Qd {
 			module->setTargetTriple(targetTriple);
 #endif
 		}
+	}
 
-		setupRuntimeDeclarations();
-		printTiming("setupRuntimeDeclarations");
+	void LlvmGenerator::Impl::collectTypeAliases(IAstNode* root) {
+		for (const auto& modulePair : moduleASTs) {
+			if (modulePair.second) {
+				for (auto* child : modulePair.second->children()) {
+					if (auto typeAlias = dynamic_cast<AstNodeTypeAlias*>(child)) {
+						typeAliases[typeAlias->name()] = typeAlias->targetType();
+					}
+				}
+			}
+		}
+		for (auto* child : root->children()) {
+			if (auto typeAlias = dynamic_cast<AstNodeTypeAlias*>(child)) {
+				typeAliases[typeAlias->name()] = typeAlias->targetType();
+			}
+		}
+	}
 
+	void LlvmGenerator::Impl::declareImports(IAstNode* root) {
 		// Process import statements from all modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -2239,214 +2378,20 @@ namespace Qd {
 
 			for (auto* child : moduleRoot->children()) {
 				if (auto importNode = dynamic_cast<AstNodeImport*>(child)) {
-					// Process import: create external function declarations
-					const std::string& namespaceName = importNode->namespaceName();
-					const std::string& library = importNode->library();
-
-					// Track library for linking
-					importedLibraries.insert(library);
-
-					for (const auto& func : importNode->functions()) {
-						// Determine mangled name based on library
-						std::string mangledName;
-						if (library == "libstdqd.so") {
-							// For libstdqd, use qd_stdqd_ prefix (matches C implementation)
-							mangledName = "qd_stdqd_" + func->name;
-						} else {
-							// Check for stdlib imports: libqd* (quadpm modules) or known renamed stdlib
-							if ((library.rfind("libqd", 0) == 0 && library.find(".a") != std::string::npos) ||
-									isStdlibImport(library)) {
-								mangledName = "usr_" + namespaceName + "_" + func->name;
-							} else {
-								mangledName = func->name;
-							}
-						}
-
-						// Check if function already exists
-						llvm::Function* fn = module->getFunction(mangledName);
-						if (!fn) {
-							// Create function type: int function(qd_context*)
-							auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-							fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
-						}
-
-						// Register fallibility for this imported function
-						std::string fullName = namespaceName + "::" + func->name;
-						fallibleFunctions[fullName] = func->throws;
-						// Mark as imported C function (handles its own success status)
-						importedCFunctions.insert(fullName);
-
-						// Track return struct type for imported functions
-						for (const auto& outParam : func->outputParameters) {
-							const std::string& typeStr = outParam->typeString();
-							if (looksLikeStructType(typeStr)) {
-								// Qualify with module name if needed
-								std::string qualifiedType = typeStr;
-								if (qualifiedType.find("::") == std::string::npos) {
-									qualifiedType = moduleName + "::" + qualifiedType;
-								}
-								functionReturnStructType[fullName] = qualifiedType;
-								break; // Use first struct-typed output
-							}
-						}
-
-						// Also register this function in userFunctions with the scoped name
-						// so that namespace::function calls work
-						std::string scopedName = "usr_" + namespaceName + "_" + func->name;
-						if (scopedName != mangledName && !module->getFunction(scopedName)) {
-							// Create alias with usr_ prefix that calls the actual function
-							auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-							auto aliasFn =
-									llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, scopedName, *module);
-							createForwardingWrapperBody(aliasFn, fn);
-						}
-
-						// If this is a public imported function, make it available for cross-module access
-						if (func->isPublic) {
-							// Register for cross-module access as module::funcname
-							std::string crossModuleName = moduleName + "::" + func->name;
-
-							// Also register fallibility under the module name
-							fallibleFunctions[crossModuleName] = func->throws;
-							importedCFunctions.insert(crossModuleName);
-
-							// Track return struct type for cross-module access
-							for (const auto& outParam : func->outputParameters) {
-								const std::string& typeStr = outParam->typeString();
-								if (looksLikeStructType(typeStr)) {
-									// Qualify with module name if needed
-									std::string qualifiedType = typeStr;
-									if (qualifiedType.find("::") == std::string::npos) {
-										qualifiedType = moduleName + "::" + qualifiedType;
-									}
-									functionReturnStructType[crossModuleName] = qualifiedType;
-									break;
-								}
-							}
-
-							// Create wrapper function accessible as usr_modulename_funcname
-							std::string moduleScoped = "usr_" + moduleName + "_" + func->name;
-							if (!module->getFunction(moduleScoped)) {
-								auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-								auto wrapperFn = llvm::Function::Create(
-										fnTy, llvm::Function::ExternalLinkage, moduleScoped, *module);
-								createForwardingWrapperBody(wrapperFn, fn);
-							}
-						}
-
-						// Create native bridge wrapper for qualifying imported C functions.
-						// This allows functions calling these imports to use native calling convention.
-						if (!func->throws) {
-							bool allNumeric = true;
-							std::vector<NativeParamType> bridgeInputTypes;
-							for (const auto& param : func->inputParameters) {
-								const std::string& typeStr = param->typeString();
-								if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
-									bridgeInputTypes.push_back(NativeParamType::F64);
-								} else if (typeStr.empty() || typeStr == "i64" || typeStr == "int" ||
-										   typeStr == "int64" || typeStr == "i") {
-									bridgeInputTypes.push_back(NativeParamType::I64);
-								} else {
-									allNumeric = false;
-									break;
-								}
-							}
-							NativeParamType bridgeOutputType = NativeParamType::I64;
-							size_t bridgeOutputCount = func->outputParameters.size();
-							if (allNumeric && bridgeOutputCount <= 1) {
-								for (const auto& param : func->outputParameters) {
-									const std::string& typeStr = param->typeString();
-									if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" ||
-											typeStr == "f") {
-										bridgeOutputType = NativeParamType::F64;
-									} else if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" &&
-											   typeStr != "int64" && typeStr != "i") {
-										allNumeric = false;
-										break;
-									}
-								}
-							}
-							if (allNumeric && bridgeInputTypes.size() > 0 && bridgeOutputCount <= 1) {
-								size_t bridgeInputCount = bridgeInputTypes.size();
-								std::string nativeName = mangledName + "_native";
-
-								// Build native function type: (ctx, typed_params...) -> typed_result
-								auto* doubleTy = builder->getDoubleTy();
-								std::vector<llvm::Type*> nativeParams;
-								nativeParams.push_back(contextPtrTy);
-								for (size_t i = 0; i < bridgeInputCount; i++) {
-									nativeParams.push_back(
-											bridgeInputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
-								}
-								llvm::Type* nativeRetTy =
-										(bridgeOutputCount == 0)
-												? builder->getVoidTy()
-												: (bridgeOutputType == NativeParamType::F64 ? doubleTy : int64Ty);
-								auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
-								auto nativeFn = llvm::Function::Create(
-										nativeFnTy, llvm::Function::InternalLinkage, nativeName, *module);
-								nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
-								nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
-								nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
-
-								// Generate bridge body: push args to runtime stack, call C func, pop result
-								auto bridgeEntryBB = llvm::BasicBlock::Create(*context, "entry", nativeFn);
-								auto savedInsertPoint = builder->GetInsertBlock();
-								auto savedInsertPos = builder->GetInsertPoint();
-								builder->SetInsertPoint(bridgeEntryBB);
-
-								auto bridgeCtx = nativeFn->getArg(0);
-								// Push each typed arg to the runtime stack
-								for (size_t i = 0; i < bridgeInputCount; i++) {
-									auto arg = nativeFn->getArg(static_cast<unsigned>(i + 1));
-									if (bridgeInputTypes[i] == NativeParamType::F64) {
-										generateInlinePushFloatValue(bridgeCtx, arg);
-									} else {
-										generateInlinePushIntValue(bridgeCtx, arg);
-									}
-								}
-								// Call the C function
-								builder->CreateCall(fn, {bridgeCtx});
-								// Pop result if any
-								if (bridgeOutputCount == 1) {
-									llvm::Value* result;
-									if (bridgeOutputType == NativeParamType::F64) {
-										result = generateInlinePopFloat(bridgeCtx);
-									} else {
-										result = generateInlinePopInt(bridgeCtx);
-									}
-									builder->CreateRet(result);
-								} else {
-									builder->CreateRetVoid();
-								}
-
-								// Restore insert point
-								if (savedInsertPoint) {
-									builder->SetInsertPoint(savedInsertPoint, savedInsertPos);
-								}
-
-								// Register under the namespace::name key
-								std::string bridgeFullName = namespaceName + "::" + func->name;
-								nativeFunctions[bridgeFullName] = nativeFn;
-								nativeFuncInfo[bridgeFullName] = {
-										bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
-
-								// Also register under moduleName::name for cross-module access
-								if (func->isPublic && moduleName != namespaceName) {
-									std::string crossName = moduleName + "::" + func->name;
-									nativeFunctions[crossName] = nativeFn;
-									nativeFuncInfo[crossName] = {
-											bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
-								}
-							}
-						}
-					}
+					declareImport(importNode, moduleName);
 				}
 			}
 		}
 
-		printTiming("processModuleImports");
+		// Process import statements from main file
+		for (auto* child : root->children()) {
+			if (auto importNode = dynamic_cast<AstNodeImport*>(child)) {
+				declareImport(importNode, "");
+			}
+		}
+	}
 
+	void LlvmGenerator::Impl::collectConstants(IAstNode* root) {
 		// Collect constants from all modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -2498,9 +2443,9 @@ namespace Qd {
 				}
 			}
 		}
+	}
 
-		printTiming("collectConstants");
-
+	void LlvmGenerator::Impl::collectGlobalVars(IAstNode* root) {
 		// Collect module-level mutable vars (`var name:type = literal`) from
 		// the main file AND every imported module (for `use "file.qd"` style
 		// local merges, the imports show up as separate module ASTs). Emit
@@ -2611,8 +2556,9 @@ namespace Qd {
 				moduleGlobalVarTypes[name] = typeName;
 			}
 		}
-		printTiming("collectGlobalVars");
+	}
 
+	void LlvmGenerator::Impl::processStructs(IAstNode* root) {
 		// Process struct declarations from all modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -2622,19 +2568,9 @@ namespace Qd {
 			}
 
 			for (auto* child : moduleRoot->children()) {
-				if (auto typeAlias = dynamic_cast<AstNodeTypeAlias*>(child)) {
-					typeAliases[typeAlias->name()] = typeAlias->targetType();
-				}
 				if (auto structNode = dynamic_cast<AstNodeStructDeclaration*>(child)) {
 					processStructDeclaration(structNode, moduleName);
 				}
-			}
-		}
-
-		// Collect type aliases from main file
-		for (auto* child : root->children()) {
-			if (auto typeAlias = dynamic_cast<AstNodeTypeAlias*>(child)) {
-				typeAliases[typeAlias->name()] = typeAlias->targetType();
 			}
 		}
 
@@ -2648,54 +2584,9 @@ namespace Qd {
 		// Generate destructor functions for all struct types (after all structs are known)
 		generateStructDestructors();
 		generateStructCloners(); // after the destructors: a cloner carries the struct's destructor
-		printTiming("processStructs");
+	}
 
-		// Process import statements from main file
-		for (auto* child : root->children()) {
-			if (auto importNode = dynamic_cast<AstNodeImport*>(child)) {
-				const std::string& namespaceName = importNode->namespaceName();
-				const std::string& library = importNode->library();
-
-				// Track library for linking
-				importedLibraries.insert(library);
-
-				for (const auto& func : importNode->functions()) {
-					std::string mangledName;
-					if (library == "libstdqd.so") {
-						mangledName = "qd_stdqd_" + func->name;
-					} else {
-						// Check for stdlib imports: libqd* (quadpm modules) or known renamed stdlib
-						if ((library.rfind("libqd", 0) == 0 && library.find(".a") != std::string::npos) ||
-								isStdlibImport(library)) {
-							mangledName = "usr_" + namespaceName + "_" + func->name;
-						} else {
-							mangledName = func->name;
-						}
-					}
-
-					if (module->getFunction(mangledName)) {
-						continue;
-					}
-
-					auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-					auto fn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, mangledName, *module);
-
-					// Register fallibility for this imported function
-					std::string fullName = namespaceName + "::" + func->name;
-					fallibleFunctions[fullName] = func->throws;
-					// Mark as imported C function (handles its own success status)
-					importedCFunctions.insert(fullName);
-
-					std::string scopedName = "usr_" + namespaceName + "_" + func->name;
-					if (scopedName != mangledName && !module->getFunction(scopedName)) {
-						auto aliasFn =
-								llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, scopedName, *module);
-						createForwardingWrapperBody(aliasFn, fn);
-					}
-				}
-			}
-		}
-
+	bool LlvmGenerator::Impl::generatesCMain(IAstNode* root) {
 		// Determine if we should generate a C main() entry point
 		// Check if there's a 'main' function in the root AND the module name looks like standalone
 		// (not a module name like "repl_0" which starts with "repl_")
@@ -2713,8 +2604,10 @@ namespace Qd {
 		// In freestanding mode we never generate a C main; the user provides
 		// their own entry (typically `_start`) and we emit a thin shim below.
 		bool isReplModule = (mainModuleName.find("repl_") == 0);
-		bool generateCMain = hasMainFunction && !isReplModule && !freestandingMode;
+		return hasMainFunction && !isReplModule && !freestandingMode;
+	}
 
+	void LlvmGenerator::Impl::declareProgramFunctions(IAstNode* root, bool generateCMain) {
 		// Pre-pass: declare all user-defined functions from main file (for forward references)
 		// This ensures functions can call each other regardless of definition order
 		for (auto* child : root->children()) {
@@ -2751,125 +2644,27 @@ namespace Qd {
 				// Register the function for forward reference lookup
 				userFunctions[registerName] = fn;
 				fallibleFunctions[registerName] = funcNode->throws();
-				// Track return struct type if output parameter is a struct
-				const auto& outputs = funcNode->outputParameters();
-				bool foundExplicitStructType = false;
-				for (const auto& outParam : outputs) {
-					if (auto* param = dynamic_cast<AstNodeParameter*>(outParam.get())) {
-						const std::string& typeStr = param->typeString();
-						if (looksLikeStructType(typeStr)) {
-							// Store the unqualified struct name for lookup
-							functionReturnStructType[registerName] = typeStr;
-							foundExplicitStructType = true;
-							break; // Use first struct-typed output
-						}
-					}
-				}
-				// If return type is ptr but body constructs a struct, infer the type
-				if (!foundExplicitStructType && funcNode->body()) {
-					std::string inferredType = findLastStructConstruction(funcNode->body());
-					if (!inferredType.empty()) {
-						functionReturnStructType[registerName] = inferredType;
-					}
+				if (std::string returned = returnStructType(funcNode); !returned.empty()) {
+					functionReturnStructType[registerName] = returned;
 				}
 
-				// Check if this function qualifies for native calling convention
-				if (!funcNode->hasReceiver() && !funcNode->throws()) {
-					bool allParamsNumeric = true;
-					std::vector<NativeParamType> inputTypes;
-					for (const auto& param : funcNode->inputParameters()) {
-						if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
-							const std::string& typeStr = paramNode->typeString();
-							if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
-								inputTypes.push_back(NativeParamType::F64);
-							} else if (typeStr.empty() || typeStr == "i64" || typeStr == "int" || typeStr == "int64" ||
-									   typeStr == "i") {
-								inputTypes.push_back(NativeParamType::I64);
-							} else {
-								allParamsNumeric = false;
-								break;
-							}
-						}
-					}
-					NativeParamType outputType = NativeParamType::I64;
-					if (allParamsNumeric) {
-						for (const auto& param : funcNode->outputParameters()) {
-							if (const auto* paramNode = dynamic_cast<const AstNodeParameter*>(param.get())) {
-								const std::string& typeStr = paramNode->typeString();
-								if (typeStr == "f64" || typeStr == "float" || typeStr == "float64" || typeStr == "f") {
-									outputType = NativeParamType::F64;
-								} else if (!typeStr.empty() && typeStr != "i64" && typeStr != "int" &&
-										   typeStr != "int64" && typeStr != "i") {
-									allParamsNumeric = false;
-									break;
-								}
-							}
-						}
-					}
-					if (allParamsNumeric) {
-						std::set<std::string> funcLocalNames;
-						collectLocalNames(funcNode, funcLocalNames);
-						bool bodyOk = true;
-						for (auto* child2 : funcNode->children()) {
-							if (!analyzeIsBodyNativeEligible(child2, funcLocalNames)) {
-								bodyOk = false;
-								break;
-							}
-						}
-						if (bodyOk) {
-							size_t inputCount = funcNode->inputParameters().size();
-							size_t outputCount = funcNode->outputParameters().size();
-							if (inputCount > 0 && outputCount <= 1) {
-								std::string nativeName = fnName + "_native";
-								llvm::Function* nativeFn = module->getFunction(nativeName);
-								if (!nativeFn) {
-									auto* doubleTy = builder->getDoubleTy();
-									std::vector<llvm::Type*> nativeParams;
-									nativeParams.push_back(contextPtrTy);
-									for (size_t i = 0; i < inputCount; i++) {
-										nativeParams.push_back(
-												inputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
-									}
-									llvm::Type* nativeRetTy =
-											(outputCount == 0)
-													? builder->getVoidTy()
-													: (outputType == NativeParamType::F64 ? doubleTy : int64Ty);
-									auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
-									nativeFn = llvm::Function::Create(nativeFnTy, linkage, nativeName, *module);
-									nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
-									nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
-									nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
-									if (funcNode->isInline()) {
-										nativeFn->addFnAttr(llvm::Attribute::AlwaysInline);
-									}
-								}
-								nativeFunctions[registerName] = nativeFn;
-								nativeFuncInfo[registerName] = {inputCount, outputCount, inputTypes, outputType};
-								// Also register with qualified name (mainModuleName::funcName)
-								// since generateFunction uses that as registerName
-								std::string qualifiedName = mainModuleName + "::" + funcNode->name();
-								nativeFunctions[qualifiedName] = nativeFn;
-								nativeFuncInfo[qualifiedName] = {inputCount, outputCount, inputTypes, outputType};
-							}
-						}
-					}
+				NativeFuncInfo info;
+				if (llvm::Function* nativeFn = declareNativeVersion(funcNode, fnName, linkage, info)) {
+					nativeFunctions[registerName] = nativeFn;
+					nativeFuncInfo[registerName] = info;
+					// generateFunction registers the program's functions as mainModuleName::name
+					const std::string qualifiedName = mainModuleName + "::" + funcNode->name();
+					nativeFunctions[qualifiedName] = nativeFn;
+					nativeFuncInfo[qualifiedName] = info;
 				}
 			}
 		}
+	}
 
-		printTiming("declareMainFunctions");
-
+	bool LlvmGenerator::Impl::declareModuleFunctions(IAstNode* root) {
 		// Compute reachable functions to skip generating IR for unused module functions
 		reachableFunctions.clear();
 		computeReachableFunctions(root, reachableFunctions);
-		printTiming("computeReachability");
-		auto isReachable = [this](AstNodeFunctionDeclaration* funcNode, const std::string& moduleName,
-								   const std::string& qualifiedName) {
-			return reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
-				   (funcNode->hasReceiver() &&
-						   (reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
-								   reachableFunctions.count(moduleName + "::" + funcNode->name())));
-		};
 
 		// First pass: DECLARE all functions from all loaded modules
 		// This ensures all functions are registered in userFunctions before any bodies are generated.
@@ -2891,24 +2686,8 @@ namespace Qd {
 					} else {
 						qualifiedName = moduleName + "::" + funcNode->name();
 					}
-					const auto& outputs = funcNode->outputParameters();
-					bool foundExplicitStructType = false;
-					for (const auto& outParam : outputs) {
-						if (auto* param = dynamic_cast<AstNodeParameter*>(outParam.get())) {
-							const std::string& typeStr = param->typeString();
-							if (looksLikeStructType(typeStr)) {
-								functionReturnStructType[qualifiedName] = typeStr;
-								foundExplicitStructType = true;
-								break;
-							}
-						}
-					}
-					// If return type is ptr but body constructs a struct, infer the type
-					if (!foundExplicitStructType && funcNode->body()) {
-						std::string inferredType = findLastStructConstruction(funcNode->body());
-						if (!inferredType.empty()) {
-							functionReturnStructType[qualifiedName] = inferredType;
-						}
+					if (std::string returned = returnStructType(funcNode); !returned.empty()) {
+						functionReturnStructType[qualifiedName] = returned;
 					}
 
 					// For merged modules, also register return struct type with unqualified name
@@ -2932,14 +2711,10 @@ namespace Qd {
 				}
 			}
 		}
-		printTiming("declareModuleFunctions");
+		return true;
+	}
 
-		// Every function is declared now, so the native set can be settled before any call to a
-		// native version is emitted.
-		collectNonIntegerSignatureFunctions(root);
-		demoteNonNativeFunctions(root);
-		printTiming("demoteNonNativeFunctions");
-
+	bool LlvmGenerator::Impl::generateFunctionBodies(IAstNode* root, bool generateCMain) {
 		// Second pass: GENERATE function bodies from all loaded modules
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
@@ -2976,7 +2751,6 @@ namespace Qd {
 
 		// Reset module name for main file generation
 		currentModuleName = "";
-		printTiming("generateModuleFunctions");
 
 		// Second pass: generate all user-defined functions from main file
 		for (auto* child : root->children()) {
@@ -2991,9 +2765,10 @@ namespace Qd {
 				}
 			}
 		}
+		return true;
+	}
 
-		printTiming("generateMainFunctions");
-
+	bool LlvmGenerator::Impl::generateTests(IAstNode* root) {
 		// Third pass: generate test functions (in test mode)
 		if (testMode) {
 			collectedTestNames.clear();
@@ -3059,7 +2834,10 @@ namespace Qd {
 				return false;
 			}
 		}
+		return true;
+	}
 
+	bool LlvmGenerator::Impl::generateEntryPoints(IAstNode* root, bool generateCMain) {
 		// Fourth pass: generate C main function (only in standalone mode, not in test mode)
 		if (generateCMain && !testMode) {
 			for (auto* child : root->children()) {
@@ -3135,11 +2913,82 @@ namespace Qd {
 			builder->CreateCall(haltFn);
 			builder->CreateUnreachable();
 		}
+		return true;
+	}
 
-		printTiming("generateCMain");
+	// Whether a function is reachable from the program, under any name a call can reach it by
+	bool LlvmGenerator::Impl::isReachable(AstNodeFunctionDeclaration* funcNode, const std::string& moduleName,
+			const std::string& qualifiedName) const {
+		return reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
+			   (funcNode->hasReceiver() &&
+					   (reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
+							   reachableFunctions.count(moduleName + "::" + funcNode->name())));
+	}
 
-		// Verify module
-		// Finalize debug info
+	bool LlvmGenerator::Impl::generateProgram(IAstNode* root) {
+		// Timing helper - only active when QUADC_TIMING is set
+		static bool timing = std::getenv("QUADC_TIMING") != nullptr;
+		auto timeLast = std::chrono::steady_clock::now();
+		auto printTiming = [&](const char* label) {
+			if (timing) {
+				auto now = std::chrono::steady_clock::now();
+				auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - timeLast).count();
+				std::cerr << "[TIMING]   irGeneration/" << label << ": " << ms << "ms" << std::endl;
+				timeLast = now;
+			}
+		};
+
+		if (!root) {
+			std::cerr << "Error: Root node is null" << std::endl;
+			return false;
+		}
+
+		applyTargetLayout();
+
+		setupRuntimeDeclarations();
+		printTiming("setupRuntimeDeclarations");
+
+		// Type aliases first: every signature read below, the imported ones included, goes
+		// through resolveTypeName
+		collectTypeAliases(root);
+		declareImports(root);
+		printTiming("declareImports");
+
+		collectConstants(root);
+		printTiming("collectConstants");
+
+		collectGlobalVars(root);
+		printTiming("collectGlobalVars");
+
+		processStructs(root);
+		printTiming("processStructs");
+
+		const bool generateCMain = generatesCMain(root);
+
+		declareProgramFunctions(root, generateCMain);
+		printTiming("declareProgramFunctions");
+
+		if (!declareModuleFunctions(root)) {
+			return false;
+		}
+		printTiming("declareModuleFunctions");
+
+		// Every function is declared now, so the native set can be settled before any call to a
+		// native version is emitted.
+		collectNonIntegerSignatureFunctions(root);
+		demoteNonNativeFunctions(root);
+		printTiming("demoteNonNativeFunctions");
+
+		if (!generateFunctionBodies(root, generateCMain)) {
+			return false;
+		}
+		printTiming("generateFunctionBodies");
+
+		if (!generateTests(root) || !generateEntryPoints(root, generateCMain)) {
+			return false;
+		}
+		printTiming("generateEntryPoints");
+
 		if (debugInfoEnabled && debugBuilder) {
 			debugBuilder->finalize();
 		}
@@ -4016,6 +3865,13 @@ namespace Qd {
 		}
 		mainJD.addGenerator(std::move(*processSymbolsGenerator));
 		printTiming("setupSymbols");
+
+		// The builders hold tracked references into the context's metadata (the DIBuilder its
+		// unfinished nodes, the IRBuilder its debug location), so they go before the context
+		// does: the JIT owns the context from here and frees it when it is done. Destroyed in
+		// ~Impl instead, they untracked metadata in freed memory, and `-g -r` crashed on exit.
+		mImpl->debugBuilder.reset();
+		mImpl->builder.reset();
 
 		// Move the module to a ThreadSafeModule
 		// We need to transfer ownership, so create new context/module

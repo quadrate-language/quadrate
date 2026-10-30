@@ -30,6 +30,7 @@
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -82,10 +83,9 @@ __attribute__((weak)) void qd_freestanding_halt(void) {
 	}
 }
 
-// libc replacements that some compiler-emitted error paths reference.
-// They all just halt — there's no recoverable "exit" in a kernel.
-__attribute__((noreturn)) void _exit(int code) {
-	(void)code;
+// The exit that compiler-emitted error paths (a failed `!` call) take. It just halts:
+// there's no recoverable "exit" in a kernel.
+__attribute__((noreturn)) void qdrt_fatal_exit(void) {
 	qd_freestanding_halt();
 	__builtin_unreachable();
 }
@@ -224,6 +224,62 @@ void qd_print_error_msg(qd_context* ctx, const char* func_name) {
 // double-frees would be safe).
 void qd_set_error_msg(qd_context* ctx, const char* msg) {
 	ctx->error_msg = (char*)msg;
+}
+
+// A raised error halts: there is no stderr to report it on and no recovery point. The
+// operation's name, a literal, is left on the context for a debugger.
+__attribute__((noreturn)) void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...) {
+	(void)fmt;
+	if (ctx != (qd_context*)0) {
+		ctx->error_msg = (char*)op;
+	}
+	qd_freestanding_halt();
+	__builtin_unreachable();
+}
+
+// The hosted qd_args, without the messages: check the whole signature, halt on a
+// mismatch, otherwise pop every argument into the out-pointers. Strings and d128 are not
+// part of the freestanding world, so only i, f, p and v are known.
+void qd_args(qd_context* ctx, const char* op, const char* sig, ...) {
+	qd_stack* st = ctx->st;
+	size_t count = 0;
+	while (sig[count] != '\0') {
+		count++;
+	}
+	if (st->size < count) {
+		qd_fatal_raise(ctx, op, "Stack underflow");
+	}
+	const size_t base = st->size - count;
+	for (size_t i = 0; i < count; i++) {
+		const qd_stack_type t = st->data[base + i].type;
+		const bool ok = (sig[i] == 'i' && t == QD_STACK_TYPE_INT) ||
+						(sig[i] == 'f' && (t == QD_STACK_TYPE_FLOAT || t == QD_STACK_TYPE_INT)) ||
+						(sig[i] == 'p' && t == QD_STACK_TYPE_PTR) || sig[i] == 'v';
+		if (!ok) {
+			qd_fatal_raise(ctx, op, "Type mismatch");
+		}
+	}
+	va_list outs;
+	va_start(outs, sig);
+	for (size_t i = 0; i < count; i++) {
+		const qd_stack_element_t* elem = &st->data[base + i];
+		switch (sig[i]) {
+		case 'i':
+			*va_arg(outs, int64_t*) = elem->value.i;
+			break;
+		case 'f':
+			*va_arg(outs, double*) = elem->type == QD_STACK_TYPE_INT ? (double)elem->value.i : elem->value.f;
+			break;
+		case 'p':
+			*va_arg(outs, void**) = elem->value.p;
+			break;
+		default:
+			*va_arg(outs, qd_stack_element_t*) = *elem;
+			break;
+		}
+	}
+	va_end(outs);
+	st->size = base;
 }
 
 // ---------------------------------------------------------------------------

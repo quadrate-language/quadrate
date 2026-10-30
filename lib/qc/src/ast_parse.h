@@ -9,6 +9,7 @@
 #include "source_utils.h"
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
+#include <quadrate/qc/type_names.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -150,7 +151,7 @@ namespace Qd {
 
 	// Check if an identifier is a built-in type name (used for unnamed parameter disambiguation)
 	inline bool isTypeName(const std::string& name) {
-		return name == "i64" || name == "f64" || name == "d128" || name == "str" || name == "ptr" || name == "any";
+		return isPrimitiveTypeName(name) || !builtinTypeAliasTarget(name).empty();
 	}
 
 	// Where the first unterminated block comment in the current parse started, or
@@ -333,6 +334,30 @@ namespace Qd {
 			return static_cast<char32_t>(static_cast<unsigned char>(src[bytePos]));
 		}
 		return 0;
+	}
+
+	// `!` (abort on failure) or `?` (propagate it) written straight after an instruction's name,
+	// as `v 0 get!` on a method that shares a builtin's name. Identifiers take theirs as they
+	// are parsed; an instruction's used to be attached only at a function body's top level, so
+	// in a test, or inside an `if` or a loop, the `!` was dropped and a failure went unchecked.
+	// `!=` is the comparison, not a suffix.
+	template <typename Node>
+	inline void parseErrorSuffix(Node* node, u8t_scanner* scanner, const char* src) {
+		const char32_t next = peekNextChar(scanner, src);
+		if (next != '!' && next != '?') {
+			return;
+		}
+		const size_t after =
+				fastCharToByteOffset(src, u8t_scanner_token_start(scanner) + u8t_scanner_token_len(scanner)) + 1;
+		if (next == '!' && src[after] == '=') {
+			return;
+		}
+		u8t_scanner_scan(scanner);
+		if (next == '!') {
+			node->setAbortOnError(true);
+		} else {
+			node->setPropagateOnError(true);
+		}
 	}
 
 	// Reports a `_` written into a number, having just scanned one. The language has no
@@ -933,30 +958,8 @@ namespace Qd {
 		return nullptr;
 	}
 
-	// Helper to synchronize parser after an error
-	// Skips tokens until a synchronization point is found
-	inline void synchronize(u8t_scanner* scanner) {
-		char32_t token;
-		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			// Stop at statement boundaries
-			if (token == '}' || token == '{' || token == ';') {
-				return;
-			}
-
-			// Stop at keywords that start new declarations/statements
-			if (token == U8T_IDENTIFIER) {
-				size_t n;
-				const char* text = u8t_scanner_token_text(scanner, &n);
-				if (strcmp(text, "fn") == 0 || strcmp(text, "const") == 0 || strcmp(text, "struct") == 0 ||
-						strcmp(text, "enum") == 0 || strcmp(text, "type") == 0 || strcmp(text, "use") == 0 ||
-						strcmp(text, "import") == 0 || strcmp(text, "if") == 0 || strcmp(text, "for") == 0 ||
-						strcmp(text, "while") == 0 || strcmp(text, "loop") == 0 || strcmp(text, "switch") == 0 ||
-						strcmp(text, "return") == 0) {
-					return;
-				}
-			}
-		}
-	}
+	// Recovery after an error at the token just scanned (ast_statements.cc)
+	void synchronize(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 
 	// Node kinds that may form a `while` condition: the run of expression nodes immediately before
 	// the keyword. Anything else -- a binding, a nested statement, a comment -- ends the run, so the

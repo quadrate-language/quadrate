@@ -105,3 +105,21 @@ int qd_cast_param(qd_context* ctx, int64_t depth, int64_t type) {
 	e->type = (qd_stack_type)type;
 	return (int){0};
 }
+
+int qd_check_param(qd_context* ctx, int64_t depth, int64_t type, int64_t param, const char* func_name) {
+	QDRT_CHECK_STACK(ctx, func_name, (size_t)depth + 1);
+	qd_stack_element_t* e = &ctx->st->data[ctx->st->size - 1 - (size_t)depth];
+	if (e->type == (qd_stack_type)type) {
+		return (int){0};
+	}
+	if (e->type == QD_STACK_TYPE_INT && type == QD_STACK_TYPE_D128) {
+		e->value.d = qd_d128_from_i64(e->value.i);
+	} else if (e->type == QD_STACK_TYPE_INT && type == QD_STACK_TYPE_FLOAT) {
+		e->value.f = (double)e->value.i;
+	} else {
+		QDRT_FATAL(ctx, func_name, "Type mismatch for parameter %lld (expected %s, got %s)", (long long)param,
+				qdrt_type_name((qd_stack_type)type), qdrt_type_name(e->type));
+	}
+	e->type = (qd_stack_type)type;
+	return (int){0};
+}

@@ -572,6 +572,9 @@ run_single_qd_test() {
                 */http/server_integration.qd|*/http/sse_integration.qd)
                     echo "SKIP:blocking server, covered by the http suite" > "$result_file"
                     ;;
+                */http/client_integration.qd)
+                    echo "SKIP:needs the servers the http suite starts" > "$result_file"
+                    ;;
                 */tests/qd/args/*.qd)
                     echo "SKIP:needs an argument list, covered by the args suite" > "$result_file"
                     ;;
@@ -1537,6 +1540,68 @@ EOFSRC
         fi
     }
 
+    # Test: -g on a function the native calling convention would take. Debug info keeps every
+    # body stack-based, and its native version used to be declared anyway and never defined,
+    # which LLVM's verifier rejected.
+    test_debug_native_function() {
+        local src_file="$test_temp/debug_native.qd"
+        local out_file="$test_temp/debug_native"
+
+        cat > "$src_file" << 'EOFSRC'
+fn twice(n:i64 -- r:i64) {
+    n 2 *
+}
+
+fn main() {
+    21 twice print nl
+}
+EOFSRC
+
+        local run_output=""
+        if "$QUADC" -g -o "$out_file" "$src_file" >/dev/null 2>&1; then
+            run_output=$("$out_file" 2>/dev/null)
+        fi
+        if [[ "$run_output" == "42" ]]; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  -g with a native-eligible function: got '$run_output', expected '42'"
+            fi
+        fi
+    }
+
+    # Test: -g under the JIT. quadc used to crash on its way out, after the program had run:
+    # the JIT freed the LLVM context the debug-info builder still pointed into.
+    test_debug_jit() {
+        local test_file="tests/qd/structs/struct_typed_param_mixed.qd"
+        local expected="${test_file%.qd}.out"
+        local run_output
+        if run_output=$(cd "$PROJECT_ROOT" && "$QUADC" -g "$test_file" -r 2>/dev/null) &&
+                [[ "$run_output" == "$(cat "$PROJECT_ROOT/$expected")" ]]; then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  -g -r on $test_file failed or printed something else"
+            fi
+        fi
+    }
+
+    # Test: -g on a module whose file also `use`s a sibling. The sibling was loaded twice, its
+    # functions generated twice, and the second debug-info subprogram failed verification.
+    test_debug_module_sibling() {
+        if (cd "$PROJECT_ROOT" && "$QUADC" -g -o "$test_temp/debug_module" tests/qd/modules/module_split.qd \
+                >/dev/null 2>&1); then
+            ((passed++))
+        else
+            ((failed++))
+            if [[ $VERBOSE -eq 1 ]]; then
+                echo "  -g on tests/qd/modules/module_split.qd did not compile"
+            fi
+        fi
+    }
+
     # Run all tests
     test_target_flag_parsing
     test_target_requires_arg
@@ -1544,6 +1609,9 @@ EOFSRC
     test_empty_target
     test_target_with_optimization
     test_target_with_debug
+    test_debug_native_function
+    test_debug_jit
+    test_debug_module_sibling
 
     # Cross-compile target tests
     # These verify that LLVM generates code for the specified target

@@ -477,7 +477,7 @@ quadrepl_regressions() {
     fi
 
     out=$(repl 'use strconv\n"zz" 10 strconv::parse_int!\n5\nstack\n' || true)
-    if echo "$out" | grep -q 'invalid number format' && [ "$(echo "$out" | tail -1)" = "5" ]; then
+    if echo "$out" | grep -q 'not a number' && [ "$(echo "$out" | tail -1)" = "5" ]; then
         pass "an aborting fallible call is recovered"
     else
         fail "an aborting fallible call is recovered" "$(echo "$out" | tr '\n' ' ')"

@@ -378,6 +378,25 @@ fn main(--) {
 	label print nl
 }' 30000 4096
 
+# A switch on a string whose arm returns. The value was released after the switch, a
+# point the returning arm never reached, so every match that returned leaked it.
+check_flat "switch_arm_return" 'use strings
+
+fn kind(s:str -- n:i64) {
+	s switch {
+		"abc" { 1 return }
+		_ { 2 }
+	}
+}
+
+fn main(--) {
+	0 -> acc
+	0 @N@ 1 for i {
+		"ab" "c" strings::concat kind acc + -> acc
+	}
+	acc print nl
+}' 400000 4096
+
 echo ""
 echo "Memory tests: $PASSED passed, $FAILED failed"
 [[ $FAILED -eq 0 ]]

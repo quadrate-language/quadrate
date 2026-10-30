@@ -57,8 +57,9 @@ Append string contents to a file. Creates the file if it doesn't exist.
 
 | Error | Description |
 |-------|-------------|
-| `io::ErrPermission` | Permission denied or cannot open file |
-| `io::ErrWrite` | Write operation failed |
+| `io::ErrNotFound` | A directory on the path does not exist |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrWrite` | The write failed, including when the disk fills as the file is closed |
 
 **Example:**
 
@@ -69,7 +70,7 @@ Append string contents to a file. Creates the file if it doesn't exist.
 
 ### `fn` close
 
-Close a file.
+Close a file. Closing an invalid or already closed handle does nothing.
 
 **Signature:** `(handle:ptr -- )`
 
@@ -86,7 +87,7 @@ f io::close
 
 ### `fn` eof
 
-Check if at end of file.
+Check if at end of file. An invalid handle is never at the end.
 
 **Signature:** `(handle:ptr -- handle:ptr is_eof:i64)`
 
@@ -102,7 +103,7 @@ Check if at end of file.
 **Example:**
 
 ```qd
-f io::eof -> f  // at_end
+f io::eof -> at_end  // f
 ```
 ---
 
@@ -136,7 +137,9 @@ Open a file.
 
 | Error | Description |
 |-------|-------------|
-| `io::ErrNotFound` | File not found |
+| `io::ErrNotFound` | The file or a directory on its path does not exist |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrInvalidArg` | The mode is not one fopen accepts |
 
 **Example:**
 
@@ -147,7 +150,7 @@ Open a file.
 
 ### `fn` read_file
 
-Read entire file contents.
+Read entire file contents, to the end of the file: a pipe, or a file under /proc whose size reads as 0, comes back whole.
 
 **Signature:** `(path:str -- contents:str)!`
 
@@ -161,7 +164,8 @@ Read entire file contents.
 
 | Error | Description |
 |-------|-------------|
-| `io::ErrNotFound` | File not found |
+| `io::ErrNotFound` | The file or a directory on its path does not exist |
+| `io::ErrPermission` | Permission denied |
 | `io::ErrRead` | Read operation failed |
 
 **Example:**
@@ -189,7 +193,8 @@ Read bytes into buffer.
 
 | Error | Description |
 |-------|-------------|
-| `io::ErrInvalidArg` | Invalid file handle, buffer, or count |
+| `io::ErrInvalidHandle` | Invalid or closed file handle |
+| `io::ErrInvalidArg` | Null buffer or negative count |
 | `io::ErrRead` | Read operation failed |
 
 **Example:**
@@ -398,8 +403,9 @@ Write string contents to file. Creates or truncates the file at the given path.
 
 | Error | Description |
 |-------|-------------|
-| `io::ErrPermission` | Permission denied or cannot create file |
-| `io::ErrWrite` | Write operation failed |
+| `io::ErrNotFound` | A directory on the path does not exist |
+| `io::ErrPermission` | Permission denied |
+| `io::ErrWrite` | The write failed, including when the disk fills as the file is closed |
 
 **Example:**
 
@@ -426,7 +432,8 @@ Write bytes from buffer.
 
 | Error | Description |
 |-------|-------------|
-| `io::ErrInvalidArg` | Invalid file handle, buffer, or count |
+| `io::ErrInvalidHandle` | Invalid or closed file handle |
+| `io::ErrInvalidArg` | Null buffer or negative count |
 | `io::ErrWrite` | Write operation failed |
 
 **Example:**

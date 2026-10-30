@@ -68,7 +68,7 @@ sock net::close
 
 ### `fn` connect
 
-Connect to a remote host.
+Connect to a remote host, over IPv4 or IPv6.
 
 **Signature:** `(host:str port:i64 -- socket:i64)!`
 
@@ -83,7 +83,8 @@ Connect to a remote host.
 
 | Error | Description |
 |-------|-------------|
-| `net::ErrConnect` | Host unreachable or connection refused |
+| `net::ErrConnect` | Host not found, unreachable or refusing connections |
+| `net::ErrInvalidArg` | The port is not between 0 and 65535 |
 
 **Example:**
 
@@ -135,6 +136,7 @@ Start listening for connections on a port.
 | Error | Description |
 |-------|-------------|
 | `net::ErrListen` | Port may be in use or permission denied |
+| `net::ErrInvalidArg` | The port is not between 0 and 65535 |
 
 **Example:**
 
@@ -170,14 +172,14 @@ Resolve a hostname to an IP address via DNS.
 
 ### `fn` receive
 
-Receive data from socket.
+Receive data from socket. At the end of the stream, the data is "" and bytes_read 0.
 
 **Signature:** `(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `socket` | `i64` | Socket descriptor |
-| `max_bytes` | `i64` | Maximum bytes to receive |
+| `max_bytes` | `i64` | Maximum bytes to receive, from 1 to 1048576 |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -187,6 +189,8 @@ Receive data from socket.
 | Error | Description |
 |-------|-------------|
 | `net::ErrReceive` | Failed to receive data |
+| `net::ErrTimeout` | The timeout set with set_timeout ran out |
+| `net::ErrInvalidArg` | max_bytes is out of range |
 
 **Example:**
 
@@ -197,7 +201,7 @@ sock 1024 net::receive! -> n  // data
 
 ### `fn` send
 
-Send data over socket.
+Send data over socket. All of it is sent, which may take several writes; a peer that has gone fails the send rather than ending the program with SIGPIPE.
 
 **Signature:** `(socket:i64 data:str -- bytes_sent:i64)!`
 
@@ -213,6 +217,7 @@ Send data over socket.
 | Error | Description |
 |-------|-------------|
 | `net::ErrSend` | Failed to send data |
+| `net::ErrTimeout` | The timeout set with set_timeout ran out |
 
 **Example:**
 

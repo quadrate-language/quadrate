@@ -391,7 +391,7 @@ e http::handle_one  // handled
 
 ### `fn` header
 
-Add request header.
+Add request header. A line break in the name or value, or a colon in the name, is a runtime error: either would let the value write further headers.
 
 **Signature:** `(req:ptr name:str value:str -- )`
 
@@ -469,7 +469,7 @@ c 200 "{\"ok\":true}" http::json
 
 ### `fn` method
 
-Set request HTTP method.
+Set request HTTP method. A method with a line break in it is a runtime error.
 
 **Signature:** `(req:ptr method:str -- )`
 
@@ -584,7 +584,7 @@ c "page" http::query_param  // page
 
 ### `fn` request_body
 
-Get the raw request body as a string. Useful for reading JSON payloads in POST/PUT handlers.
+Get the raw request body as a string. Useful for reading JSON payloads in POST/PUT handlers. The server reads as many bytes as the request's Content-Length gives, up to 1 MiB; a larger request gets 413 before any handler runs.
 
 **Signature:** `(c:Ctx -- body:str)`
 
@@ -627,7 +627,7 @@ e ":8080" http::run!
 
 ### `fn` set_header
 
-Set response header. Must be called before sending response body.
+Set response header. Must be called before sending response body. A line break in the name or value, or a colon in the name, is a runtime error: either would let the value write further headers.
 
 **Signature:** `(c:Ctx name:str value:str -- )`
 
@@ -831,7 +831,7 @@ HTTP Response structure (for client)
 
 #### `fn` get
 
-Simple GET request.
+Simple GET request. Fails as `send` does.
 
 **Signature:** `(url:str -- resp:Response)!`
 
@@ -852,7 +852,7 @@ Simple GET request.
 
 #### `fn` send
 
-Execute HTTP request.
+Execute HTTP request. A chunked response body is decoded. The `Host` header carries the port when it is not the scheme's default, and `Content-Length` is sent whenever a body was set, even an empty one.
 
 **Signature:** `(req:ptr -- resp:Response)!`
 
@@ -863,6 +863,15 @@ Execute HTTP request.
 | Output | Type | Description |
 |--------|------|-------------|
 | `resp` | `Response` | Response struct with status, headers, body |
+
+| Error | Description |
+|-------|-------------|
+| `http::ErrInvalidUrl` | The URL is not http:// or https://, or is malformed |
+| `http::ErrConnect` | Host not found, unreachable or refusing connections |
+| `http::ErrTls` | The TLS handshake failed, or the certificate is not trusted |
+| `http::ErrSend` | The request could not be sent |
+| `http::ErrReceive` | The connection failed before the response was complete |
+| `http::ErrParse` | The reply is not an HTTP response |
 
 **Example:**
 

@@ -134,14 +134,14 @@
       "description": "Append string contents to a file. Creates the file if it doesn't exist.",
       "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "contents", "type": "str", "description": "String to append"}],
       "returns": [],
-      "errors": [{"code": "ErrPermission", "description": "Permission denied or cannot open file"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "errors": [{"code": "ErrNotFound", "description": "A directory on the path does not exist"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrWrite", "description": "The write failed, including when the disk fills as the file is closed"}],
       "examples": ["\"/tmp/log.txt\" \"New line\\n\" io::append_file!"]
     },
     {
       "name": "close",
       "signature": "(handle:ptr -- )",
       "failable": false,
-      "description": "Close a file.",
+      "description": "Close a file. Closing an invalid or already closed handle does nothing.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle to close"}],
       "returns": [],
       "errors": [],
@@ -151,11 +151,11 @@
       "name": "eof",
       "signature": "(handle:ptr -- handle:ptr is_eof:i64)",
       "failable": false,
-      "description": "Check if at end of file.",
+      "description": "Check if at end of file. An invalid handle is never at the end.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}],
       "returns": [{"name": "handle", "type": "ptr", "description": "File handle (unchanged)"}, {"name": "is_eof", "type": "i64", "description": "1 if at EOF, 0 otherwise"}],
       "errors": [],
-      "examples": ["f io::eof -> f -> at_end"]
+      "examples": ["f io::eof -> at_end -> f"]
     },
     {
       "name": "flush",
@@ -174,17 +174,17 @@
       "description": "Open a file.",
       "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "mode", "type": "str", "description": "Open mode (use io::Read, io::Write, etc.)"}],
       "returns": [{"name": "handle", "type": "ptr", "description": "File handle"}],
-      "errors": [{"code": "ErrNotFound", "description": "File not found"}],
+      "errors": [{"code": "ErrNotFound", "description": "The file or a directory on its path does not exist"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrInvalidArg", "description": "The mode is not one fopen accepts"}],
       "examples": ["\"data.txt\" io::Read io::open! -> f"]
     },
     {
       "name": "read_file",
       "signature": "(path:str -- contents:str)",
       "failable": true,
-      "description": "Read entire file contents.",
+      "description": "Read entire file contents, to the end of the file: a pipe, or a file under /proc whose size reads as 0, comes back whole.",
       "params": [{"name": "path", "type": "str", "description": "File path"}],
       "returns": [{"name": "contents", "type": "str", "description": "File contents as string"}],
-      "errors": [{"code": "ErrNotFound", "description": "File not found"}, {"code": "ErrRead", "description": "Read operation failed"}],
+      "errors": [{"code": "ErrNotFound", "description": "The file or a directory on its path does not exist"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrRead", "description": "Read operation failed"}],
       "examples": ["\"/etc/hostname\" io::read_file! -> contents"]
     },
     {
@@ -194,7 +194,7 @@
       "description": "Read bytes into buffer.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Pre-allocated buffer"}, {"name": "count", "type": "i64", "description": "Maximum bytes to read"}],
       "returns": [{"name": "bytes_read", "type": "i64", "description": "Actual bytes read"}],
-      "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrRead", "description": "Read operation failed"}],
+      "errors": [{"code": "ErrInvalidHandle", "description": "Invalid or closed file handle"}, {"code": "ErrInvalidArg", "description": "Null buffer or negative count"}, {"code": "ErrRead", "description": "Read operation failed"}],
       "examples": ["f buf 1024 io::read! -> n"]
     },
     {
@@ -274,7 +274,7 @@
       "description": "Write string contents to file. Creates or truncates the file at the given path.",
       "params": [{"name": "path", "type": "str", "description": "File path"}, {"name": "contents", "type": "str", "description": "String to write"}],
       "returns": [],
-      "errors": [{"code": "ErrPermission", "description": "Permission denied or cannot create file"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "errors": [{"code": "ErrNotFound", "description": "A directory on the path does not exist"}, {"code": "ErrPermission", "description": "Permission denied"}, {"code": "ErrWrite", "description": "The write failed, including when the disk fills as the file is closed"}],
       "examples": ["\"/tmp/test.txt\" \"Hello, world!\\n\" io::write_file!"]
     },
     {
@@ -284,7 +284,7 @@
       "description": "Write bytes from buffer.",
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}, {"name": "buffer", "type": "ptr", "description": "Buffer containing data"}, {"name": "count", "type": "i64", "description": "Number of bytes to write"}],
       "returns": [{"name": "bytes_written", "type": "i64", "description": "Actual bytes written"}],
-      "errors": [{"code": "ErrInvalidArg", "description": "Invalid file handle, buffer, or count"}, {"code": "ErrWrite", "description": "Write operation failed"}],
+      "errors": [{"code": "ErrInvalidHandle", "description": "Invalid or closed file handle"}, {"code": "ErrInvalidArg", "description": "Null buffer or negative count"}, {"code": "ErrWrite", "description": "Write operation failed"}],
       "examples": ["f buf len io::write! drop"]
     }
   ]

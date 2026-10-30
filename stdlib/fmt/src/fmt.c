@@ -1,7 +1,9 @@
+#include <errno.h>
 #include <quadrate/fmt/fmt.h>
 #include <quadrate/rt/qd_string.h>
-#include <quadrate/rt/stack.h>
-#include <errno.h>
+#include <quadrate/rt/runtime.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,792 +13,368 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
 
-// Helper function to skip past format specifier modifiers (flags, width, precision)
-// Returns pointer to the conversion specifier character
-static const char* skip_format_modifiers(const char* p) {
-	// Skip flags: -, +, space, #, 0
-	while (*p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '0') {
-		p++;
-	}
-	// Skip width
-	while (*p >= '0' && *p <= '9') {
-		p++;
-	}
-	// Skip precision
-	if (*p == '.') {
-		p++;
-		while (*p >= '0' && *p <= '9') {
-			p++;
-		}
-	}
-	// Skip length modifiers (l, ll, h, hh, L, z, j, t)
-	if (*p == 'l') {
-		p++;
-		if (*p == 'l') p++;
-	} else if (*p == 'h') {
-		p++;
-		if (*p == 'h') p++;
-	} else if (*p == 'L' || *p == 'z' || *p == 'j' || *p == 't') {
-		p++;
-	}
-	return p;
-}
-
-// Helper function to count format specifiers in format string
-static int count_format_specifiers(const char* fmt) {
-	int count = 0;
-	for (const char* p = fmt; *p; p++) {
-		if (*p == '%') {
-			p++; // Skip '%'
-			if (*p == '%') {
-				// Literal '%', not a format specifier
-				continue;
-			}
-			// Skip modifiers to find the conversion specifier
-			p = skip_format_modifiers(p);
-			if (*p == 's' || *p == 'd' || *p == 'i' || *p == 'f' ||
-			    *p == 'e' || *p == 'E' || *p == 'g' || *p == 'G' ||
-			    *p == 'x' || *p == 'X' || *p == 'o' || *p == 'u' ||
-			    *p == 'c' || *p == 'p') {
-				count++;
-			}
-		}
-	}
-	return count;
-}
-
 // Cap for width/precision fields in a format specifier. Width/precision come
 // straight from the caller's (untrusted) format string; without a bound a spec
 // like "%999999999d" would make the underlying printf attempt a huge amount of
 // output/padding, a denial-of-service vector.
 #define FMT_MAX_FIELD 1048576
 
-// Returns 1 if every width/precision field in the format string is within
-// FMT_MAX_FIELD, 0 otherwise.
-static int fmt_format_fields_ok(const char* fmt) {
-	for (const char* p = fmt; *p; p++) {
+/** One conversion: `%`, flags, width, precision, an ignored length modifier, the letter */
+typedef struct {
+	const char* start;	// the '%'
+	size_t flags_len;	// flags, width and precision, which go to printf as written
+	const char* conv;	// the conversion letter
+	bool field_too_big; // a width or precision over FMT_MAX_FIELD
+} fmt_spec_t;
+
+// The value type a conversion letter takes, or 0 for a letter that is not a conversion:
+// 'i' i64, 'f' f64, 's' str, 'p' ptr
+static char spec_type(char conv) {
+	switch (conv) {
+	case 'd':
+	case 'i':
+	case 'x':
+	case 'X':
+	case 'o':
+	case 'u':
+	case 'c':
+		return 'i';
+	case 'f':
+	case 'e':
+	case 'E':
+	case 'g':
+	case 'G':
+		return 'f';
+	case 's':
+		return 's';
+	case 'p':
+		return 'p';
+	default:
+		return 0;
+	}
+}
+
+static long read_field(const char** p, bool* too_big) {
+	long n = 0;
+	while (**p >= '0' && **p <= '9') {
+		if (n <= FMT_MAX_FIELD) {
+			n = n * 10 + (**p - '0');
+		}
+		(*p)++;
+	}
+	if (n > FMT_MAX_FIELD) {
+		*too_big = true;
+	}
+	return n;
+}
+
+// Parse the conversion at `p`, just past a '%' that is not "%%"
+static fmt_spec_t parse_spec(const char* p) {
+	fmt_spec_t spec = {p - 1, 0, NULL, false};
+	while (*p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '0') {
+		p++;
+	}
+	read_field(&p, &spec.field_too_big);
+	if (*p == '.') {
+		p++;
+		read_field(&p, &spec.field_too_big);
+	}
+	spec.flags_len = (size_t)(p - spec.start - 1);
+	// The length is ours to choose, from the value's type: a written l, ll, h, hh, L, z, j or t goes
+	if (*p == 'l' || *p == 'h') {
+		p += p[1] == p[0] ? 2 : 1;
+	} else if (*p == 'L' || *p == 'z' || *p == 'j' || *p == 't') {
+		p++;
+	}
+	spec.conv = p;
+	return spec;
+}
+
+// Walk `format` and call `each` for every conversion, in order. Stops early when it returns false.
+static void for_each_spec(const char* format, bool (*each)(const fmt_spec_t* spec, void* data), void* data) {
+	for (const char* p = format; *p; p++) {
 		if (*p != '%') {
 			continue;
 		}
-		p++;
-		if (*p == '%' || *p == '\0') {
+		if (p[1] == '%') {
+			// "%%" takes no value and writes one '%'
+			const fmt_spec_t percent = {p, 0, p + 1, false};
+			if (!each(&percent, data)) {
+				return;
+			}
+			p++;
 			continue;
 		}
-		// Flags
-		while (*p == '-' || *p == '+' || *p == ' ' || *p == '#' || *p == '0') {
-			p++;
+		const fmt_spec_t spec = parse_spec(p + 1);
+		if (spec_type(*spec.conv) && !each(&spec, data)) {
+			return;
 		}
-		// Width
-		long width = 0;
-		while (*p >= '0' && *p <= '9') {
-			width = width * 10 + (*p - '0');
-			if (width > FMT_MAX_FIELD) {
-				return 0;
-			}
-			p++;
-		}
-		// Precision
-		if (*p == '.') {
-			p++;
-			long prec = 0;
-			while (*p >= '0' && *p <= '9') {
-				prec = prec * 10 + (*p - '0');
-				if (prec > FMT_MAX_FIELD) {
-					return 0;
-				}
-				p++;
-			}
+		if (spec_type(*spec.conv)) {
+			p = spec.conv;
 		}
 	}
-	return 1;
 }
 
-int usr_fmt_printf(qd_context* ctx) {
-	// Stack order: ( arg1 arg2 ... argN format:s -- )
-	// Format string is on top, arguments are below it
+typedef struct {
+	qd_context* ctx;
+	const char* op;
+	const qd_stack_element_t* args; // the first argument, deepest on the stack
+	size_t count;					// how many the format names
+	size_t checked;
+	const char* error;
+	char error_buf[160];
+} fmt_check_t;
 
-	// Pop format string from top
-	qd_stack_element_t fmt_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &fmt_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in usr_fmt_printf: Stack underflow\n");
-		abort();
+static bool count_spec(const fmt_spec_t* spec, void* data) {
+	fmt_check_t* check = (fmt_check_t*)data;
+	if (*spec->conv == '%') {
+		return true;
 	}
-
-	if (fmt_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_printf: Expected format string, got type %d\n", fmt_elem.type);
-		abort();
+	if (spec->field_too_big) {
+		check->error = "format width/precision too large";
 	}
-
-	const char* format = qd_string_data(fmt_elem.value.s);
-	if (!fmt_format_fields_ok(format)) {
-		fprintf(stderr, "Fatal error in fmt: format width/precision too large\n");
-		qd_string_release(fmt_elem.value.s);
-		abort();
-	}
-	int arg_count = count_format_specifiers(format);
-
-	// Now pop exactly arg_count arguments from stack
-	qd_stack_element_t* elements = NULL;
-	if (arg_count > 0) {
-		elements = malloc(sizeof(qd_stack_element_t) * (size_t)arg_count);
-		if (!elements) {
-			fprintf(stderr, "Fatal error in usr_fmt_printf: Memory allocation failed\n");
-			qd_string_release(fmt_elem.value.s);
-			abort();
-		}
-
-		for (int i = 0; i < arg_count; i++) {
-			err = qd_stack_pop(ctx->st, &elements[i]);
-			if (err != QD_STACK_OK) {
-				fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments on stack\n");
-				for (int j = 0; j < i; j++) {
-					if (elements[j].type == QD_STACK_TYPE_STR) qd_string_release(elements[j].value.s);
-				}
-				free(elements);
-				qd_string_release(fmt_elem.value.s);
-				abort();
-			}
-		}
-	}
-
-	// Arguments are in reverse order: elements[arg_count-1] is first arg, elements[0] is last arg
-	// Process format string and print
-	int arg_idx = arg_count - 1; // Start from the last argument
-	for (const char* p = format; *p; p++) {
-		if (*p == '%' && *(p + 1)) {
-			const char* spec_start = p; // Remember start of format specifier
-			p++; // Skip '%'
-
-			if (*p == '%') {
-				// Literal '%'
-				putchar('%');
-				continue;
-			}
-
-			// Skip to conversion specifier
-			const char* conv = skip_format_modifiers(p);
-			char conv_char = *conv;
-
-			// Extract the full format specifier (e.g., "%.2f")
-			size_t spec_len = (size_t)(conv - spec_start + 1);
-			char spec_buf[64];
-			if (spec_len >= sizeof(spec_buf)) spec_len = sizeof(spec_buf) - 1;
-			memcpy(spec_buf, spec_start, spec_len);
-			spec_buf[spec_len] = '\0';
-
-			if (conv_char == 's') {
-				// String argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_STR) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected string for %%s, got type %d\n",
-						elements[arg_idx].type);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				printf(spec_buf, qd_string_data(elements[arg_idx].value.s));
-				arg_idx--;
-			} else if (conv_char == 'd' || conv_char == 'i' || conv_char == 'x' ||
-			           conv_char == 'X' || conv_char == 'o' || conv_char == 'u') {
-				// Integer argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected int for %%%c, got type %d\n",
-						conv_char, elements[arg_idx].type);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				// Insert 'l' modifier for long if not already present
-				char int_spec[68];
-				size_t idx = spec_len - 1;
-				memcpy(int_spec, spec_buf, idx);
-				int_spec[idx++] = 'l';
-				int_spec[idx++] = conv_char;
-				int_spec[idx] = '\0';
-				printf(int_spec, elements[arg_idx].value.i);
-				arg_idx--;
-			} else if (conv_char == 'f' || conv_char == 'e' || conv_char == 'E' ||
-			           conv_char == 'g' || conv_char == 'G') {
-				// Float argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_FLOAT) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected float for %%%c, got type %d\n",
-						conv_char, elements[arg_idx].type);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				printf(spec_buf, elements[arg_idx].value.f);
-				arg_idx--;
-			} else if (conv_char == 'c') {
-				// Character argument (from int)
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected int for %%c, got type %d\n",
-						elements[arg_idx].type);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				printf(spec_buf, (int)elements[arg_idx].value.i);
-				arg_idx--;
-			} else if (conv_char == 'p') {
-				// Pointer argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Not enough arguments for format string\n");
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_PTR) {
-					fprintf(stderr, "Fatal error in usr_fmt_printf: Expected ptr for %%p, got type %d\n",
-						elements[arg_idx].type);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				printf(spec_buf, elements[arg_idx].value.p);
-				arg_idx--;
-			} else {
-				// Unknown format specifier, just print it
-				putchar('%');
-				putchar(*p);
-				continue;
-			}
-			p = conv; // Advance past the conversion character
-		} else {
-			// Regular character
-			putchar(*p);
-		}
-	}
-
-	// Clean up all strings (including format and arguments)
-	if (elements) {
-		for (int i = 0; i < arg_count; i++) {
-			if (elements[i].type == QD_STACK_TYPE_STR) {
-				qd_string_release(elements[i].value.s);
-			}
-		}
-		free(elements);
-	}
-	qd_string_release(fmt_elem.value.s);
-
-	return (int){0};
+	check->count++;
+	return check->error == NULL;
 }
 
-int usr_fmt_sprintf(qd_context* ctx) {
-	// Stack order: ( arg1 arg2 ... argN format:s -- result:s )
-	// Format string is on top, arguments are below it
+static bool check_spec(const fmt_spec_t* spec, void* data) {
+	fmt_check_t* check = (fmt_check_t*)data;
+	if (*spec->conv == '%') {
+		return true;
+	}
+	const qd_stack_type actual = check->args[check->checked].type;
+	const char want = spec_type(*spec->conv);
+	const bool ok = (want == 'i' && actual == QD_STACK_TYPE_INT) ||
+					(want == 'f' && (actual == QD_STACK_TYPE_FLOAT || actual == QD_STACK_TYPE_INT)) ||
+					(want == 's' && actual == QD_STACK_TYPE_STR) || (want == 'p' && actual == QD_STACK_TYPE_PTR);
+	if (!ok) {
+		const char* expected = want == 'i' ? "i64" : want == 'f' ? "f64" : want == 's' ? "str" : "ptr";
+		snprintf(check->error_buf, sizeof(check->error_buf), "Expected %s for %%%c (argument %zu), got %s", expected,
+				*spec->conv, check->checked + 1, qd_type_name(actual));
+		check->error = check->error_buf;
+	}
+	check->checked++;
+	return ok;
+}
 
-	// Pop format string from top
-	qd_stack_element_t fmt_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &fmt_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintf: Stack underflow\n");
-		abort();
+__attribute__((format(printf, 2, 3))) static bool append_printf(qd_string_builder_t* sb, const char* spec, ...) {
+	va_list args;
+	va_start(args, spec);
+	const int n = vsnprintf(NULL, 0, spec, args);
+	va_end(args);
+	if (n < 0) {
+		return false;
+	}
+	char* text = malloc((size_t)n + 1);
+	if (!text) {
+		return false;
+	}
+	va_start(args, spec);
+	vsnprintf(text, (size_t)n + 1, spec, args);
+	va_end(args);
+	const bool ok = qd_sb_append(sb, text, (size_t)n);
+	free(text);
+	return ok;
+}
+
+typedef struct {
+	qd_string_builder_t* sb;
+	const qd_stack_element_t* args;
+	size_t next;
+	const char* copied_to; // the format, written out up to here
+	bool ok;
+} fmt_write_t;
+
+static bool write_spec(const fmt_spec_t* spec, void* data) {
+	fmt_write_t* w = (fmt_write_t*)data;
+	w->ok = w->ok && qd_sb_append(w->sb, w->copied_to, (size_t)(spec->start - w->copied_to));
+	w->copied_to = spec->conv + 1;
+	if (*spec->conv == '%') {
+		w->ok = w->ok && qd_sb_append(w->sb, "%", 1);
+		return true;
 	}
 
-	if (fmt_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected format string, got type %d\n", fmt_elem.type);
-		abort();
-	}
+	// '%', flags, width, precision, then our length modifier and the letter
+	char printf_spec[48];
+	const char conv = *spec->conv;
+	const char want = spec_type(conv);
+	const char* length = (want == 'i' && conv != 'c') ? "ll" : "";
+	snprintf(printf_spec, sizeof(printf_spec), "%%%.*s%s%c", (int)spec->flags_len, spec->start + 1, length, conv);
 
-	const char* format = qd_string_data(fmt_elem.value.s);
-	if (!fmt_format_fields_ok(format)) {
-		fprintf(stderr, "Fatal error in fmt: format width/precision too large\n");
-		qd_string_release(fmt_elem.value.s);
-		abort();
-	}
-	int arg_count = count_format_specifiers(format);
-
-	// Pop exactly arg_count arguments from stack
-	qd_stack_element_t* elements = NULL;
-	if (arg_count > 0) {
-		elements = malloc(sizeof(qd_stack_element_t) * (size_t)arg_count);
-		if (!elements) {
-			fprintf(stderr, "Fatal error in usr_fmt_sprintf: Memory allocation failed\n");
-			qd_string_release(fmt_elem.value.s);
-			abort();
-		}
-
-		for (int i = 0; i < arg_count; i++) {
-			err = qd_stack_pop(ctx->st, &elements[i]);
-			if (err != QD_STACK_OK) {
-				fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments on stack\n");
-				for (int j = 0; j < i; j++) {
-					if (elements[j].type == QD_STACK_TYPE_STR) qd_string_release(elements[j].value.s);
-				}
-				free(elements);
-				qd_string_release(fmt_elem.value.s);
-				abort();
-			}
-		}
-	}
-
-	// Create string builder for result
-	qd_string_builder_t* sb = qd_sb_create(256);
-	if (!sb) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintf: String builder allocation failed\n");
-		if (elements) {
-			for (int i = 0; i < arg_count; i++) {
-				if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-			}
-			free(elements);
-		}
-		qd_string_release(fmt_elem.value.s);
-		abort();
-	}
-
-	// Arguments are in reverse order: elements[arg_count-1] is first arg, elements[0] is last arg
-	int arg_idx = arg_count - 1;
-	for (const char* p = format; *p; p++) {
-		if (*p == '%' && *(p + 1)) {
-			const char* spec_start = p; // Remember start of format specifier
-			p++; // Skip '%'
-
-			if (*p == '%') {
-				// Literal '%'
-				qd_sb_append(sb, "%", 1);
-				continue;
-			}
-
-			// Skip to conversion specifier
-			const char* conv = skip_format_modifiers(p);
-			char conv_char = *conv;
-
-			// Extract the full format specifier (e.g., "%.2f")
-			size_t spec_len = (size_t)(conv - spec_start + 1);
-			char spec_buf[64];
-			if (spec_len >= sizeof(spec_buf)) spec_len = sizeof(spec_buf) - 1;
-			memcpy(spec_buf, spec_start, spec_len);
-			spec_buf[spec_len] = '\0';
-
-			char result_buf[256];
-			int len = 0;
-
-			if (conv_char == 's') {
-				// String argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
-					qd_sb_free(sb);
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_STR) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected string for %%s, got type %d\n",
-						elements[arg_idx].type);
-					qd_sb_free(sb);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				len = snprintf(result_buf, sizeof(result_buf), spec_buf, qd_string_data(elements[arg_idx].value.s));
-				qd_sb_append(sb, result_buf, (size_t)len);
-				arg_idx--;
-			} else if (conv_char == 'd' || conv_char == 'i' || conv_char == 'x' ||
-			           conv_char == 'X' || conv_char == 'o' || conv_char == 'u') {
-				// Integer argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
-					qd_sb_free(sb);
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected int for %%%c, got type %d\n",
-						conv_char, elements[arg_idx].type);
-					qd_sb_free(sb);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				// Insert 'l' modifier for long
-				char int_spec[68];
-				size_t idx = spec_len - 1;
-				memcpy(int_spec, spec_buf, idx);
-				int_spec[idx++] = 'l';
-				int_spec[idx++] = conv_char;
-				int_spec[idx] = '\0';
-				len = snprintf(result_buf, sizeof(result_buf), int_spec, elements[arg_idx].value.i);
-				qd_sb_append(sb, result_buf, (size_t)len);
-				arg_idx--;
-			} else if (conv_char == 'f' || conv_char == 'e' || conv_char == 'E' ||
-			           conv_char == 'g' || conv_char == 'G') {
-				// Float argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
-					qd_sb_free(sb);
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_FLOAT) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected float for %%%c, got type %d\n",
-						conv_char, elements[arg_idx].type);
-					qd_sb_free(sb);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				len = snprintf(result_buf, sizeof(result_buf), spec_buf, elements[arg_idx].value.f);
-				qd_sb_append(sb, result_buf, (size_t)len);
-				arg_idx--;
-			} else if (conv_char == 'c') {
-				// Character argument (from int)
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
-					qd_sb_free(sb);
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_INT) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected int for %%c, got type %d\n",
-						elements[arg_idx].type);
-					qd_sb_free(sb);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				len = snprintf(result_buf, sizeof(result_buf), spec_buf, (int)elements[arg_idx].value.i);
-				qd_sb_append(sb, result_buf, (size_t)len);
-				arg_idx--;
-			} else if (conv_char == 'p') {
-				// Pointer argument
-				if (arg_idx < 0) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Not enough arguments for format string\n");
-					qd_sb_free(sb);
-					free(elements);
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				if (elements[arg_idx].type != QD_STACK_TYPE_PTR) {
-					fprintf(stderr, "Fatal error in usr_fmt_sprintf: Expected ptr for %%p, got type %d\n",
-						elements[arg_idx].type);
-					qd_sb_free(sb);
-					if (elements) {
-						for (int i = 0; i < arg_count; i++) {
-							if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-						}
-						free(elements);
-					}
-					qd_string_release(fmt_elem.value.s);
-					abort();
-				}
-				len = snprintf(result_buf, sizeof(result_buf), spec_buf, elements[arg_idx].value.p);
-				qd_sb_append(sb, result_buf, (size_t)len);
-				arg_idx--;
-			} else {
-				// Unknown format specifier, just append it
-				qd_sb_append(sb, "%", 1);
-				qd_sb_append(sb, p, 1);
-				continue;
-			}
-			p = conv; // Advance past the conversion character
+	const qd_stack_element_t* arg = &w->args[w->next++];
+	switch (want) {
+	case 'i':
+		if (conv == 'c') {
+			w->ok = w->ok && append_printf(w->sb, printf_spec, (int)arg->value.i);
+		} else if (conv == 'd' || conv == 'i') {
+			w->ok = w->ok && append_printf(w->sb, printf_spec, (long long)arg->value.i);
 		} else {
-			// Regular character
-			qd_sb_append(sb, p, 1);
+			w->ok = w->ok && append_printf(w->sb, printf_spec, (unsigned long long)arg->value.i);
 		}
+		break;
+	case 'f':
+		w->ok = w->ok &&
+				append_printf(w->sb, printf_spec, arg->type == QD_STACK_TYPE_INT ? (double)arg->value.i : arg->value.f);
+		break;
+	case 's':
+		w->ok = w->ok && append_printf(w->sb, printf_spec, qd_string_data(arg->value.s));
+		break;
+	default:
+		w->ok = w->ok && append_printf(w->sb, printf_spec, arg->value.p);
+		break;
+	}
+	return true;
+}
+
+// Format the string on top of the stack with the values under it, one per conversion,
+// the first deepest, and pop them all. The format and every argument are checked before
+// anything is popped, so a raise leaves the stack as it was.
+static qd_string_t* format_from_stack(qd_context* ctx, const char* op) {
+	qd_stack* st = ctx->st;
+	if (st->size == 0) {
+		qd_fatal_raise(ctx, op, "Stack underflow");
+	}
+	const qd_stack_element_t* fmt_elem = &st->data[st->size - 1];
+	if (fmt_elem->type != QD_STACK_TYPE_STR) {
+		qd_fatal_raise(ctx, op, "Expected a format string, got %s", qd_type_name(fmt_elem->type));
+	}
+	const char* format = qd_string_data(fmt_elem->value.s);
+
+	fmt_check_t check = {ctx, op, NULL, 0, 0, NULL, {0}};
+	for_each_spec(format, count_spec, &check);
+	if (check.error) {
+		qd_fatal_raise(ctx, op, "%s", check.error);
+	}
+	if (st->size - 1 < check.count) {
+		qd_fatal_raise(ctx, op, "The format takes %zu values, the stack has %zu", check.count, st->size - 1);
+	}
+	const size_t base = st->size - 1 - check.count;
+	check.args = &st->data[base];
+	for_each_spec(format, check_spec, &check);
+	if (check.error) {
+		qd_fatal_raise(ctx, op, "%s", check.error);
 	}
 
-	// Convert builder to string and push onto stack
-	qd_string_t* result = qd_sb_to_string(sb);
+	qd_string_builder_t* sb = qd_sb_create(strlen(format) + 64);
+	fmt_write_t w = {sb, check.args, 0, format, sb != NULL};
+	if (sb) {
+		for_each_spec(format, write_spec, &w);
+		w.ok = w.ok && qd_sb_append(sb, w.copied_to, strlen(w.copied_to));
+	}
+	qd_string_t* result = w.ok ? qd_sb_to_string(sb) : NULL;
 	qd_sb_free(sb);
-
 	if (!result) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintf: Failed to create result string\n");
-		if (elements) {
-			for (int i = 0; i < arg_count; i++) {
-				if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-			}
-			free(elements);
-		}
-		qd_string_release(fmt_elem.value.s);
-		abort();
+		qd_fatal_raise(ctx, op, "Out of memory");
 	}
 
-	// Push result string onto stack
-	err = qd_stack_push_str(ctx->st, qd_string_data(result));
-	qd_string_release(result);
-
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintf: Failed to push result onto stack\n");
-		if (elements) {
-			for (int i = 0; i < arg_count; i++) {
-				if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-			}
-			free(elements);
+	for (size_t i = base; i < st->size; i++) {
+		if (st->data[i].type == QD_STACK_TYPE_STR) {
+			qd_string_release(st->data[i].value.s);
 		}
-		qd_string_release(fmt_elem.value.s);
-		abort();
 	}
+	st->size = base;
+	return result;
+}
 
-	// Clean up all strings (format and arguments)
-	if (elements) {
-		for (int i = 0; i < arg_count; i++) {
-			if (elements[i].type == QD_STACK_TYPE_STR) {
-				qd_string_release(elements[i].value.s);
-			}
+static void write_string(FILE* f, const qd_string_t* s) {
+	fwrite(qd_string_data(s), 1, qd_string_length(s), f);
+}
+
+// Stack signature: ( args... format:str -- )
+int usr_fmt_printf(qd_context* ctx) {
+	qd_string_t* text = format_from_stack(ctx, "fmt::printf");
+	write_string(stdout, text);
+	qd_string_release(text);
+	return 0;
+}
+
+// Stack signature: ( args... format:str -- result:str )
+int usr_fmt_sprintf(qd_context* ctx) {
+	qd_string_t* text = format_from_stack(ctx, "fmt::sprintf");
+	qd_push_s_ref(ctx, text);
+	qd_string_release(text);
+	return 0;
+}
+
+// Stack signature: ( args... fd:i64 format:str -- )
+// The format is on top, as the signature has it, with the fd under it and the values
+// under that. This took the fd from the top, so no call written as declared worked.
+int usr_fmt_fprintf(qd_context* ctx) {
+	qd_stack* st = ctx->st;
+	if (st->size < 2 || st->data[st->size - 2].type != QD_STACK_TYPE_INT) {
+		qd_fatal_raise(ctx, "fmt::fprintf", "Expected an fd (i64) under the format string");
+	}
+	// Set the fd aside, so the values sit right under the format
+	const qd_stack_element_t format = st->data[st->size - 1];
+	const int fd = (int)st->data[st->size - 2].value.i;
+	st->data[st->size - 2] = format;
+	st->size--;
+	qd_string_t* text = format_from_stack(ctx, "fmt::fprintf");
+
+	// stdio may still hold output for the same descriptor, which goes first
+	fflush(NULL);
+	const char* out = qd_string_data(text);
+	const size_t len = qd_string_length(text);
+	size_t written = 0;
+	while (written < len) {
+		const ssize_t n = write(fd, out + written, len - written);
+		if (n < 0 && errno == EINTR) {
+			continue;
 		}
-		free(elements);
+		if (n <= 0) {
+			break;
+		}
+		written += (size_t)n;
 	}
-	qd_string_release(fmt_elem.value.s);
-
-	return (int){0};
+	qd_string_release(text);
+	return 0;
 }
 
 int usr_fmt_print(qd_context* ctx) {
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_print: Expected string on stack\n");
-		abort();
-	}
-	fputs(qd_string_data(elem.value.s), stdout);
-	qd_string_release(elem.value.s);
-	return (int){0};
+	qd_string_t* s;
+	qd_args(ctx, "fmt::print", "s", &s);
+	write_string(stdout, s);
+	qd_string_release(s);
+	return 0;
 }
 
 int usr_fmt_println(qd_context* ctx) {
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_println: Expected string on stack\n");
-		abort();
-	}
-	puts(qd_string_data(elem.value.s));
-	qd_string_release(elem.value.s);
-	return (int){0};
+	qd_string_t* s;
+	qd_args(ctx, "fmt::println", "s", &s);
+	write_string(stdout, s);
+	fputc('\n', stdout);
+	qd_string_release(s);
+	return 0;
 }
 
 int usr_fmt_eprintln(qd_context* ctx) {
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_eprintln: Expected string on stack\n");
-		abort();
-	}
-	fprintf(stderr, "%s\n", qd_string_data(elem.value.s));
-	qd_string_release(elem.value.s);
-	return (int){0};
+	qd_string_t* s;
+	qd_args(ctx, "fmt::eprintln", "s", &s);
+	// What went to stdout before this came first
+	fflush(stdout);
+	write_string(stderr, s);
+	fputc('\n', stderr);
+	qd_string_release(s);
+	return 0;
 }
 
 int usr_fmt_sprintln(qd_context* ctx) {
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintln: Expected string on stack\n");
-		abort();
+	qd_string_t* s;
+	qd_args(ctx, "fmt::sprintln", "s", &s);
+	const size_t len = qd_string_length(s);
+	char* data = malloc(len + 1);
+	if (!data) {
+		qd_string_release(s);
+		qd_fatal_raise(ctx, "fmt::sprintln", "Out of memory");
 	}
-	const char* data = qd_string_data(elem.value.s);
-	size_t len = strlen(data);
-	qd_string_builder_t* sb = qd_sb_create(len + 2);
-	qd_sb_append(sb, data, len);
-	qd_sb_append(sb, "\n", 1);
-	qd_string_t* result = qd_sb_to_string(sb);
-	qd_sb_free(sb);
-	qd_string_release(elem.value.s);
-	err = qd_stack_push_str(ctx->st, qd_string_data(result));
+	memcpy(data, qd_string_data(s), len);
+	data[len] = '\n';
+	qd_string_release(s);
+	qd_string_t* result = qd_string_create_with_length(data, len + 1);
+	free(data);
+	qd_push_s_ref(ctx, result);
 	qd_string_release(result);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in usr_fmt_sprintln: Failed to push result\n");
-		abort();
-	}
-	return (int){0};
-}
-
-int usr_fmt_fprintf(qd_context* ctx) {
-	// Stack: ( arg1 arg2 ... argN format:s fd:i64 -- )
-	// Pop fd first, then delegate to printf-like logic writing to fd
-
-	qd_stack_element_t fd_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &fd_elem);
-	if (err != QD_STACK_OK || fd_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in usr_fmt_fprintf: Expected fd (i64) on stack\n");
-		abort();
-	}
-	int fd = (int)fd_elem.value.i;
-
-	// Pop format string
-	qd_stack_element_t fmt_elem;
-	err = qd_stack_pop(ctx->st, &fmt_elem);
-	if (err != QD_STACK_OK || fmt_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in usr_fmt_fprintf: Expected format string on stack\n");
-		abort();
-	}
-
-	const char* format = qd_string_data(fmt_elem.value.s);
-	if (!fmt_format_fields_ok(format)) {
-		fprintf(stderr, "Fatal error in fmt: format width/precision too large\n");
-		qd_string_release(fmt_elem.value.s);
-		abort();
-	}
-	int arg_count = count_format_specifiers(format);
-
-	qd_stack_element_t* elements = NULL;
-	if (arg_count > 0) {
-		elements = malloc(sizeof(qd_stack_element_t) * (size_t)arg_count);
-		if (!elements) {
-			qd_string_release(fmt_elem.value.s);
-			abort();
-		}
-		for (int i = 0; i < arg_count; i++) {
-			err = qd_stack_pop(ctx->st, &elements[i]);
-			if (err != QD_STACK_OK) {
-				for (int j = 0; j < i; j++) {
-					if (elements[j].type == QD_STACK_TYPE_STR) qd_string_release(elements[j].value.s);
-				}
-				free(elements);
-				qd_string_release(fmt_elem.value.s);
-				abort();
-			}
-		}
-	}
-
-	// Build formatted string using sprintf logic, then write to fd
-	qd_string_builder_t* sb = qd_sb_create(256);
-	int arg_idx = arg_count - 1;
-	for (const char* p = format; *p; p++) {
-		if (*p == '%' && *(p + 1)) {
-			const char* spec_start = p;
-			p++;
-			if (*p == '%') { qd_sb_append(sb, "%", 1); continue; }
-			const char* conv = skip_format_modifiers(p);
-			char conv_char = *conv;
-			size_t spec_len = (size_t)(conv - spec_start + 1);
-			char spec_buf[64];
-			if (spec_len >= sizeof(spec_buf)) spec_len = sizeof(spec_buf) - 1;
-			memcpy(spec_buf, spec_start, spec_len);
-			spec_buf[spec_len] = '\0';
-			char result_buf[256];
-			int len = 0;
-			if (arg_idx >= 0) {
-				if (conv_char == 's' && elements[arg_idx].type == QD_STACK_TYPE_STR) {
-					len = snprintf(result_buf, sizeof(result_buf), spec_buf, qd_string_data(elements[arg_idx].value.s));
-					arg_idx--;
-				} else if ((conv_char == 'd' || conv_char == 'i' || conv_char == 'x' || conv_char == 'X' || conv_char == 'o' || conv_char == 'u') && elements[arg_idx].type == QD_STACK_TYPE_INT) {
-					char int_spec[68];
-					size_t idx = spec_len - 1;
-					memcpy(int_spec, spec_buf, idx);
-					int_spec[idx++] = 'l';
-					int_spec[idx++] = conv_char;
-					int_spec[idx] = '\0';
-					len = snprintf(result_buf, sizeof(result_buf), int_spec, elements[arg_idx].value.i);
-					arg_idx--;
-				} else if ((conv_char == 'f' || conv_char == 'e' || conv_char == 'E' || conv_char == 'g' || conv_char == 'G') && elements[arg_idx].type == QD_STACK_TYPE_FLOAT) {
-					len = snprintf(result_buf, sizeof(result_buf), spec_buf, elements[arg_idx].value.f);
-					arg_idx--;
-				} else if (conv_char == 'c' && elements[arg_idx].type == QD_STACK_TYPE_INT) {
-					len = snprintf(result_buf, sizeof(result_buf), spec_buf, (int)elements[arg_idx].value.i);
-					arg_idx--;
-				} else if (conv_char == 'p' && elements[arg_idx].type == QD_STACK_TYPE_PTR) {
-					len = snprintf(result_buf, sizeof(result_buf), spec_buf, elements[arg_idx].value.p);
-					arg_idx--;
-				}
-			}
-			if (len > 0) qd_sb_append(sb, result_buf, (size_t)len);
-			p = conv;
-		} else {
-			qd_sb_append(sb, p, 1);
-		}
-	}
-
-	qd_string_t* result = qd_sb_to_string(sb);
-	qd_sb_free(sb);
-	if (result) {
-		const char* out = qd_string_data(result);
-		size_t out_len = strlen(out);
-		// Use write() for fd-based output. Loop to handle partial
-		// writes and EINTR; give up on unrecoverable errors.
-		size_t written = 0;
-		while (written < out_len) {
-			ssize_t n = write(fd, out + written, out_len - written);
-			if (n < 0) {
-				if (errno == EINTR) continue;
-				break;
-			}
-			written += (size_t)n;
-		}
-		qd_string_release(result);
-	}
-
-	if (elements) {
-		for (int i = 0; i < arg_count; i++) {
-			if (elements[i].type == QD_STACK_TYPE_STR) qd_string_release(elements[i].value.s);
-		}
-		free(elements);
-	}
-	qd_string_release(fmt_elem.value.s);
-	return (int){0};
+	return 0;
 }
 
 #pragma GCC diagnostic pop

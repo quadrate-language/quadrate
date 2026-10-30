@@ -1,0 +1,10 @@
+// Error recovery stops before a keyword that starts a declaration, the error token
+// included: the `fn` that should have been a `{` still starts `main`, and the
+// `pub fn` after a bad `pub` is read whole.
+enum Color
+pub 5
+pub fn helper() {
+}
+
+fn main() {
+}

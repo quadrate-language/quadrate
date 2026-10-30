@@ -2,8 +2,8 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/stack.h>
 #include <quadrate/strconv/strconv.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -14,15 +14,14 @@
 #define STRCONV_ERR_OK 1
 #define STRCONV_ERR_INVALID 2
 
-// Helper to convert digit value to character
+// The parse words take the whole string as the number, as parse_d128 always has: no space
+// around it and nothing after it. "12abc" read as 12 and "1.5x" as 1.5, the kind of answer
+// that goes unnoticed.
+
 static char digit_to_char(int digit) {
-	if (digit < 10) {
-		return (char)('0' + digit);
-	}
-	return (char)('a' + (digit - 10));
+	return (char)(digit < 10 ? '0' + digit : 'a' + (digit - 10));
 }
 
-// Helper to convert character to digit value
 static int char_to_digit(char c) {
 	if (c >= '0' && c <= '9') {
 		return c - '0';
@@ -36,380 +35,187 @@ static int char_to_digit(char c) {
 	return -1;
 }
 
-// format_int - format integer in given base ( value:i base:i -- str:s )
-int usr_strconv_format_int(qd_context* ctx) {
-	qd_stack_element_t base_elem, value_elem;
-
-	// Pop base
-	qd_stack_error err = qd_stack_pop(ctx->st, &base_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::format_int: Stack underflow\n");
-		abort();
-	}
-
-	// Pop value
-	err = qd_stack_pop(ctx->st, &value_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::format_int: Stack underflow\n");
-		abort();
-	}
-
-	if (value_elem.type != QD_STACK_TYPE_INT || base_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in strconv::format_int: Expected two integers\n");
-		abort();
-	}
-
-	int64_t value = value_elem.value.i;
-	int64_t base = base_elem.value.i;
-
+static void check_base(qd_context* ctx, const char* op, int64_t base, qd_string_t* s) {
 	if (base < 2 || base > 36) {
-		fprintf(stderr, "Fatal error in strconv::format_int: Base must be 2-36, got %ld\n", base);
-		abort();
+		if (s) {
+			qd_string_release(s);
+		}
+		qd_fatal_raise(ctx, op, "Base must be 2-36, got %" PRId64, base);
 	}
+}
 
-	// Handle zero specially
-	if (value == 0) {
-		qd_push_s(ctx, "0");
-		return (int){0};
-	}
+static int fail(qd_context* ctx, const char* op, const char* why, qd_string_t* s) {
+	const int code = qd_fail(ctx, STRCONV_ERR_INVALID, "%s: %s: \"%s\"", op, why, qd_string_data(s));
+	qd_string_release(s);
+	return code;
+}
 
-	// Buffer for result (64 bits = max 64 binary digits + sign + null)
+static int push_string(qd_context* ctx, const char* text) {
+	qd_push_s(ctx, text);
+	return 0;
+}
+
+// Stack signature: ( value:i64 base:i64 -- s:str )
+int usr_strconv_format_int(qd_context* ctx) {
+	int64_t value;
+	int64_t base;
+	qd_args(ctx, "strconv::format_int", "ii", &value, &base);
+	check_base(ctx, "strconv::format_int", base, NULL);
+
+	// 64 binary digits, a sign and the NUL
 	char buffer[66];
 	char* ptr = buffer + sizeof(buffer) - 1;
 	*ptr = '\0';
-
-	int negative = 0;
-	uint64_t uvalue;
-
+	// The magnitude as unsigned, so INT64_MIN has one
+	uint64_t u = value < 0 ? (uint64_t)0 - (uint64_t)value : (uint64_t)value;
+	do {
+		*--ptr = digit_to_char((int)(u % (uint64_t)base));
+		u /= (uint64_t)base;
+	} while (u > 0);
 	if (value < 0) {
-		negative = 1;
-		uvalue = (uint64_t)(-(value + 1)) + 1;
-	} else {
-		uvalue = (uint64_t)value;
+		*--ptr = '-';
 	}
-
-	// Convert digits in reverse
-	while (uvalue > 0) {
-		ptr--;
-		*ptr = digit_to_char((int)(uvalue % (uint64_t)base));
-		uvalue /= (uint64_t)base;
-	}
-
-	// Add negative sign if needed
-	if (negative) {
-		ptr--;
-		*ptr = '-';
-	}
-
-	qd_push_s(ctx, ptr);
-	return (int){0};
+	return push_string(ctx, ptr);
 }
 
-// parse_int - parse integer from string in given base ( str:s base:i -- value:i )
-int usr_strconv_parse_int(qd_context* ctx) {
-	qd_stack_element_t base_elem, str_elem;
-
-	// Pop base
-	qd_stack_error err = qd_stack_pop(ctx->st, &base_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::parse_int: Stack underflow\n");
-		abort();
+// Read an i64 in `base` from all of `s`. 0 on success, else what was wrong.
+static const char* read_int(const qd_string_t* s, int64_t base, int64_t* out) {
+	const char* p = qd_string_data(s);
+	const char* end = p + qd_string_length(s);
+	const bool negative = p < end && *p == '-';
+	if (p < end && (*p == '-' || *p == '+')) {
+		p++;
 	}
-
-	// Pop string
-	err = qd_stack_pop(ctx->st, &str_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::parse_int: Stack underflow\n");
-		abort();
+	if (p == end) {
+		return "not a number";
 	}
-
-	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in strconv::parse_int: Expected string\n");
-		abort();
-	}
-
-	if (base_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in strconv::parse_int: Expected integer base\n");
-		qd_string_release(str_elem.value.s);
-		abort();
-	}
-
-	int64_t base = base_elem.value.i;
-	if (base < 2 || base > 36) {
-		fprintf(stderr, "Fatal error in strconv::parse_int: Base must be 2-36, got %ld\n", base);
-		qd_string_release(str_elem.value.s);
-		abort();
-	}
-
-	const char* str = qd_string_data(str_elem.value.s);
-	const char* ptr = str;
-
-	// Skip leading whitespace
-	while (*ptr && isspace((unsigned char)*ptr)) {
-		ptr++;
-	}
-
-	// Check for negative sign
-	int negative = 0;
-	if (*ptr == '-') {
-		negative = 1;
-		ptr++;
-	} else if (*ptr == '+') {
-		ptr++;
-	}
-
-	// Parse digits
-	int64_t result = 0;
-	int digits_parsed = 0;
-
-	while (*ptr) {
-		int digit = char_to_digit(*ptr);
+	// INT64_MIN's magnitude is one more than INT64_MAX's
+	const uint64_t limit = negative ? (uint64_t)INT64_MAX + 1 : (uint64_t)INT64_MAX;
+	uint64_t result = 0;
+	for (; p < end; p++) {
+		const int digit = char_to_digit(*p);
 		if (digit < 0 || digit >= base) {
+			return "not a number";
+		}
+		if (result > (limit - (uint64_t)digit) / (uint64_t)base) {
+			return "out of range";
+		}
+		result = result * (uint64_t)base + (uint64_t)digit;
+	}
+	*out = negative ? (int64_t)(0 - result) : (int64_t)result;
+	return NULL;
+}
+
+static int parse_int(qd_context* ctx, const char* op, qd_string_t* s, int64_t base) {
+	int64_t value = 0;
+	const char* why = read_int(s, base, &value);
+	if (why) {
+		return fail(ctx, op, why, s);
+	}
+	qd_string_release(s);
+	qd_push_i(ctx, value);
+	return qd_push_i(ctx, STRCONV_ERR_OK);
+}
+
+// Stack signature: ( s:str base:i64 -- value:i64 )!
+int usr_strconv_parse_int(qd_context* ctx) {
+	qd_string_t* s;
+	int64_t base;
+	qd_args(ctx, "strconv::parse_int", "si", &s, &base);
+	check_base(ctx, "strconv::parse_int", base, s);
+	return parse_int(ctx, "strconv::parse_int", s, base);
+}
+
+// Stack signature: ( value:i64 -- s:str )
+int usr_strconv_itoa(qd_context* ctx) {
+	int64_t value;
+	qd_args(ctx, "strconv::itoa", "i", &value);
+	char buffer[32];
+	snprintf(buffer, sizeof(buffer), "%" PRId64, value);
+	return push_string(ctx, buffer);
+}
+
+// Stack signature: ( s:str -- value:i64 )!
+int usr_strconv_atoi(qd_context* ctx) {
+	qd_string_t* s;
+	qd_args(ctx, "strconv::atoi", "s", &s);
+	return parse_int(ctx, "strconv::atoi", s, 10);
+}
+
+// Stack signature: ( value:f64 -- s:str )
+// The shortest text that reads back as the same double. Plain %g kept six digits, so
+// 1234567.0 came out as "1.23457e+06", a different number.
+int usr_strconv_format_float(qd_context* ctx) {
+	double value;
+	qd_args(ctx, "strconv::format_float", "f", &value);
+	char buffer[32];
+	for (int precision = 15; precision <= 17; precision++) {
+		snprintf(buffer, sizeof(buffer), "%.*g", precision, value);
+		if (value != value || strtod(buffer, NULL) == value) {
 			break;
 		}
-		// Detect overflow before it happens (signed overflow is UB).
-		if (result > (INT64_MAX - digit) / base) {
-			qd_string_release(str_elem.value.s);
-			ctx->error_code = STRCONV_ERR_INVALID;
-			qd_set_error_msg(ctx, "strconv::parse_int: number out of range");
-			qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-			return (int){STRCONV_ERR_INVALID};
-		}
-		result = result * base + digit;
-		digits_parsed++;
-		ptr++;
 	}
-
-	if (digits_parsed == 0) {
-		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRCONV_ERR_INVALID;
-		qd_set_error_msg(ctx, "strconv::parse_int: invalid number format");
-		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-		return (int){STRCONV_ERR_INVALID};
-	}
-
-	if (negative) {
-		result = -result;
-	}
-
-	qd_string_release(str_elem.value.s);
-	qd_push_i(ctx, result);
-	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
-	return (int){0};
+	return push_string(ctx, buffer);
 }
 
-// itoa - convert integer to string (base 10) ( value:i -- str:s )
-int usr_strconv_itoa(qd_context* ctx) {
-	qd_stack_element_t value_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::itoa: Stack underflow\n");
-		abort();
-	}
-
-	if (value_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in strconv::itoa: Expected integer\n");
-		abort();
-	}
-
-	char buffer[32];
-	snprintf(buffer, sizeof(buffer), "%ld", value_elem.value.i);
-	qd_push_s(ctx, buffer);
-
-	return (int){0};
-}
-
-// atoi - convert string to integer (base 10) ( str:s -- value:i )
-int usr_strconv_atoi(qd_context* ctx) {
-	qd_stack_element_t str_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::atoi: Stack underflow\n");
-		abort();
-	}
-
-	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in strconv::atoi: Expected string\n");
-		abort();
-	}
-
-	const char* str = qd_string_data(str_elem.value.s);
-	char* endptr;
-	errno = 0;
-	long parsed = strtol(str, &endptr, 10);
-
-	// Check if any valid digits were parsed
-	if (endptr == str) {
-		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRCONV_ERR_INVALID;
-		qd_set_error_msg(ctx, "strconv::atoi: invalid number format");
-		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-		return (int){STRCONV_ERR_INVALID};
-	}
-
-	// Detect out-of-range values rather than silently using the clamped result.
-	if (errno == ERANGE) {
-		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRCONV_ERR_INVALID;
-		qd_set_error_msg(ctx, "strconv::atoi: number out of range");
-		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-		return (int){STRCONV_ERR_INVALID};
-	}
-
-	int64_t result = (int64_t)parsed;
-
-	qd_string_release(str_elem.value.s);
-	qd_push_i(ctx, result);
-	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
-	return (int){0};
-}
-
-// format_float - format float to string ( value:f -- str:s )
-int usr_strconv_format_float(qd_context* ctx) {
-	qd_stack_element_t value_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::format_float: Stack underflow\n");
-		abort();
-	}
-
-	if (value_elem.type != QD_STACK_TYPE_FLOAT) {
-		fprintf(stderr, "Fatal error in strconv::format_float: Expected float\n");
-		abort();
-	}
-
-	char buffer[64];
-	snprintf(buffer, sizeof(buffer), "%g", value_elem.value.f);
-	qd_push_s(ctx, buffer);
-
-	return (int){0};
-}
-
-// parse_float - parse string to float ( str:s -- value:f )
+// Stack signature: ( s:str -- value:f64 )!
 int usr_strconv_parse_float(qd_context* ctx) {
-	qd_stack_element_t str_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::parse_float: Stack underflow\n");
-		abort();
+	qd_string_t* s;
+	qd_args(ctx, "strconv::parse_float", "s", &s);
+	const char* str = qd_string_data(s);
+	const char* end = str + qd_string_length(s);
+	if (str == end || isspace((unsigned char)*str)) {
+		return fail(ctx, "strconv::parse_float", "not a number", s);
 	}
-
-	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in strconv::parse_float: Expected string\n");
-		abort();
+	char* stop;
+	errno = 0;
+	const double value = strtod(str, &stop);
+	if (stop != end) {
+		return fail(ctx, "strconv::parse_float", "not a number", s);
 	}
-
-	const char* str = qd_string_data(str_elem.value.s);
-	char* endptr;
-	double result = strtod(str, &endptr);
-
-	// Check if any valid digits were parsed
-	if (endptr == str) {
-		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRCONV_ERR_INVALID;
-		qd_set_error_msg(ctx, "strconv::parse_float: invalid number format");
-		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-		return (int){STRCONV_ERR_INVALID};
+	// Too large for a double; one too small to hold rounds to 0 or a subnormal, which is fine
+	if (errno == ERANGE && (value > 1.0 || value < -1.0)) {
+		return fail(ctx, "strconv::parse_float", "out of range", s);
 	}
-
-	qd_string_release(str_elem.value.s);
-	qd_push_f(ctx, result);
-	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
-	return (int){0};
+	qd_string_release(s);
+	qd_push_f(ctx, value);
+	return qd_push_i(ctx, STRCONV_ERR_OK);
 }
 
-// parse_d128 - parse string to d128 ( s:str -- value:d128 )!
-//
-// Stricter than parse_float, which takes the longest prefix that reads: a decimal value is
-// usually money or a measurement typed by a person, and "1.5x" being 1.5 is the kind of
-// answer that goes unnoticed.
+// Stack signature: ( s:str -- value:d128 )!
 int usr_strconv_parse_d128(qd_context* ctx) {
-	qd_stack_element_t str_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::parse_d128: Stack underflow\n");
-		abort();
+	qd_string_t* s;
+	qd_args(ctx, "strconv::parse_d128", "s", &s);
+	qd_d128_t value;
+	if (!qd_d128_parse(qd_string_data(s), &value)) {
+		return fail(ctx, "strconv::parse_d128", "not a number", s);
 	}
-
-	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in strconv::parse_d128: Expected string\n");
-		abort();
-	}
-
-	qd_d128_t result;
-	const bool read = qd_d128_parse(qd_string_data(str_elem.value.s), &result);
-	qd_string_release(str_elem.value.s);
-	if (!read) {
-		ctx->error_code = STRCONV_ERR_INVALID;
-		qd_set_error_msg(ctx, "strconv::parse_d128: invalid number format");
-		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-		return (int){STRCONV_ERR_INVALID};
-	}
-
-	if (qd_stack_push_d128(ctx->st, result) != QD_STACK_OK) {
-		qd_fatal_raise(ctx, "strconv::parse_d128", "Stack overflow");
-	}
-	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
-	return (int){0};
+	qd_string_release(s);
+	qd_push_d(ctx, value);
+	return qd_push_i(ctx, STRCONV_ERR_OK);
 }
 
-// format_bool - format boolean to string ( value:i -- str:s )
+// Stack signature: ( value:i64 -- s:str )
 int usr_strconv_format_bool(qd_context* ctx) {
-	qd_stack_element_t value_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &value_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::format_bool: Stack underflow\n");
-		abort();
-	}
-
-	if (value_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in strconv::format_bool: Expected integer\n");
-		abort();
-	}
-
-	qd_push_s(ctx, value_elem.value.i != 0 ? "true" : "false");
-
-	return (int){0};
+	int64_t value;
+	qd_args(ctx, "strconv::format_bool", "i", &value);
+	return push_string(ctx, value != 0 ? "true" : "false");
 }
 
-// parse_bool - parse string to boolean ( str:s -- value:i )
+// Stack signature: ( s:str -- value:i64 )!
 int usr_strconv_parse_bool(qd_context* ctx) {
-	qd_stack_element_t str_elem;
-
-	qd_stack_error err = qd_stack_pop(ctx->st, &str_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in strconv::parse_bool: Stack underflow\n");
-		abort();
-	}
-
-	if (str_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in strconv::parse_bool: Expected string\n");
-		abort();
-	}
-
-	const char* str = qd_string_data(str_elem.value.s);
-
-	int64_t result;
+	qd_string_t* s;
+	qd_args(ctx, "strconv::parse_bool", "s", &s);
+	const char* str = qd_string_data(s);
+	int64_t value;
 	if (strcasecmp(str, "true") == 0 || strcmp(str, "1") == 0) {
-		result = 1;
+		value = 1;
 	} else if (strcasecmp(str, "false") == 0 || strcmp(str, "0") == 0) {
-		result = 0;
+		value = 0;
 	} else {
-		qd_string_release(str_elem.value.s);
-		ctx->error_code = STRCONV_ERR_INVALID;
-		qd_set_error_msg(ctx, "strconv::parse_bool: invalid boolean format");
-		qd_stack_push_int(ctx->st, (int64_t)STRCONV_ERR_INVALID);
-		return (int){STRCONV_ERR_INVALID};
+		return fail(ctx, "strconv::parse_bool", "not a boolean", s);
 	}
-
-	qd_string_release(str_elem.value.s);
-	qd_push_i(ctx, result);
-	qd_stack_push_int(ctx->st, STRCONV_ERR_OK);
-	return (int){0};
+	qd_string_release(s);
+	qd_push_i(ctx, value);
+	return qd_push_i(ctx, STRCONV_ERR_OK);
 }

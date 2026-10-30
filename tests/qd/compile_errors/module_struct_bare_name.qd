@@ -1,0 +1,15 @@
+// Test: building a module's struct by its bare name keeps the function's own checks on.
+//
+// The construction used to fall through to the call checks, find no function named `Pt`, and
+// mark the function's stack unpredictable, which switched off the output-count check: `make`
+// declares one output, leaves two, and compiled clean.
+use bare_struct_geom
+
+fn make( -- p:bare_struct_geom::Pt) {
+	1 2 Pt
+	7
+}
+
+fn main() {
+	make drop
+}

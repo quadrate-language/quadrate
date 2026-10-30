@@ -75,6 +75,8 @@ if get_option('build_tools')
 	jansson_dep = dependency('jansson', version: '>=2.14', required: true, fallback: ['jansson', 'jansson_dep'],
 		include_type: 'system')
 
+	# The tools' shared code: it reads qd.json, so it needs jansson, and resolves modules through lib/qc
+	subdir('lib/cli')
 	subdir('cmd')
 endif
 

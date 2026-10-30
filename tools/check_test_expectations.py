@@ -30,6 +30,7 @@ PINNED_SUFFIXES = ('.out', '.expected', '.err', '.runtime_err')
 # legitimately have no expectation sibling here.
 EXEMPT = (
     ('args/*.qd', 'driven by the args suite, which pins the output per argument list'),
+    ('http/client_integration.qd', 'needs the servers the http suite starts'),
     ('http/server_integration.qd', 'blocking server, driven by the http suite'),
     ('http/sse_integration.qd', 'blocking server, driven by the http suite'),
     ('stdlib/*_test.qd', 'test blocks asserted by the stdlib suite (quad test)'),

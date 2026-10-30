@@ -1,0 +1,5 @@
+tell 2 depth 0
+write_file: ErrNotFound
+open: ErrNotFound
+full: ErrWrite
+1

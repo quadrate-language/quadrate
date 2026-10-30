@@ -10,11 +10,11 @@
 # tools/gen_module_register.py.
 gen_module_register = find_program(meson.project_source_root() / 'tools' / 'gen_module_register.py')
 
-# Only the modules asked for, in this order. None of them depends on another,
-# but http's tests use net and tls.
+# Only the modules asked for, in this order. Only http depends on another: its
+# client speaks TLS through tls's platform layer.
 stdlib_modules = get_option('stdlib_modules')
-if get_option('build_tests') and 'http' in stdlib_modules and not ('net' in stdlib_modules and 'tls' in stdlib_modules)
-	error('stdlib_modules: http\'s tests need net and tls; add them, or set build_tests=false')
+if 'http' in stdlib_modules and 'tls' not in stdlib_modules
+	error('stdlib_modules: http needs tls; add it')
 endif
 
 foreach module : ['decimal', 'fmt', 'io', 'math', 'mem', 'net', 'os', 'signal', 'unicode', 'strings', 'strconv', 'testing', 'time', 'thread', 'tty', 'tls', 'http', 'log']

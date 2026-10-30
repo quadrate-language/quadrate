@@ -12,6 +12,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/module_resolver.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 #include <set>
@@ -26,103 +27,8 @@ extern "C" {
 #include "src/platform/dynlib_platform.h"
 #include "src/platform/exe_path_platform.h"
 }
-#include "src/platform/platform_paths.h"
 
 namespace fs = std::filesystem;
-
-// Helper: Find the first .qd file in a directory (excluding *_test.qd files)
-static std::string findFirstQdFile(const std::string& directory) {
-	try {
-		if (!fs::exists(directory) || !fs::is_directory(directory)) {
-			return "";
-		}
-
-		for (const auto& entry : fs::directory_iterator(directory)) {
-			if (entry.is_regular_file()) {
-				std::string filename = entry.path().filename().string();
-				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
-					// Exclude test files (*_test.qd)
-					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
-						continue;
-					}
-					return entry.path().string();
-				}
-			}
-		}
-	} catch (const std::filesystem::filesystem_error&) {
-		// Ignore filesystem errors
-	}
-	return "";
-}
-
-// Helper to find module file in standard locations
-static std::string findModuleFile(const std::string& moduleName) {
-	std::string result;
-
-	// Try 1: QUADRATE_ROOT environment variable
-	const char* quadrateRoot = getenv("QUADRATE_ROOT");
-	if (quadrateRoot) {
-		result = findFirstQdFile(std::string(quadrateRoot) + "/" + moduleName);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	// Try 2: QUADRATE_LIBDIR (for development/testing)
-	const char* libDir = getenv("QUADRATE_LIBDIR");
-	if (libDir) {
-		// Standard library modules are in lib/qd<name>/qd/<name>/ relative to QUADRATE_LIBDIR
-		result = findFirstQdFile(std::string(libDir) + "/../lib/qd" + moduleName + "/qd/" + moduleName);
-		if (!result.empty()) {
-			return result;
-		}
-		// Also try installed structure
-		result = findFirstQdFile(std::string(libDir) + "/../" + DATA_DIR_NAME + "/quadrate/" + moduleName);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	// Try 3: Standard library relative to executable
-	// Note: DATA_DIR_NAME is "data" on Haiku, "share" on other platforms
-	{
-		char exePathBuf[4096];
-		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-		if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
-			try {
-				fs::path exePath = fs::canonical(exePathBuf);
-				fs::path exeDir = exePath.parent_path();
-				fs::path sharePath = exeDir / ".." / DATA_DIR_NAME / "quadrate" / moduleName;
-				result = findFirstQdFile(sharePath.string());
-				if (!result.empty()) {
-					return result;
-				}
-			} catch (const std::filesystem::filesystem_error&) {
-				// Ignore errors resolving path
-			}
-		}
-	}
-
-	// Try 4: $HOME/quadrate directory
-	const char* home = getenv("HOME");
-	if (home) {
-		result = findFirstQdFile(std::string(home) + "/quadrate/" + moduleName);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	// Try 5: Local development paths (relative to build directory, debug builds only)
-	if (MESON_BUILD_ROOT[0] != '\0') {
-		fs::path sourceRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
-		result = findFirstQdFile((sourceRoot / "stdlib" / moduleName / "qd" / moduleName).string());
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	return "";
-}
 
 // Helper to find the library directory (either build or installed location)
 static std::string findLibraryDir() {
@@ -372,13 +278,388 @@ void qd_set_warning_min_line(qd_module* mod, size_t line) {
 	mod->warning_min_line = line;
 }
 
+// Run a command line, collecting what it prints. Its exit status, or -1 if it did not run.
+static int runCommand(const std::string& command, std::string& output) {
+	FILE* pipe = popen(command.c_str(), "r");
+	if (!pipe) {
+		return -1;
+	}
+	char buffer[256];
+	while (fgets(buffer, sizeof(buffer), pipe)) {
+		output += buffer;
+	}
+	return pclose(pipe);
+}
+
+static bool writeTextFile(const fs::path& path, const std::string& contents) {
+	std::ofstream file(path, std::ios::binary);
+	file << contents;
+	file.close();
+	return !file.fail();
+}
+
+// Every `use` under `node`, the module it names
+static void forEachUse(Qd::IAstNode* node, const std::function<void(const std::string&)>& visit) {
+	if (!node) {
+		return;
+	}
+	if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+		visit(static_cast<Qd::AstNodeUse*>(node)->module());
+	}
+	for (size_t i = 0; i < node->childCount(); i++) {
+		forEachUse(node->child(i), visit);
+	}
+}
+
+static bool isQdFile(const std::string& name) {
+	return name.size() > 3 && name.compare(name.size() - 3, 3, ".qd") == 0;
+}
+
+// The modules of `ctx` by name, as they stand now
+static std::unordered_map<std::string, qd_module*> contextModules(qd_context* ctx) {
+	std::lock_guard<std::mutex> lock(g_modules_mutex);
+	auto it = g_context_modules.find(ctx);
+	return it == g_context_modules.end() ? std::unordered_map<std::string, qd_module*>{} : it->second;
+}
+
+// The other modules of the context with typed native functions, written out as .qd
+// files of FFI declarations, so that the validator and the generator see their
+// signatures. libqd<name>.a is what gives their functions the usr_<ns>_<func> names
+// the stubs below define.
+static void writeTypedModules(qd_module* mod) {
+	for (const auto& [name, other] : contextModules(mod->owner_ctx)) {
+		if (other == mod) {
+			continue;
+		}
+		std::string declarations;
+		for (const auto& [fname, nf] : other->native_functions) {
+			if (!nf.signature.empty()) {
+				declarations += "\tpub fn " + fname + nf.signature + "\n";
+			}
+		}
+		if (declarations.empty()) {
+			continue;
+		}
+		const fs::path dir = mod->temp_dir / name;
+		fs::create_directories(dir);
+		writeTextFile(
+				dir / (name + ".qd"), "import \"libqd" + name + ".a\" as \"" + name + "\" {\n" + declarations + "}\n");
+	}
+}
+
+// Loads what a script uses, through the search quadc runs: the temp directory first,
+// where writeTypedModules put the typed native modules, then the module roots. A module
+// is every one of its files, each validated alongside the others.
+class ModuleLoader {
+public:
+	explicit ModuleLoader(const fs::path& tempDir) : mTempDir(tempDir.string()) {
+		mSearch.sourceDir = mTempDir;
+	}
+
+	void load(Qd::IAstNode* root) {
+		collect(root, "", mTempDir);
+	}
+
+	// Namespace and root of every file loaded, a file before the files it uses
+	std::vector<std::pair<std::string, Qd::IAstNode*>> modules;
+
+private:
+	Qd::IAstNode* parse(const std::string& path) {
+		auto cached = mParsed.find(path);
+		if (cached != mParsed.end()) {
+			return cached->second;
+		}
+		Qd::IAstNode* root = nullptr;
+		std::ifstream file(path);
+		if (file) {
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			const std::string source = buffer.str();
+			auto ast = std::make_unique<Qd::Ast>();
+			root = ast->generate(source.c_str(), false, path.c_str());
+			if (root && ast->hasErrors()) {
+				root = nullptr;
+			}
+			mOwners.push_back(std::move(ast));
+		}
+		mParsed[path] = root;
+		return root;
+	}
+
+	// The file names a file imports with `use helper.qd`
+	std::unordered_set<std::string> qdImportsOf(const std::string& path) {
+		std::unordered_set<std::string> names;
+		forEachUse(parse(path), [&](const std::string& used) {
+			if (isQdFile(used)) {
+				names.insert(fs::path(used).filename().string());
+			}
+		});
+		return names;
+	}
+
+	// One file of namespace `ns`, once, then whatever it uses in turn
+	void loadFile(const std::string& path, const std::string& ns, const std::vector<std::string>& moduleFiles) {
+		std::error_code ec;
+		const fs::path canonical = fs::weakly_canonical(path, ec);
+		if (!mLoadedFiles.emplace(ns, ec ? path : canonical.string()).second) {
+			return;
+		}
+		Qd::IAstNode* root = parse(path);
+		if (!root) {
+			return;
+		}
+		Qd::SemanticValidator validator;
+		validator.setIncludePaths({mTempDir});
+		validator.setSiblingFiles(
+				Qd::moduleSiblings(path, moduleFiles, [this](const std::string& file) { return qdImportsOf(file); }));
+		if (validator.validate(root, path.c_str(), true, false) != 0) {
+			return;
+		}
+		modules.push_back({ns, root});
+		collect(root, ns, fs::path(path).parent_path().string());
+	}
+
+	void collect(Qd::IAstNode* root, const std::string& importerNs, const std::string& importerDir) {
+		forEachUse(root, [&](const std::string& name) {
+			if (isQdFile(name)) {
+				// `use helper.qd` in a module is part of that module; in the script, a module
+				// of its own, named after the file
+				Qd::ModuleSearch fileSearch;
+				fileSearch.sourceDir = importerDir;
+				const std::string path = Qd::findModuleFile(name, fileSearch);
+				if (!path.empty()) {
+					const bool inModule = !importerNs.empty();
+					loadFile(path, inModule ? importerNs : fs::path(name).stem().string(),
+							inModule ? Qd::moduleFiles(fs::path(path).parent_path().string())
+									 : std::vector<std::string>{});
+				}
+				return;
+			}
+			if (!mProcessedModules.insert(name).second) {
+				return;
+			}
+			// Not found or ambiguous: the validator has reported it
+			const Qd::ModuleLocation location = Qd::findModule(name, mSearch);
+			if (location.directory.empty()) {
+				return;
+			}
+			const std::vector<std::string> files = Qd::moduleFiles(location.directory);
+			for (const std::string& file : files) {
+				loadFile(file, location.namespaceName, files);
+			}
+		});
+	}
+
+	std::string mTempDir;
+	Qd::ModuleSearch mSearch;
+	std::vector<std::unique_ptr<Qd::Ast>> mOwners;
+	std::unordered_map<std::string, Qd::IAstNode*> mParsed;
+	std::unordered_set<std::string> mProcessedModules;
+	std::set<std::pair<std::string, std::string>> mLoadedFiles; // namespace, canonical path
+};
+
+// The -I flags that find quadrate/qd/qd.h and what it includes
+static std::string stubIncludeFlags() {
+	fs::path installed = fs::path(findLibraryDir()) / ".." / "include";
+	if (fs::exists(installed / "quadrate" / "qd" / "qd.h")) {
+		return " -I" + shellQuote(fs::canonical(installed).string());
+	}
+	std::string flags;
+	if (MESON_BUILD_ROOT[0] != '\0') {
+		// Development build: the headers are in the source tree
+		const fs::path sourceRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
+		if (fs::exists(sourceRoot / "lib" / "qd" / "include" / "quadrate" / "qd" / "qd.h")) {
+			flags += " -I" + shellQuote((sourceRoot / "lib" / "qd" / "include").string());
+		}
+		if (fs::exists(sourceRoot / "lib" / "rt" / "include" / "quadrate" / "rt" / "runtime.h")) {
+			flags += " -I" + shellQuote((sourceRoot / "lib" / "rt" / "include").string());
+		}
+	}
+	return flags;
+}
+
+// Compiled code calls a native function of a used module as usr_<ns>_<func>. These stubs
+// define those symbols, each a trampoline through qd_call_native, for the modules of the
+// context that have native functions, typed or not.
+static std::vector<fs::path> compileNativeStubs(qd_module* mod, Qd::IAstNode* root) {
+	std::unordered_set<std::string> used;
+	forEachUse(root, [&](const std::string& name) { used.insert(name); });
+
+	const auto modules = contextModules(mod->owner_ctx);
+	std::vector<fs::path> objects;
+	std::string includeFlags;
+	for (const auto& name : used) {
+		auto it = modules.find(name);
+		if (it == modules.end() || it->second->native_functions.empty()) {
+			continue;
+		}
+
+		std::string source = "#include <quadrate/qd/qd.h>\n";
+		for (const auto& [fname, nf] : it->second->native_functions) {
+			source += "int usr_" + name + "_" + fname + "(qd_context* ctx) {\n    return qd_call_native(ctx, \"" +
+					  name + "\", \"" + fname + "\");\n}\n";
+		}
+		const fs::path stubC = mod->temp_dir / ("stub_" + name + ".c");
+		const fs::path stubO = mod->temp_dir / ("stub_" + name + ".o");
+		if (!writeTextFile(stubC, source)) {
+			continue;
+		}
+
+		if (includeFlags.empty()) {
+			includeFlags = stubIncludeFlags();
+		}
+		std::string errors;
+		const int status =
+				runCommand(std::string(findCC()) + " -c -fPIC" + includeFlags + " " + shellQuote(stubC.string()) +
+								   " -o " + shellQuote(stubO.string()) + " 2>&1",
+						errors);
+		if (status != 0) {
+			fprintf(stderr, "qd_build: Failed to compile stub for module '%s':\n%s\n", name.c_str(), errors.c_str());
+			continue;
+		}
+		objects.push_back(stubO);
+	}
+	return objects;
+}
+
+// The functions an object file defines, by the name qd_execute looks them up by
+static std::unordered_map<std::string, std::string> exportedSymbols(qd_module* mod, const fs::path& object) {
+	std::unordered_map<std::string, std::string> symbols;
+	std::string listing;
+	runCommand("nm " + shellQuote(object.string()) + " | grep ' T usr_' || true", listing);
+
+	const std::string ownPrefix = "usr_" + mod->name + "_";
+	std::istringstream lines(listing);
+	std::string line;
+	while (std::getline(lines, line)) {
+		// "0000000000000000 T usr_package_function"
+		const size_t start = line.find("usr_");
+		if (start == std::string::npos) {
+			continue;
+		}
+		const std::string symbol = line.substr(start);
+		// The object holds this module's functions and every function of every module
+		// it uses, and the map is keyed on the bare name -- so a script with its own
+		// `parse` and a `use json` both want the key "parse", and whichever nm printed
+		// second used to win. This module's own symbols take the key; a used module's
+		// only fills one nothing else claims.
+		if (symbol.compare(0, ownPrefix.size(), ownPrefix) == 0) {
+			symbols[symbol.substr(ownPrefix.size())] = symbol;
+		} else if (size_t second = symbol.find('_', 4); second != std::string::npos) {
+			// usr_package_function -> function
+			symbols.emplace(symbol.substr(second + 1), symbol);
+		}
+	}
+	return symbols;
+}
+
+// The static library `libPath` and, through the .deps file beside it, what it needs in
+// turn: a Quadrate library is linked and followed, anything else passed to the linker
+// as written. Mirrors processLibraryDeps in generator.cc.
+static void addLibraryDeps(
+		const std::string& libDir, const std::string& libPath, std::set<std::string>& seen, std::string& flags) {
+	if (!seen.insert(libPath).second) {
+		return;
+	}
+	std::string depsFile = libPath;
+	if (depsFile.size() > 2 && depsFile.compare(depsFile.size() - 2, 2, ".a") == 0) {
+		depsFile = depsFile.substr(0, depsFile.size() - 2) + ".deps";
+	}
+	std::ifstream deps(depsFile);
+	std::string line;
+	while (std::getline(deps, line)) {
+		line.erase(0, line.find_first_not_of(" \t\r\n"));
+		line.erase(line.find_last_not_of(" \t\r\n") + 1);
+		if (line.empty()) {
+			continue;
+		}
+		if (line.rfind("-l", 0) == 0 && line.size() > 2) {
+			const std::string depLib = findStaticLib(libDir, line.substr(2));
+			if (!depLib.empty()) {
+				flags += " " + depLib;
+				addLibraryDeps(libDir, depLib, seen, flags);
+				continue;
+			}
+		}
+		flags += " " + line;
+	}
+}
+
+// Links the object, the stubs, the runtime and the library of every module the script
+// loaded into mod->so_path
+static bool linkSharedLibrary(qd_module* mod, const fs::path& object, const std::vector<fs::path>& stubs,
+		const std::vector<std::pair<std::string, Qd::IAstNode*>>& modules) {
+	const std::string libDir = findLibraryDir();
+
+	std::string command = std::string(findCXX()) + " -shared -fPIC " + shellQuote(object.string());
+	for (const auto& stub : stubs) {
+		command += " " + shellQuote(stub.string());
+	}
+	command += " -o " + shellQuote(mod->so_path.string());
+
+	std::unordered_set<std::string> libraries = {"rt"};
+	for (const auto& module : modules) {
+		libraries.insert(module.first);
+	}
+	std::set<std::string> seen;
+	std::string depsFlags;
+	for (const auto& library : libraries) {
+		const std::string libPath = findStaticLib(libDir, library);
+		if (!libPath.empty()) {
+			command += " -Wl,--whole-archive " + shellQuote(libPath) + " -Wl,--no-whole-archive";
+			addLibraryDeps(libDir, libPath, seen, depsFlags);
+		}
+	}
+	if (!depsFlags.empty()) {
+		command += " -Wl,--start-group" + depsFlags + " -Wl,--end-group";
+	}
+	command += " -lm";
+	if (!stubs.empty()) {
+		// The stubs call qd_call_native, which resolves at dlopen time against the libqd
+		// already loaded. In a meson build tree it is in a qd/ subdirectory.
+		command += " -L" + shellQuote(libDir);
+		if (fs::exists(fs::path(libDir) / "qd" / "libqd.so")) {
+			command += " -L" + shellQuote(libDir + "/qd");
+		}
+		command += " -lqd";
+	}
+
+	std::string errors;
+	const int status = runCommand(command + " 2>&1", errors);
+	if (status == -1) {
+		fprintf(stderr, "qd_build: Failed to execute linker\n");
+		return false;
+	}
+	if (status != 0) {
+		fprintf(stderr, "qd_build: Linking failed:\n%s\n", errors.c_str());
+		return false;
+	}
+	return true;
+}
+
+// Whatever an earlier build of the module left: its library and its temp directory
+static void discardBuild(qd_module* mod) {
+	if (mod->dl_handle) {
+		dynlib_platform_close(mod->dl_handle);
+		mod->dl_handle = nullptr;
+	}
+	if (!mod->temp_dir.empty()) {
+		std::error_code ec;
+		fs::remove_all(mod->temp_dir, ec);
+		mod->temp_dir.clear();
+	}
+	mod->symbol_map.clear();
+	mod->compiled = false;
+}
+
 void qd_build(qd_module* mod) {
 	if (!mod) {
 		return;
 	}
+	discardBuild(mod);
 
 	if (mod->scripts.empty()) {
-		// If we have native functions but no scripts, just mark as compiled
+		// Native functions alone need nothing compiled
 		if (!mod->native_functions.empty()) {
 			mod->compiled = true;
 			return;
@@ -388,493 +669,83 @@ void qd_build(qd_module* mod) {
 	}
 
 	try {
-		// Create temporary directory for compilation
-		fs::path temp_base = fs::temp_directory_path();
-		std::string temp_template = (temp_base / "qd_embed_XXXXXX").string();
-		std::vector<char> temp_buf(temp_template.begin(), temp_template.end());
-		temp_buf.push_back('\0');
-		char* temp_path = mkdtemp(temp_buf.data());
-		if (!temp_path) {
+		std::string tempTemplate = (fs::temp_directory_path() / "qd_embed_XXXXXX").string();
+		if (!mkdtemp(tempTemplate.data())) {
 			fprintf(stderr, "qd_build: Failed to create temporary directory\n");
 			return;
 		}
-		mod->temp_dir = temp_path;
+		mod->temp_dir = tempTemplate;
 
-		// Combine all scripts into one source file
-		// Prepend package declaration to ensure correct symbol names
-		std::string combined_source = "package " + mod->name + "\n\n";
+		// The scripts as one source, a line apart
+		std::string source;
 		for (const auto& script : mod->scripts) {
-			combined_source += script;
-			combined_source += "\n";
+			source += script + "\n";
 		}
-
-		// Write source to file
-		fs::path source_file = mod->temp_dir / "script.qd";
-		FILE* f = fopen(source_file.c_str(), "w");
-		if (!f) {
+		const fs::path sourceFile = mod->temp_dir / "script.qd";
+		if (!writeTextFile(sourceFile, source)) {
 			fprintf(stderr, "qd_build: Failed to write source file\n");
 			return;
 		}
-		fwrite(combined_source.c_str(), 1, combined_source.size(), f);
-		fclose(f);
+		writeTypedModules(mod);
 
-		// Generate synthetic .qd module files for other modules that have
-		// typed native functions. This allows the semantic validator and LLVM
-		// generator to resolve type signatures for host-registered callbacks.
-		{
-			auto ctx_it = g_context_modules.find(mod->owner_ctx);
-			if (ctx_it != g_context_modules.end()) {
-				for (const auto& [modName, otherMod] : ctx_it->second) {
-					if (modName == mod->name) {
-						continue;
-					}
-					if (otherMod->native_functions.empty()) {
-						continue;
-					}
-
-					// Check if any functions have type signatures
-					bool hasTypedFunctions = false;
-					for (const auto& [fname, nf] : otherMod->native_functions) {
-						if (!nf.signature.empty()) {
-							hasTypedFunctions = true;
-							break;
-						}
-					}
-					if (!hasTypedFunctions) {
-						continue;
-					}
-
-					// Create synthetic module directory and .qd file
-					fs::path synth_dir = mod->temp_dir / modName;
-					fs::create_directories(synth_dir);
-					fs::path synth_file = synth_dir / (modName + ".qd");
-
-					FILE* sf = fopen(synth_file.c_str(), "w");
-					if (!sf) {
-						continue;
-					}
-
-					// Use libqd<name>.a naming to trigger usr_<ns>_<func> mangling
-					// in the LLVM generator (matches the C stubs generated below)
-					fprintf(sf, "import \"libqd%s.a\" as \"%s\" {\n", modName.c_str(), modName.c_str());
-					for (const auto& [fname, nf] : otherMod->native_functions) {
-						if (!nf.signature.empty()) {
-							fprintf(sf, "\tpub fn %s%s\n", fname.c_str(), nf.signature.c_str());
-						}
-					}
-					fprintf(sf, "}\n");
-					fclose(sf);
-				}
-			}
-		}
-
-		// Parse the source
-		const std::string display_name = "<" + mod->name + ">";
+		const std::string displayName = "<" + mod->name + ">";
 		Qd::Ast ast;
-		Qd::IAstNode* root = ast.generate(combined_source.c_str(), false, display_name.c_str());
-		if (!root) {
+		Qd::IAstNode* root = ast.generate(source.c_str(), false, displayName.c_str());
+		if (!root || ast.hasErrors()) {
+			for (const auto& error : ast.getErrors()) {
+				fprintf(stderr, "%s:%zu:%zu: error: %s\n", displayName.c_str(), error.line, error.column,
+						error.message.c_str());
+			}
 			fprintf(stderr, "qd_build: Failed to parse script\n");
 			return;
 		}
 
-		// Validate semantics (pass true for isModuleFile since this is dynamically loaded code)
+		// Validated as a module, which is what dynamically loaded code is
 		Qd::SemanticValidator validator;
 		if (mod->warning_min_line > 0) {
 			validator.setWarningMinLine(mod->warning_min_line);
 		}
-		// Add temp dir as include path so validator finds synthetic module files
 		validator.setIncludePaths({mod->temp_dir.string()});
-		validator.setDisplayFilename(display_name);
-		size_t error_count = validator.validate(root, source_file.string().c_str(), true, false);
-		if (error_count > 0) {
-			fprintf(stderr, "qd_build: Semantic validation failed with %zu error(s)\n", error_count);
+		validator.setDisplayFilename(displayName);
+		const size_t errorCount = validator.validate(root, sourceFile.string().c_str(), true, false);
+		if (errorCount > 0) {
+			fprintf(stderr, "qd_build: Semantic validation failed with %zu error(s)\n", errorCount);
 			return;
 		}
 
-		// Collect use statements and load module ASTs
-		std::vector<std::pair<std::string, Qd::IAstNode*>> moduleASTs;
-		std::vector<std::unique_ptr<Qd::Ast>> moduleAstOwners; // Keep AST objects alive
-		std::unordered_set<std::string> processedModules;
+		ModuleLoader loader(mod->temp_dir);
+		loader.load(root);
+		const std::vector<fs::path> stubs = compileNativeStubs(mod, root);
 
-		std::function<void(Qd::IAstNode*)> collectAndLoadModules = [&](Qd::IAstNode* node) {
-			if (!node) {
-				return;
-			}
-			if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-				auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-				std::string moduleName = useNode->module();
-
-				// Skip if already processed
-				if (processedModules.count(moduleName)) {
-					return;
-				}
-				processedModules.insert(moduleName);
-
-				// Find and load the module
-				std::string modulePath = findModuleFile(moduleName);
-				if (modulePath.empty()) {
-					// Check for synthetic module file (from typed native functions)
-					modulePath = findFirstQdFile((mod->temp_dir / moduleName).string());
-				}
-				if (modulePath.empty()) {
-					// Module not found - semantic validator should have caught this
-					return;
-				}
-
-				// Read module file
-				std::ifstream moduleFile(modulePath);
-				if (!moduleFile.is_open()) {
-					return;
-				}
-
-				moduleFile.seekg(0, std::ios::end);
-				auto pos = moduleFile.tellg();
-				moduleFile.seekg(0);
-				if (pos < 0) {
-					return;
-				}
-
-				size_t size = static_cast<size_t>(pos);
-				std::string buffer(size, ' ');
-				moduleFile.read(&buffer[0], static_cast<std::streamsize>(size));
-
-				// Parse the module
-				auto moduleAst = std::make_unique<Qd::Ast>();
-				auto moduleRoot = moduleAst->generate(buffer.c_str(), false, modulePath.c_str());
-				if (moduleRoot && !moduleAst->hasErrors()) {
-					// Validate module
-					Qd::SemanticValidator modValidator;
-					size_t modErrors = modValidator.validate(moduleRoot, modulePath.c_str(), true, false);
-					if (modErrors == 0) {
-						moduleASTs.push_back({moduleName, moduleRoot});
-						moduleAstOwners.push_back(std::move(moduleAst));
-
-						// Recursively process this module's imports
-						collectAndLoadModules(moduleRoot);
-					}
-				}
-			}
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectAndLoadModules(node->child(i));
-			}
-		};
-		collectAndLoadModules(root);
-
-		// Generate C stubs for modules with registered native functions.
-		// Compiled QD code emits external calls to symbols like usr_sat_get;
-		// the stubs trampoline through qd_call_native so dlopen can resolve
-		// them at load time. This covers both:
-		// - Native-only modules (no .qd source, untyped functions)
-		// - Typed modules (synthetic .qd file generated above)
-		std::vector<fs::path> stub_objects;
-		{
-			// Collect all used module names from USE statements
-			std::unordered_set<std::string> usedModules;
-			std::function<void(Qd::IAstNode*)> collectUsedModules = [&](Qd::IAstNode* node) {
-				if (!node) {
-					return;
-				}
-				if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
-					auto* useNode = static_cast<Qd::AstNodeUse*>(node);
-					usedModules.insert(useNode->module());
-				}
-				for (size_t i = 0; i < node->childCount(); i++) {
-					collectUsedModules(node->child(i));
-				}
-			};
-			collectUsedModules(root);
-
-			for (const auto& nativeModName : usedModules) {
-				// Check if this module exists in the owner context and has native functions
-				if (!mod->owner_ctx) {
-					continue;
-				}
-				auto ctx_it = g_context_modules.find(mod->owner_ctx);
-				if (ctx_it == g_context_modules.end()) {
-					continue;
-				}
-				auto mod_it = ctx_it->second.find(nativeModName);
-				if (mod_it == ctx_it->second.end()) {
-					continue;
-				}
-				qd_module* nativeMod = mod_it->second;
-				if (nativeMod->native_functions.empty()) {
-					continue;
-				}
-
-				// Generate C stub file
-				fs::path stub_c = mod->temp_dir / ("stub_" + nativeModName + ".c");
-				FILE* stub_f = fopen(stub_c.c_str(), "w");
-				if (!stub_f) {
-					continue;
-				}
-
-				fprintf(stub_f, "#include <quadrate/qd/qd.h>\n");
-				for (const auto& fn_pair : nativeMod->native_functions) {
-					fprintf(stub_f,
-							"int usr_%s_%s(qd_context* ctx) {\n"
-							"    return qd_call_native(ctx, \"%s\", \"%s\");\n"
-							"}\n",
-							nativeModName.c_str(), fn_pair.first.c_str(), nativeModName.c_str(), fn_pair.first.c_str());
-				}
-				fclose(stub_f);
-
-				// Compile the stub
-				fs::path stub_o = mod->temp_dir / ("stub_" + nativeModName + ".o");
-
-				// Find include directories for qd/qd.h and qdrt/context.h
-				std::vector<std::string> include_dirs;
-				std::string lib_dir_for_inc = findLibraryDir();
-				// Try relative to lib dir: ../include
-				fs::path inc_candidate = fs::path(lib_dir_for_inc) / ".." / "include";
-				if (fs::exists(inc_candidate / "quadrate" / "qd" / "qd.h")) {
-					include_dirs.push_back(fs::canonical(inc_candidate).string());
-				} else if (MESON_BUILD_ROOT[0] != '\0') {
-					// Development build: headers are in source tree
-					fs::path buildRoot = fs::path(MESON_BUILD_ROOT).parent_path().parent_path();
-					inc_candidate = buildRoot / "lib" / "qd" / "include";
-					if (fs::exists(inc_candidate / "quadrate" / "qd" / "qd.h")) {
-						include_dirs.push_back(inc_candidate.string());
-					}
-					fs::path qdrt_inc = buildRoot / "lib" / "rt" / "include";
-					if (fs::exists(qdrt_inc / "quadrate" / "rt" / "runtime.h")) {
-						include_dirs.push_back(qdrt_inc.string());
-					}
-				}
-
-				std::string stub_cmd = std::string(findCC()) + " -c -fPIC";
-				for (const auto& dir : include_dirs) {
-					stub_cmd += " -I" + shellQuote(dir);
-				}
-				stub_cmd += " " + shellQuote(stub_c.string()) + " -o " + shellQuote(stub_o.string()) + " 2>&1";
-
-				FILE* stub_output = popen(stub_cmd.c_str(), "r");
-				if (!stub_output) {
-					continue;
-				}
-
-				char sbuf[256];
-				std::string stub_errors;
-				while (fgets(sbuf, sizeof(sbuf), stub_output)) {
-					stub_errors += sbuf;
-				}
-				int stub_result = pclose(stub_output);
-				if (stub_result != 0) {
-					fprintf(stderr, "qd_build: Failed to compile stub for module '%s':\n%s\n", nativeModName.c_str(),
-							stub_errors.c_str());
-					continue;
-				}
-
-				stub_objects.push_back(stub_o);
-			}
-		}
-
-		// Generate LLVM IR
 		Qd::LlvmGenerator generator;
 		generator.setOptimizationLevel(2);
-		generator.setExportMode(true); // Enable export mode for shared library compilation
-
-		// Add all imported modules first (in reverse order for proper dependency ordering)
-		for (auto it = moduleASTs.rbegin(); it != moduleASTs.rend(); ++it) {
+		generator.setExportMode(true); // A shared library's functions are its interface
+		// A used module after the modules it uses
+		for (auto it = loader.modules.rbegin(); it != loader.modules.rend(); ++it) {
 			generator.addModuleAST(it->first, it->second);
 		}
-
 		if (!generator.generate(root, mod->name)) {
 			fprintf(stderr, "qd_build: Failed to generate LLVM IR\n");
 			return;
 		}
-
-		// Write object file
-		fs::path obj_file = mod->temp_dir / "script.o";
-		if (!generator.writeObject(obj_file.string())) {
+		const fs::path object = mod->temp_dir / "script.o";
+		if (!generator.writeObject(object.string())) {
 			fprintf(stderr, "qd_build: Failed to write object file\n");
 			return;
 		}
 
-		// Link to shared library
+		mod->symbol_map = exportedSymbols(mod, object);
 		mod->so_path = mod->temp_dir / ("lib" + mod->name + ".so");
-
-		// Check what symbols are in the object file and store them for lookup
-		std::string nm_cmd = "nm " + shellQuote(obj_file.string()) + " | grep ' T usr_' || true";
-		FILE* nm_output = popen(nm_cmd.c_str(), "r");
-		std::unordered_map<std::string, std::string> symbol_map; // function_name -> full_symbol
-		if (nm_output) {
-			char buffer[256];
-			while (fgets(buffer, sizeof(buffer), nm_output)) {
-				// Parse symbol: "0000000000000000 T usr_package_function"
-				char* symbol_start = strstr(buffer, "usr_");
-				if (symbol_start) {
-					std::string full_symbol = symbol_start;
-					// Remove newline
-					if (!full_symbol.empty() && full_symbol.back() == '\n') {
-						full_symbol.pop_back();
-					}
-					// The object holds this module's functions and every function of every
-					// module it uses, and the map is keyed on the bare name -- so a script
-					// with its own `parse` and a `use json` both want the key "parse", and
-					// whichever nm printed second used to win. This module's own symbols
-					// take the key; a used module's only fills one nothing else claims.
-					const std::string ownPrefix = "usr_" + mod->name + "_";
-					if (full_symbol.compare(0, ownPrefix.size(), ownPrefix) == 0) {
-						symbol_map[full_symbol.substr(ownPrefix.size())] = full_symbol;
-					} else {
-						// usr_package_function -> function
-						size_t first_us = full_symbol.find('_');
-						if (first_us != std::string::npos) {
-							size_t second_us = full_symbol.find('_', first_us + 1);
-							if (second_us != std::string::npos) {
-								std::string func_name = full_symbol.substr(second_us + 1);
-								symbol_map.emplace(func_name, full_symbol);
-							}
-						}
-					}
-				}
-			}
-			pclose(nm_output);
-		}
-
-		// Store symbol map in module for later lookup
-		mod->symbol_map = symbol_map;
-
-		// Find the library directory (build or installed location)
-		std::string lib_dir = findLibraryDir();
-
-		// Determine the stdlib subdirectory (quadrate/ under lib_dir)
-		std::string stdlibDir;
-		{
-			fs::path quadrateDir = fs::path(lib_dir) / "quadrate";
-			if (fs::exists(quadrateDir)) {
-				stdlibDir = quadrateDir.string();
-			}
-		}
-
-		// Recursively process .deps files for transitive native dependencies.
-		// This mirrors the logic in generator.cc's processLibraryDeps.
-		std::set<std::string> processedDeps;
-		std::string transitiveDepsFlags;
-
-		std::function<void(const std::string&)> processLibraryDeps;
-		processLibraryDeps = [&](const std::string& libPath) {
-			if (processedDeps.count(libPath)) {
-				return;
-			}
-			processedDeps.insert(libPath);
-
-			// Derive .deps filename from .a path
-			std::string depsFile = libPath;
-			if (depsFile.size() > 2 && depsFile.substr(depsFile.size() - 2) == ".a") {
-				depsFile = depsFile.substr(0, depsFile.size() - 2) + ".deps";
-			}
-
-			if (!fs::exists(depsFile)) {
-				return;
-			}
-
-			std::ifstream deps(depsFile);
-			if (!deps.is_open()) {
-				return;
-			}
-
-			std::string line;
-			while (std::getline(deps, line)) {
-				// Trim whitespace
-				line.erase(0, line.find_first_not_of(" \t\r\n"));
-				line.erase(line.find_last_not_of(" \t\r\n") + 1);
-				if (line.empty()) {
-					continue;
-				}
-
-				if (line.rfind("-l", 0) == 0 && line.size() > 2) {
-					// -l<name>: check if it's a Quadrate library first
-					std::string depName = line.substr(2);
-					std::string depLib = findStaticLib(lib_dir, depName);
-					if (!depLib.empty()) {
-						// It's a Quadrate library — link it and recurse
-						transitiveDepsFlags += " " + depLib;
-						processLibraryDeps(depLib);
-					} else {
-						// System library — pass through as-is
-						transitiveDepsFlags += " " + line;
-					}
-				} else {
-					// Other flags (e.g., -L paths) — pass through
-					transitiveDepsFlags += " " + line;
-				}
-			}
-		};
-
-		// Link the object file into a shared library with static libs
-		std::string link_cmd = std::string(findCXX()) + " -shared -fPIC ";
-		link_cmd += shellQuote(obj_file.string());
-		for (const auto& stub_o : stub_objects) {
-			link_cmd += " " + shellQuote(stub_o.string());
-		}
-		link_cmd += " -o ";
-		link_cmd += shellQuote(mod->so_path.string());
-
-		// Link only the stdlib libraries that the script actually uses.
-		// The runtime (rt) is always required. Other libraries are linked
-		// based on which modules were imported via 'use' statements.
-		// Each library's .deps file is processed for transitive dependencies.
-		std::unordered_set<std::string> usedLibs;
-		usedLibs.insert("rt"); // Runtime is always needed
-		for (const auto& ast_pair : moduleASTs) {
-			usedLibs.insert(ast_pair.first);
-		}
-
-		for (const auto& libName : usedLibs) {
-			std::string libPath = findStaticLib(lib_dir, libName);
-			if (!libPath.empty()) {
-				link_cmd += " -Wl,--whole-archive " + shellQuote(libPath) + " -Wl,--no-whole-archive";
-				processLibraryDeps(libPath);
-			}
-		}
-
-		// Add transitive dependencies (system libs from .deps files)
-		if (!transitiveDepsFlags.empty()) {
-			link_cmd += " -Wl,--start-group" + transitiveDepsFlags + " -Wl,--end-group";
-		}
-
-		link_cmd += " -lm"; // Math library for sin, cos, etc.
-		if (!stub_objects.empty()) {
-			// Link against libqd so qd_call_native resolves at dlopen time
-			// via the already-loaded shared library.
-			link_cmd += " -L" + shellQuote(lib_dir);
-			// In meson build tree, libqd.so lives in a qd/ subdirectory
-			if (fs::exists(fs::path(lib_dir) / "qd" / "libqd.so")) {
-				link_cmd += " -L" + shellQuote(lib_dir + "/qd");
-			}
-			link_cmd += " -lqd";
-		}
-		link_cmd += " 2>&1";
-
-		FILE* link_output = popen(link_cmd.c_str(), "r");
-		if (!link_output) {
-			fprintf(stderr, "qd_build: Failed to execute linker\n");
+		if (!linkSharedLibrary(mod, object, stubs, loader.modules)) {
 			return;
 		}
 
-		char buffer[256];
-		std::string link_errors;
-		while (fgets(buffer, sizeof(buffer), link_output)) {
-			link_errors += buffer;
-		}
-		int link_result = pclose(link_output);
-
-		if (link_result != 0) {
-			fprintf(stderr, "qd_build: Linking failed:\n%s\n", link_errors.c_str());
-			return;
-		}
-
-		// Load the shared library
 		mod->dl_handle = dynlib_platform_open(mod->so_path.c_str());
 		if (!mod->dl_handle) {
 			fprintf(stderr, "qd_build: Failed to load shared library: %s\n", dynlib_platform_error());
 			return;
 		}
-
 		mod->compiled = true;
-
 	} catch (const std::exception& e) {
 		fprintf(stderr, "qd_build: Exception: %s\n", e.what());
 	}

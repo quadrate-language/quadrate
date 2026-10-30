@@ -1,0 +1,9 @@
+// A field initializer starts from an empty stack. `+` here compiled and took whatever
+// was beneath the construction.
+struct S {
+	x:i64
+}
+
+fn main() {
+	S { x = + } <<x print nl
+}

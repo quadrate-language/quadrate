@@ -30,93 +30,12 @@
 #include <quadrate/qc/error_reporter.h>
 #include <quadrate/qc/formatter.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/module_resolver.h>
+#include <quadrate/qc/reference.h>
 #include <quadrate/qc/semantic_validator.h>
+#include <quadrate/qc/type_names.h>
 #include <set>
 #include <sstream>
-
-// Expand tilde (~) in file paths
-std::string expandTilde(const std::string& path) {
-	if (!path.empty() && path[0] == '~') {
-		const char* home = getenv("HOME");
-		if (home) {
-			return std::string(home) + path.substr(1);
-		}
-	}
-	return path;
-}
-
-// Load dependencies from qd.json and return include paths
-std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir) {
-	std::vector<std::string> includePaths;
-
-	std::string manifestPath = manifestDir + "/qd.json";
-	json_error_t error;
-	json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
-	if (!root) {
-		return includePaths;
-	}
-
-	json_t* dependencies = json_object_get(root, "dependencies");
-	if (dependencies && json_is_object(dependencies)) {
-		const char* depName;
-		json_t* depValue;
-		json_object_foreach(dependencies, depName, depValue) {
-			std::string resolved;
-
-			if (json_is_string(depValue)) {
-				// Simple form: "name": "url" or "name": "../path"
-				resolved = json_string_value(depValue);
-			} else if (json_is_object(depValue)) {
-				// Expanded form: { "url": "..." }
-				json_t* url = json_object_get(depValue, "url");
-				if (url && json_is_string(url)) {
-					resolved = json_string_value(url);
-				}
-			}
-
-			if (resolved.empty()) {
-				continue;
-			}
-
-			// Check if it's a local path
-			bool isPath =
-					(resolved.size() > 0 && (resolved[0] == '/' || resolved[0] == '.' ||
-													(resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/')));
-
-			if (isPath) {
-				resolved = expandTilde(resolved);
-				if (resolved.size() > 0 && resolved[0] != '/') {
-					resolved = manifestDir + "/" + resolved;
-				}
-				try {
-					resolved = std::filesystem::weakly_canonical(resolved).string();
-				} catch (...) {
-				}
-				if (std::filesystem::exists(resolved)) {
-					includePaths.push_back(resolved);
-				}
-			} else {
-				// Git URL - check if installed in packages dir via _namespaces symlink
-				const char* home = getenv("HOME");
-				if (home) {
-					std::string namespacePath = std::string(home) + "/quadrate/modules/_namespaces/" + depName;
-					if (std::filesystem::exists(namespacePath)) {
-						try {
-							std::string resolvedPath = std::filesystem::canonical(namespacePath).string();
-							includePaths.push_back(resolvedPath);
-						} catch (...) {
-							// If canonical fails, try the path anyway
-							includePaths.push_back(namespacePath);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	json_decref(root);
-	return includePaths;
-}
 
 // QuadrateLSP implementation
 
@@ -1273,7 +1192,7 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 
 		// Load include paths from qd.json if present
 		std::filesystem::path fileDir = std::filesystem::path(filePath).parent_path();
-		std::vector<std::string> manifestPaths = loadDependenciesFromManifest(fileDir.string());
+		std::vector<std::string> manifestPaths = qdcli::manifestIncludePaths(fileDir.string());
 		if (!manifestPaths.empty()) {
 			validator.setIncludePaths(manifestPaths);
 		}
@@ -1316,20 +1235,23 @@ void QuadrateLSP::publishDiagnostics(const std::string& uri, const std::string& 
 		}
 	}
 
-	// Run quadlint if enabled and no parse/semantic errors
-	// Skip linting for files in standard library or installed package locations
+	// Run quadlint if enabled and no parse/semantic errors, but not on a module installed elsewhere
+	// -- where quadpm installed it, or the standard library. ~/quadrate is the user's own.
 	bool isExternalModule = false;
 	std::string filePath = lspUriToPath(uri);
 	if (!filePath.empty()) {
-		// Check if file is in standard library or module locations
-		if (filePath.find("/usr/share/quadrate/") != std::string::npos ||
-				filePath.find("/.quadrate/modules/") != std::string::npos) {
-			isExternalModule = true;
-		}
-		// Also check QUADRATE_ROOT
-		const char* quadrateRoot = getenv("QUADRATE_ROOT");
-		if (quadrateRoot && filePath.find(quadrateRoot) == 0) {
-			isExternalModule = true;
+		std::vector<std::string> installed = Qd::moduleRoots();
+		const char* home = getenv("HOME");
+		installed.erase(std::remove(installed.begin(), installed.end(), home ? std::string(home) + "/quadrate" : ""),
+				installed.end());
+		installed.push_back(Qd::packagesDirectory());
+		std::error_code ec;
+		const std::string canonicalFile = std::filesystem::weakly_canonical(filePath, ec).string();
+		for (const auto& dir : installed) {
+			const std::string installedDir = std::filesystem::weakly_canonical(dir, ec).string();
+			if (!dir.empty() && !ec && canonicalFile.compare(0, installedDir.size() + 1, installedDir + "/") == 0) {
+				isExternalModule = true;
+			}
 		}
 	}
 
@@ -1470,298 +1392,38 @@ void QuadrateLSP::handleFormatting(const std::string& id, const std::string& uri
 	json_decref(response);
 }
 
+// The signature on the first line, on its own, which is what signature help shows, then the
+// description. Both come from reference.def, which the manual is generated from too.
 std::string QuadrateLSP::getBuiltInDocumentation(const std::string& word) {
-	static const std::map<std::string, std::string> docs = {
-			{"add", "Add two numbers from the stack.\n\n**Stack effect:** `a b -- result`\n\nPops two values, "
-					"pushes their sum."},
-			{"sub", "Subtract top from second.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a "
-					"- b`."},
-			{"mul", "Multiply two numbers.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes their "
-					"product."},
-			{"div", "Divide second by top.\n\n**Stack effect:** `a b -- result`\n\nPops two values, pushes `a / "
-					"b`."},
-			{"dup", "Duplicate top of stack.\n\n**Stack effect:** `a -- a a`\n\nDuplicates the top stack value."},
-			{"swap", "Swap top two values.\n\n**Stack effect:** `a b -- b a`\n\nSwaps the top two stack values."},
-			{"drop", "Remove top of stack.\n\n**Stack effect:** `a --`\n\nRemoves the top value from the stack."},
-			{"over", "Copy second item to top.\n\n**Stack effect:** `a b -- a b a`\n\nCopies the second value to "
-					 "the top."},
-			{"rot", "Rotate top three items.\n\n**Stack effect:** `a b c -- b c a`\n\nRotates the top three "
-					"values."},
-			{"print", "Print top value.\n\n**Stack effect:** `a --`\n\nPrints the top value and removes it."},
-			{"prints", "Print string.\n\n**Stack effect:** `str --`\n\nPrints a string value."},
-			{"eq", "Test equality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if equal, 0 otherwise."},
-			{"neq", "Test inequality.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if not equal, 0 otherwise."},
-			{"lt", "Less than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a < b, 0 otherwise."},
-			{"gt", "Greater than.\n\n**Stack effect:** `a b -- bool`\n\nPushes 1 if a > b, 0 otherwise."},
-			{"lte", "Less than or equal.\n\n**Stack effect:** `a b -- bool`"},
-			{"gte", "Greater than or equal.\n\n**Stack effect:** `a b -- bool`"},
-			{"and", "Logical AND.\n\n**Stack effect:** `a b -- bool`"},
-			{"or", "Logical OR.\n\n**Stack effect:** `a b -- bool`"},
-			{"not", "Logical NOT.\n\n**Stack effect:** `a -- bool`"},
-			{"abs", "Absolute value.\n\n**Stack effect:** `a -- result`"},
-			{"sqrt", "Square root.\n\n**Stack effect:** `a -- result`"},
-			{"sq", "Square.\n\n**Stack effect:** `a -- result`"},
-			{"sin", "Sine function.\n\n**Stack effect:** `a -- result`"},
-			{"cos", "Cosine function.\n\n**Stack effect:** `a -- result`"},
-			{"tan", "Tangent function.\n\n**Stack effect:** `a -- result`"},
-			{"if", "Conditional execution.\n\n**Syntax:** `condition if { ... } else { ... }`"},
-			{"for", "Loop construct.\n\n**Syntax:** `start end step for name { ... }`"},
-			{"loop", "Infinite loop.\n\n**Syntax:** `loop { ... }`\n\nUse `if { break }` for conditional exit."},
-			{"while", "Conditional loop.\n\n**Syntax:** `cond while { ... }`\n\nThe condition is the words "
-					  "immediately before the keyword, re-evaluated before every iteration, so the body does not "
-					  "restate it. It must leave exactly one value."},
-			{"free", "Free allocated memory.\n\n**Stack effect:** `ptr --`\n\nFrees memory allocated for structs or "
-					 "strings. Automatically frees nested string fields in structs."},
-			{"struct", "Declare a struct type.\n\n**Syntax:** `struct Name { field1:type1 field2:type2 "
-					   "}`\n\nDefines a "
-					   "composite data type with named fields."},
-			{"enum", "Declare an enum type.\n\n**Syntax:** `enum Name { Variant1 Variant2 = 10 "
-					 "}`\n\nDefines scoped named integer constants. Values auto-increment from 0 or from "
-					 "the last explicit value. Access with `Name::Variant`."},
-			{"pub", "Public visibility modifier.\n\n**Syntax:** `pub struct Name { ... }` or `pub fn name(...) { "
-					"... "
-					"}`\n\nMakes structs, enums, or functions visible to other modules."},
-			{"stack", "Stack-argument modifier.\n\n**Syntax:** `stack fn name(a:i64 b:i64 -- r:i64) { ... "
-					  "}`\n\nThe inputs are not bound as locals: they stay on the stack for the body to work on, "
-					  "and any names they carry are documentation that is not in scope. Without it every input must "
-					  "be named."},
-			{"defer", "Defer execution until scope exit.\n\n**Syntax:** `defer { ... }`\n\nExecutes code block when "
-					  "function returns, useful for cleanup."},
-			{"as", "Type narrowing cast.\n\n**Syntax:** `expr as TypeName`\n\nNarrows a ptr value to a specific "
-				   "struct type for field access. Compile-time only, no runtime cost.\n\n**Example:** `c as "
-				   "http::Ctx @body`"},
-			{"null", "Null pointer constant.\n\nPushes `0` with pointer type. Use for empty pointer fields in "
-					 "structs.\n\n**Example:** `Node { value = 1 next = null }`\n\n**Check:** `ptr null == if { "
-					 "... }`"},
-	};
-
-	auto it = docs.find(word);
-	if (it != docs.end()) {
-		return it->second;
+	const Qd::ReferenceEntry* entry = Qd::findReference(word);
+	if (entry == nullptr) {
+		return "";
 	}
-	return "";
+	const std::string heading = entry->signature != nullptr ? word + " " + entry->signature : word + " (keyword)";
+	return heading + "\n\n" + entry->description;
 }
 
 std::string QuadrateLSP::getWordAtPosition(const std::string& text, size_t line, size_t character) {
 	return lspGetWordAtPosition(text, line, character);
 }
 
-std::string QuadrateLSP::getPackagesDir() {
-	// Check QUADRATE_PATH environment variable first
-	const char* quadratePath = getenv("QUADRATE_PATH");
-	if (quadratePath) {
-		return std::string(quadratePath);
-	}
-
-	// Check if XDG_DATA_HOME is set
-	const char* xdgDataHome = getenv("XDG_DATA_HOME");
-	if (xdgDataHome) {
-		return std::string(xdgDataHome) + "/quadrate/modules";
-	}
-
-	// Default to ~/quadrate/modules
-	const char* home = getenv("HOME");
-	if (home) {
-		return std::string(home) + "/quadrate/modules";
-	}
-
-	return "";
-}
-
-std::string QuadrateLSP::findLatestPackageVersion(const std::string& moduleName) {
-	std::string packagesDir = getPackagesDir();
-	if (packagesDir.empty() || !std::filesystem::exists(packagesDir)) {
-		return "";
-	}
-
-	std::string latestPath;
-	try {
-		// Modules are nested in paths like github.com/quadrate-language/compress@master
-		// Use recursive iteration to find them
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(packagesDir)) {
-			if (!entry.is_directory()) {
-				continue;
-			}
-
-			std::string dirName = entry.path().filename().string();
-			std::string prefix = moduleName + "@";
-			if (dirName.size() > prefix.size() && dirName.substr(0, prefix.size()) == prefix) {
-				latestPath = entry.path().string();
-			}
-		}
-	} catch (...) {
-		return "";
-	}
-
-	return latestPath;
-}
-
-// Helper: Find the first .qd file in a directory (excluding *_test.qd files)
-static std::string findFirstQdFile(const std::string& directory) {
-	try {
-		if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
-			return "";
-		}
-
-		for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-			if (entry.is_regular_file()) {
-				std::string filename = entry.path().filename().string();
-				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
-					// Exclude test files (*_test.qd)
-					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
-						continue;
-					}
-					return entry.path().string();
-				}
-			}
-		}
-	} catch (...) {
-		// Ignore filesystem errors
-	}
-	return "";
-}
-
+// The file a `use moduleName` written in sourceDir names, for reading its declarations: the one
+// named after the module when there is one (`strings/strings.qd`), else its first file. Found by
+// the search quadc and the validator run, with qd.json's dependencies as include paths.
 std::string QuadrateLSP::resolveModulePath(const std::string& moduleName, const std::string& sourceDir) {
-	std::string result;
-
-	// Try 0: Check qd.json manifest for dependencies
-	std::string manifestPath = sourceDir + "/qd.json";
-	if (std::filesystem::exists(manifestPath)) {
-		json_error_t error;
-		json_t* root = json_load_file(manifestPath.c_str(), 0, &error);
-		if (root) {
-			json_t* dependencies = json_object_get(root, "dependencies");
-			if (dependencies && json_is_object(dependencies)) {
-				json_t* depValue = json_object_get(dependencies, moduleName.c_str());
-				if (depValue) {
-					std::string resolved;
-					if (json_is_string(depValue)) {
-						resolved = json_string_value(depValue);
-					} else if (json_is_object(depValue)) {
-						json_t* url = json_object_get(depValue, "url");
-						if (url && json_is_string(url)) {
-							resolved = json_string_value(url);
-						}
-					}
-
-					if (!resolved.empty()) {
-						// Check if it's a local path
-						bool isPath = (resolved[0] == '/' || resolved[0] == '.' ||
-									   (resolved.size() > 1 && resolved[0] == '~' && resolved[1] == '/'));
-
-						if (isPath) {
-							resolved = expandTilde(resolved);
-							if (resolved[0] != '/') {
-								resolved = sourceDir + "/" + resolved;
-							}
-							try {
-								resolved = std::filesystem::weakly_canonical(resolved).string();
-							} catch (...) {
-							}
-							if (std::filesystem::exists(resolved)) {
-								// If it's a directory, find first .qd file
-								if (std::filesystem::is_directory(resolved)) {
-									result = findFirstQdFile(resolved);
-									if (!result.empty()) {
-										json_decref(root);
-										return result;
-									}
-								} else if (std::filesystem::is_regular_file(resolved)) {
-									json_decref(root);
-									return resolved;
-								}
-							}
-						}
-					}
-				}
-			}
-			json_decref(root);
-		}
+	Qd::ModuleSearch search;
+	search.sourceDir = sourceDir;
+	search.includePaths = qdcli::manifestIncludePaths(sourceDir);
+	const Qd::ModuleLocation location = Qd::findModule(moduleName, search);
+	if (location.directory.empty()) {
+		return "";
 	}
-
-	// Try 1: Sibling file (moduleName.qd in the same directory)
-	std::string siblingFile = sourceDir + "/" + moduleName + ".qd";
-	if (std::filesystem::exists(siblingFile) && std::filesystem::is_regular_file(siblingFile)) {
-		return siblingFile;
+	const std::vector<std::string> files = Qd::moduleFiles(location.directory);
+	const std::string named = location.directory + "/" + location.namespaceName + ".qd";
+	if (std::find(files.begin(), files.end(), named) != files.end()) {
+		return named;
 	}
-
-	// Try 2: Local path (relative to source file) - subdirectory
-	result = findFirstQdFile(sourceDir + "/" + moduleName);
-	if (!result.empty()) {
-		return result;
-	}
-
-	// Try 2: Third-party packages directory (installed via quadpm)
-	std::string packagePath = findLatestPackageVersion(moduleName);
-	if (!packagePath.empty()) {
-		result = findFirstQdFile(packagePath);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	// Try 3: QUADRATE_ROOT environment variable
-	const char* quadrateRoot = getenv("QUADRATE_ROOT");
-	if (quadrateRoot) {
-		result = findFirstQdFile(std::string(quadrateRoot) + "/" + moduleName);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	// Try 4: Standard library relative to executable (for dist/ or installed builds)
-	// This allows the LSP to find stdlib when run as dist/bin/quadlsp
-	try {
-#ifdef __linux__
-		std::filesystem::path exePath = std::filesystem::read_symlink("/proc/self/exe");
-#elif defined(__HAIKU__)
-		std::filesystem::path exePath = std::filesystem::canonical("/proc/self/exe");
-#else
-		std::filesystem::path exePath; // Unsupported platform
-#endif
-		if (!exePath.empty()) {
-			std::filesystem::path exeDir = exePath.parent_path();
-#ifdef __HAIKU__
-			std::filesystem::path shareDir = exeDir / ".." / "data" / "quadrate" / moduleName;
-#else
-			std::filesystem::path shareDir = exeDir / ".." / "share" / "quadrate" / moduleName;
-#endif
-			result = findFirstQdFile(shareDir.string());
-			if (!result.empty()) {
-				return result;
-			}
-		}
-	} catch (...) {
-		// Ignore errors resolving executable path
-	}
-
-	// Try 5: Installed standard library (/usr/share/quadrate/ on Linux, /boot/system/data/quadrate/ on Haiku)
-#ifdef __HAIKU__
-	result = findFirstQdFile("/boot/system/data/quadrate/" + moduleName);
-#else
-	result = findFirstQdFile("/usr/share/quadrate/" + moduleName);
-#endif
-	if (!result.empty()) {
-		return result;
-	}
-
-	// Try 6: Standard library directories relative to current directory (for development)
-	// Pattern: lib/qd{moduleName}/qd/{moduleName}/
-	result = findFirstQdFile("lib/qd" + moduleName + "/qd/" + moduleName);
-	if (!result.empty()) {
-		return result;
-	}
-
-	// Try 7: $HOME/quadrate directory
-	const char* home = getenv("HOME");
-	if (home) {
-		result = findFirstQdFile(std::string(home) + "/quadrate/" + moduleName);
-		if (!result.empty()) {
-			return result;
-		}
-	}
-
-	return "";
+	return files.empty() ? "" : files.front();
 }
 
 void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri, size_t startLine, size_t startChar,
@@ -2060,10 +1722,7 @@ enum SemanticTokenModifier {
 
 // Helper to check if a word is a Quadrate keyword
 static bool isKeyword(const std::string& word) {
-	static const std::set<std::string> keywords = {"fn", "if", "else", "for", "use", "struct", "packed", "enum", "type",
-			"const", "var", "return", "break", "continue", "defer", "switch", "case", "default", "true", "false", "nil",
-			"and", "or", "not", "in", "as", "test", "pub", "inline", "stack"};
-	return keywords.count(word) > 0;
+	return Qd::isKeyword(word);
 }
 
 // Helper to check if a word is a built-in stack operation.
@@ -2074,11 +1733,9 @@ static bool isBuiltinOp(const std::string& word) {
 	return Qd::isBuiltInInstruction(word.c_str());
 }
 
-// Helper to check if a word is a type name
+// A type name, or `void`, which no value has but which is reserved all the same
 static bool isTypeName(const std::string& word) {
-	static const std::set<std::string> types = {"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64",
-			"d128", "bool", "str", "ptr", "void", "any"};
-	return types.count(word) > 0;
+	return Qd::isBuiltinTypeName(word) || word == "void";
 }
 
 bool lspIsReservedName(const std::string& name) {
@@ -4654,8 +4311,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 	Qd::Ast ast;
 	Qd::IAstNode* root = ast.generate(text.c_str(), false, nullptr);
 
-	if (!root || ast.hasErrors()) {
-		return functions; // Return empty on parse errors
+	// A document being edited rarely parses cleanly, so what did parse is used
+	if (!root) {
+		return functions;
 	}
 
 	// Root should be AstProgram
@@ -4870,8 +4528,9 @@ std::vector<StructInfo> QuadrateLSP::extractStructs(const std::string& text) {
 	Qd::Ast ast;
 	Qd::IAstNode* root = ast.generate(text.c_str(), false, nullptr);
 
-	if (!root || ast.hasErrors()) {
-		return structs; // Return empty on parse errors
+	// A document being edited rarely parses cleanly, so what did parse is used
+	if (!root) {
+		return structs;
 	}
 
 	// Root should be AstProgram

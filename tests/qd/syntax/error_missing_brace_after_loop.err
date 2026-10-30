@@ -1,1 +1,2 @@
 tests/qd/syntax/error_missing_brace_after_loop.qd:4:3: error: Expected '{' after 'loop'
+!reached end of file

@@ -1,0 +1,34 @@
+// Test: parameters typed by an alias, by `bool` and by a method's own parameters go through the
+// same argument check as their underlying type: an alias of f64 takes an f64, a method's
+// receiver above its arguments does not shift which argument is checked as what.
+type Meters = f64
+
+struct Box {
+	w: f64
+}
+
+fn double(m:Meters -- r:Meters) {
+	m 2.0 *
+}
+
+fn flip(b:bool -- r:bool) {
+	b 0 ==
+}
+
+fn (b:Box) scaled(by:f64 label:str -- r:str) {
+	b <<w by * print " " print label
+}
+
+fn relay(a:any -- r:Meters) {
+	a double
+}
+
+fn main() {
+	1.25 double print nl
+	1.5 relay print nl
+	0 flip print nl
+	Box {
+		w = 2.0
+	} -> box
+	box 3.0 "wide" scaled print nl
+}

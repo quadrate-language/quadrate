@@ -1,0 +1,6 @@
+// Test: set past the end raises, where it used to print a line and go on
+fn main() {
+	[1 2] -> xs
+	xs -1 5 set
+	"not reached" print nl
+}

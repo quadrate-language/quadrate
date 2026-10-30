@@ -47,6 +47,11 @@ extern "C" {
 /**
  * @defgroup StackPush Stack Push Operations
  * @brief Functions for pushing values onto the stack
+ *
+ * A push onto a full stack is a fatal stack overflow, as it is in compiled code: it
+ * prints the error and exits, or unwinds to the recovery point when one is armed (see
+ * qd_recovery_arm()). So a push either succeeds or does not return, and its result
+ * needs no check; the functions return 0 so a native can end with `return qd_push_i(...)`.
  * @{
  */
 
@@ -55,7 +60,7 @@ extern "C" {
  *
  * @param ctx Execution context
  * @param value Integer value to push
- * @return Execution result (0 on success)
+ * @return 0
  */
 int qd_push_i(qd_context* ctx, int64_t value);
 
@@ -64,7 +69,7 @@ int qd_push_i(qd_context* ctx, int64_t value);
  *
  * @param ctx Execution context
  * @param value Float value to push
- * @return Execution result (0 on success)
+ * @return 0
  */
 int qd_push_f(qd_context* ctx, double value);
 
@@ -73,7 +78,7 @@ int qd_push_f(qd_context* ctx, double value);
  *
  * @param ctx Execution context
  * @param value String to push (will be copied)
- * @return Execution result (0 on success)
+ * @return 0
  *
  * @note The string is copied; caller retains ownership of the original
  */
@@ -84,7 +89,7 @@ int qd_push_s(qd_context* ctx, const char* value);
  *
  * @param ctx Execution context
  * @param value Reference-counted string to push (will be retained)
- * @return Execution result (0 on success)
+ * @return 0
  *
  * @note The string reference count is incremented; string is shared, not copied
  */
@@ -95,7 +100,7 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
  *
  * @param ctx Execution context
  * @param value Pointer value to push
- * @return Execution result (0 on success)
+ * @return 0
  *
  * @note The pointer is stored as-is; no ownership transfer occurs
  */
@@ -106,7 +111,7 @@ int qd_push_p(qd_context* ctx, void* value);
  *
  * @param ctx Execution context
  * @param value Value to push
- * @return Execution result (0 on success)
+ * @return 0
  */
 int qd_push_d(qd_context* ctx, qd_d128_t value);
 
@@ -117,7 +122,7 @@ int qd_push_d(qd_context* ctx, qd_d128_t value);
  * qd_d128_t::w[0] and w[1], which crosses into C the same way on every target, where a
  * sixteen-byte struct would not.
  *
- * @return Execution result (0 on success)
+ * @return 0
  */
 int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high);
 
@@ -654,6 +659,22 @@ int qd_castd(qd_context* ctx);
  */
 int qd_cast_param(qd_context* ctx, int64_t depth, int64_t type);
 
+/**
+ * @brief Check an `any` argument against the parameter it is passed to
+ *
+ * The element `depth` places below the top must hold `type`, or an i64 where `type` is
+ * f64 or d128, which it becomes. Anything else is a fatal type mismatch naming the
+ * parameter and the function.
+ *
+ * @param ctx Execution context
+ * @param depth How far below the top the argument lies
+ * @param type The qd_stack_type the parameter takes
+ * @param param The parameter's number, from 1
+ * @param func_name The function being called
+ * @return Execution result (0 on success)
+ */
+int qd_check_param(qd_context* ctx, int64_t depth, int64_t type, int64_t param, const char* func_name);
+
 /** @} */ // end of TypeCast group
 
 /**
@@ -1079,6 +1100,64 @@ void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, ...)
 		__attribute__((format(printf, 3, 4)))
 #endif
 		;
+
+/**
+ * @brief Pop an argument of a native word, or raise
+ *
+ * For the stdlib and FFI words: each pops the top of the stack as the type it names, and
+ * raises through qd_fatal_raise, naming `op` (`"math::sqrt"`), when the stack is empty or
+ * holds another type. The compiler checks the types of every call it can see; these catch
+ * the rest, such as a value that came through an `any`.
+ *
+ * qd_arg_f and qd_arg_d also take an i64, which widens exactly as it does in arithmetic.
+ * qd_arg_s hands the caller the stack's reference to the string, to release.
+ */
+int64_t qd_arg_i(qd_context* ctx, const char* op);
+double qd_arg_f(qd_context* ctx, const char* op);
+qd_d128_t qd_arg_d(qd_context* ctx, const char* op);
+void* qd_arg_p(qd_context* ctx, const char* op);
+qd_string_t* qd_arg_s(qd_context* ctx, const char* op);
+
+/**
+ * @brief Pop every argument of a native word, or raise
+ *
+ * `sig` spells the inputs in the order they are written, deepest first, one letter each:
+ * `i` i64, `f` f64, `d` d128, `s` str, `p` ptr, and `v` a value of any type. Each letter
+ * takes a pointer to receive the value, in the same order: int64_t*, double*, qd_d128_t*,
+ * qd_string_t**, void**, and for `v` a qd_stack_element_t*, whose reference, if it holds
+ * one, is the caller's to release.
+ *
+ * The whole signature is checked before anything is popped, so a raise leaves the stack as
+ * it was and nothing has been taken that would need releasing. Popping one argument at a
+ * time with qd_arg_* cannot promise that once one of them is a string. Types follow qd_arg_*:
+ * `f` and `d` also take an i64, and each string comes with the stack's reference, to release.
+ *
+ *     qd_string_t* s; int64_t start, length;
+ *     qd_args(ctx, "strings::substring", "sii", &s, &start, &length);
+ */
+void qd_args(qd_context* ctx, const char* op, const char* sig, ...);
+
+/**
+ * @brief Fail a fallible native word: the one way out of a `!` word on error
+ *
+ * Sets `ctx->error_code` to `code` and the error message from `fmt`, pushes `code` as the
+ * word's status, and returns `code`. Both halves are needed: the generated code reads the
+ * failure from `error_code`, not from the return value, and drops the status the word
+ * pushed. A word that returned a code without setting it read as a success; one that set
+ * it without pushing a status lost one of the caller's values instead. `code` must not be 0.
+ *
+ *     if (!f) {
+ *         return qd_fail(ctx, IO_ERR_NOT_FOUND, "io::open: %s", strerror(errno));
+ *     }
+ */
+int qd_fail(qd_context* ctx, int code, const char* fmt, ...)
+#ifdef __GNUC__
+		__attribute__((format(printf, 3, 4)))
+#endif
+		;
+
+/** @brief A stack type's name as the language spells it: i64, f64, d128, str, ptr */
+const char* qd_type_name(qd_stack_type type);
 
 /** @brief Longjmp to the recovery buffer if recovery is armed, otherwise return.
  *  @param op Operation name prefixed to the message, or NULL

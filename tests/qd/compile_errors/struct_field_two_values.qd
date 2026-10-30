@@ -1,0 +1,8 @@
+// A field initializer leaves one value. The extra one was taken for another field.
+struct S {
+	x:i64
+}
+
+fn main() {
+	S { x = 1 2 } <<x print nl
+}

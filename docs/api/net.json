@@ -71,10 +71,10 @@
       "name": "connect",
       "signature": "(host:str port:i64 -- socket:i64)",
       "failable": true,
-      "description": "Connect to a remote host.",
+      "description": "Connect to a remote host, over IPv4 or IPv6.",
       "params": [{"name": "host", "type": "str", "description": "Hostname or IP address"}, {"name": "port", "type": "i64", "description": "Port number"}],
       "returns": [{"name": "socket", "type": "i64", "description": "Connected socket descriptor"}],
-      "errors": [{"code": "ErrConnect", "description": "Host unreachable or connection refused"}],
+      "errors": [{"code": "ErrConnect", "description": "Host not found, unreachable or refusing connections"}, {"code": "ErrInvalidArg", "description": "The port is not between 0 and 65535"}],
       "examples": ["\"localhost\" 8080 net::connect! -> sock"]
     },
     {
@@ -94,7 +94,7 @@
       "description": "Start listening for connections on a port.",
       "params": [{"name": "port", "type": "i64", "description": "Port number to listen on"}],
       "returns": [{"name": "socket", "type": "i64", "description": "Server socket descriptor"}],
-      "errors": [{"code": "ErrListen", "description": "Port may be in use or permission denied"}],
+      "errors": [{"code": "ErrListen", "description": "Port may be in use or permission denied"}, {"code": "ErrInvalidArg", "description": "The port is not between 0 and 65535"}],
       "examples": ["8080 net::listen! -> server"]
     },
     {
@@ -111,20 +111,20 @@
       "name": "receive",
       "signature": "(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)",
       "failable": true,
-      "description": "Receive data from socket.",
-      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive"}],
+      "description": "Receive data from socket. At the end of the stream, the data is \"\" and bytes_read 0.",
+      "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive, from 1 to 1048576"}],
       "returns": [{"name": "data", "type": "str", "description": "Received data"}, {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}],
-      "errors": [{"code": "ErrReceive", "description": "Failed to receive data"}],
+      "errors": [{"code": "ErrReceive", "description": "Failed to receive data"}, {"code": "ErrTimeout", "description": "The timeout set with set_timeout ran out"}, {"code": "ErrInvalidArg", "description": "max_bytes is out of range"}],
       "examples": ["sock 1024 net::receive! -> n -> data"]
     },
     {
       "name": "send",
       "signature": "(socket:i64 data:str -- bytes_sent:i64)",
       "failable": true,
-      "description": "Send data over socket.",
+      "description": "Send data over socket. All of it is sent, which may take several writes; a peer that has gone fails the send rather than ending the program with SIGPIPE.",
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "data", "type": "str", "description": "Data to send"}],
       "returns": [{"name": "bytes_sent", "type": "i64", "description": "Number of bytes sent"}],
-      "errors": [{"code": "ErrSend", "description": "Failed to send data"}],
+      "errors": [{"code": "ErrSend", "description": "Failed to send data"}, {"code": "ErrTimeout", "description": "The timeout set with set_timeout ran out"}],
       "examples": ["sock \"Hello\" net::send! -> n"]
     },
     {

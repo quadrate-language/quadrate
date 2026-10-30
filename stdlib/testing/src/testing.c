@@ -1,20 +1,27 @@
+#define _DEFAULT_SOURCE
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/stack.h>
 #include <quadrate/testing/testing.h>
+#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-// Helper to release a stack element (only strings need releasing)
+// The assertions take the value under test first and the expected value second, as in
+// `2 3 + 5 testing::assert_eq`, and report them that way round.
+
 static void release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR && elem->value.s != NULL) {
 		qd_string_release(elem->value.s);
 	}
 }
 
-// Helper function to print a stack element value
-static void print_element_value(FILE* f, qd_stack_element_t* elem) {
+static void print_string(FILE* f, const qd_string_t* s) {
+	fputc('"', f);
+	fwrite(qd_string_data(s), 1, qd_string_length(s), f);
+	fputc('"', f);
+}
+
+static void print_element(FILE* f, const qd_stack_element_t* elem) {
 	switch (elem->type) {
 	case QD_STACK_TYPE_INT:
 		fprintf(f, "%ld", elem->value.i);
@@ -23,7 +30,7 @@ static void print_element_value(FILE* f, qd_stack_element_t* elem) {
 		fprintf(f, "%g", elem->value.f);
 		break;
 	case QD_STACK_TYPE_STR:
-		fprintf(f, "\"%s\"", qd_string_data(elem->value.s));
+		print_string(f, elem->value.s);
 		break;
 	case QD_STACK_TYPE_PTR:
 		fprintf(f, "ptr(%p)", elem->value.p);
@@ -34,458 +41,201 @@ static void print_element_value(FILE* f, qd_stack_element_t* elem) {
 		fprintf(f, "%sd", text);
 		break;
 	}
-	default:
-		fprintf(f, "<unknown>");
-		break;
 	}
+	fprintf(f, " (%s)", qd_type_name(elem->type));
 }
 
-// Helper function to get type name
-static const char* get_type_name(qd_stack_type type) {
-	switch (type) {
-	case QD_STACK_TYPE_INT:
-		return "i64";
-	case QD_STACK_TYPE_FLOAT:
-		return "f64";
-	case QD_STACK_TYPE_STR:
-		return "str";
-	case QD_STACK_TYPE_PTR:
-		return "ptr";
-	case QD_STACK_TYPE_D128:
-		return "d128";
-	default:
-		return "unknown";
-	}
+static bool strings_equal(const qd_string_t* a, const qd_string_t* b) {
+	return qd_string_length(a) == qd_string_length(b) &&
+		   memcmp(qd_string_data(a), qd_string_data(b), qd_string_length(a)) == 0;
 }
 
-// Helper function to compare two stack elements for equality
-static int elements_equal(qd_stack_element_t* a, qd_stack_element_t* b) {
+static bool elements_equal(const qd_stack_element_t* a, const qd_stack_element_t* b) {
 	if (a->type != b->type) {
-		return 0;
+		return false;
 	}
-
 	switch (a->type) {
 	case QD_STACK_TYPE_INT:
 		return a->value.i == b->value.i;
 	case QD_STACK_TYPE_FLOAT:
 		return a->value.f == b->value.f;
 	case QD_STACK_TYPE_STR:
-		return strcmp(qd_string_data(a->value.s), qd_string_data(b->value.s)) == 0;
+		return strings_equal(a->value.s, b->value.s);
 	case QD_STACK_TYPE_PTR:
 		return a->value.p == b->value.p;
 	case QD_STACK_TYPE_D128:
 		// IEEE equality, as `==` has it: 1.5 and 1.50 are equal, NaN is equal to nothing.
 		return qd_d128_compare(a->value.d, b->value.d) == 0;
-	default:
-		return 0;
 	}
+	return false;
 }
 
-// assert_eq - Assert two values are equal: ( a b -- )
-int usr_testing_assert_eq(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Assertion error: assert_eq requires 2 values on stack, have %zu\n", stack_size);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	qd_stack_element_t b, a;
-	qd_stack_error err = qd_stack_pop(ctx->st, &b);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-	err = qd_stack_pop(ctx->st, &a);
-	if (err != QD_STACK_OK) {
-		release_element(&b);
-		return (int){-2};
-	}
-
-	int equal = elements_equal(&a, &b);
-
-	if (!equal) {
-		fprintf(stderr, "Assertion failed: assert_eq\n");
-		fprintf(stderr, "  expected: ");
-		print_element_value(stderr, &a);
-		fprintf(stderr, " (%s)\n", get_type_name(a.type));
-		fprintf(stderr, "       got: ");
-		print_element_value(stderr, &b);
-		fprintf(stderr, " (%s)\n", get_type_name(b.type));
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&a);
-		release_element(&b);
-		return (int){1};
-	}
-
-	release_element(&a);
-	release_element(&b);
-	return (int){0};
-}
-
-// assert_ne - Assert two values are not equal: ( a b -- )
-int usr_testing_assert_ne(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Assertion error: assert_ne requires 2 values on stack, have %zu\n", stack_size);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	qd_stack_element_t b, a;
-	qd_stack_error err = qd_stack_pop(ctx->st, &b);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-	err = qd_stack_pop(ctx->st, &a);
-	if (err != QD_STACK_OK) {
-		release_element(&b);
-		return (int){-2};
-	}
-
-	int equal = elements_equal(&a, &b);
-
-	if (equal) {
-		fprintf(stderr, "Assertion failed: assert_ne\n");
-		fprintf(stderr, "  both values are: ");
-		print_element_value(stderr, &a);
-		fprintf(stderr, " (%s)\n", get_type_name(a.type));
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&a);
-		release_element(&b);
-		return (int){1};
-	}
-
-	release_element(&a);
-	release_element(&b);
-	return (int){0};
-}
-
-// assert_true - Assert value is truthy: ( v -- )
-int usr_testing_assert_true(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Assertion error: assert_true requires 1 value on stack, have %zu\n", stack_size);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	qd_stack_element_t v;
-	qd_stack_error err = qd_stack_pop(ctx->st, &v);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-
-	int truthy = 0;
-	switch (v.type) {
+static bool truthy(const qd_stack_element_t* v) {
+	switch (v->type) {
 	case QD_STACK_TYPE_INT:
-		truthy = v.value.i != 0;
-		break;
+		return v->value.i != 0;
 	case QD_STACK_TYPE_FLOAT:
-		truthy = v.value.f != 0.0;
-		break;
+		return v->value.f != 0.0;
 	case QD_STACK_TYPE_STR:
-		truthy = qd_string_data(v.value.s)[0] != '\0';
-		break;
+		return qd_string_length(v->value.s) > 0;
 	case QD_STACK_TYPE_PTR:
-		truthy = v.value.p != NULL;
-		break;
+		return v->value.p != NULL;
 	case QD_STACK_TYPE_D128:
-		truthy = !qd_d128_is_zero(v.value.d);
-		break;
-	default:
-		truthy = 0;
-		break;
+		return !qd_d128_is_zero(v->value.d);
 	}
-
-	if (!truthy) {
-		fprintf(stderr, "Assertion failed: assert_true\n");
-		fprintf(stderr, "  value: ");
-		print_element_value(stderr, &v);
-		fprintf(stderr, " (%s) is not truthy\n", get_type_name(v.type));
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&v);
-		return (int){1};
-	}
-
-	release_element(&v);
-	return (int){0};
+	return false;
 }
 
-// assert_false - Assert value is falsy: ( v -- )
-int usr_testing_assert_false(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Assertion error: assert_false requires 1 value on stack, have %zu\n", stack_size);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	qd_stack_element_t v;
-	qd_stack_error err = qd_stack_pop(ctx->st, &v);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-
-	int falsy = 0;
-	switch (v.type) {
-	case QD_STACK_TYPE_INT:
-		falsy = v.value.i == 0;
-		break;
-	case QD_STACK_TYPE_FLOAT:
-		falsy = v.value.f == 0.0;
-		break;
-	case QD_STACK_TYPE_STR:
-		falsy = qd_string_data(v.value.s)[0] == '\0';
-		break;
-	case QD_STACK_TYPE_PTR:
-		falsy = v.value.p == NULL;
-		break;
-	case QD_STACK_TYPE_D128:
-		falsy = qd_d128_is_zero(v.value.d);
-		break;
-	default:
-		falsy = 1;
-		break;
-	}
-
-	if (!falsy) {
-		fprintf(stderr, "Assertion failed: assert_false\n");
-		fprintf(stderr, "  value: ");
-		print_element_value(stderr, &v);
-		fprintf(stderr, " (%s) is not falsy\n", get_type_name(v.type));
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&v);
-		return (int){1};
-	}
-
-	release_element(&v);
-	return (int){0};
+// What the test printed came before the failure, so it goes out first
+static void begin_failure(const char* what) {
+	fflush(stdout);
+	fprintf(stderr, "Assertion failed: %s\n", what);
 }
 
-// fail - Unconditionally fail a test: ( msg -- )
-int usr_testing_fail(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Test failed (no message provided)\n");
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	qd_stack_element_t msg;
-	qd_stack_error err = qd_stack_pop(ctx->st, &msg);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Test failed (error reading message)\n");
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	if (msg.type == QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Test failed: %s\n", qd_string_data(msg.value.s));
-	} else {
-		fprintf(stderr, "Test failed: ");
-		print_element_value(stderr, &msg);
-		fprintf(stderr, "\n");
-	}
+static int end_failure(qd_context* ctx) {
 	qd_print_stack_trace(ctx);
 	qd_assertion_failed(ctx);
-
-	release_element(&msg);
-	return (int){1};
+	return 1;
 }
 
-// Helper to pop two strings: ( haystack needle -- )
-// Returns 0 on success, non-zero on failure
-static int pop_two_strings(
-		qd_context* ctx, const char* func_name, qd_stack_element_t* haystack, qd_stack_element_t* needle) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Assertion error: %s requires 2 strings on stack, have %zu\n", func_name, stack_size);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return 1;
+// assert_eq: ( actual:any expected:any -- )
+int usr_testing_assert_eq(qd_context* ctx) {
+	qd_stack_element_t actual;
+	qd_stack_element_t expected;
+	qd_args(ctx, "testing::assert_eq", "vv", &actual, &expected);
+	int rc = 0;
+	if (!elements_equal(&actual, &expected)) {
+		begin_failure("assert_eq");
+		fputs("  expected: ", stderr);
+		print_element(stderr, &expected);
+		fputs("\n       got: ", stderr);
+		print_element(stderr, &actual);
+		fputc('\n', stderr);
+		rc = end_failure(ctx);
 	}
-
-	qd_stack_error err = qd_stack_pop(ctx->st, needle);
-	if (err != QD_STACK_OK) {
-		return -2;
-	}
-	err = qd_stack_pop(ctx->st, haystack);
-	if (err != QD_STACK_OK) {
-		release_element(needle);
-		return -2;
-	}
-
-	if (haystack->type != QD_STACK_TYPE_STR || needle->type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Assertion error: %s requires 2 strings, got %s and %s\n", func_name,
-				get_type_name(haystack->type), get_type_name(needle->type));
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(haystack);
-		release_element(needle);
-		return 1;
-	}
-
-	return 0;
+	release_element(&actual);
+	release_element(&expected);
+	return rc;
 }
 
-// assert_contains - Assert string contains substring: ( haystack needle -- )
-int usr_testing_assert_contains(qd_context* ctx) {
-	qd_stack_element_t haystack, needle;
-	int rc = pop_two_strings(ctx, "assert_contains", &haystack, &needle);
-	if (rc != 0) {
-		return rc;
+// assert_ne: ( a:any b:any -- )
+int usr_testing_assert_ne(qd_context* ctx) {
+	qd_stack_element_t a;
+	qd_stack_element_t b;
+	qd_args(ctx, "testing::assert_ne", "vv", &a, &b);
+	int rc = 0;
+	if (elements_equal(&a, &b)) {
+		begin_failure("assert_ne");
+		fputs("  both values are: ", stderr);
+		print_element(stderr, &a);
+		fputc('\n', stderr);
+		rc = end_failure(ctx);
 	}
-
-	const char* h = qd_string_data(haystack.value.s);
-	const char* n = qd_string_data(needle.value.s);
-
-	if (strstr(h, n) == NULL) {
-		fprintf(stderr, "Assertion failed: assert_contains\n");
-		fprintf(stderr, "  string: \"%s\"\n", h);
-		fprintf(stderr, "  does not contain: \"%s\"\n", n);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&haystack);
-		release_element(&needle);
-		return (int){1};
-	}
-
-	release_element(&haystack);
-	release_element(&needle);
-	return (int){0};
-}
-
-// assert_starts_with - Assert string starts with prefix: ( str prefix -- )
-int usr_testing_assert_starts_with(qd_context* ctx) {
-	qd_stack_element_t haystack, needle;
-	int rc = pop_two_strings(ctx, "assert_starts_with", &haystack, &needle);
-	if (rc != 0) {
-		return rc;
-	}
-
-	const char* h = qd_string_data(haystack.value.s);
-	const char* n = qd_string_data(needle.value.s);
-	size_t nlen = strlen(n);
-
-	if (strncmp(h, n, nlen) != 0) {
-		fprintf(stderr, "Assertion failed: assert_starts_with\n");
-		fprintf(stderr, "  string: \"%s\"\n", h);
-		fprintf(stderr, "  does not start with: \"%s\"\n", n);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&haystack);
-		release_element(&needle);
-		return (int){1};
-	}
-
-	release_element(&haystack);
-	release_element(&needle);
-	return (int){0};
-}
-
-// assert_ends_with - Assert string ends with suffix: ( str suffix -- )
-int usr_testing_assert_ends_with(qd_context* ctx) {
-	qd_stack_element_t haystack, needle;
-	int rc = pop_two_strings(ctx, "assert_ends_with", &haystack, &needle);
-	if (rc != 0) {
-		return rc;
-	}
-
-	const char* h = qd_string_data(haystack.value.s);
-	const char* n = qd_string_data(needle.value.s);
-	size_t hlen = strlen(h);
-	size_t nlen = strlen(n);
-
-	if (nlen > hlen || strcmp(h + hlen - nlen, n) != 0) {
-		fprintf(stderr, "Assertion failed: assert_ends_with\n");
-		fprintf(stderr, "  string: \"%s\"\n", h);
-		fprintf(stderr, "  does not end with: \"%s\"\n", n);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&haystack);
-		release_element(&needle);
-		return (int){1};
-	}
-
-	release_element(&haystack);
-	release_element(&needle);
-	return (int){0};
-}
-
-// assert_approx_eq - Assert two floats are approximately equal: ( a b epsilon -- )
-int usr_testing_assert_approx_eq(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 3) {
-		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 values on stack (a b epsilon), have %zu\n",
-				stack_size);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		return (int){1};
-	}
-
-	qd_stack_element_t epsilon, b, a;
-	qd_stack_error err = qd_stack_pop(ctx->st, &epsilon);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-	err = qd_stack_pop(ctx->st, &b);
-	if (err != QD_STACK_OK) {
-		release_element(&epsilon);
-		return (int){-2};
-	}
-	err = qd_stack_pop(ctx->st, &a);
-	if (err != QD_STACK_OK) {
-		release_element(&epsilon);
-		release_element(&b);
-		return (int){-2};
-	}
-
-	// All three must be floats
-	if (a.type != QD_STACK_TYPE_FLOAT || b.type != QD_STACK_TYPE_FLOAT || epsilon.type != QD_STACK_TYPE_FLOAT) {
-		fprintf(stderr, "Assertion error: assert_approx_eq requires 3 floats\n");
-		fprintf(stderr, "  got: %s, %s, %s\n", get_type_name(a.type), get_type_name(b.type),
-				get_type_name(epsilon.type));
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&a);
-		release_element(&b);
-		release_element(&epsilon);
-		return (int){1};
-	}
-
-	double diff = a.value.f - b.value.f;
-	if (diff < 0) {
-		diff = -diff;
-	}
-
-	int approx_equal = diff <= epsilon.value.f;
-
-	if (!approx_equal) {
-		fprintf(stderr, "Assertion failed: assert_approx_eq\n");
-		fprintf(stderr, "  expected: %g\n", a.value.f);
-		fprintf(stderr, "       got: %g\n", b.value.f);
-		fprintf(stderr, "      diff: %g\n", diff);
-		fprintf(stderr, "   epsilon: %g\n", epsilon.value.f);
-		qd_print_stack_trace(ctx);
-		qd_assertion_failed(ctx);
-		release_element(&a);
-		release_element(&b);
-		release_element(&epsilon);
-		return (int){1};
-	}
-
 	release_element(&a);
 	release_element(&b);
-	release_element(&epsilon);
-	return (int){0};
+	return rc;
+}
+
+static int assert_truth(qd_context* ctx, const char* op, const char* name, bool want) {
+	qd_stack_element_t v;
+	qd_args(ctx, op, "v", &v);
+	int rc = 0;
+	if (truthy(&v) != want) {
+		begin_failure(name);
+		fputs("  value: ", stderr);
+		print_element(stderr, &v);
+		fprintf(stderr, " is not %s\n", want ? "truthy" : "falsy");
+		rc = end_failure(ctx);
+	}
+	release_element(&v);
+	return rc;
+}
+
+// assert_true: ( v:any -- )
+int usr_testing_assert_true(qd_context* ctx) {
+	return assert_truth(ctx, "testing::assert_true", "assert_true", true);
+}
+
+// assert_false: ( v:any -- )
+int usr_testing_assert_false(qd_context* ctx) {
+	return assert_truth(ctx, "testing::assert_false", "assert_false", false);
+}
+
+// fail: ( msg:str -- )
+int usr_testing_fail(qd_context* ctx) {
+	qd_string_t* msg;
+	qd_args(ctx, "testing::fail", "s", &msg);
+	fflush(stdout);
+	fputs("Test failed: ", stderr);
+	fwrite(qd_string_data(msg), 1, qd_string_length(msg), stderr);
+	fputc('\n', stderr);
+	qd_string_release(msg);
+	return end_failure(ctx);
+}
+
+// The string assertions: ( s:str part:str -- ), `found` says whether `part` is where the
+// assertion wants it
+static int assert_string(qd_context* ctx, const char* op, const char* name, const char* relation,
+		bool (*found)(const qd_string_t* s, const qd_string_t* part)) {
+	qd_string_t* s;
+	qd_string_t* part;
+	qd_args(ctx, op, "ss", &s, &part);
+	int rc = 0;
+	if (!found(s, part)) {
+		begin_failure(name);
+		fputs("  string: ", stderr);
+		print_string(stderr, s);
+		fprintf(stderr, "\n  %s: ", relation);
+		print_string(stderr, part);
+		fputc('\n', stderr);
+		rc = end_failure(ctx);
+	}
+	qd_string_release(s);
+	qd_string_release(part);
+	return rc;
+}
+
+static bool contains(const qd_string_t* s, const qd_string_t* part) {
+	const size_t n = qd_string_length(part);
+	return n == 0 || memmem(qd_string_data(s), qd_string_length(s), qd_string_data(part), n) != NULL;
+}
+
+static bool starts_with(const qd_string_t* s, const qd_string_t* part) {
+	const size_t n = qd_string_length(part);
+	return n <= qd_string_length(s) && memcmp(qd_string_data(s), qd_string_data(part), n) == 0;
+}
+
+static bool ends_with(const qd_string_t* s, const qd_string_t* part) {
+	const size_t n = qd_string_length(part);
+	const size_t len = qd_string_length(s);
+	return n <= len && memcmp(qd_string_data(s) + len - n, qd_string_data(part), n) == 0;
+}
+
+int usr_testing_assert_contains(qd_context* ctx) {
+	return assert_string(ctx, "testing::assert_contains", "assert_contains", "does not contain", contains);
+}
+
+int usr_testing_assert_starts_with(qd_context* ctx) {
+	return assert_string(ctx, "testing::assert_starts_with", "assert_starts_with", "does not start with", starts_with);
+}
+
+int usr_testing_assert_ends_with(qd_context* ctx) {
+	return assert_string(ctx, "testing::assert_ends_with", "assert_ends_with", "does not end with", ends_with);
+}
+
+// assert_approx_eq: ( actual:f64 expected:f64 epsilon:f64 -- )
+int usr_testing_assert_approx_eq(qd_context* ctx) {
+	double actual;
+	double expected;
+	double epsilon;
+	qd_args(ctx, "testing::assert_approx_eq", "fff", &actual, &expected, &epsilon);
+	const double diff = actual > expected ? actual - expected : expected - actual;
+	// A NaN anywhere fails: `diff <= epsilon` is false for it
+	if (diff <= epsilon) {
+		return 0;
+	}
+	begin_failure("assert_approx_eq");
+	fprintf(stderr, "  expected: %g\n       got: %g\n      diff: %g\n   epsilon: %g\n", expected, actual, diff,
+			epsilon);
+	return end_failure(ctx);
 }

@@ -1,5 +1,6 @@
 // Unit tests for the fmt module
 use fmt
+use strings
 use testing
 
 test "fmt::sprintf with string" {
@@ -104,4 +105,18 @@ test "fmt::sprintf left align" {
 
 test "fmt::sprintf zero padding" {
 	42 "%05d" fmt::sprintf "00042" testing::assert_eq
+}
+
+// Each conversion used to be formatted into a 256-byte buffer, and a longer result was cut
+test "fmt::sprintf keeps a long %s whole" {
+	"x" 300 strings::repeat "[%s]" fmt::sprintf strings::len 302 testing::assert_eq
+}
+
+// The length is fmt's to choose; a written one used to be doubled into an invalid spec
+test "fmt::sprintf with a length modifier" {
+	42 "%lld" fmt::sprintf "42" testing::assert_eq
+}
+
+test "fmt::sprintf widens an i64 for %f" {
+	3 "%.1f" fmt::sprintf "3.0" testing::assert_eq
 }

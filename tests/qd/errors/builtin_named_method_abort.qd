@@ -1,0 +1,29 @@
+// Test: `!` on a method that shares a builtin's name aborts inside a nested block too.
+//
+// `set` is a builtin as well as Slot's method, so it parses as an instruction, and an
+// instruction only took its `!` at the top of a function body. Inside the `if` below the `!`
+// was dropped: the failure was ignored and "FAIL" printed.
+struct Slot {
+	v: i64
+}
+
+fn (s:Slot) set(n:i64 -- s2:Slot)! {
+	n 0 < if {
+		s "negative value" 1 panic
+	}
+	Slot {
+		v = n
+	}
+}
+
+fn main() {
+	Slot {
+		v = 0
+	} -> s
+	1 if {
+		s 5 set! -> s
+		s <<v print nl
+		s -1 set! -> s
+		"FAIL: should not be reached" print nl
+	}
+}

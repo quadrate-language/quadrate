@@ -1,0 +1,7 @@
+// Test: a program in a directory named lib shares its namespace with the files beside it, as
+// one anywhere else does. quadc and quadlsp used to skip every path containing /lib/ or
+// /tests/, so such a program could not see its own helpers.
+
+fn main() {
+	14 triple print nl
+}

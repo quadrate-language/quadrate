@@ -1,0 +1,7 @@
+// Test: an index past the end raises, where it used to print a line and push nothing
+fn main() {
+	[10 20 30] -> xs
+	"before" print nl
+	xs 3 nth print nl
+	"not reached" print nl
+}

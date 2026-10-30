@@ -347,19 +347,34 @@ TEST(StrconvItoaMinusOne) {
 
 /* ===== atoi edge cases ===== */
 
-TEST(StrconvAtoiLeadingWhitespace) {
+// The whole string must be the number, as for parse_d128
+TEST(StrconvAtoiRejectsSurroundingText) {
+	const char* inputs[] = {"  42", "42 ", "12abc", "", "-"};
+	for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+		qd_context* ctx = create_test_context();
+		qd_push_s(ctx, inputs[i]);
+		usr_strconv_atoi(ctx);
+		ASSERT_EQ(2, (int)ctx->error_code, inputs[i]);
+		ASSERT_EQ(1, (int)qd_stack_size(ctx->st), "only the status is left");
+		destroy_test_context(ctx);
+	}
+}
+
+TEST(StrconvAtoiExtremes) {
 	qd_context* ctx = create_test_context();
 
-	qd_push_s(ctx, "  42");
+	qd_push_s(ctx, "-9223372036854775808");
 	usr_strconv_atoi(ctx);
-
 	qd_stack_element_t status;
 	qd_stack_pop(ctx->st, &status);
-	ASSERT_EQ(1, (int)status.value.i, "atoi whitespace status should be Ok");
-
+	ASSERT_EQ(1, (int)status.value.i, "INT64_MIN parses");
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
-	ASSERT_EQ(42, (int)elem.value.i, "atoi(\"  42\") should handle leading whitespace");
+	ASSERT(elem.value.i == INT64_MIN, "to INT64_MIN");
+
+	qd_push_s(ctx, "9223372036854775808");
+	usr_strconv_atoi(ctx);
+	ASSERT_EQ(2, (int)ctx->error_code, "one past INT64_MAX is out of range");
 
 	destroy_test_context(ctx);
 }
@@ -572,20 +587,13 @@ TEST(StrconvParseIntDecimal) {
 	destroy_test_context(ctx);
 }
 
-TEST(StrconvParseIntLeadingWhitespace) {
+TEST(StrconvParseIntRejectsLeadingWhitespace) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "  ff");
 	qd_push_i(ctx, 16);
 	usr_strconv_parse_int(ctx);
-
-	qd_stack_element_t status;
-	qd_stack_pop(ctx->st, &status);
-	ASSERT_EQ(1, (int)status.value.i, "parse_int whitespace status Ok");
-
-	qd_stack_element_t elem;
-	qd_stack_pop(ctx->st, &elem);
-	ASSERT_EQ(255, (int)elem.value.i, "parse_int(\"  ff\", 16) should skip whitespace");
+	ASSERT_EQ(2, (int)ctx->error_code, "parse_int(\"  ff\", 16) is not a number");
 
 	destroy_test_context(ctx);
 }
@@ -800,6 +808,22 @@ TEST(StrconvFormatFloatSmall) {
 	destroy_test_context(ctx);
 }
 
+// The shortest text that reads back as the same double; %g kept six digits
+TEST(StrconvFormatFloatRoundTrips) {
+	const double values[] = {1234567.0, 0.1, 1e21, 123456789.123, -2.5e-300};
+	const char* texts[] = {"1234567", "0.1", "1e+21", "123456789.123", "-2.5e-300"};
+	for (size_t i = 0; i < sizeof(values) / sizeof(values[0]); i++) {
+		qd_context* ctx = create_test_context();
+		qd_push_f(ctx, values[i]);
+		usr_strconv_format_float(ctx);
+		qd_stack_element_t elem;
+		qd_stack_pop(ctx->st, &elem);
+		ASSERT_STR_EQ(texts[i], qd_string_data(elem.value.s), texts[i]);
+		qd_string_release(elem.value.s);
+		destroy_test_context(ctx);
+	}
+}
+
 TEST(StrconvFormatFloatLarge) {
 	qd_context* ctx = create_test_context();
 
@@ -808,7 +832,7 @@ TEST(StrconvFormatFloatLarge) {
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
-	ASSERT_STR_EQ("1e+10", qd_string_data(elem.value.s), "format_float(1e10)");
+	ASSERT_STR_EQ("10000000000", qd_string_data(elem.value.s), "format_float(1e10)");
 
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);

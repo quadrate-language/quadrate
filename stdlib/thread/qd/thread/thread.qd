@@ -232,6 +232,8 @@ pub struct Channel {
 
 /// Create a new unbuffered (synchronous) channel.
 ///
+/// A send on it waits until another thread has received the value.
+///
 /// @return ch Channel New channel handle
 /// @error ErrChannel Failed to create channel
 /// @example thread::chan_new! -> ch
@@ -257,8 +259,11 @@ pub fn chan_buffered(capacity:i64 -- ch:Channel)! {
 
 /// Send a value on the channel.
 ///
+/// Waits while a buffered channel is full. On an unbuffered channel, waits until
+/// another thread has received the value.
+///
 /// @param val i64 Value to send
-/// @error ErrClosed Cannot send on closed channel
+/// @error ErrClosed The channel was closed before the value could be sent or received
 /// @example ch 42 send!
 pub fn (ch:Channel) send(val:i64 -- )! {
 	val ch <<handle thread::raw_chan_send?
@@ -276,7 +281,7 @@ pub fn (ch:Channel) recv( -- val:i64)! {
 /// Try to send without blocking.
 ///
 /// @param val i64 Value to send
-/// @return success i64 1 if sent, 0 if would block
+/// @return success i64 1 if sent, 0 if would block (on an unbuffered channel, unless a receiver is waiting)
 /// @example ch 42 try_send -> sent
 pub fn (ch:Channel) try_send(val:i64 -- success:i64) {
 	val ch <<handle thread::raw_chan_try_send

@@ -2,7 +2,9 @@
 #define QD_QC_AST_NODE_INSTRUCTION_H
 
 #include "ast_node.h"
+#include "ast_types.h"
 #include <string>
+#include <vector>
 
 namespace Qd {
 	// Forward declaration for friend access
@@ -69,6 +71,11 @@ namespace Qd {
 			return !mTypeParam.empty();
 		}
 
+		// For a method call: which arguments need casts or checks (indexed from bottom of stack)
+		const std::vector<CastDirection>& parameterCasts() const {
+			return mParameterCasts;
+		}
+
 		bool isMethodCall() const {
 			return mIsMethodCall;
 		}
@@ -102,9 +109,10 @@ namespace Qd {
 			return mPropagateOnError;
 		}
 
-		// `call` only: whether the function pointer on the stack is a fallible one. The call site
-		// cannot see that for itself -- the callee is a value, not a name -- so the validator,
-		// which resolves the pointer's signature, records it here for code generation.
+		// Whether what this calls can fail, for `call` and for a method named like a builtin. The
+		// call site cannot see that for itself -- `call`'s callee is a value, a method's depends
+		// on the receiver's type -- so the validator, which resolves it, records it here for code
+		// generation.
 		void setCalleeFallible(bool fallible) {
 			mCalleeFallible = fallible;
 		}
@@ -143,6 +151,10 @@ namespace Qd {
 			mMethodReceiverPositionFromTop = pos;
 		}
 
+		void setParameterCasts(const std::vector<CastDirection>& casts) {
+			mParameterCasts = casts;
+		}
+
 		void setResolvedType(const std::string& type) {
 			mResolvedType = type;
 		}
@@ -160,6 +172,7 @@ namespace Qd {
 		bool mPropagateOnError = false;
 		bool mCalleeFallible = false;
 		std::string mResolvedType;
+		std::vector<CastDirection> mParameterCasts;
 	};
 }
 

@@ -487,33 +487,45 @@ fn main() {{
         """Test completions after << for field access"""
         print("\n=== Testing Field Access Completion ===")
 
-        # Test with a function parameter that has a struct type
+        # `p <<` with the field still to be typed: the document does not parse, and
+        # there is a space between the variable and the operator, as field reads are
+        # written
         content = """struct Point {
     x:f64
     y:f64
 }
 
 fn test(p:Point -- ) {
-    p <<x
+    p <<
 }"""
         uri = "file:///tmp/test_field_access.qd"
         self.open_document(uri, content)
 
-        # Field access completion requires struct type resolution which may not work
-        # in all cases. Test that the request doesn't crash.
-        items = self.get_completions(uri, 6, 6)  # After p@ on line 6
-        labels = self.get_completion_labels(items)
+        labels = self.get_completion_labels(self.get_completions(uri, 6, 8))
+        self.assert_test("x" in labels and "y" in labels, "Field access offers the struct's fields", str(labels))
 
-        # Check that completion returns something (even if not field names)
-        # Field access is a complex feature that requires type inference
-        has_fields = "x" in labels and "y" in labels
-        no_crash = True  # If we got here, no crash
+    def test_body_in_unfinished_document(self):
+        """The document's own functions and structs while it does not parse"""
+        print("\n=== Testing Body Completion In Unfinished Code ===")
 
-        self.assert_test(no_crash, "Field access completion doesn't crash")
-        if has_fields:
-            print("  ✓ Field access correctly returns struct fields")
-        else:
-            print("  (Note: Field completion requires type inference - may need improvement)")
+        content = """struct Pair {
+    a:i64
+}
+
+fn helper(x:i64 -- y:i64) {
+    x
+}
+
+fn main() {
+    helper
+    mymod::
+}"""
+        uri = "file:///tmp/test_body_unfinished.qd"
+        self.open_document(uri, content)
+
+        labels = self.get_completion_labels(self.get_completions(uri, 9, 4))
+        self.assert_test("helper" in labels, "Unfinished document still offers its functions", str(labels[-5:]))
+        self.assert_test("Pair" in labels, "Unfinished document still offers its structs")
 
     # ============================================================================
     # Variable declaration type completion
@@ -603,6 +615,7 @@ fn test(p:Point -- ) {
 
             # Field access tests
             self.test_field_access_completion()
+            self.test_body_in_unfinished_document()
 
             # Variable declaration tests
             self.test_type_after_arrow_var()

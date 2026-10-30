@@ -1,0 +1,20 @@
+// A field built by position holds its declared type, as one built by name does. `2 2.5 3 M`
+// stored the bits as they were, so the f64 field read back as 9.9e-324, and an i64 for a
+// d128 field and an `any` for an f64 one were rejected.
+struct M {
+	b:f64
+	c:i64
+	d:d128
+}
+
+fn any_float( -- v:any) {
+	1.25
+}
+
+fn main() {
+	2 2.5 3 M -> m
+	m <<b print nl
+	m <<c print nl
+	m <<d print nl
+	any_float 1 1 M <<b print nl
+}

@@ -30,7 +30,7 @@ typedef struct qd_thread {
 } qd_thread;
 
 // Thread functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
-int usr_thread_raw_spawn(qd_context* ctx);	  // (fn -- thread:ptr)!
+int usr_thread_raw_spawn(qd_context* ctx);	  // (func:ptr -- thread:ptr)!
 int usr_thread_raw_join(qd_context* ctx);	  // (thread:ptr -- )!
 int usr_thread_raw_detach(qd_context* ctx);	  // (thread:ptr -- )!
 int usr_thread_raw_is_alive(qd_context* ctx); // (thread:ptr -- alive:i64)
@@ -52,22 +52,26 @@ typedef struct qd_channel {
 	mtx_t mutex;
 	cnd_t not_empty;
 	cnd_t not_full;
-	qd_stack_element_t* buffer;
+	int64_t* buffer;
 	size_t capacity; // 0 = unbuffered (synchronous)
 	size_t count;
 	size_t head;
 	size_t tail;
+	// Values ever stored and ever taken. An unbuffered send waits for `received` to pass
+	// its own number, which is how it knows a receiver has its value.
+	size_t sent;
+	size_t received;
+	size_t receivers_waiting;
 	bool closed;
-	int refcount;
 } qd_channel;
 
 // Channel functions exposed to Quadrate (raw_ prefix to avoid collision with Quadrate wrappers)
 int usr_thread_raw_chan_new(qd_context* ctx);		// ( -- ch:ptr)!
 int usr_thread_raw_chan_buffered(qd_context* ctx);	// (capacity:i64 -- ch:ptr)!
-int usr_thread_raw_chan_send(qd_context* ctx);		// (val ch:ptr -- )!
-int usr_thread_raw_chan_recv(qd_context* ctx);		// (ch:ptr -- val)!
-int usr_thread_raw_chan_try_send(qd_context* ctx);	// (val ch:ptr -- success:i64)
-int usr_thread_raw_chan_try_recv(qd_context* ctx);	// (ch:ptr -- val success:i64)
+int usr_thread_raw_chan_send(qd_context* ctx);		// (val:i64 ch:ptr -- )!
+int usr_thread_raw_chan_recv(qd_context* ctx);		// (ch:ptr -- val:i64)!
+int usr_thread_raw_chan_try_send(qd_context* ctx);	// (val:i64 ch:ptr -- success:i64)
+int usr_thread_raw_chan_try_recv(qd_context* ctx);	// (ch:ptr -- val:i64 success:i64)
 int usr_thread_raw_chan_close(qd_context* ctx);		// (ch:ptr -- )
 int usr_thread_raw_chan_is_closed(qd_context* ctx); // (ch:ptr -- closed:i64)
 int usr_thread_raw_chan_len(qd_context* ctx);		// (ch:ptr -- len:i64)

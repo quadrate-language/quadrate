@@ -1,1 +1,2 @@
 tests/qd/syntax/error_missing_brace_after_if.qd:4:3: error: Expected '{' after 'if'
+!reached end of file

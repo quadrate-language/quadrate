@@ -283,7 +283,7 @@ Implementations SHOULD decode malformed input rather than reject it — a string
 a file, a socket or `argv` — by treating each byte that is not part of a well-formed sequence
 as one character. Whatever they accept, their *output* MUST be well-formed.
 
-`bool` MAY be provided as an alias for `i64`.
+`bool` is an alias for `i64`, as if every program began with `type bool = i64`: it MUST be accepted wherever a type is written, and means `i64` there.
 
 #### 3.1.1 Sized Integer Types
 
@@ -411,7 +411,7 @@ element types disagree is a compile-time error where they are known.
 [src len]i64          // The size MAY be any expression leaving one i64
 ```
 
-The zero value MUST be `0` for the integer types, `0.0` for `f64` and `f32`, an empty string
+The zero value MUST be `0` for the integer types and `bool`, `0.0` for `f64`, `0` for `d128`, an empty string
 for `str`, and null for `ptr`. For a struct type, `[n]T` MUST produce `n` distinct instances,
 each constructed as `T {}`; it is therefore well-formed exactly where `T {}` is, which
 requires every field of `T` to declare a default. For an array element type, `[n][]T` MUST
@@ -486,6 +486,16 @@ The `fn(...)` type specifies the full signature of the function pointer, includi
 |------|-------------|
 | `any` | Wildcard type for operations accepting any type |
 
+A value of type `any` carries its type with it, so a parameter of type `any` accepts every value. Passing an `any` on to a parameter of a definite type is checked when the call runs: the value MUST hold that type, or an `i64` where the parameter takes `f64` or `d128`, which widens as a plain `i64` argument does. Anything else MUST stop the program with a type mismatch naming the function and the parameter.
+
+```quadrate
+fn next(x:i64 -- r:i64) { x 1 + }
+fn relay(a:any -- r:i64) { a next }
+
+1 relay print nl       // 2
+"two" relay print nl   // fatal: Type mismatch for parameter 1 (expected int, got str)
+```
+
 ### 3.6 Null
 
 The `null` keyword pushes the integer value `0` with pointer semantics. It is used to represent the absence of a value, particularly for pointer-typed struct fields.
@@ -497,7 +507,7 @@ The `null` keyword pushes the integer value `0` with pointer semantics. It is us
 ```quadrate
 null 0 == if { "true" print nl }     // true — null equals 0
 42 null neq if { "true" print nl }   // true — non-zero is not null
-null print nl                         // prints: 0
+null print nl                         // prints: null, as any null ptr does
 ```
 
 #### 3.6.2 Pointer Fields
@@ -1439,15 +1449,28 @@ Test files (`*_test.qd`) are excluded from module loading.
 
 ### 9.2 Module Resolution
 
-When `use modulename` is encountered, search order:
+When `use modulename` is encountered, the first of these that holds `.qd` files is the
+module, and every tool -- the compiler, the language server, the REPL -- searches in this
+order:
 
-1. Local path: `./modulename/*.qd` (all `.qd` files in directory)
-2. Include paths (from `-I` flags)
-3. Third-party packages: `~/.quadrate/modules/`
-4. `$QUADRATE_PATH` environment variable
-5. `$QUADRATE_ROOT` environment variable
-6. Relative to executable: `../share/quadrate/`
-7. `$HOME/quadrate/`
+1. `modulename/` beside the file that wrote the `use`
+2. Each include path (`-I`, and the local dependencies `qd.json` names): the path itself when
+   its `qd.json` names the module, else `modulename/` in it
+3. The installed packages, in `$QUADRATE_PATH`, else `$XDG_DATA_HOME/quadrate/modules`, else
+   `~/quadrate/modules`: the package registered under the namespace `modulename`, or with
+   `-l modulename@version` that version
+4. `$QUADRATE_ROOT/modulename/`
+5. `share/quadrate/modulename/` beside the compiler's installation
+6. `~/quadrate/modulename/`
+7. The system's `share/quadrate/modulename/`
+
+A namespace that more than one installed package declares is an error, which names each
+package by its full path: `use "github.com/user/repo"` selects one, and its words go under
+the namespace that package declares. The compiler does not build a full-path import yet --
+it reports one, naming the namespace to `use` instead -- though the language server and the
+validator resolve it. `use "path/file.qd"`
+names a single file, found beside the file that wrote the `use`, then beside the module that
+file belongs to.
 
 ### 9.3 Public and Private
 
@@ -1513,6 +1536,16 @@ pub fn main_feature() {
 // helpers.qd
 fn helper_function() { }
 ```
+
+### 9.7 A Program's Directory
+
+A program's own directory is a namespace too: the `.qd` files beside the file being compiled are merged into the program, with no `use`. Excluded are:
+
+- test files (`*_test.qd`);
+- files with their own `fn main`, which are programs of their own;
+- a file the program brings in with `use "file.qd"`, or that brings the program in, which the `use` already loads.
+
+Where a directory sits does not matter: one named `lib` or `tests` is a namespace like any other. A directory of independent programs therefore gives each one a `main`, and keeps a helper that only one of them uses in a directory with that program.
 
 ---
 

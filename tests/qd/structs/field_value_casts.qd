@@ -1,0 +1,24 @@
+// A field holds its declared type, whatever was pushed for it. Named construction and
+// `>>field` stored the bits as they were, so `f = 2` read back as 4.9e-324 and
+// `y = 2 1.5 *` as 4613937818241073152.
+struct S {
+	y:i64
+	f:f64
+	d:d128
+}
+
+fn any_float( -- v:any) {
+	1.25
+}
+
+fn main() {
+	S { y = 2 1.5 * f = 2 d = 3 } -> s
+	s <<y print nl
+	s <<f print nl
+	s <<d print nl
+	s 2.5 >>y 7 >>f 9 >>d drop
+	s <<y print nl
+	s <<f print nl
+	s <<d print nl
+	S { y = 1 f = any_float d = 1 } <<f print nl
+}

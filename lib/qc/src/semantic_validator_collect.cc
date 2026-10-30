@@ -354,11 +354,7 @@ namespace Qd {
 					StackValueType fieldType = StackValueType::UNKNOWN;
 					const std::string& typeName = field->typeName();
 					// Resolve type aliases
-					std::string resolvedTypeName = typeName;
-					auto fieldAliasIt = mTypeAliases.find(typeName);
-					if (fieldAliasIt != mTypeAliases.end()) {
-						resolvedTypeName = fieldAliasIt->second;
-					}
+					const std::string resolvedTypeName = resolveTypeAliasChain(typeName);
 
 					if (resolvedTypeName == "f64") {
 						fieldType = StackValueType::FLOAT;
@@ -492,47 +488,11 @@ namespace Qd {
 				// Also register function signature for type checking
 				FunctionSignature sig;
 
-				// Process input parameters
 				for (const auto& param : func->inputParameters) {
-					std::string typeStr = param->typeString();
-					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
-							typeStr == "u32" || typeStr == "u64") {
-						sig.consumes.push_back(StackValueType::INT);
-					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
-						sig.consumes.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "d128") {
-						sig.consumes.push_back(StackValueType::D128);
-					} else if (typeStr == "str") {
-						sig.consumes.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr" || typeStr == "bool" || isStructTypeName(typeStr)) {
-						sig.consumes.push_back(StackValueType::PTR);
-					} else {
-						sig.consumes.push_back(StackValueType::ANY);
-					}
+					addSignatureInput(sig, param->typeString(), "");
 				}
-
-				// Process output parameters
-				size_t producesIdx = 0;
 				for (const auto& param : func->outputParameters) {
-					std::string typeStr = param->typeString();
-					if (typeStr == "i32" || typeStr == "i64" || typeStr == "u8" || typeStr == "u16" ||
-							typeStr == "u32" || typeStr == "u64") {
-						sig.produces.push_back(StackValueType::INT);
-					} else if (typeStr == "f32" || typeStr == "f64" || typeStr == "float") {
-						sig.produces.push_back(StackValueType::FLOAT);
-					} else if (typeStr == "d128") {
-						sig.produces.push_back(StackValueType::D128);
-					} else if (typeStr == "str") {
-						sig.produces.push_back(StackValueType::STRING);
-					} else if (typeStr == "ptr" || typeStr == "bool") {
-						sig.produces.push_back(StackValueType::PTR);
-					} else if (isStructTypeName(typeStr)) {
-						sig.produces.push_back(StackValueType::PTR);
-						sig.producesStructTypes[producesIdx] = typeStr;
-					} else {
-						sig.produces.push_back(StackValueType::ANY);
-					}
-					producesIdx++;
+					addSignatureOutput(sig, param->typeString(), "");
 				}
 
 				sig.throws = func->throws;
@@ -562,6 +522,19 @@ namespace Qd {
 		std::unordered_set<std::string> localVariables;
 		std::unordered_set<std::string> iteratorNames;
 		validateReferencesInternal(node, localVariables, iteratorNames);
+	}
+
+	// A lambda's named parameters, which are its own and never a capture of the same name.
+	// Taken for one, the body read the outer variable in place of its argument.
+	static std::unordered_set<std::string> lambdaParameterNames(AstNodeAnonymousFunction* anonFunc) {
+		std::unordered_set<std::string> names;
+		for (const auto& paramNode : anonFunc->inputParameters()) {
+			const auto* param = static_cast<const AstNodeParameter*>(paramNode.get());
+			if (param->hasName()) {
+				names.insert(param->name());
+			}
+		}
+		return names;
 	}
 
 	void SemanticValidator::validateReferencesInternal(IAstNode* node, std::unordered_set<std::string>& localVariables,
@@ -669,7 +642,8 @@ namespace Qd {
 						}
 
 						// Type aliases - valid
-						if (mTypeAliases.find(baseTypeName) != mTypeAliases.end()) {
+						if (mTypeAliases.find(baseTypeName) != mTypeAliases.end() ||
+								!builtinTypeAliasTarget(baseTypeName).empty()) {
 							continue;
 						}
 
@@ -689,11 +663,9 @@ namespace Qd {
 							continue;
 						}
 
-						// Primitive types: f64, i64, str, ptr, bool, u8, i8, u16, i16, u32, i32, u64
-						static const std::unordered_set<std::string> primitiveTypes = {"f64", "d128", "i64", "str",
-								"ptr", "bool", "u8", "i8", "u16", "i16", "u32", "i32", "u64"};
-
-						if (primitiveTypes.find(baseTypeName) == primitiveTypes.end()) {
+						// A field cannot be `any`: it holds one value of one type, which is what a
+						// generic struct's type parameter is for
+						if (!isBuiltinTypeName(baseTypeName) || baseTypeName == "any") {
 							// Not a primitive - check if it's a known struct
 							// Check in local structs (mDefinedStructs)
 							bool found = mDefinedStructs.find(baseTypeName) != mDefinedStructs.end();
@@ -1226,8 +1198,8 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
 			AstNodeAnonymousFunction* anonFunc = static_cast<AstNodeAnonymousFunction*>(node);
 
-			// Create a new empty scope for the anonymous function
-			std::unordered_set<std::string> anonLocals;
+			// A new scope for the anonymous function, holding its own parameters
+			std::unordered_set<std::string> anonLocals = lambdaParameterNames(anonFunc);
 			std::unordered_set<std::string> anonIterators;
 
 			// A `for` iterator is in scope for the body but is tracked in iteratorNames rather than
@@ -1387,18 +1359,24 @@ namespace Qd {
 			return;
 		}
 
-		// Handle nested anonymous functions - they form their own closure scope
-		// For now, we don't support nested closures capturing from grandparent scopes
+		// A nested anonymous function captures from this one's scope and from further out. What
+		// it takes from further out, this one has to capture too, to have it to hand on: the
+		// nested closure's environment is built here, from what this function can see.
 		if (node->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
-			// Nested anonymous function - it can capture from our local scope
-			// but for now we just validate it separately
 			AstNodeAnonymousFunction* nestedAnon = static_cast<AstNodeAnonymousFunction*>(node);
-			std::unordered_set<std::string> nestedLocals;
+			std::unordered_set<std::string> nestedLocals = lambdaParameterNames(nestedAnon);
 			std::unordered_set<std::string> nestedIterators;
-			// The nested function can capture from the current scope + outer scope
 			std::unordered_set<std::string> combinedOuter = outerScopeVariables;
 			combinedOuter.insert(localVariables.begin(), localVariables.end());
+			combinedOuter.insert(iteratorNames.begin(), iteratorNames.end());
 			collectCapturedVariables(nestedAnon->body(), nestedLocals, nestedIterators, combinedOuter, nestedAnon);
+			for (const std::string& name : nestedAnon->capturedVariables()) {
+				const auto& captures = anonFunc->capturedVariables();
+				if (!localVariables.count(name) && !iteratorNames.count(name) && outerScopeVariables.count(name) &&
+						std::find(captures.begin(), captures.end(), name) == captures.end()) {
+					anonFunc->addCapturedVariable(name);
+				}
+			}
 			return;
 		}
 
@@ -1413,17 +1391,14 @@ namespace Qd {
 			return;
 		}
 
-		// Analyze each function definition to determine its stack effect
+		// Each function's signature, from what it declares
 		if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
 			AstNodeFunctionDeclaration* func = static_cast<AstNodeFunctionDeclaration*>(node);
-			std::vector<StackValueType> typeStack;
 
 			// Set current type parameters for generic functions
 			mCurrentTypeParams = func->typeParams();
 
-			// Collect parameter names and initialize type stack with input parameter types
-			// The input parameters ARE on the runtime stack when the function starts,
-			// but parameter names must be explicitly bound with -> before use
+			// The parameters' names, for the field accesses below, and their types checked
 			std::vector<std::string> paramNames;
 			for (const auto& paramNode : func->inputParameters()) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
@@ -1438,18 +1413,6 @@ namespace Qd {
 				if (!isValidTypeName(typeStr)) {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
-
-				// Add parameter type to the type stack (values are on runtime stack)
-				StackValueType paramType = stringToStackValueType(typeStr);
-				typeStack.push_back(paramType);
-			}
-
-			// Analyze the function body in isolation (without resolving function calls)
-			// Note: Parameters must be explicitly bound with -> before use, so we pass
-			// an empty local variable map (parameter names are NOT pre-registered)
-			std::unordered_map<std::string, StackValueType> emptyLocalVars;
-			if (func->body()) {
-				analyzeBlockInIsolation(func->body(), typeStack, emptyLocalVars);
 			}
 
 			// Store the signature with input parameters as consumes
@@ -1469,24 +1432,7 @@ namespace Qd {
 					reportError(param, invalidTypeMessage(typeStr, parameterSuffix(param)).c_str());
 				}
 
-				// Resolve type aliases
-				std::string resolvedType = typeStr;
-				auto aliasIt = mTypeAliases.find(typeStr);
-				if (aliasIt != mTypeAliases.end()) {
-					resolvedType = aliasIt->second;
-				}
-
-				StackValueType paramType = stringToStackValueType(resolvedType);
-				sig.consumes.push_back(paramType);
-				sig.parameterTypeNames[paramIdx] = resolvedType;
-
-				// Track struct/array/fn types for PTR parameters
-				if (paramType == StackValueType::PTR &&
-						(isStructTypeName(resolvedType) ||
-								(resolvedType.size() > 2 && resolvedType[0] == '[' && resolvedType[1] == ']') ||
-								(resolvedType.size() > 3 && resolvedType.substr(0, 3) == "fn("))) {
-					sig.parameterStructTypes[paramIdx] = resolvedType;
-				}
+				addSignatureInput(sig, typeStr, "");
 			}
 
 			// Validate declared output parameter types
@@ -1536,29 +1482,8 @@ namespace Qd {
 
 			// Build produces list from declared output parameters
 			// Always use declared params — body analysis is unreliable for control flow
-			size_t producesIdx = 0;
 			for (const auto& paramNode : func->outputParameters()) {
-				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
-				std::string typeStr = param->typeString();
-
-				// Resolve type aliases
-				auto outAliasIt = mTypeAliases.find(typeStr);
-				if (outAliasIt != mTypeAliases.end()) {
-					typeStr = outAliasIt->second;
-				}
-
-				// Use stringToStackValueType to handle all types including type parameters
-				StackValueType producedType = stringToStackValueType(typeStr);
-				sig.produces.push_back(producedType);
-				sig.producesTypeNames[producesIdx] = typeStr;
-
-				// Track struct/array/fn types for PTR return values
-				if (producedType == StackValueType::PTR &&
-						(isStructTypeName(typeStr) || (typeStr.size() > 2 && typeStr[0] == '[' && typeStr[1] == ']') ||
-								(typeStr.size() > 3 && typeStr.substr(0, 3) == "fn("))) {
-					sig.producesStructTypes[producesIdx] = typeStr;
-				}
-				producesIdx++;
+				addSignatureOutput(sig, static_cast<AstNodeParameter*>(paramNode.get())->typeString(), "");
 			}
 			sig.throws = func->throws();
 			sig.typeParams = mCurrentTypeParams;

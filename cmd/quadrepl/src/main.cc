@@ -11,7 +11,10 @@
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/module_resolver.h>
+#include <quadrate/qc/reference.h>
 #include <quadrate/qc/semantic_validator.h>
+#include <quadrate/qc/type_names.h>
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
@@ -46,26 +49,6 @@ static bool isWordChar(char c) {
 	return isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
 }
 
-struct ReferenceEntry {
-	const char* name;
-	const char* signature;
-	const char* description;
-};
-
-static const ReferenceEntry g_reference[] = {
-#define KEYWORD(name, description) {#name, nullptr, description},
-#define BUILTIN(name, signature, description) {#name, signature, description},
-#include <quadrate/qc/reference.def>
-#undef BUILTIN
-#undef KEYWORD
-};
-
-static const char* const g_keywords[] = {"fn", "pub", "inline", "stack", "if", "else", "for", "loop", "while", "break",
-		"continue", "return", "use", "struct", "packed", "enum", "const", "var", "defer", "switch", "case", "test",
-		"type", "as", "null", "true", "false", "Ok", "Err"};
-
-extern "C" int exe_path_platform_get(char* buffer, size_t buffer_size);
-
 #ifndef QUADRATE_SOURCE_ROOT
 #define QUADRATE_SOURCE_ROOT ""
 #endif
@@ -81,6 +64,9 @@ extern "C" int exe_path_platform_get(char* buffer, size_t buffer_size);
 // usually present without holding any of the standard library, so stopping there
 // left :doc and completion with nothing at all. Declarations are merged with
 // emplace, so an earlier root still wins for a name two roots share.
+// The directories :doc and completion read module declarations from: every place a `use`
+// searches (qc/module_resolver.h), with this build's own stdlib sources ahead of the system's
+// and the installed packages after them
 static std::vector<std::string> findStdlibRoots() {
 	namespace fs = std::filesystem;
 
@@ -92,38 +78,16 @@ static std::vector<std::string> findStdlibRoots() {
 		}
 	};
 
-	if (const char* root = getenv("QUADRATE_ROOT")) {
-		add(root);
-	}
-
 	if (const char* libDir = getenv("QUADRATE_LIBDIR")) {
 		add(fs::path(libDir) / ".." / QD_DATA_DIR_NAME / "quadrate");
 	}
-
-	char exePathBuf[4096];
-	const int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-	if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
-		std::error_code ec;
-		fs::path exePath = fs::canonical(exePathBuf, ec);
-		if (!ec) {
-			add(exePath.parent_path() / ".." / QD_DATA_DIR_NAME / "quadrate");
-		}
-	}
-
 	if (QUADRATE_SOURCE_ROOT[0] != '\0') {
 		add(fs::path(QUADRATE_SOURCE_ROOT) / "stdlib");
 	}
-
-	if (const char* home = getenv("HOME")) {
-		add(fs::path(home) / "quadrate");
-		add(fs::path(home) / "quadrate" / "modules" / "_namespaces");
+	for (const std::string& root : Qd::moduleRoots()) {
+		add(root);
 	}
-
-#ifdef QD_PLATFORM_HAIKU
-	add("/boot/system/data/quadrate");
-#else
-	add("/usr/share/quadrate");
-#endif
+	add(fs::path(Qd::packagesDirectory()) / "_namespaces");
 
 	return roots;
 }
@@ -213,9 +177,8 @@ static const std::map<std::string, std::string>& stdlibDeclarations() {
 
 static const std::vector<std::string>& completionCandidates() {
 	static const std::vector<std::string> candidates = [] {
-		std::vector<std::string> all(std::begin(g_keywords), std::end(g_keywords));
-		all.insert(all.end(), std::begin(Qd::BUILTIN_INSTRUCTIONS), std::end(Qd::BUILTIN_INSTRUCTIONS));
-		for (const auto& entry : g_reference) {
+		std::vector<std::string> all(std::begin(Qd::BUILTIN_INSTRUCTIONS), std::end(Qd::BUILTIN_INSTRUCTIONS));
+		for (const auto& entry : Qd::REFERENCE) {
 			if (strcmp(entry.name, "_") != 0) {
 				all.push_back(entry.name);
 			}
@@ -986,7 +949,7 @@ private:
 	void printDoc(const std::string& query) {
 		size_t matches = 0;
 
-		for (const auto& entry : g_reference) {
+		for (const auto& entry : Qd::REFERENCE) {
 			if (query != entry.name) {
 				continue;
 			}
@@ -1303,7 +1266,7 @@ private:
 	}
 
 	static bool isAnonymousType(const std::string& type) {
-		return type == "i64" || type == "f64" || type == "d128" || type == "str" || type == "ptr" || type == "any";
+		return Qd::isPrimitiveTypeName(type);
 	}
 
 	std::string buildSource(const std::string& code, const std::vector<std::string>& stackTypes,
@@ -1380,8 +1343,10 @@ private:
 		return source;
 	}
 
+	// The line repl_main starts on: after the uses and the definitions, each group
+	// followed by a blank line
 	size_t bodyLineNumber() const {
-		size_t line = 2;
+		size_t line = 0;
 		line += useStatements.size() + (useStatements.empty() ? 0 : 1);
 		line += definitions.size() + (definitions.empty() ? 0 : 1);
 		return line + 1;

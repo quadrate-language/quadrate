@@ -14,9 +14,6 @@
 // Default error span length in characters for diagnostic highlighting
 static const int ERROR_SPAN_LENGTH = 10;
 
-// Expand tilde (~) in file paths
-std::string expandTilde(const std::string& path);
-
 // Return the word at the given line/character position, including '::'
 // for scoped identifiers. Returns "" if the position is out of range or
 // no word exists there. Free function so it can be linked into fuzz
@@ -39,9 +36,6 @@ std::string lspPathToUri(const std::string& path);
 // True for keywords, type names and built-in instructions, none of which can
 // be used as a user-defined name.
 bool lspIsReservedName(const std::string& name);
-
-// Load dependencies from qd.json and return include paths
-std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
 
 // Get sibling .qd files in the same directory (for directory-based namespaces)
 
@@ -112,6 +106,13 @@ private:
 
 	// Completion (implemented in lsp_completion.cc)
 	void handleCompletion(const std::string& id, const std::string& uri, size_t line, size_t character);
+	void addTypeCompletions(
+			json_t* items, const std::string& documentText, Qd::IAstNode* root, const std::string& sourceDir);
+	void addFieldCompletions(json_t* items, const std::string& documentText, Qd::IAstNode* root,
+			const std::string& variable, size_t line, const std::string& sourceDir);
+	void addModuleCompletions(
+			json_t* items, Qd::IAstNode* root, const std::string& module, const std::string& sourceDir);
+	void addBodyCompletions(json_t* items, const std::string& documentText, Qd::IAstNode* root, bool topLevel);
 	std::string getModulePrefixAtPosition(const std::string& text, size_t line, size_t character);
 	std::string getFieldAccessVariableAtPosition(const std::string& text, size_t line, size_t character);
 	std::vector<std::pair<std::string, std::string>> findStructFields(
@@ -205,8 +206,6 @@ private:
 	// Utility functions
 	std::string getBuiltInDocumentation(const std::string& word);
 	std::string getWordAtPosition(const std::string& text, size_t line, size_t character);
-	std::string getPackagesDir();
-	std::string findLatestPackageVersion(const std::string& moduleName);
 	std::string resolveModulePath(const std::string& moduleName, const std::string& sourceDir);
 
 	// Extraction functions

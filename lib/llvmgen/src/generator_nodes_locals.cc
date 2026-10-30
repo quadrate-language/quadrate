@@ -13,6 +13,73 @@ namespace Qd {
 		}
 	}
 
+	// A variable a closure captures lives in a refcounted block, { refcount, slot }, so that the
+	// closure can outlive the frame. The alloca returned holds a pointer to the slot.
+	llvm::AllocaInst* LlvmGenerator::Impl::createCapturedSlot(const std::string& name) {
+		// Variable will be captured by a closure - allocate on heap for escaped closure support
+		// Layout: { int64_t refcount, qd_stack_element_t elem } = 32 bytes
+		// Create alloca to hold the heap pointer (to the elem part, not the refcount)
+		llvm::AllocaInst* localAlloca = createEntryAlloca(ptrTy, (name + "_ptr").c_str());
+
+		// Null until the declaration runs, so a declaration inside a branch that is never
+		// taken leaves nothing to release and the release below has something to test.
+		{
+			llvm::IRBuilder<> entryBuilder(localAlloca->getParent(), std::next(localAlloca->getIterator()));
+			entryBuilder.CreateStore(llvm::Constant::getNullValue(ptrTy), localAlloca);
+		}
+
+		// The block is allocated *here*, where the declaration runs, not once in the entry
+		// block. One block per declaration is what gives a loop body one binding per
+		// iteration: the entry-block version handed every iteration's closure a pointer to
+		// the same block, so closures that outlived the loop all read the last value
+		// written to it. The previous iteration's block is released first, leaving it alive
+		// only for whatever captured it.
+		emitCaptureBlockRelease(builder->CreateLoad(ptrTy, localAlloca, name + "_prev"), name);
+
+		// 8 bytes refcount + 24 bytes qd_stack_element_t = 32 bytes
+		llvm::Value* heapBlock = builder->CreateCall(mallocFn, {builder->getInt64(32)}, name + "_heap_block");
+
+		// Initialize refcount to 1 -- this slot's own reference
+		builder->CreateStore(builder->getInt64(1), heapBlock);
+
+		// Get pointer to the qd_stack_element_t (at offset 8)
+		llvm::Value* heapPtr =
+				builder->CreateGEP(builder->getInt8Ty(), heapBlock, builder->getInt64(8), name + "_heap");
+
+		// Initialize type field to -1 (uninitialized marker)
+		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, heapPtr, 1, name + "_init_type");
+		builder->CreateStore(builder->getInt32(static_cast<uint32_t>(-1)), typePtr);
+
+		// Store elem pointer in the alloca (this is what code accesses)
+		builder->CreateStore(heapPtr, localAlloca);
+
+		indirectLocalVariables.insert(name);
+		return localAlloca;
+	}
+
+	// A named parameter as a local. One a closure captures goes in a captured slot, as a
+	// captured `-> name` does: on the machine stack, a closure that outlived the call read a
+	// dead frame.
+	void LlvmGenerator::Impl::bindParameter(const std::string& name, llvm::Value* ctx) {
+		llvm::Value* slot = nullptr;
+		if (heapAllocatedCaptures.count(name)) {
+			llvm::AllocaInst* ref = createCapturedSlot(name);
+			localVariables[name] = ref;
+			slot = builder->CreateLoad(ptrTy, ref, name + "_slot");
+		} else {
+			llvm::Function* fn = builder->GetInsertBlock()->getParent();
+			llvm::IRBuilder<> entryBuilder(&fn->getEntryBlock(), fn->getEntryBlock().begin());
+			llvm::AllocaInst* alloca = entryBuilder.CreateAlloca(stackElementTy, nullptr, name);
+			// -1 marks the slot as not yet holding anything
+			entryBuilder.CreateStore(entryBuilder.getInt32(static_cast<uint32_t>(-1)),
+					entryBuilder.CreateStructGEP(stackElementTy, alloca, 1, name + "_init_type"));
+			localVariables[name] = alloca;
+			slot = alloca;
+		}
+		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
+		builder->CreateCall(stackPopFn, {builder->CreateLoad(ptrTy, stackPtrPtr, "stack"), slot});
+	}
+
 	void LlvmGenerator::Impl::generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx) {
 		// `-> global` always stores to the LLVM global, regardless of which
 		// stack is active. Checked before the native / runtime paths so
@@ -141,42 +208,7 @@ namespace Qd {
 			llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
 
 			if (isCaptured) {
-				// Variable will be captured by a closure - allocate on heap for escaped closure support
-				// Layout: { int64_t refcount, qd_stack_element_t elem } = 32 bytes
-				// Create alloca to hold the heap pointer (to the elem part, not the refcount)
-				localAlloca = tmpBuilder.CreateAlloca(ptrTy, nullptr, name + "_ptr");
-
-				// Null until the declaration runs, so a declaration inside a branch that is never
-				// taken leaves nothing to release and the release below has something to test.
-				tmpBuilder.CreateStore(llvm::Constant::getNullValue(ptrTy), localAlloca);
-
-				// The block is allocated *here*, where the declaration runs, not once in the entry
-				// block. One block per declaration is what gives a loop body one binding per
-				// iteration: the entry-block version handed every iteration's closure a pointer to
-				// the same block, so closures that outlived the loop all read the last value
-				// written to it. The previous iteration's block is released first, leaving it alive
-				// only for whatever captured it.
-				emitCaptureBlockRelease(builder->CreateLoad(ptrTy, localAlloca, name + "_prev"), name);
-
-				// 8 bytes refcount + 24 bytes qd_stack_element_t = 32 bytes
-				llvm::Value* heapBlock = builder->CreateCall(mallocFn, {builder->getInt64(32)}, name + "_heap_block");
-
-				// Initialize refcount to 1 -- this slot's own reference
-				builder->CreateStore(builder->getInt64(1), heapBlock);
-
-				// Get pointer to the qd_stack_element_t (at offset 8)
-				llvm::Value* heapPtr =
-						builder->CreateGEP(builder->getInt8Ty(), heapBlock, builder->getInt64(8), name + "_heap");
-
-				// Initialize type field to -1 (uninitialized marker)
-				llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, heapPtr, 1, name + "_init_type");
-				builder->CreateStore(builder->getInt32(static_cast<uint32_t>(-1)), typePtr);
-
-				// Store elem pointer in the alloca (this is what code accesses)
-				builder->CreateStore(heapPtr, localAlloca);
-
-				// Track as indirect variable
-				indirectLocalVariables.insert(name);
+				localAlloca = createCapturedSlot(name);
 			} else {
 				// Normal case: Create alloca for the stack element in the entry block
 				localAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, name);
@@ -204,13 +236,12 @@ namespace Qd {
 				llvm::DIType* debugType = stackElementDebugType;
 				auto typeHintIt = localVariableTypeHints.find(name);
 				if (typeHintIt != localVariableTypeHints.end()) {
-					const std::string& typeStr = typeHintIt->second;
-					if ((typeStr == "i64" || typeStr == "int" || typeStr == "int64" || typeStr == "i") &&
-							int64DebugType) {
+					const ValueKind kind = valueKind(typeHintIt->second);
+					if (kind == ValueKind::Int && int64DebugType) {
 						debugType = int64DebugType;
-					} else if ((typeStr == "f64" || typeStr == "float" || typeStr == "f") && floatDebugType) {
+					} else if (kind == ValueKind::Float && floatDebugType) {
 						debugType = floatDebugType;
-					} else if ((typeStr == "str" || typeStr == "string") && stringDebugType) {
+					} else if (kind == ValueKind::Str && stringDebugType) {
 						debugType = stringDebugType;
 					}
 					// For struct types, keep using stackElementDebugType

@@ -1,6 +1,6 @@
 {
   "name": "strconv",
-  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - parse_d128: Parse string to d128 - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean",
+  "description": "String to number conversions.  Functions: - format_int: Format integer in any base (2-36) - parse_int: Parse string to integer in any base (2-36) - itoa: Convert integer to decimal string (shorthand for 10 format_int) - atoi: Parse decimal string to integer (shorthand for 10 parse_int) - format_float: Format float to string - parse_float: Parse string to float - parse_d128: Parse string to d128 - format_bool: Format boolean to string (\"true\"/\"false\") - parse_bool: Parse string to boolean  The parse functions take the whole string as the value: \" 42\", \"42 \" and \"12abc\" are errors, ErrInvalid, not 42 and 12.",
   "constants": [
 
   ],
@@ -32,7 +32,7 @@
       "name": "format_float",
       "signature": "(value:f64 -- s:str)",
       "failable": false,
-      "description": "Format float to string. Uses compact %g format (removes trailing zeros).",
+      "description": "Format float to string: the shortest text that parse_float reads back as the same value, so 1234567.0 is \"1234567\", where %g would write \"1.23457e+06\".",
       "params": [{"name": "value", "type": "f64", "description": "Float value"}],
       "returns": [{"name": "s", "type": "str", "description": "Formatted string"}],
       "errors": [],
@@ -82,7 +82,7 @@
       "name": "parse_float",
       "signature": "(s:str -- value:f64)",
       "failable": true,
-      "description": "Parse string to float.",
+      "description": "Parse string to float. A value too large for an f64 is an error, not infinity.",
       "params": [{"name": "s", "type": "str", "description": "String to parse"}],
       "returns": [{"name": "value", "type": "f64", "description": "Parsed float"}],
       "errors": [],
@@ -92,7 +92,7 @@
       "name": "parse_int",
       "signature": "(s:str base:i64 -- value:i64)",
       "failable": true,
-      "description": "Parse integer from string in given base.",
+      "description": "Parse integer from string in given base: an optional sign, then digits of the base. The whole i64 range reads, -9223372036854775808 included; beyond it is an error.",
       "params": [{"name": "s", "type": "str", "description": "String to parse"}, {"name": "base", "type": "i64", "description": "Numeric base (2-36)"}],
       "returns": [{"name": "value", "type": "i64", "description": "Parsed integer"}],
       "errors": [],

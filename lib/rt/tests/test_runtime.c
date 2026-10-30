@@ -1088,6 +1088,61 @@ TEST(RecoveryIsPerContext) {
 	qd_free_context(b);
 }
 
+TEST(ArgsPopsDeepestFirst) {
+	qd_context* ctx = qd_create_context(64);
+
+	qd_push_s(ctx, "text");
+	qd_push_i(ctx, 7);
+	qd_push_i(ctx, 2); // an i64 where an f64 is expected widens
+	qd_push_p(ctx, &ctx);
+
+	qd_string_t* s = NULL;
+	int64_t i = 0;
+	double f = 0.0;
+	void* p = NULL;
+	qd_args(ctx, "test::args", "sifp", &s, &i, &f, &p);
+
+	ASSERT(qd_stack_is_empty(ctx->st), "every argument is popped");
+	ASSERT_STR_EQ("text", qd_string_data(s), "the deepest argument is the first");
+	ASSERT(i == 7, "then the i64");
+	ASSERT(f == 2.0, "then the widened f64");
+	ASSERT(p == &ctx, "and the top one last");
+
+	qd_string_release(s);
+	qd_free_context(ctx);
+}
+
+// A raise leaves the stack exactly as it was: nothing popped, so no reference to release
+static void args_expect_raise(const char* sig, size_t depth, const char* message) {
+	qd_context* ctx = qd_create_context(64);
+	qd_push_s(ctx, "kept");
+	qd_push_f(ctx, 1.5);
+
+	qd_string_t* s = NULL;
+	int64_t i = 0;
+	int recovered = 0;
+	if (setjmp(*qd_recovery_buf(ctx)) == 0) {
+		qd_recovery_arm(ctx);
+		qd_args(ctx, "test::args", sig, &s, &i, &i);
+		qd_recovery_disarm(ctx);
+	} else {
+		recovered = 1;
+	}
+
+	ASSERT(recovered == 1, "a bad signature raises");
+	ASSERT(qd_stack_size(ctx->st) == depth, "and pops nothing");
+	ASSERT(strstr(qd_error_message(ctx), message) != NULL, message);
+	qd_free_context(ctx);
+}
+
+TEST(ArgsTypeErrorPopsNothing) {
+	args_expect_raise("si", 2, "Expected i64 for argument 2, got f64");
+}
+
+TEST(ArgsUnderflowPopsNothing) {
+	args_expect_raise("sii", 2, "Stack underflow");
+}
+
 TEST(RecoveryCatchesFatalError) {
 	qd_context* ctx = qd_create_context(64);
 
@@ -1114,6 +1169,53 @@ TEST(RecoveryCatchesFatalError) {
 	ASSERT(qd_add(ctx) == 0, "the context still works");
 
 	qd_free_context(ctx);
+}
+
+// Each push onto a full stack raises, where it used to return -2 that callers ignored
+static void push_expect_overflow(int kind) {
+	qd_context* ctx = qd_create_context(1);
+	qd_push_i(ctx, 1);
+	qd_string_t* s = qd_string_create("ref");
+
+	int recovered = 0;
+	if (setjmp(*qd_recovery_buf(ctx)) == 0) {
+		qd_recovery_arm(ctx);
+		switch (kind) {
+		case 0:
+			qd_push_i(ctx, 2);
+			break;
+		case 1:
+			qd_push_f(ctx, 2.0);
+			break;
+		case 2:
+			qd_push_s(ctx, "lost");
+			break;
+		case 3:
+			qd_push_s_ref(ctx, s);
+			break;
+		case 4:
+			qd_push_p(ctx, NULL);
+			break;
+		default:
+			qd_push_d_bits(ctx, 0, 0);
+			break;
+		}
+		qd_recovery_disarm(ctx);
+	} else {
+		recovered = 1;
+	}
+
+	ASSERT(recovered == 1, "a push onto a full stack raises");
+	ASSERT(qd_stack_size(ctx->st) == 1, "and leaves the stack as it was");
+	ASSERT(strstr(qd_error_message(ctx), "Stack overflow") != NULL, "as a stack overflow");
+	qd_string_release(s);
+	qd_free_context(ctx);
+}
+
+TEST(PushOverflowRaises) {
+	for (int kind = 0; kind <= 5; kind++) {
+		push_expect_overflow(kind);
+	}
 }
 
 TEST(ClonedContextIsNotArmed) {

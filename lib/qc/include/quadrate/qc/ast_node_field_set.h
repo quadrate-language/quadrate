@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_FIELD_SET_H
 
 #include "ast_node.h"
+#include "ast_types.h"
 #include <string>
 
 namespace Qd {
@@ -53,8 +54,18 @@ namespace Qd {
 			return mFieldName;
 		}
 
+		// What the value needs to fit the field, set by the validator
+		CastDirection cast() const {
+			return mCast;
+		}
+
+		void setCast(CastDirection cast) {
+			mCast = cast;
+		}
+
 	private:
 		std::string mFieldName;
+		CastDirection mCast = CastDirection::NONE;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

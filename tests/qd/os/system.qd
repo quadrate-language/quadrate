@@ -10,8 +10,10 @@ fn main() {
 	"true" os::system
 	print nl  // Should print 0 (success)
 
-	// Test false command (exits with non-zero)
-	// Return value varies by platform (1 on some, 256 on others), so check non-zero
+	// The command's exit status, not the wait status: `false` used to give 256
 	"false" os::system
-	0 != if { "non-zero" } else { "zero" } print nl
+	print nl  // 1
+
+	"exit 3" os::system
+	print nl  // 3
 }

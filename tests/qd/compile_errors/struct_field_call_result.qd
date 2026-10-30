@@ -1,0 +1,13 @@
+// A field initializer is checked as code: a call's result is its declared type. It was
+// not typed at all, so a string went into an i64 field as its address.
+struct S {
+	x:i64
+}
+
+fn name( -- s:str) {
+	"abc"
+}
+
+fn main() {
+	S { x = name } <<x print nl
+}

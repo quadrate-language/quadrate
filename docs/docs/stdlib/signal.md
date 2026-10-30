@@ -296,7 +296,7 @@ signal::SigInt signal::trap
 
 ### `fn` wait
 
-Block until any trapped signal is received. Returns the signal number that was received.
+Block until any trapped signal is received, and take it: its pending flag is cleared, so the next wait waits for the next signal. With no signal trapped, nothing could end the wait, and it is a runtime error.
 
 **Signature:** `( -- signum:i64)`
 

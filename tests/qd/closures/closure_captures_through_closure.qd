@@ -1,0 +1,11 @@
+// A closure reads a variable that only the closure around it could see. The outer closure
+// did not capture it, so the inner one's environment held an uninitialised pointer and
+// the call crashed.
+fn main() {
+	42 -> x
+	fn ( -- r:i64) {
+		fn ( -- r:i64) { x } -> inner
+		inner call
+	} -> outer
+	outer call print nl
+}

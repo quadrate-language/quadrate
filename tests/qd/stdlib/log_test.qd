@@ -63,3 +63,17 @@ test "log level off" {
 	"/tmp/test_log_off.log" io::read_file! -> content
 	content strings::len 0 testing::assert_eq
 }
+
+// The size counted for rotation left out what the JSON writer escaped and wrote, so a JSON
+// log grew to about twice max_size before it rotated
+test "JSON logs rotate at their max_size" {
+	log::new! -> logger
+	logger log::disable_stdout
+	logger log::FormatJson log::set_format
+	logger "/tmp/test_log_rotate.json" log::RotateSize 2000 2 log::add_file_rotate!
+	0 100 1 for i {
+		logger "x" 60 strings::repeat log::info
+	}
+	logger log::free
+	"/tmp/test_log_rotate.json.1" io::stat_size! 2200 testing::assert_lt
+}

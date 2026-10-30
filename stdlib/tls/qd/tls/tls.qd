@@ -16,7 +16,7 @@ pub const ErrConnect = 3
 /// TLS handshake failed (server mode).
 pub const ErrAccept = 4
 
-/// Certificate validation or loading error.
+/// The peer's certificate did not verify, or ours could not be loaded.
 pub const ErrCertificate = 5
 
 /// TLS read operation failed.
@@ -25,7 +25,7 @@ pub const ErrRead = 6
 /// TLS write operation failed.
 pub const ErrWrite = 7
 
-/// Connection closed by peer.
+/// Connection closed by peer, on a send. A receive reports a clean close as "" and 0.
 pub const ErrClosed = 8
 
 /// Memory allocation failed.
@@ -36,10 +36,13 @@ pub const ErrInvalidArg = 10
 
 import "libtls.a" as "tls" {
 	/// Wrap a TCP socket with TLS encryption (client mode).
-	/// Performs TLS handshake and certificate verification.
+	/// Performs TLS handshake and certificate verification, against the system's CA
+	/// certificates or those the SSL_CERT_FILE and SSL_CERT_DIR environment variables name.
 	/// @param socket i64 TCP socket from net::connect
 	/// @param hostname str Server hostname for SNI and certificate verification
 	/// @return conn ptr TLS connection handle
+	/// @error ErrCertificate The certificate is untrusted, expired, or for another name
+	/// @error ErrConnect The handshake failed for another reason
 	/// @example "example.com" 443 net::connect! -> sock  sock "example.com" tls::connect! -> conn
 	pub fn connect(socket:i64 hostname:str -- conn:ptr)!
 
@@ -63,7 +66,8 @@ import "libtls.a" as "tls" {
 	pub fn accept(socket:i64 cert_path:str key_path:str -- conn:ptr)!
 
 	/// Send data over TLS connection.
-	/// Data is encrypted before transmission.
+	/// Data is encrypted before transmission. All of it is sent; a peer that has gone
+	/// fails the send rather than ending the program with SIGPIPE.
 	/// @param conn ptr TLS connection handle
 	/// @param data str Data to send
 	/// @return bytes_sent i64 Number of bytes sent
@@ -71,12 +75,14 @@ import "libtls.a" as "tls" {
 	pub fn send(conn:ptr data:str -- bytes_sent:i64)!
 
 	/// Receive data from TLS connection.
-	/// Data is decrypted after reception.
+	/// Data is decrypted after reception. When the peer has closed the session cleanly,
+	/// the data is "" and bytes_read 0, as for net::receive.
 	/// @param conn ptr TLS connection handle
-	/// @param max_bytes i64 Maximum bytes to receive
+	/// @param max_bytes i64 Maximum bytes to receive, from 1 to 1048576
 	/// @return data str Received and decrypted data
 	/// @return bytes_read i64 Actual bytes received
-	/// @example conn 4096 tls::receive! -> data -> n
+	/// @error ErrRead The read failed, or the connection ended without a TLS close
+	/// @example conn 4096 tls::receive! -> n -> data
 	pub fn receive(conn:ptr max_bytes:i64 -- data:str bytes_read:i64)!
 
 	/// Close TLS connection and free resources.

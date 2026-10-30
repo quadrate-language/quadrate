@@ -1,6 +1,6 @@
 {
   "name": "fmt",
-  "description": "Formatted output functions.",
+  "description": "Formatted output functions.  printf, sprintf and fprintf take one value per conversion from under the format string, the first value deepest: `%d %i %x %X %o %u %c` an i64, `%f %e %E %g %G` an f64 (an i64 widens), `%s` a str and `%p` a ptr. `%%` is a percent sign. Flags, width and precision work as in C; a length modifier such as `l` is accepted and ignored. Too few values, or one of the wrong type, is a runtime error, raised before anything is taken off the stack.",
   "constants": [
 
   ],
@@ -22,11 +22,11 @@
       "name": "fprintf",
       "signature": "(fd:i64 format:str -- )",
       "failable": false,
-      "description": "Print formatted output to a file descriptor.",
+      "description": "Print formatted output to a file descriptor. The values go under the fd, as for printf they go under the format. Anything still buffered for stdout or stderr is written first.",
       "params": [{"name": "fd", "type": "i64", "description": "File descriptor (1=stdout, 2=stderr)"}, {"name": "format", "type": "str", "description": "Format string with % specifiers"}],
       "returns": [],
       "errors": [],
-      "examples": ["\"error: %s\\n\" \"not found\" 2 fmt::fprintf"]
+      "examples": ["\"not found\" 2 \"error: %s\\n\" fmt::fprintf"]
     },
     {
       "name": "printf",

@@ -4,7 +4,9 @@
  *
  * Tests each assertion function in both pass and fail scenarios.
  * The assertion functions return 0 on success and non-zero on failure,
- * so we verify return codes rather than trapping aborts.
+ * so we verify return codes rather than trapping aborts. Too few
+ * arguments, or one of the wrong type, raises instead, which
+ * expect_raise catches.
  */
 
 #define _POSIX_C_SOURCE 200809L
@@ -13,6 +15,7 @@
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/rt/qd_string.h>
+#include <setjmp.h>
 #include <unit-check/uc.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -24,6 +27,20 @@ static qd_context* create_test_context(void) {
 
 static void destroy_test_context(qd_context* ctx) {
 	qd_free_context(ctx);
+}
+
+// Whether `fn` raised, rather than returning, and left the stack as it was
+static int expect_raise(qd_context* ctx, int (*fn)(qd_context*)) {
+	const size_t depth = qd_stack_size(ctx->st);
+	int raised = 0;
+	if (setjmp(*qd_recovery_buf(ctx)) == 0) {
+		qd_recovery_arm(ctx);
+		fn(ctx);
+		qd_recovery_disarm(ctx);
+	} else {
+		raised = 1;
+	}
+	return raised && qd_stack_size(ctx->st) == depth && qd_assertion_failures(ctx) == 0;
 }
 
 /* ===================================================================
@@ -106,8 +123,7 @@ TEST(AssertEqInsufficientStack) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 42);
-	int rc = usr_testing_assert_eq(ctx);
-	ASSERT_NE(0, rc, "assert_eq should fail with only 1 value on stack");
+	ASSERT(expect_raise(ctx, usr_testing_assert_eq), "assert_eq raises with only 1 value on stack");
 
 	destroy_test_context(ctx);
 }
@@ -247,8 +263,7 @@ TEST(AssertTrueEmptyStrFail) {
 TEST(AssertTrueEmptyStack) {
 	qd_context* ctx = create_test_context();
 
-	int rc = usr_testing_assert_true(ctx);
-	ASSERT_NE(0, rc, "assert_true should fail with empty stack");
+	ASSERT(expect_raise(ctx, usr_testing_assert_true), "assert_true raises with an empty stack");
 
 	destroy_test_context(ctx);
 }
@@ -330,8 +345,7 @@ TEST(FailAlwaysFails) {
 TEST(FailEmptyStack) {
 	qd_context* ctx = create_test_context();
 
-	int rc = usr_testing_fail(ctx);
-	ASSERT_NE(0, rc, "fail should return non-zero even with empty stack");
+	ASSERT(expect_raise(ctx, usr_testing_fail), "fail raises with an empty stack");
 
 	destroy_test_context(ctx);
 }
@@ -396,11 +410,39 @@ TEST(AssertApproxEqFail) {
 TEST(AssertApproxEqWrongType) {
 	qd_context* ctx = create_test_context();
 
+	qd_push_s(ctx, "1");
+	qd_push_f(ctx, 1.0);
+	qd_push_f(ctx, 0.1);
+	ASSERT(expect_raise(ctx, usr_testing_assert_approx_eq), "assert_approx_eq raises on a non-number");
+	qd_clear(ctx);
+
+	destroy_test_context(ctx);
+}
+
+// An i64 widens to f64, as it does for every f64 parameter
+TEST(AssertApproxEqWidensInt) {
+	qd_context* ctx = create_test_context();
+
 	qd_push_i(ctx, 1);
 	qd_push_f(ctx, 1.0);
 	qd_push_f(ctx, 0.1);
-	int rc = usr_testing_assert_approx_eq(ctx);
-	ASSERT_NE(0, rc, "assert_approx_eq should fail with non-float argument");
+	ASSERT_EQ(0, usr_testing_assert_approx_eq(ctx), "1 and 1.0 are approximately equal");
+
+	destroy_test_context(ctx);
+}
+
+// The second value is the expected one, as in `2 3 + 5 testing::assert_eq`; equal strings
+// that differ after a NUL byte are not equal
+TEST(AssertEqComparesWholeStrings) {
+	qd_context* ctx = create_test_context();
+
+	qd_string_t* a = qd_string_create_with_length("a\0b", 3);
+	qd_string_t* b = qd_string_create_with_length("a\0c", 3);
+	qd_push_s_ref(ctx, a);
+	qd_push_s_ref(ctx, b);
+	qd_string_release(a);
+	qd_string_release(b);
+	ASSERT_NE(0, usr_testing_assert_eq(ctx), "strings that differ after a NUL byte are not equal");
 
 	destroy_test_context(ctx);
 }
@@ -410,8 +452,7 @@ TEST(AssertApproxEqInsufficientStack) {
 
 	qd_push_f(ctx, 1.0);
 	qd_push_f(ctx, 1.0);
-	int rc = usr_testing_assert_approx_eq(ctx);
-	ASSERT_NE(0, rc, "assert_approx_eq should fail with only 2 values on stack");
+	ASSERT(expect_raise(ctx, usr_testing_assert_approx_eq), "assert_approx_eq raises with only 2 values on stack");
 
 	destroy_test_context(ctx);
 }
@@ -485,8 +526,8 @@ TEST(AssertContainsNonStringFail) {
 
 	qd_push_i(ctx, 42);
 	qd_push_s(ctx, "42");
-	int rc = usr_testing_assert_contains(ctx);
-	ASSERT_NE(0, rc, "assert_contains should fail with non-string haystack");
+	ASSERT(expect_raise(ctx, usr_testing_assert_contains), "assert_contains raises on a non-string haystack");
+	qd_clear(ctx);
 
 	destroy_test_context(ctx);
 }

@@ -60,11 +60,13 @@ import "libio.a" as "io" {
 	/// @param path str File path
 	/// @param mode str Open mode (use io::Read, io::Write, etc.)
 	/// @return handle ptr File handle
-	/// @error ErrNotFound File not found
+	/// @error ErrNotFound The file or a directory on its path does not exist
+	/// @error ErrPermission Permission denied
+	/// @error ErrInvalidArg The mode is not one fopen accepts
 	/// @example "data.txt" io::Read io::open! -> f
 	pub fn open(path:str mode:str -- handle:ptr)!
 
-	/// Close a file.
+	/// Close a file. Closing an invalid or already closed handle does nothing.
 	/// @param handle ptr File handle to close
 	/// @example f io::close
 	pub fn close(handle:ptr -- )
@@ -74,7 +76,8 @@ import "libio.a" as "io" {
 	/// @param buffer ptr Pre-allocated buffer
 	/// @param count i64 Maximum bytes to read
 	/// @return bytes_read i64 Actual bytes read
-	/// @error ErrInvalidArg Invalid file handle, buffer, or count
+	/// @error ErrInvalidHandle Invalid or closed file handle
+	/// @error ErrInvalidArg Null buffer or negative count
 	/// @error ErrRead Read operation failed
 	/// @example f buf 1024 io::read! -> n
 	pub fn read(handle:ptr buffer:ptr count:i64 -- bytes_read:i64)!
@@ -84,7 +87,8 @@ import "libio.a" as "io" {
 	/// @param buffer ptr Buffer containing data
 	/// @param count i64 Number of bytes to write
 	/// @return bytes_written i64 Actual bytes written
-	/// @error ErrInvalidArg Invalid file handle, buffer, or count
+	/// @error ErrInvalidHandle Invalid or closed file handle
+	/// @error ErrInvalidArg Null buffer or negative count
 	/// @error ErrWrite Write operation failed
 	/// @example f buf len io::write! drop
 	pub fn write(handle:ptr buffer:ptr count:i64 -- bytes_written:i64)!
@@ -108,11 +112,11 @@ import "libio.a" as "io" {
 	/// @example f io::tell! -> pos
 	pub fn tell(handle:ptr -- position:i64)!
 
-	/// Check if at end of file.
+	/// Check if at end of file. An invalid handle is never at the end.
 	/// @param handle ptr File handle
 	/// @return handle ptr File handle (unchanged)
 	/// @return is_eof i64 1 if at EOF, 0 otherwise
-	/// @example f io::eof -> f -> at_end
+	/// @example f io::eof -> at_end -> f
 	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
 
 	/// Read a line from stdin.
@@ -126,10 +130,12 @@ import "libio.a" as "io" {
 	/// @example io::readline switch { Ok { -> ok -> line line print nl } _ { } }
 	pub fn readline( -- line:str ok:i64)!
 
-	/// Read entire file contents.
+	/// Read entire file contents, to the end of the file: a pipe, or a file under /proc
+	/// whose size reads as 0, comes back whole.
 	/// @param path str File path
 	/// @return contents str File contents as string
-	/// @error ErrNotFound File not found
+	/// @error ErrNotFound The file or a directory on its path does not exist
+	/// @error ErrPermission Permission denied
 	/// @error ErrRead Read operation failed
 	/// @example "/etc/hostname" io::read_file! -> contents
 	pub fn read_file(path:str -- contents:str)!
@@ -138,8 +144,9 @@ import "libio.a" as "io" {
 	/// Creates or truncates the file at the given path.
 	/// @param path str File path
 	/// @param contents str String to write
-	/// @error ErrPermission Permission denied or cannot create file
-	/// @error ErrWrite Write operation failed
+	/// @error ErrNotFound A directory on the path does not exist
+	/// @error ErrPermission Permission denied
+	/// @error ErrWrite The write failed, including when the disk fills as the file is closed
 	/// @example "/tmp/test.txt" "Hello, world!\n" io::write_file!
 	pub fn write_file(path:str contents:str -- )!
 
@@ -189,8 +196,9 @@ import "libio.a" as "io" {
 	/// Creates the file if it doesn't exist.
 	/// @param path str File path
 	/// @param contents str String to append
-	/// @error ErrPermission Permission denied or cannot open file
-	/// @error ErrWrite Write operation failed
+	/// @error ErrNotFound A directory on the path does not exist
+	/// @error ErrPermission Permission denied
+	/// @error ErrWrite The write failed, including when the disk fills as the file is closed
 	/// @example "/tmp/log.txt" "New line\n" io::append_file!
 	pub fn append_file(path:str contents:str -- )!
 }

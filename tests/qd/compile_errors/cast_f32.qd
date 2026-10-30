@@ -1,0 +1,4 @@
+// Test: f32 is not a type, so it is not a cast target.
+fn main() {
+	1 cast<f32> print nl
+}

@@ -1,0 +1,17 @@
+// Test: an `any` holding an i64, passed to a struct parameter, stops at the call.
+struct Box {
+	w: f64
+}
+
+fn width(b:Box -- r:f64) {
+	b <<w
+}
+
+fn relay(a:any -- r:f64) {
+	a width
+}
+
+fn main() {
+	5 relay print nl
+	"FAIL: should not be reached" print nl
+}

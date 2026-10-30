@@ -1,0 +1,16 @@
+// Test: output printed before a failed `!` call is not lost.
+//
+// The abort used to end the program with a bare _exit(1), which skips stdio's flush. With
+// stdout going to a pipe or a file (as here: the harness captures it) everything printed
+// so far was still in the buffer, and the program appeared to print nothing at all.
+fn check(n:i64 -- )! {
+	n 0 < if {
+		"negative value" 2 panic
+	}
+}
+
+fn main() {
+	"printed before the failure" print nl
+	-1 check!
+	"FAIL: should not be reached" print nl
+}

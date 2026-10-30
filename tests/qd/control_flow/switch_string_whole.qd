@@ -1,0 +1,24 @@
+// A string case label matches the whole string. The labels were compared with
+// strcmp, which stops at a NUL, so the one-byte string holding NUL matched "".
+use strings
+
+fn describe(s:str -- r:str) {
+	s switch {
+		"" {
+			"empty"
+		}
+		"a" {
+			"a"
+		}
+		_ {
+			"other"
+		}
+	}
+}
+
+fn main() {
+	"" describe print nl
+	"a" describe print nl
+	0 strings::from_char describe print nl
+	"a" 0 strings::from_char strings::concat describe print nl
+}

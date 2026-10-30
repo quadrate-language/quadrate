@@ -2,6 +2,7 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 
 namespace Qd {
 
@@ -82,11 +83,9 @@ namespace Qd {
 	}
 
 	// The tail of a fallible call: `!` aborts, `?` returns to the caller, and a bare call pushes
-	// a status for the `if` or `switch` that reads it. Written for `call`, where the callee is a
-	// value rather than a name; the calls by name each carry their own copy of this, from before
-	// there was anywhere shared to put it.
-	void LlvmGenerator::Impl::generateFallibleCallEpilogue(
-			llvm::Value* ctx, const char* name, IAstNode* callNode, bool abortOnError, bool propagateOnError) {
+	// a status for the `if` or `switch` that reads it.
+	void LlvmGenerator::Impl::generateFallibleCallEpilogue(llvm::Value* ctx, const char* name, IAstNode* callNode,
+			bool abortOnError, bool propagateOnError, bool calleePushesStatus) {
 		auto errorState = generateReadErrorState(ctx);
 		auto hasError = errorState.failed;
 		auto errorCode = errorState.code;
@@ -103,14 +102,22 @@ namespace Qd {
 			builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
 			builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
 			builder->CreateCall(printStackTraceFn, {ctx});
-			builder->CreateCall(exitFn, {builder->getInt32(1)});
+			builder->CreateCall(exitFn, {});
 			builder->CreateUnreachable();
 
 			builder->SetInsertPoint(continueBlock);
+			if (calleePushesStatus) {
+				// `!` handles the failure through the error state, so the status goes
+				generateInlineDrop(ctx);
+			}
 			return;
 		}
 
 		if (propagateOnError) {
+			if (calleePushesStatus) {
+				// `?` handles the failure through the error state, so the status goes either way
+				generateInlineDrop(ctx);
+			}
 			llvm::BasicBlock* errorBlock =
 					llvm::BasicBlock::Create(*context, "error_propagate", builder->GetInsertBlock()->getParent());
 			llvm::BasicBlock* continueBlock =
@@ -131,6 +138,17 @@ namespace Qd {
 		// Bare call: the status is shaped for whoever consumes it -- 1/0 for an `if`, the error
 		// code itself for a `switch`, which matches against specific codes.
 		const bool wantsCode = fallibleConsumerOf(callNode) == FallibleConsumer::Switch;
+		if (calleePushesStatus) {
+			// An imported C function pushes its raw error code, which is what a `switch` wants.
+			// For an `if` any code >= 2 is truthy, which selected the success branch on failure,
+			// so it becomes a boolean.
+			if (fallibleConsumerOf(callNode) == FallibleConsumer::If) {
+				generateInlineDrop(ctx);
+				builder->CreateCall(pushIntFn, {ctx, builder->CreateSelect(hasError, builder->getInt64(0),
+															 builder->getInt64(1), "success_status")});
+			}
+			return;
+		}
 		llvm::Value* onFailure = wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
 		auto successStatus = builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
 		builder->CreateCall(pushIntFn, {ctx, successStatus});
@@ -218,14 +236,14 @@ namespace Qd {
 			break;
 		}
 		case AstNodeLiteral::LiteralType::NULL_PTR: {
+			// A ptr, as the type checker and the interpreter have it. This pushed the i64 0, so a
+			// native that checks for a ptr, `null 0 mem::get_i64`, refused it as the wrong type.
 			if (useCompileTimeStack) {
 				compileTimeStack.push_back(builder->getInt64(0));
-			} else if (debugInfoEnabled) {
-				builder->CreateCall(pushIntFn, {ctx, builder->getInt64(0)});
 			} else {
-				generateInlinePushInt(ctx, 0);
+				builder->CreateCall(pushPtrFn, {ctx, llvm::ConstantPointerNull::get(ptrTy)});
 			}
-			lastPushedType = LastPushedType::INTEGER;
+			lastPushedType = LastPushedType::POINTER;
 			break;
 		}
 		}
@@ -233,77 +251,10 @@ namespace Qd {
 
 	// generateInstruction is in generator_nodes_instructions.cc
 
-	void LlvmGenerator::Impl::generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx) {
-		const std::string& name = ident->name();
-
-		// Check if it's a captured variable (by reference)
-		auto capIt = capturedVariableRefs.find(name);
-		if (capIt != capturedVariableRefs.end()) {
-			// Load the pointer to the outer variable, then access through it
-			llvm::AllocaInst* ptrAlloca = capIt->second;
-			llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, ptrAlloca, name + "_cap_ptr");
-
-			// Now outerVarPtr points to a qd_stack_element_t - use it like localAlloca below
-			// Extract type field
-			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, outerVarPtr, 1, name + "_cap_type_ptr");
-			llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_cap_type");
-
-			// Value pointer
-			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, outerVarPtr, 0, name + "_cap_value_ptr");
-
-			// Create basic blocks for each type
-			llvm::BasicBlock* intBlock =
-					llvm::BasicBlock::Create(*context, "cap_int", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* floatBlock =
-					llvm::BasicBlock::Create(*context, "cap_float", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* strBlock =
-					llvm::BasicBlock::Create(*context, "cap_str", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* ptrBlock =
-					llvm::BasicBlock::Create(*context, "cap_ptr", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* endBlock =
-					llvm::BasicBlock::Create(*context, "cap_end", builder->GetInsertBlock()->getParent());
-
-			llvm::SwitchInst* switchInst = builder->CreateSwitch(type, endBlock, 4);
-			switchInst->addCase(builder->getInt32(0), intBlock);
-			switchInst->addCase(builder->getInt32(1), floatBlock);
-			switchInst->addCase(builder->getInt32(2), ptrBlock);
-			switchInst->addCase(builder->getInt32(3), strBlock);
-			addD128PushCase(switchInst, valuePtr, ctx, endBlock, name + "_cap");
-
-			// INT block
-			builder->SetInsertPoint(intBlock);
-			llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_cap_i");
-			generateInlinePushIntValue(ctx, intVal);
-			builder->CreateBr(endBlock);
-
-			// FLOAT block
-			builder->SetInsertPoint(floatBlock);
-			llvm::Value* floatVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_cap_f");
-			builder->CreateCall(pushFloatFn, {ctx, floatVal});
-			builder->CreateBr(endBlock);
-
-			// STR block
-			builder->SetInsertPoint(strBlock);
-			llvm::Value* strVal = builder->CreateLoad(ptrTy, valuePtr, name + "_cap_s");
-			builder->CreateCall(pushStrRefFn, {ctx, strVal});
-			builder->CreateBr(endBlock);
-
-			// PTR block
-			builder->SetInsertPoint(ptrBlock);
-			llvm::Value* ptrVal = builder->CreateLoad(ptrTy, valuePtr, name + "_cap_p");
-			builder->CreateCall(qdPtrRetainFn, {ptrVal});
-			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
-			builder->CreateBr(endBlock);
-
-			builder->SetInsertPoint(endBlock);
-			// A captured struct carries its type for a following `<<`, as a plain local does.
-			auto capStructIt = localVariableStructTypes.find(name);
-			if (capStructIt != localVariableStructTypes.end()) {
-				lastStructConstructed = capStructIt->second;
-			}
-			return;
-		}
-
+	// Pushes the local variable `name` when there is one: a native local onto the compile-time
+	// stack, any other onto the runtime stack, as its stored type says. False when `name` is not
+	// a local. An instruction calls this too, for a local that shares a builtin's name.
+	bool LlvmGenerator::Impl::generateLocalPush(const std::string& name, llvm::Value* ctx) {
 		// Check if it's a native local variable (compile-time stack mode)
 		if (useCompileTimeStack) {
 			auto nativeLocalIt = nativeLocalVariables.find(name);
@@ -312,7 +263,7 @@ namespace Qd {
 				llvm::Value* val =
 						builder->CreateLoad(nativeLocalIt->second->getAllocatedType(), nativeLocalIt->second, name);
 				compileTimeStack.push_back(val);
-				return;
+				return true;
 			}
 		}
 
@@ -355,490 +306,459 @@ namespace Qd {
 				builder->CreateBr(contBB);
 
 				builder->SetInsertPoint(contBB);
-				return;
+				return true;
 			}
 
-			// Extract type field (field index 1 in qd_stack_element_t)
-			llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 1, name + "_type_ptr");
-			llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_type");
-
-			// Switch on type and push appropriate value
-			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, storagePtr, 0, name + "_value_ptr");
-
-			// Create basic blocks for each type
-			llvm::BasicBlock* intBlock =
-					llvm::BasicBlock::Create(*context, "local_int", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* floatBlock =
-					llvm::BasicBlock::Create(*context, "local_float", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* strBlock =
-					llvm::BasicBlock::Create(*context, "local_str", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* ptrBlock =
-					llvm::BasicBlock::Create(*context, "local_ptr", builder->GetInsertBlock()->getParent());
-			llvm::BasicBlock* endBlock =
-					llvm::BasicBlock::Create(*context, "local_end", builder->GetInsertBlock()->getParent());
-
-			llvm::SwitchInst* switchInst = builder->CreateSwitch(type, endBlock, 4);
-			switchInst->addCase(builder->getInt32(0), intBlock);   // QD_STACK_TYPE_INT = 0
-			switchInst->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT = 1
-			switchInst->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR = 2
-			switchInst->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR = 3
-			addD128PushCase(switchInst, valuePtr, ctx, endBlock, name);
-
-			// INT block: load i64 and push inline
-			builder->SetInsertPoint(intBlock);
-			llvm::Value* intVal = builder->CreateLoad(int64Ty, valuePtr, name + "_i");
-			generateInlinePushIntValue(ctx, intVal);
-			builder->CreateBr(endBlock);
-
-			// FLOAT block: load double and push
-			builder->SetInsertPoint(floatBlock);
-			llvm::Value* floatVal = builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_f");
-			builder->CreateCall(pushFloatFn, {ctx, floatVal});
-			builder->CreateBr(endBlock);
-
-			// STR block: load qd_string_t* and push with retain
-			builder->SetInsertPoint(strBlock);
-			llvm::Value* strVal = builder->CreateLoad(ptrTy, valuePtr, name + "_s");
-			builder->CreateCall(pushStrRefFn, {ctx, strVal});
-			builder->CreateBr(endBlock);
-
-			// PTR block: load void* and push (retain for arrays and potential structs)
-			builder->SetInsertPoint(ptrBlock);
-			llvm::Value* ptrVal = builder->CreateLoad(ptrTy, valuePtr, name + "_p");
-			// Retain based on variable type
-			if (localArrayVariables.find(name) != localArrayVariables.end()) {
-				// Retain array variables
-				llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
-				if (!arrayRetainFn) {
-					auto arrayRetainFnTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
-					arrayRetainFn = llvm::Function::Create(
-							arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
-				}
-				builder->CreateCall(arrayRetainFn, {ptrVal});
-			} else {
-				// Retain pointer - could be array or struct (generic function checks both)
-				builder->CreateCall(qdPtrRetainFn, {ptrVal});
-			}
-			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
-			builder->CreateBr(endBlock);
-
-			// Continue after type switch
-			builder->SetInsertPoint(endBlock);
-
-			// Track that this identifier was just pushed (for smart free)
+			pushStackElement(storagePtr, ctx, name, localArrayVariables.count(name) > 0);
 
 			// If this local variable has a known struct type, track it for the next pop
 			auto structTypeIt = localVariableStructTypes.find(name);
 			if (structTypeIt != localVariableStructTypes.end()) {
 				lastStructConstructed = structTypeIt->second;
 			}
-			return;
+			return true;
 		}
+		return false;
+	}
 
-		// Check if it's a loop iterator variable
+	// Push the value a qd_stack_element_t holds, as its type tag says. A pointer is retained
+	// for the stack's reference; `isArray` says it is known to be an array.
+	void LlvmGenerator::Impl::pushStackElement(
+			llvm::Value* elementPtr, llvm::Value* ctx, const std::string& name, bool isArray) {
+		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elementPtr, 1, name + "_type_ptr");
+		llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_type");
+		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elementPtr, 0, name + "_value_ptr");
+
+		llvm::Function* fn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* intBlock = llvm::BasicBlock::Create(*context, name + "_int", fn);
+		llvm::BasicBlock* floatBlock = llvm::BasicBlock::Create(*context, name + "_float", fn);
+		llvm::BasicBlock* ptrBlock = llvm::BasicBlock::Create(*context, name + "_ptr", fn);
+		llvm::BasicBlock* strBlock = llvm::BasicBlock::Create(*context, name + "_str", fn);
+		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, name + "_pushed", fn);
+
+		llvm::SwitchInst* switchInst = builder->CreateSwitch(type, endBlock, 4);
+		switchInst->addCase(builder->getInt32(0), intBlock);   // QD_STACK_TYPE_INT
+		switchInst->addCase(builder->getInt32(1), floatBlock); // QD_STACK_TYPE_FLOAT
+		switchInst->addCase(builder->getInt32(2), ptrBlock);   // QD_STACK_TYPE_PTR
+		switchInst->addCase(builder->getInt32(3), strBlock);   // QD_STACK_TYPE_STR
+		addD128PushCase(switchInst, valuePtr, ctx, endBlock, name);
+
+		builder->SetInsertPoint(intBlock);
+		generateInlinePushIntValue(ctx, builder->CreateLoad(int64Ty, valuePtr, name + "_i"));
+		builder->CreateBr(endBlock);
+
+		builder->SetInsertPoint(floatBlock);
+		builder->CreateCall(pushFloatFn, {ctx, builder->CreateLoad(builder->getDoubleTy(), valuePtr, name + "_f")});
+		builder->CreateBr(endBlock);
+
+		// The push retains the string
+		builder->SetInsertPoint(strBlock);
+		builder->CreateCall(pushStrRefFn, {ctx, builder->CreateLoad(ptrTy, valuePtr, name + "_s")});
+		builder->CreateBr(endBlock);
+
+		builder->SetInsertPoint(ptrBlock);
+		llvm::Value* ptrVal = builder->CreateLoad(ptrTy, valuePtr, name + "_p");
+		if (isArray) {
+			llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
+			if (!arrayRetainFn) {
+				auto arrayRetainFnTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
+				arrayRetainFn = llvm::Function::Create(
+						arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
+			}
+			builder->CreateCall(arrayRetainFn, {ptrVal});
+		} else {
+			// Could be an array or a struct; qd_ptr_retain tells them apart
+			builder->CreateCall(qdPtrRetainFn, {ptrVal});
+		}
+		builder->CreateCall(pushPtrFn, {ctx, ptrVal});
+		builder->CreateBr(endBlock);
+
+		builder->SetInsertPoint(endBlock);
+	}
+
+	// A variable a closure captured by reference: its slot holds a pointer to the outer one
+	bool LlvmGenerator::Impl::generateCapturedPush(const std::string& name, llvm::Value* ctx) {
+		auto capIt = capturedVariableRefs.find(name);
+		if (capIt == capturedVariableRefs.end()) {
+			return false;
+		}
+		llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, capIt->second, name + "_cap_ptr");
+		pushStackElement(outerVarPtr, ctx, name + "_cap", false);
+		// A captured struct carries its type for a following `<<`, as a plain local does.
+		auto capStructIt = localVariableStructTypes.find(name);
+		if (capStructIt != localVariableStructTypes.end()) {
+			lastStructConstructed = capStructIt->second;
+		}
+		return true;
+	}
+
+	// A `for` loop's iterator
+	bool LlvmGenerator::Impl::generateIteratorPush(const std::string& name, llvm::Value* ctx) {
 		auto iterIt = iteratorVars.find(name);
-		if (iterIt != iteratorVars.end()) {
-			if (useCompileTimeStack) {
-				compileTimeStack.push_back(iterIt->second);
-				return;
-			}
-
-			// A loop whose bounds came off the runtime stack carries both halves,
-			// because only the bounds' type tags say which one counts. Push the
-			// bits and the tag the same flag selects rather than branching.
-			auto floatIt = iteratorFloatVars.find(name);
-			if (floatIt != iteratorFloatVars.end()) {
-				llvm::Value* asBits = builder->CreateBitCast(floatIt->second.value, int64Ty, "iter_f_bits");
-				llvm::Value* bits = builder->CreateSelect(floatIt->second.isFloat, asBits, iterIt->second, "iter_bits");
-				llvm::Value* tag = builder->CreateSelect(
-						floatIt->second.isFloat, builder->getInt32(1), builder->getInt32(0), "iter_type");
-				generateInlinePushTaggedValue(ctx, bits, tag, "pushiter");
-				return;
-			}
-
-			// Push loop iterator as integer (inline for performance)
-			generateInlinePushIntValue(ctx, iterIt->second);
-			return;
+		if (iterIt == iteratorVars.end()) {
+			return false;
+		}
+		if (useCompileTimeStack) {
+			compileTimeStack.push_back(iterIt->second);
+			return true;
 		}
 
-		// Check if it's a module-level `var` — emit a load from the LLVM global.
-		// Works in both native (compile-time stack) mode and runtime stack mode.
-		// The load is volatile so GVN/DCE can't hoist it above an intervening
-		// function call that stores the global (AlwaysInliner can produce
-		// that pattern when a helper is inlined multiple times into main).
-		{
-			auto gvIt = moduleGlobalVars.find(name);
-			if (gvIt != moduleGlobalVars.end()) {
-				llvm::GlobalVariable* gv = gvIt->second;
-				const std::string& typeName = moduleGlobalVarTypes[name];
-
-				// Classify for load/push: any non-scalar name (including struct
-				// types from `var p = Point { ... }`) is treated as a pointer.
-				bool isFloat = (typeName == "f64");
-				bool isStr = (typeName == "str");
-				bool isD128 = (typeName == "d128");
-				bool isPtr = (typeName == "ptr") || isKnownStruct(typeName);
-				bool isSizedInt = (typeName == "i64" || typeName == "i32" || typeName == "i16" || typeName == "i8" ||
-								   typeName == "u64" || typeName == "u32" || typeName == "u16" || typeName == "u8");
-
-				llvm::Type* loadTy = int64Ty;
-				if (isFloat) {
-					loadTy = builder->getDoubleTy();
-				} else if (isD128) {
-					loadTy = slotValueTy;
-				} else if (isStr || isPtr) {
-					loadTy = ptrTy;
-				}
-
-				llvm::Value* v = builder->CreateLoad(loadTy, gv, name + "_g");
-				llvm::cast<llvm::LoadInst>(v)->setVolatile(true);
-
-				if (useCompileTimeStack) {
-					compileTimeStack.push_back(v);
-				} else if (isFloat) {
-					builder->CreateCall(pushFloatFn, {ctx, v});
-				} else if (isD128) {
-					// A global holds its value from the start, its literal's encoding the initializer
-					builder->CreateCall(pushD128BitsFn, {ctx, builder->CreateExtractValue(v, 0, name + "_g_low"),
-																builder->CreateExtractValue(v, 1, name + "_g_high")});
-				} else if (isStr) {
-					// qd_push_s_ref refuses a null string and pushes nothing, returning -2
-					// that nothing here reads -- so a `str` global read before it was ever
-					// assigned left the stack one short and the *next* instruction died of
-					// an underflow naming itself. A global that holds no string reads as the
-					// empty one, which is what `str`'s zero is everywhere else.
-					llvm::Function* strFn = builder->GetInsertBlock()->getParent();
-					auto* emptyBB = llvm::BasicBlock::Create(*context, "gstr_empty", strFn);
-					auto* valueBB = llvm::BasicBlock::Create(*context, "gstr_value", strFn);
-					auto* contBB = llvm::BasicBlock::Create(*context, "gstr_cont", strFn);
-					llvm::Value* isNull =
-							builder->CreateICmpEQ(v, llvm::ConstantPointerNull::get(ptrTy), name + "_g_null");
-					builder->CreateCondBr(isNull, emptyBB, valueBB);
-
-					builder->SetInsertPoint(emptyBB);
-					builder->CreateCall(pushStrFn, {ctx, getOrCreateGlobalString("")});
-					builder->CreateBr(contBB);
-
-					builder->SetInsertPoint(valueBB);
-					builder->CreateCall(pushStrRefFn, {ctx, v});
-					builder->CreateBr(contBB);
-
-					builder->SetInsertPoint(contBB);
-				} else if (isPtr) {
-					// A pointer on the stack owns a reference: reading a local retains before
-					// pushing, and every consumer releases -- `<<field` pops and calls
-					// qd_ptr_release on the assumption that the push retained. Reading a global
-					// did not, so the release was cancelling the one reference the global itself
-					// owns. `var origin = Point { ... }` freed the struct on the *first* field
-					// read, and every read after that was a use-after-free.
-					// (qd_push_s_ref retains internally, which is why the str case above needs
-					// nothing; the compile-time-stack path above pushes an SSA value that no
-					// runtime release ever sees.)
-					builder->CreateCall(qdPtrRetainFn, {v});
-					builder->CreateCall(pushPtrFn, {ctx, v});
-				} else {
-					// Integer (sized or unknown → i64 default).
-					(void)isSizedInt;
-					builder->CreateCall(pushIntFn, {ctx, v});
-				}
-				// Remember the struct type of this var so subsequent field
-				// accesses (`var.<<field`) resolve correctly.
-				if (isKnownStruct(typeName)) {
-					lastFieldAccessResultType = typeName;
-				}
-				return;
-			}
+		// A loop whose bounds came off the runtime stack carries both halves,
+		// because only the bounds' type tags say which one counts. Push the
+		// bits and the tag the same flag selects rather than branching.
+		auto floatIt = iteratorFloatVars.find(name);
+		if (floatIt != iteratorFloatVars.end()) {
+			llvm::Value* asBits = builder->CreateBitCast(floatIt->second.value, int64Ty, "iter_f_bits");
+			llvm::Value* bits = builder->CreateSelect(floatIt->second.isFloat, asBits, iterIt->second, "iter_bits");
+			llvm::Value* tag = builder->CreateSelect(
+					floatIt->second.isFloat, builder->getInt32(1), builder->getInt32(0), "iter_type");
+			generateInlinePushTaggedValue(ctx, bits, tag, "pushiter");
+			return true;
 		}
 
-		// Check if it's a constant
+		// Push loop iterator as integer (inline for performance)
+		generateInlinePushIntValue(ctx, iterIt->second);
+		return true;
+	}
+
+	// A module-level `var`, loaded from its LLVM global. Works in both native (compile-time
+	// stack) mode and runtime stack mode. The load is volatile so GVN/DCE can't hoist it above
+	// an intervening function call that stores the global (AlwaysInliner can produce that
+	// pattern when a helper is inlined multiple times into main).
+	bool LlvmGenerator::Impl::generateGlobalVarPush(const std::string& name, llvm::Value* ctx) {
+		auto gvIt = moduleGlobalVars.find(name);
+		if (gvIt == moduleGlobalVars.end()) {
+			return false;
+		}
+		llvm::GlobalVariable* gv = gvIt->second;
+		const std::string& typeName = moduleGlobalVarTypes[name];
+
+		// Classify for load/push: any non-scalar name (including struct
+		// types from `var p = Point { ... }`) is treated as a pointer.
+		bool isFloat = (typeName == "f64");
+		bool isStr = (typeName == "str");
+		bool isD128 = (typeName == "d128");
+		bool isPtr = (typeName == "ptr") || isKnownStruct(typeName);
+
+		llvm::Type* loadTy = int64Ty;
+		if (isFloat) {
+			loadTy = builder->getDoubleTy();
+		} else if (isD128) {
+			loadTy = slotValueTy;
+		} else if (isStr || isPtr) {
+			loadTy = ptrTy;
+		}
+
+		llvm::Value* v = builder->CreateLoad(loadTy, gv, name + "_g");
+		llvm::cast<llvm::LoadInst>(v)->setVolatile(true);
+
+		if (useCompileTimeStack) {
+			compileTimeStack.push_back(v);
+		} else if (isFloat) {
+			builder->CreateCall(pushFloatFn, {ctx, v});
+		} else if (isD128) {
+			// A global holds its value from the start, its literal's encoding the initializer
+			builder->CreateCall(pushD128BitsFn, {ctx, builder->CreateExtractValue(v, 0, name + "_g_low"),
+														builder->CreateExtractValue(v, 1, name + "_g_high")});
+		} else if (isStr) {
+			// qd_push_s_ref refuses a null string and pushes nothing, returning -2
+			// that nothing here reads -- so a `str` global read before it was ever
+			// assigned left the stack one short and the *next* instruction died of
+			// an underflow naming itself. A global that holds no string reads as the
+			// empty one, which is what `str`'s zero is everywhere else.
+			llvm::Function* strFn = builder->GetInsertBlock()->getParent();
+			auto* emptyBB = llvm::BasicBlock::Create(*context, "gstr_empty", strFn);
+			auto* valueBB = llvm::BasicBlock::Create(*context, "gstr_value", strFn);
+			auto* contBB = llvm::BasicBlock::Create(*context, "gstr_cont", strFn);
+			llvm::Value* isNull = builder->CreateICmpEQ(v, llvm::ConstantPointerNull::get(ptrTy), name + "_g_null");
+			builder->CreateCondBr(isNull, emptyBB, valueBB);
+
+			builder->SetInsertPoint(emptyBB);
+			builder->CreateCall(pushStrFn, {ctx, getOrCreateGlobalString("")});
+			builder->CreateBr(contBB);
+
+			builder->SetInsertPoint(valueBB);
+			builder->CreateCall(pushStrRefFn, {ctx, v});
+			builder->CreateBr(contBB);
+
+			builder->SetInsertPoint(contBB);
+		} else if (isPtr) {
+			// A pointer on the stack owns a reference: reading a local retains before
+			// pushing, and every consumer releases -- `<<field` pops and calls
+			// qd_ptr_release on the assumption that the push retained. Reading a global
+			// did not, so the release was cancelling the one reference the global itself
+			// owns. `var origin = Point { ... }` freed the struct on the *first* field
+			// read, and every read after that was a use-after-free.
+			// (qd_push_s_ref retains internally, which is why the str case above needs
+			// nothing; the compile-time-stack path above pushes an SSA value that no
+			// runtime release ever sees.)
+			builder->CreateCall(qdPtrRetainFn, {v});
+			builder->CreateCall(pushPtrFn, {ctx, v});
+		} else {
+			// Integer (sized or unknown → i64 default).
+			builder->CreateCall(pushIntFn, {ctx, v});
+		}
+		// Remember the struct type of this var so subsequent field
+		// accesses (`var.<<field`) resolve correctly.
+		if (isKnownStruct(typeName)) {
+			lastFieldAccessResultType = typeName;
+		}
+		return true;
+	}
+
+	// A `const`, pushed as its spelling says
+	bool LlvmGenerator::Impl::generateConstantPush(const std::string& name, llvm::Value* ctx) {
 		auto constIt = moduleConstants.find(name);
-		if (constIt != moduleConstants.end()) {
-			const std::string& value = constIt->second;
+		if (constIt == moduleConstants.end()) {
+			return false;
+		}
+		const std::string& value = constIt->second;
 
-			// Compile-time stack path for numeric constants
-			if (useCompileTimeStack) {
-				if (value.empty() || (value.size() >= 2 && value.front() == '"')) {
-					// String constant - fall through to runtime path
-				} else if (isFloatLiteralText(value)) {
-					// Float constant
-					compileTimeStack.push_back(
-							llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0)));
-					return;
-				} else {
-					int64_t intValue = 0;
-					parseIntegerLiteral(value, intValue);
-					compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(intValue)));
-					return;
-				}
-			}
-
-			// Determine the type of the constant and push it
-			if (!value.empty() && value.size() >= 2 && value.front() == '"' && value.back() == '"') {
-				llvm::Value* strConst = builder->CreateGlobalString(decodeStringLiteral(value));
-				builder->CreateCall(pushStrFn, {ctx, strConst});
-			} else if (isD128LiteralText(value)) {
-				generateD128Literal(value, ctx);
+		// Compile-time stack path for numeric constants
+		if (useCompileTimeStack) {
+			if (value.empty() || (value.size() >= 2 && value.front() == '"')) {
+				// String constant - fall through to runtime path
 			} else if (isFloatLiteralText(value)) {
 				// Float constant
-				llvm::Value* floatConst = llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0));
-				builder->CreateCall(pushFloatFn, {ctx, floatConst});
+				compileTimeStack.push_back(llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0)));
+				return true;
 			} else {
-				// Integer constant
 				int64_t intValue = 0;
-				if (!parseIntegerLiteral(value, intValue)) {
-					std::cerr << "quadc: error: Invalid integer constant '" << value
-							  << "' (out of range or invalid format)" << std::endl;
-					compilationFailed = true;
-				}
-				llvm::Value* intConst = builder->getInt64(static_cast<uint64_t>(intValue));
-				builder->CreateCall(pushIntFn, {ctx, intConst});
+				parseIntegerLiteral(value, intValue);
+				compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(intValue)));
+				return true;
 			}
+		}
+
+		// Determine the type of the constant and push it
+		if (!value.empty() && value.size() >= 2 && value.front() == '"' && value.back() == '"') {
+			llvm::Value* strConst = builder->CreateGlobalString(decodeStringLiteral(value));
+			builder->CreateCall(pushStrFn, {ctx, strConst});
+		} else if (isD128LiteralText(value)) {
+			generateD128Literal(value, ctx);
+		} else if (isFloatLiteralText(value)) {
+			// Float constant
+			llvm::Value* floatConst = llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0));
+			builder->CreateCall(pushFloatFn, {ctx, floatConst});
+		} else {
+			// Integer constant
+			int64_t intValue = 0;
+			if (!parseIntegerLiteral(value, intValue)) {
+				std::cerr << "quadc: error: Invalid integer constant '" << value << "' (out of range or invalid format)"
+						  << std::endl;
+				compilationFailed = true;
+			}
+			llvm::Value* intConst = builder->getInt64(static_cast<uint64_t>(intValue));
+			builder->CreateCall(pushIntFn, {ctx, intConst});
+		}
+		return true;
+	}
+
+	// A function pointer bound with `-> name` from an anonymous function; `call` takes it
+	bool LlvmGenerator::Impl::generateFunctionAliasPush(const std::string& name, llvm::Value* ctx) {
+		auto fpAliasIt = functionPointerAliases.find(name);
+		if (fpAliasIt == functionPointerAliases.end()) {
+			return false;
+		}
+		builder->CreateCall(pushPtrFn, {ctx, builder->CreateBitCast(fpAliasIt->second, ptrTy)});
+		return true;
+	}
+
+	std::string LlvmGenerator::Impl::resolveCallee(AstNodeIdentifier* ident, bool& resolvedAsMethod) {
+		const std::string& name = ident->name();
+		resolvedAsMethod = false;
+		// A method call the semantic validator identified: ReceiverType::methodName
+		if (ident->isMethodCall()) {
+			std::string method = ident->receiverType() + "::" + name;
+			resolvedAsMethod = userFunctions.count(method) > 0;
+			return resolvedAsMethod ? method : std::string();
+		}
+		// The plain name, then the current module's, for an intra-module call
+		if (userFunctions.count(name) > 0) {
+			return name;
+		}
+		if (currentModulePrefix != "main" && userFunctions.count(currentModulePrefix + "::" + name) > 0) {
+			return currentModulePrefix + "::" + name;
+		}
+		// A method on the most recently pushed struct. This handles intra-module method calls
+		// in cached module function bodies, where the semantic validator didn't type-check
+		// (so isMethodCall was never set). The struct's name is tried qualified, then bare.
+		if (!lastStructConstructed.empty()) {
+			std::vector<std::string> receivers = {lastStructConstructed};
+			const size_t sep = lastStructConstructed.rfind("::");
+			if (sep != std::string::npos) {
+				receivers.push_back(lastStructConstructed.substr(sep + 2));
+			}
+			for (const std::string& receiver : receivers) {
+				std::string method = receiver + "::" + name;
+				if (userFunctions.count(method) > 0) {
+					resolvedAsMethod = true;
+					return method;
+				}
+			}
+		}
+		return std::string();
+	}
+
+	// Integer-only caller to integer-only callee: pass the values on the compile-time stack to
+	// the callee's native version. False when the callee has none.
+	bool LlvmGenerator::Impl::generateCompileTimeNativeCall(const std::string& callee, llvm::Value* ctx) {
+		auto calleeNativeIt = nativeFunctions.find(callee);
+		if (calleeNativeIt == nativeFunctions.end()) {
+			return false;
+		}
+		auto& calleeInfo = nativeFuncInfo[callee];
+		// Pop args from compile-time stack (in reverse order)
+		std::vector<llvm::Value*> args;
+		args.push_back(ctx); // ctx is always first
+		std::vector<llvm::Value*> poppedArgs;
+		for (size_t i = 0; i < calleeInfo.inputCount; i++) {
+			poppedArgs.push_back(compileTimeStack.back());
+			compileTimeStack.pop_back();
+		}
+		// Reverse to get correct parameter order
+		for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
+			args.push_back(*rit);
+		}
+		// Call native function directly
+		if (calleeInfo.outputCount == 1) {
+			llvm::Value* result = builder->CreateCall(calleeNativeIt->second, args, "call_result");
+			compileTimeStack.push_back(result);
+		} else {
+			builder->CreateCall(calleeNativeIt->second, args);
+		}
+		return true;
+	}
+
+	// The bits:: words that lower to one instruction
+	bool LlvmGenerator::Impl::generateInlineBitsCall(const std::string& callee, llvm::Value* ctx) {
+		static const std::map<std::string, void (Impl::*)(llvm::Value*)> inlined = {
+				{"bits::and", &Impl::generateInlineBitAnd},
+				{"bits::or", &Impl::generateInlineBitOr},
+				{"bits::xor", &Impl::generateInlineBitXor},
+				{"bits::not", &Impl::generateInlineBitNot},
+				{"bits::lshift", &Impl::generateInlineBitLshift},
+				{"bits::rshift", &Impl::generateInlineBitRshift},
+		};
+		auto it = inlined.find(callee);
+		if (it == inlined.end()) {
+			return false;
+		}
+		(this->*(it->second))(ctx);
+		return true;
+	}
+
+	// A method takes its receiver on top; roll it there from `positionFromTop` when it is deeper.
+	// roll N brings the Nth element (0-indexed from top) to top.
+	void LlvmGenerator::Impl::generateReceiverRoll(size_t positionFromTop, llvm::Value* ctx) {
+		if (positionFromTop == 0) {
+			return;
+		}
+		builder->CreateCall(pushIntFn, {ctx, builder->getInt64(positionFromTop)});
+		auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
+		auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
+		builder->CreateCall(rollFn, {ctx});
+	}
+
+	// Call the callee's native version directly when it has one, skipping the wrapper that
+	// moves its arguments through the stack; otherwise the wrapper
+	llvm::Value* LlvmGenerator::Impl::generateDirectCall(
+			const std::string& callee, llvm::Function* wrapper, llvm::Value* ctx) {
+		auto nativeIt = nativeFunctions.find(callee);
+		if (nativeIt == nativeFunctions.end()) {
+			return builder->CreateCall(wrapper, {ctx}, "call_result");
+		}
+		auto& info = nativeFuncInfo[callee];
+		std::vector<llvm::Value*> nativeArgs;
+		nativeArgs.push_back(ctx);
+		std::vector<llvm::Value*> poppedArgs;
+		for (size_t j = info.inputCount; j > 0; j--) {
+			if (info.inputTypes[j - 1] == NativeParamType::F64) {
+				poppedArgs.push_back(generateInlinePopFloat(ctx));
+			} else {
+				poppedArgs.push_back(generateInlinePopInt(ctx));
+			}
+		}
+		for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
+			nativeArgs.push_back(*rit);
+		}
+		if (info.outputCount == 1) {
+			llvm::Value* result = builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
+			if (info.outputType == NativeParamType::F64) {
+				generateInlinePushFloatValue(ctx, result);
+			} else {
+				generateInlinePushIntValue(ctx, result);
+			}
+		} else {
+			builder->CreateCall(nativeIt->second, nativeArgs);
+		}
+		// The native version reports nothing; a failure goes through the error state
+		return builder->getInt32(0);
+	}
+
+	void LlvmGenerator::Impl::generateUserCall(
+			AstNodeIdentifier* ident, const std::string& callee, bool resolvedAsMethod, llvm::Value* ctx) {
+		// Callee without a native version: the stack-based call below. For an integer-only
+		// caller that shouldn't happen.
+		if (useCompileTimeStack && generateCompileTimeNativeCall(callee, ctx)) {
 			return;
 		}
 
-		// Check if it's a struct construction
-		const StructLayout* structLayout = findStructDefinition(name);
-		if (structLayout != nullptr) {
+		// Generate any needed type casts before the function call
+		generateCastInstructions(ident->parameterCasts(), callee, resolvedAsMethod, ctx);
+
+		// Each call to a fallible function starts with a clean error state
+		auto fallibleIt = fallibleFunctions.find(callee);
+		const bool fallible = fallibleIt != fallibleFunctions.end() && fallibleIt->second;
+		if (fallible) {
+			generateClearErrorState(ctx);
+		}
+
+		if (!generateInlineBitsCall(callee, ctx)) {
+			if (resolvedAsMethod) {
+				// A method the validator did not resolve keeps its receiver position from its definition
+				size_t receiverPosition = ident->methodReceiverPositionFromTop();
+				if (!ident->isMethodCall()) {
+					auto posIt = methodReceiverPosition.find(callee);
+					receiverPosition = posIt != methodReceiverPosition.end() ? posIt->second : 0;
+				}
+				generateReceiverRoll(receiverPosition, ctx);
+			}
+			generateDirectCall(callee, userFunctions[callee], ctx);
+		}
+
+		// Track return struct type for local variable binding (-> name)
+		auto returnTypeIt = functionReturnStructType.find(callee);
+		if (returnTypeIt != functionReturnStructType.end()) {
+			lastStructConstructed = returnTypeIt->second;
+		}
+
+		if (fallible) {
+			generateFallibleCallEpilogue(
+					ctx, ident->name().c_str(), ident, ident->abortOnError(), ident->propagateOnError());
+		}
+	}
+
+	void LlvmGenerator::Impl::generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx) {
+		const std::string& name = ident->name();
+		if (generateCapturedPush(name, ctx) || generateLocalPush(name, ctx) || generateIteratorPush(name, ctx) ||
+				generateGlobalVarPush(name, ctx) || generateConstantPush(name, ctx)) {
+			return;
+		}
+		if (const StructLayout* structLayout = findStructDefinition(name)) {
+			generateCastInstructions(ident->parameterCasts(), structLayout->name, false, ctx);
 			generateStructConstruction(structLayout->name, ctx);
 			return;
 		}
-
-		// Check if it's a function pointer alias (from anonymous function stored via -> name)
-		// This pushes the function pointer to the stack for use with 'call'
-		auto fpAliasIt = functionPointerAliases.find(name);
-		if (fpAliasIt != functionPointerAliases.end()) {
-			// Get the function pointer and push it to the stack
-			llvm::Function* func = fpAliasIt->second;
-			llvm::Value* funcPtr = builder->CreateBitCast(func, ptrTy);
-			builder->CreateCall(pushPtrFn, {ctx, funcPtr});
+		if (generateFunctionAliasPush(name, ctx)) {
 			return;
 		}
-
-		// Check if it's a user-defined function call
-		// First check if this is a method call (identified by semantic validator)
-		// For methods, lookup uses ReceiverType::methodName
-		auto it = userFunctions.end();
-		std::string lookupName = name;
 		bool resolvedAsMethod = false;
-		if (ident->isMethodCall()) {
-			// Method call - use mangled name
-			lookupName = ident->receiverType() + "::" + name;
-			it = userFunctions.find(lookupName);
-			resolvedAsMethod = (it != userFunctions.end());
-		} else {
-			// Regular function call
-			// First try the plain name, then try with current module prefix for intra-module calls
-			it = userFunctions.find(name);
-			if (it == userFunctions.end() && currentModulePrefix != "main") {
-				std::string qualifiedName = currentModulePrefix + "::" + name;
-				it = userFunctions.find(qualifiedName);
-				if (it != userFunctions.end()) {
-					lookupName = qualifiedName;
-				}
-			}
-			// Fallback: try resolving as a method call on the most recently pushed struct.
-			// This handles intra-module method calls in cached module function bodies where
-			// the semantic validator didn't type-check (so isMethodCall was never set).
-			if (it == userFunctions.end() && !lastStructConstructed.empty()) {
-				std::string methodLookup = lastStructConstructed + "::" + name;
-				it = userFunctions.find(methodLookup);
-				if (it != userFunctions.end()) {
-					lookupName = methodLookup;
-					resolvedAsMethod = true;
-				} else if (lastStructConstructed.find("::") != std::string::npos) {
-					// Try unqualified struct name
-					std::string unqualified = lastStructConstructed.substr(lastStructConstructed.rfind("::") + 2);
-					methodLookup = unqualified + "::" + name;
-					it = userFunctions.find(methodLookup);
-					if (it != userFunctions.end()) {
-						lookupName = methodLookup;
-						resolvedAsMethod = true;
-					}
-				}
-			}
+		const std::string callee = resolveCallee(ident, resolvedAsMethod);
+		if (!callee.empty()) {
+			generateUserCall(ident, callee, resolvedAsMethod, ctx);
 		}
-		if (it != userFunctions.end()) {
-			// Compile-time stack path: call native version directly if available
-			if (useCompileTimeStack) {
-				auto calleeNativeIt = nativeFunctions.find(lookupName);
-				if (calleeNativeIt != nativeFunctions.end()) {
-					auto& calleeInfo = nativeFuncInfo[lookupName];
-					// Pop args from compile-time stack (in reverse order)
-					std::vector<llvm::Value*> args;
-					args.push_back(ctx); // ctx is always first
-					std::vector<llvm::Value*> poppedArgs;
-					for (size_t i = 0; i < calleeInfo.inputCount; i++) {
-						poppedArgs.push_back(compileTimeStack.back());
-						compileTimeStack.pop_back();
-					}
-					// Reverse to get correct parameter order
-					for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
-						args.push_back(*rit);
-					}
-					// Call native function directly
-					if (calleeInfo.outputCount == 1) {
-						llvm::Value* result = builder->CreateCall(calleeNativeIt->second, args, "call_result");
-						compileTimeStack.push_back(result);
-					} else {
-						builder->CreateCall(calleeNativeIt->second, args);
-					}
-					return;
-				}
-				// Callee has no native version - fall through to stack-based call
-				// Materialize compile-time stack args to runtime stack, call, dematerialize
-				// For now, this shouldn't happen for integer-only callers calling integer-only callees
-			}
-
-			// Generate any needed type casts before the function call
-			generateCastInstructions(ident->parameterCasts(), ctx);
-
-			// For fallible functions, clear the error state before the call
-			// This ensures each call starts with a clean state
-			auto preFallibleIt = fallibleFunctions.find(lookupName);
-			if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-				generateClearErrorState(ctx);
-			}
-
-			// Check for inlinable bits:: functions
-			if (lookupName == "bits::and") {
-				generateInlineBitAnd(ctx);
-			} else if (lookupName == "bits::or") {
-				generateInlineBitOr(ctx);
-			} else if (lookupName == "bits::xor") {
-				generateInlineBitXor(ctx);
-			} else if (lookupName == "bits::not") {
-				generateInlineBitNot(ctx);
-			} else if (lookupName == "bits::lshift") {
-				generateInlineBitLshift(ctx);
-			} else if (lookupName == "bits::rshift") {
-				generateInlineBitRshift(ctx);
-			} else {
-				// For method calls, rotate stack so receiver is on top before calling
-				// Only roll if receiver is NOT already on top
-				if (resolvedAsMethod) {
-					size_t receiverPositionFromTop = 0;
-					if (ident->isMethodCall()) {
-						receiverPositionFromTop = ident->methodReceiverPositionFromTop();
-					} else {
-						// Fallback path: use stored method metadata
-						auto posIt = methodReceiverPosition.find(lookupName);
-						if (posIt != methodReceiverPosition.end()) {
-							receiverPositionFromTop = posIt->second;
-						}
-					}
-					if (receiverPositionFromTop > 0) {
-						// Push the count and call qd_roll
-						// roll N brings the Nth element (0-indexed from top) to top
-						builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop)});
-						auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-						auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
-						builder->CreateCall(rollFn, {ctx});
-					}
-				}
-				// Check if callee has native version - call directly to skip wrapper overhead
-				auto nativeIt = nativeFunctions.find(lookupName);
-				if (nativeIt != nativeFunctions.end()) {
-					auto& info = nativeFuncInfo[lookupName];
-					std::vector<llvm::Value*> nativeArgs;
-					nativeArgs.push_back(ctx);
-					std::vector<llvm::Value*> poppedArgs;
-					for (size_t j = info.inputCount; j > 0; j--) {
-						if (info.inputTypes[j - 1] == NativeParamType::F64) {
-							poppedArgs.push_back(generateInlinePopFloat(ctx));
-						} else {
-							poppedArgs.push_back(generateInlinePopInt(ctx));
-						}
-					}
-					for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
-						nativeArgs.push_back(*rit);
-					}
-					if (info.outputCount == 1) {
-						llvm::Value* result = builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
-						if (info.outputType == NativeParamType::F64) {
-							generateInlinePushFloatValue(ctx, result);
-						} else {
-							generateInlinePushIntValue(ctx, result);
-						}
-					} else {
-						builder->CreateCall(nativeIt->second, nativeArgs);
-					}
-				} else {
-					builder->CreateCall(it->second, {ctx});
-				}
-			}
-
-			// Track return struct type for local variable binding (-> name)
-			auto returnTypeIt = functionReturnStructType.find(lookupName);
-			if (returnTypeIt != functionReturnStructType.end()) {
-				lastStructConstructed = returnTypeIt->second;
-			}
-
-			// Check if this function is fallible
-			auto fallibleIt = fallibleFunctions.find(lookupName);
-			if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
-				// This is a fallible function - push error status after the call
-				auto errorState = generateReadErrorState(ctx);
-				auto hasError = errorState.failed;
-				auto errorCode = errorState.code;
-
-				if (ident->abortOnError()) {
-					// ! operator: check error and abort if set
-					llvm::BasicBlock* errorBlock =
-							llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
-					llvm::BasicBlock* continueBlock =
-							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
-
-					builder->CreateCondBr(hasError, errorBlock, continueBlock);
-
-					// Error block: print message and abort
-					builder->SetInsertPoint(errorBlock);
-
-					// Print error message with context->error_msg if available
-					auto funcNameStr = builder->CreateGlobalString(name);
-					builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
-					builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-					builder->CreateCall(printStackTraceFn, {ctx});
-					builder->CreateCall(exitFn, {builder->getInt32(1)});
-					builder->CreateUnreachable();
-
-					// Continue block - user-defined functions don't push success status
-					builder->SetInsertPoint(continueBlock);
-					// Note: don't drop here - only imported C functions push success status
-				} else if (ident->propagateOnError()) {
-					// ? operator: propagate error to caller
-					llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
-							*context, "error_propagate", builder->GetInsertBlock()->getParent());
-					llvm::BasicBlock* continueBlock =
-							llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
-
-					builder->CreateCondBr(hasError, errorBlock, continueBlock);
-
-					builder->SetInsertPoint(errorBlock);
-					if (currentFunctionReturnBlock) {
-						builder->CreateBr(currentFunctionReturnBlock);
-					} else {
-						builder->CreateUnreachable();
-					}
-
-					builder->SetInsertPoint(continueBlock);
-				} else {
-					// No operator: push a status shaped for whoever consumes it (see
-					// fallibleConsumerOf). Don't clear error_code -- `err` still needs it, and
-					// the next fallible call overwrites it anyway.
-					const bool wantsCode = fallibleConsumerOf(ident) == FallibleConsumer::Switch;
-					llvm::Value* onFailure = wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
-					auto successStatus =
-							builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
-
-					builder->CreateCall(pushIntFn, {ctx, successStatus});
-				}
-			}
-
-			return;
-		}
-
-		// Otherwise, it might be an instruction (fallback)
-		// This shouldn't happen in well-formed code
+		// Anything else names nothing the validator let through
 	}
 
 	void LlvmGenerator::Impl::generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx) {
@@ -859,534 +779,312 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::generateAnonymousFunction(AstNodeAnonymousFunction* anonFunc, llvm::Value* ctx) {
-		// Generate a unique name for this anonymous function
-		std::string funcName = "__anon_" + std::to_string(anonymousFunctionCounter++);
-		std::string fullFuncName = "usr_" + mainModuleName + "_" + funcName;
-
+		const std::string funcName = "__anon_" + std::to_string(anonymousFunctionCounter++);
 		const auto& captures = anonFunc->capturedVariables();
-		bool hasClosure = !captures.empty();
 
-		// Save current state
-		auto savedLocalVars = localVariables;
-		auto savedLocalVarStructTypes = localVariableStructTypes;
-		auto savedLocalArrayVars = localArrayVariables;
-		auto savedCapturedVarRefs = capturedVariableRefs;
-		auto savedLastStruct = lastStructConstructed;
-		auto savedLastFieldAccess = lastFieldAccessResultType;
-		auto savedReturnBlock = currentFunctionReturnBlock;
-		auto savedIsFallible = currentFunctionIsFallible;
-		auto savedInsertPoint = builder->GetInsertBlock();
-		auto savedInsertPointEnd = builder->GetInsertPoint();
-		auto savedClosureVariables = closureVariables;
-		auto savedIndirectLocalVars = indirectLocalVariables;
-		auto savedHeapAllocatedCaptures = heapAllocatedCaptures;
+		EnclosingScope enclosing = enterLambdaScope();
+		llvm::Function* fn = generateLambdaFunction(anonFunc, funcName, enclosing);
+		leaveLambdaScope(std::move(enclosing));
 
-		// Clear local variables for the anonymous function
-		localVariables.clear();
-		localVariableStructTypes.clear();
-		localArrayVariables.clear();
-		capturedVariableRefs.clear();
-		lastStructConstructed.clear();
-		lastFieldAccessResultType.clear();
-		closureVariables.clear();
-		indirectLocalVariables.clear();
-		heapAllocatedCaptures.clear();
-
-		// Create the function type
-		// For closures: takes (context, env_ptr), returns int
-		// For non-closures: takes (context), returns int
-		llvm::FunctionType* fnTy;
-		if (hasClosure) {
-			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy}, false);
-		} else {
-			fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-		}
-		auto fn = llvm::Function::Create(fnTy, llvm::Function::InternalLinkage, fullFuncName, *module);
-
-		// Register the function
-		userFunctions[funcName] = fn;
-
-		// Create basic blocks
-		auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
-		auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
-
-		builder->SetInsertPoint(entryBB);
-
-		// Get context parameter
-		llvm::Value* anonCtx = fn->getArg(0);
-		anonCtx->setName("ctx");
-
-		// For closures, load captured variable pointers from environment (capture-by-reference)
-		llvm::Value* envPtr = nullptr;
-		if (hasClosure) {
-			envPtr = fn->getArg(1);
-			envPtr->setName("env");
-
-			// Environment is an array of pointers to qd_stack_element_t in outer scope
-			for (size_t i = 0; i < captures.size(); i++) {
-				const std::string& capName = captures[i];
-
-				// Create local alloca to hold the pointer to outer variable
-				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-				llvm::AllocaInst* ptrAlloca = tmpBuilder.CreateAlloca(ptrTy, nullptr, capName + "_ref");
-
-				// Load pointer from environment array
-				llvm::Value* envSlot = builder->CreateGEP(ptrTy, envPtr, builder->getInt64(i), capName + "_env_slot");
-				llvm::Value* outerPtr = builder->CreateLoad(ptrTy, envSlot, capName + "_outer_ptr");
-
-				// Store the pointer in our local alloca
-				builder->CreateStore(outerPtr, ptrAlloca);
-
-				// Register as captured variable reference (needs extra indirection when accessed)
-				capturedVariableRefs[capName] = ptrAlloca;
-				// The body reads the outer variable through the reference, so it needs the outer
-				// variable's struct type for a following `<<field` to resolve the field.
-				auto capStructType = savedLocalVarStructTypes.find(capName);
-				if (capStructType != savedLocalVarStructTypes.end()) {
-					localVariableStructTypes[capName] = capStructType->second;
-				}
-			}
-		}
-
-		// Set the return target for this function
-		currentFunctionReturnBlock = returnBB;
-		// A lambda marked `!` is fallible, exactly as a named function marked `!` is: `panic` in
-		// its body returns from it, and a call site handles or propagates the error.
-		currentFunctionIsFallible = anonFunc->throws();
-
-		// Auto-bind named input parameters as local variables
-		// Pop from stack in reverse order (stack is LIFO: last param on top)
-		// `stack fn` leaves them on the stack instead, which is the rule a named function uses.
-		{
-			const auto& inputs = anonFunc->inputParameters();
-			const bool bindParams = !anonFunc->isStack();
-			for (int paramIdx = static_cast<int>(inputs.size()) - 1; bindParams && paramIdx >= 0; paramIdx--) {
-				const auto* param = static_cast<const AstNodeParameter*>(inputs[static_cast<size_t>(paramIdx)].get());
-				if (!param->hasName()) {
-					continue;
-				}
-				const std::string& paramName = param->name();
-
-				// Create alloca in entry block
-				llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
-				llvm::IRBuilder<> tmpBuilder(&currentFn->getEntryBlock(), currentFn->getEntryBlock().begin());
-				llvm::AllocaInst* paramAlloca = tmpBuilder.CreateAlloca(stackElementTy, nullptr, paramName);
-
-				// Initialize type field to -1 (uninitialized marker)
-				llvm::Value* typePtr =
-						tmpBuilder.CreateStructGEP(stackElementTy, paramAlloca, 1, paramName + "_init_type");
-				tmpBuilder.CreateStore(tmpBuilder.getInt32(static_cast<uint32_t>(-1)), typePtr);
-
-				// Store in local variables map
-				localVariables[paramName] = paramAlloca;
-
-				// Pop from runtime stack
-				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, anonCtx, 0, "stack_ptr");
-				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
-				builder->CreateCall(stackPopFn, {stackPtr, paramAlloca});
-			}
-		}
-
-		// Generate the body
-		if (anonFunc->body()) {
-			generateNode(anonFunc->body(), anonCtx);
-		}
-
-		// Clean up local variables before returning
-		generateLocalCleanup();
-
-		// Jump to return block if we haven't already terminated
-		llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
-		if (currentBlock && !isTerminated(currentBlock)) {
-			builder->CreateBr(returnBB);
-		}
-
-		// Generate return block
-		builder->SetInsertPoint(returnBB);
-		builder->CreateRet(builder->getInt32(0));
-
-		// Restore state
-		localVariables = savedLocalVars;
-		localVariableStructTypes = savedLocalVarStructTypes;
-		localArrayVariables = savedLocalArrayVars;
-		capturedVariableRefs = savedCapturedVarRefs;
-		lastStructConstructed = savedLastStruct;
-		lastFieldAccessResultType = savedLastFieldAccess;
-		currentFunctionReturnBlock = savedReturnBlock;
-		currentFunctionIsFallible = savedIsFallible;
-		builder->SetInsertPoint(savedInsertPoint, savedInsertPointEnd);
-		closureVariables = savedClosureVariables;
-		indirectLocalVariables = savedIndirectLocalVars;
-		heapAllocatedCaptures = savedHeapAllocatedCaptures;
-
-		if (hasClosure) {
-			// Allocate closure struct: { magic, fn_ptr, env_ptr, capture_count }
-			// Magic marker to identify closures: 0xCL05UR3E (closure in leet speak)
-			// Allocate environment array (array of pointers for capture-by-reference)
-			size_t envSize = captures.size() * 8; // sizeof(pointer) = 8 bytes on 64-bit
-
-			llvm::Value* envAlloc = builder->CreateCall(mallocFn, {builder->getInt64(envSize)}, "env_alloc");
-
-			// Store pointers to captured variables in environment (capture-by-reference)
-			// Environment is now an array of pointers to qd_stack_element_t
-			for (size_t i = 0; i < captures.size(); i++) {
-				const std::string& capName = captures[i];
-
-				// Get the captured variable's alloca from the outer scope
-				auto it = savedLocalVars.find(capName);
-				if (it != savedLocalVars.end()) {
-					llvm::AllocaInst* outerAlloca = it->second;
-					llvm::Value* capturePtr = outerAlloca;
-
-					// For indirect (heap-allocated) variables, load the heap pointer and increment refcount
-					if (indirectLocalVariables.find(capName) != indirectLocalVariables.end()) {
-						capturePtr = builder->CreateLoad(ptrTy, outerAlloca, capName + "_heap_ptr");
-
-						// Increment refcount for this capture (the closure takes ownership)
-						// Refcount is 8 bytes before the elem pointer
-						llvm::Value* refCountPtr = builder->CreateGEP(builder->getInt8Ty(), capturePtr,
-								builder->getInt64(static_cast<uint64_t>(-8)), capName + "_refcount_ptr");
-						llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "refcount");
-						llvm::Value* newRefCount = builder->CreateAdd(refCount, builder->getInt64(1), "new_refcount");
-						builder->CreateStore(newRefCount, refCountPtr);
-					}
-
-					// Store pointer to captured variable into environment array
-					llvm::Value* envSlot = builder->CreateGEP(ptrTy, envAlloc, builder->getInt64(i), capName + "_slot");
-					builder->CreateStore(capturePtr, envSlot);
-					continue;
-				}
-
-				// A captured `for` iterator has no alloca to point at: it is an SSA value, replaced
-				// each iteration, so there is no address whose contents could be shared. It is
-				// captured by value instead -- this closure gets a block of its own holding the
-				// iterator as it stands now. That is the per-iteration meaning the documentation
-				// already promised, and it is indistinguishable from capturing the iteration's
-				// binding by reference, because assigning to the name inside the body creates a
-				// shadowing local rather than moving the loop on. The block carries a refcount of
-				// one, so the closure's own release frees it like any other capture.
-				auto iterIt = iteratorVars.find(capName);
-				if (iterIt != iteratorVars.end()) {
-					llvm::Value* block =
-							builder->CreateCall(mallocFn, {builder->getInt64(32)}, capName + "_iter_block");
-					builder->CreateStore(builder->getInt64(1), block);
-					llvm::Value* elem = builder->CreateGEP(
-							builder->getInt8Ty(), block, builder->getInt64(8), capName + "_iter_elem");
-
-					// A loop whose bounds came off the runtime stack carries both halves and picks
-					// between them at run time; mirror that here so a float iterator captures as a
-					// float.
-					llvm::Value* bits = iterIt->second;
-					llvm::Value* tag = builder->getInt32(0);
-					auto floatIt = iteratorFloatVars.find(capName);
-					if (floatIt != iteratorFloatVars.end()) {
-						llvm::Value* asBits =
-								builder->CreateBitCast(floatIt->second.value, int64Ty, capName + "_iter_f_bits");
-						bits = builder->CreateSelect(
-								floatIt->second.isFloat, asBits, iterIt->second, capName + "_iter_bits");
-						tag = builder->CreateSelect(floatIt->second.isFloat, builder->getInt32(1), builder->getInt32(0),
-								capName + "_iter_tag");
-					}
-
-					llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elem, 0, capName + "_iter_value");
-					builder->CreateStore(bits, valuePtr);
-					llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elem, 1, capName + "_iter_type");
-					builder->CreateStore(tag, typePtr);
-
-					llvm::Value* envSlot = builder->CreateGEP(ptrTy, envAlloc, builder->getInt64(i), capName + "_slot");
-					builder->CreateStore(elem, envSlot);
-				}
-			}
-
-			// Allocate closure struct (magic + 2 pointers + capture_count = 32 bytes)
-			llvm::Value* closureAlloc = builder->CreateCall(mallocFn, {builder->getInt64(32)}, "closure_alloc");
-
-			// Store magic marker (0xCL05UR3E = 0xC105023E in hex)
-			llvm::Value* magicSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 0, "magic_slot");
-			builder->CreateStore(builder->getInt64(0xC105023E), magicSlot);
-
-			// Store function pointer
-			llvm::Value* fnPtrSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 1, "fn_ptr_slot");
-			llvm::Value* fnPtrCast = builder->CreateBitCast(fn, ptrTy, "fn_ptr_cast");
-			builder->CreateStore(fnPtrCast, fnPtrSlot);
-
-			// Store environment pointer
-			llvm::Value* envPtrSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 2, "env_ptr_slot");
-			builder->CreateStore(envAlloc, envPtrSlot);
-
-			// Store capture count for cleanup
-			llvm::Value* capCountSlot = builder->CreateStructGEP(closureStructTy, closureAlloc, 3, "cap_count_slot");
-			builder->CreateStore(builder->getInt64(captures.size()), capCountSlot);
-
-			// Register the closure in the closure registry for safe detection
-			auto closureRegisterFnTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
-			auto closureRegisterFn = module->getOrInsertFunction("qd_closure_register", closureRegisterFnTy);
-			builder->CreateCall(closureRegisterFn, {closureAlloc});
-
-			// Push closure struct pointer to stack
-			builder->CreateCall(pushPtrFn, {ctx, closureAlloc});
-
-			// Track that we just generated a closure
-			lastGeneratedWasClosure = true;
-		} else {
-			// No captures - just push the function pointer (existing behavior)
-			auto funcPtrValue = builder->CreateBitCast(fn, ptrTy);
-			builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
-
-			// Not a closure
+		if (captures.empty()) {
+			// No captures: the function pointer itself
+			builder->CreateCall(pushPtrFn, {ctx, builder->CreateBitCast(fn, ptrTy)});
 			lastGeneratedWasClosure = false;
+		} else {
+			pushClosure(fn, generateClosureEnvironment(captures), captures.size(), ctx);
+			lastGeneratedWasClosure = true;
 		}
 
 		// Track the function name for potential aliasing via -> name
 		lastGeneratedAnonFuncName = funcName;
 	}
 
-	void LlvmGenerator::Impl::generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx) {
-		const std::string& scope = scopedIdent->scope();
-		const std::string& name = scopedIdent->name();
+	// Sets aside what the enclosing function was being generated with, leaving a clean slate
+	// for a lambda's body
+	LlvmGenerator::Impl::EnclosingScope LlvmGenerator::Impl::enterLambdaScope() {
+		EnclosingScope scope;
+		scope.localVariables = std::exchange(localVariables, {});
+		scope.localVariableStructTypes = std::exchange(localVariableStructTypes, {});
+		scope.localArrayVariables = std::exchange(localArrayVariables, {});
+		scope.capturedVariableRefs = std::exchange(capturedVariableRefs, {});
+		scope.heapAllocatedCaptures = std::exchange(heapAllocatedCaptures, {});
+		scope.indirectLocalVariables = std::exchange(indirectLocalVariables, {});
+		scope.closureVariables = std::exchange(closureVariables, {});
+		scope.lastStructConstructed = std::exchange(lastStructConstructed, {});
+		scope.lastFieldAccessResultType = std::exchange(lastFieldAccessResultType, {});
+		scope.returnBlock = currentFunctionReturnBlock;
+		scope.isFallible = currentFunctionIsFallible;
+		scope.insertBlock = builder->GetInsertBlock();
+		scope.insertPoint = builder->GetInsertPoint();
+		return scope;
+	}
 
-		// Look up scoped name: scope::name
-		std::string fullName = scope + "::" + name;
+	void LlvmGenerator::Impl::leaveLambdaScope(EnclosingScope&& scope) {
+		localVariables = std::move(scope.localVariables);
+		localVariableStructTypes = std::move(scope.localVariableStructTypes);
+		localArrayVariables = std::move(scope.localArrayVariables);
+		capturedVariableRefs = std::move(scope.capturedVariableRefs);
+		heapAllocatedCaptures = std::move(scope.heapAllocatedCaptures);
+		indirectLocalVariables = std::move(scope.indirectLocalVariables);
+		closureVariables = std::move(scope.closureVariables);
+		lastStructConstructed = std::move(scope.lastStructConstructed);
+		lastFieldAccessResultType = std::move(scope.lastFieldAccessResultType);
+		currentFunctionReturnBlock = scope.returnBlock;
+		currentFunctionIsFallible = scope.isFallible;
+		builder->SetInsertPoint(scope.insertBlock, scope.insertPoint);
+	}
 
-		// Check if this is an explicit method call (scope is struct type, name is method)
-		// The semantic validator marks these with isMethodCall()
-		if (scopedIdent->isMethodCall()) {
-			// Method call - look up in userFunctions with mangled name
-			// Use receiver type if set, otherwise use scope::name
-			std::string lookupName =
-					scopedIdent->receiverType().empty() ? fullName : (scopedIdent->receiverType() + "::" + name);
-			auto it = userFunctions.find(lookupName);
-			if (it != userFunctions.end()) {
-				// Generate any needed type casts before the function call
-				generateCastInstructions(scopedIdent->parameterCasts(), ctx);
+	// The lambda's own function. A closure takes (context, environment), the environment an
+	// array of pointers to the captured variables' slots; anything else takes (context).
+	llvm::Function* LlvmGenerator::Impl::generateLambdaFunction(
+			AstNodeAnonymousFunction* anonFunc, const std::string& funcName, const EnclosingScope& enclosing) {
+		const auto& captures = anonFunc->capturedVariables();
+		std::vector<llvm::Type*> params = {contextPtrTy};
+		if (!captures.empty()) {
+			params.push_back(ptrTy);
+		}
+		auto fn = llvm::Function::Create(llvm::FunctionType::get(execResultTy, params, false),
+				llvm::Function::InternalLinkage, "usr_" + mainModuleName + "_" + funcName, *module);
+		userFunctions[funcName] = fn;
 
-				// Clear error_code for fallible methods
-				auto preFallibleIt = fallibleFunctions.find(lookupName);
-				if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
-					generateClearErrorState(ctx);
+		auto entryBB = llvm::BasicBlock::Create(*context, "entry", fn);
+		auto returnBB = llvm::BasicBlock::Create(*context, "return", fn);
+		builder->SetInsertPoint(entryBB);
+
+		llvm::Value* anonCtx = fn->getArg(0);
+		anonCtx->setName("ctx");
+
+		if (!captures.empty()) {
+			llvm::Value* envPtr = fn->getArg(1);
+			envPtr->setName("env");
+			llvm::IRBuilder<> entryBuilder(entryBB, entryBB->begin());
+			for (size_t i = 0; i < captures.size(); i++) {
+				const std::string& capName = captures[i];
+				// A captured variable is read through a pointer to its slot, held here
+				llvm::AllocaInst* ref = entryBuilder.CreateAlloca(ptrTy, nullptr, capName + "_ref");
+				llvm::Value* envSlot = builder->CreateGEP(ptrTy, envPtr, builder->getInt64(i), capName + "_env_slot");
+				builder->CreateStore(builder->CreateLoad(ptrTy, envSlot, capName + "_outer_ptr"), ref);
+				capturedVariableRefs[capName] = ref;
+				// The struct type it has outside, for a following `<<field` to resolve the field
+				auto structType = enclosing.localVariableStructTypes.find(capName);
+				if (structType != enclosing.localVariableStructTypes.end()) {
+					localVariableStructTypes[capName] = structType->second;
 				}
-
-				// For method calls, rotate stack so receiver is on top before calling
-				// Only roll if receiver is NOT already on top
-				size_t receiverPositionFromTop = scopedIdent->methodReceiverPositionFromTop();
-				if (receiverPositionFromTop > 0) {
-					// Push the count and call qd_roll
-					// roll N brings the Nth element (0-indexed from top) to top
-					builder->CreateCall(pushIntFn, {ctx, builder->getInt64(receiverPositionFromTop)});
-					auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-					auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
-					builder->CreateCall(rollFn, {ctx});
-				}
-
-				// Call the method
-				builder->CreateCall(it->second, {ctx});
-
-				// Handle fallible method return
-				auto fallibleIt = fallibleFunctions.find(lookupName);
-				if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
-					auto errorState = generateReadErrorState(ctx);
-					auto hasError = errorState.failed;
-					auto errorCode = errorState.code;
-
-					if (scopedIdent->abortOnError()) {
-						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
-								*context, "error_abort", builder->GetInsertBlock()->getParent());
-						llvm::BasicBlock* continueBlock =
-								llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
-						builder->CreateCondBr(hasError, errorBlock, continueBlock);
-
-						builder->SetInsertPoint(errorBlock);
-
-						// Print error message with context->error_msg if available
-						auto funcNameStr = builder->CreateGlobalString(name);
-						builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
-						builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-						builder->CreateCall(printStackTraceFn, {ctx});
-						builder->CreateCall(exitFn, {builder->getInt32(1)});
-						builder->CreateUnreachable();
-
-						// Continue - user-defined methods don't push success status
-						builder->SetInsertPoint(continueBlock);
-						// Note: don't drop here - only imported C functions push success status
-					} else if (scopedIdent->propagateOnError()) {
-						// ? operator: propagate error to caller
-						llvm::BasicBlock* errorBlock = llvm::BasicBlock::Create(
-								*context, "error_propagate", builder->GetInsertBlock()->getParent());
-						llvm::BasicBlock* continueBlock =
-								llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
-
-						builder->CreateCondBr(hasError, errorBlock, continueBlock);
-
-						builder->SetInsertPoint(errorBlock);
-						if (currentFunctionReturnBlock) {
-							builder->CreateBr(currentFunctionReturnBlock);
-						} else {
-							builder->CreateUnreachable();
-						}
-
-						builder->SetInsertPoint(continueBlock);
-					} else {
-						// Shape the status for its consumer -- see fallibleConsumerOf.
-						llvm::Value* onFailure = (fallibleConsumerOf(scopedIdent) == FallibleConsumer::Switch)
-														 ? static_cast<llvm::Value*>(errorCode)
-														 : builder->getInt64(0);
-						auto successStatus =
-								builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
-						builder->CreateCall(pushIntFn, {ctx, successStatus});
-					}
-				}
-				return;
 			}
 		}
 
-		// Check if this is a constant first
-		auto constIt = moduleConstants.find(fullName);
-		if (constIt != moduleConstants.end()) {
-			// This is a constant - generate a literal push
-			const std::string& value = constIt->second;
+		currentFunctionReturnBlock = returnBB;
+		// A lambda marked `!` is fallible, exactly as a named function marked `!` is: `panic` in
+		// its body returns from it, and a call site handles or propagates the error.
+		currentFunctionIsFallible = anonFunc->throws();
 
-			// Determine literal type from the value string
-			AstNodeLiteral::LiteralType litType;
-			if (!value.empty() && value[0] == '"') {
-				litType = AstNodeLiteral::LiteralType::STRING;
-			} else if (isD128LiteralText(value)) {
-				litType = AstNodeLiteral::LiteralType::D128;
-			} else if (isFloatLiteralText(value)) {
-				litType = AstNodeLiteral::LiteralType::FLOAT;
-			} else {
-				litType = AstNodeLiteral::LiteralType::INTEGER;
-			}
+		// The lambda's own variables that lambdas inside it capture
+		collectAllCapturesFromAST(anonFunc->body(), heapAllocatedCaptures);
+		bindLambdaParameters(anonFunc, anonCtx);
+		if (anonFunc->body()) {
+			generateNode(anonFunc->body(), anonCtx);
+		}
+		generateLocalCleanup();
 
-			// Create literal and generate push
-			AstNodeLiteral literal(value, litType);
-			generateLiteral(&literal, ctx);
+		llvm::BasicBlock* currentBlock = builder->GetInsertBlock();
+		if (currentBlock && !isTerminated(currentBlock)) {
+			builder->CreateBr(returnBB);
+		}
+		builder->SetInsertPoint(returnBB);
+		builder->CreateRet(builder->getInt32(0));
+		return fn;
+	}
+
+	// Named parameters become locals, popped last first. `stack fn` leaves them on the stack
+	// instead, which is the rule a named function uses.
+	void LlvmGenerator::Impl::bindLambdaParameters(AstNodeAnonymousFunction* anonFunc, llvm::Value* anonCtx) {
+		if (anonFunc->isStack()) {
 			return;
 		}
+		const auto& inputs = anonFunc->inputParameters();
+		for (size_t idx = inputs.size(); idx > 0; idx--) {
+			const auto* param = static_cast<const AstNodeParameter*>(inputs[idx - 1].get());
+			if (param->hasName()) {
+				bindParameter(param->name(), anonCtx);
+			}
+		}
+	}
 
-		// Check if this is a struct construction
-		// All structs (both from main file and modules) are in structDefinitions
-		// Use qualified name for module struct lookup
-		std::string qualifiedName = scope + "::" + name;
-		const StructLayout* structLayout = findStructDefinition(qualifiedName);
-		if (structLayout != nullptr) {
-			// This is a struct construction from a module
-			// Generate struct allocation and field initialization
+	// The environment a closure carries: for each capture, a pointer to the variable's slot,
+	// whose block the closure holds a reference to. Releasing the closure gives them back.
+	llvm::Value* LlvmGenerator::Impl::generateClosureEnvironment(const std::vector<std::string>& captures) {
+		llvm::Value* env =
+				builder->CreateCall(mallocFn, {builder->getInt64(captures.size() * sizeof(void*))}, "env_alloc");
+		for (size_t i = 0; i < captures.size(); i++) {
+			const std::string& capName = captures[i];
+			llvm::Value* slot = captureReference(capName);
+			if (!slot) {
+				std::cerr << "quadc: error: internal: captured variable '" << capName << "' has no storage here"
+						  << std::endl;
+				compilationFailed = true;
+				slot = llvm::ConstantPointerNull::get(ptrTy);
+			}
+			builder->CreateStore(slot, builder->CreateGEP(ptrTy, env, builder->getInt64(i), capName + "_slot"));
+		}
+		return env;
+	}
+
+	// A pointer to the slot of the variable `name` as this function sees it, with a reference
+	// taken for the closure being built: null when there is no such variable
+	llvm::Value* LlvmGenerator::Impl::captureReference(const std::string& name) {
+		if (auto it = localVariables.find(name); it != localVariables.end()) {
+			// A captured variable always lives in a block; a stack slot has no refcount for the
+			// closure's release to give back
+			if (!indirectLocalVariables.count(name)) {
+				return nullptr;
+			}
+			llvm::Value* slot = builder->CreateLoad(ptrTy, it->second, name + "_heap_ptr");
+			retainCaptureBlock(slot, name);
+			return slot;
+		}
+
+		// A variable this lambda itself captured, which a lambda nested in it captures in turn:
+		// the same slot, through the reference this one holds
+		if (auto it = capturedVariableRefs.find(name); it != capturedVariableRefs.end()) {
+			llvm::Value* slot = builder->CreateLoad(ptrTy, it->second, name + "_outer_ptr");
+			retainCaptureBlock(slot, name);
+			return slot;
+		}
+
+		// A captured `for` iterator has no alloca to point at: it is an SSA value, replaced
+		// each iteration, so there is no address whose contents could be shared. It is
+		// captured by value instead -- this closure gets a block of its own holding the
+		// iterator as it stands now. That is the per-iteration meaning the documentation
+		// already promised, and it is indistinguishable from capturing the iteration's
+		// binding by reference, because assigning to the name inside the body creates a
+		// shadowing local rather than moving the loop on. The block carries a refcount of
+		// one, so the closure's own release frees it like any other capture.
+		auto iterIt = iteratorVars.find(name);
+		if (iterIt == iteratorVars.end()) {
+			return nullptr;
+		}
+		llvm::Value* block = builder->CreateCall(mallocFn, {builder->getInt64(32)}, name + "_iter_block");
+		builder->CreateStore(builder->getInt64(1), block);
+		llvm::Value* elem = builder->CreateGEP(builder->getInt8Ty(), block, builder->getInt64(8), name + "_iter_elem");
+
+		// A loop whose bounds came off the runtime stack carries both halves and picks between
+		// them at run time; mirror that here so a float iterator captures as a float.
+		llvm::Value* bits = iterIt->second;
+		llvm::Value* tag = builder->getInt32(0);
+		auto floatIt = iteratorFloatVars.find(name);
+		if (floatIt != iteratorFloatVars.end()) {
+			llvm::Value* asBits = builder->CreateBitCast(floatIt->second.value, int64Ty, name + "_iter_f_bits");
+			bits = builder->CreateSelect(floatIt->second.isFloat, asBits, iterIt->second, name + "_iter_bits");
+			tag = builder->CreateSelect(
+					floatIt->second.isFloat, builder->getInt32(1), builder->getInt32(0), name + "_iter_tag");
+		}
+		builder->CreateStore(bits, builder->CreateStructGEP(stackElementTy, elem, 0, name + "_iter_value"));
+		builder->CreateStore(tag, builder->CreateStructGEP(stackElementTy, elem, 1, name + "_iter_type"));
+		return elem;
+	}
+
+	// A captured variable's block is { refcount, slot }, the refcount the 8 bytes before the slot
+	void LlvmGenerator::Impl::retainCaptureBlock(llvm::Value* slot, const std::string& name) {
+		llvm::Value* refCountPtr = builder->CreateGEP(
+				builder->getInt8Ty(), slot, builder->getInt64(static_cast<uint64_t>(-8)), name + "_refcount_ptr");
+		llvm::Value* refCount = builder->CreateLoad(int64Ty, refCountPtr, "refcount");
+		builder->CreateStore(builder->CreateAdd(refCount, builder->getInt64(1), "new_refcount"), refCountPtr);
+	}
+
+	// A closure: { magic, function, environment, capture count }, registered so that `call`
+	// and the releases can tell it from a bare function pointer
+	void LlvmGenerator::Impl::pushClosure(llvm::Function* fn, llvm::Value* env, size_t captureCount, llvm::Value* ctx) {
+		llvm::Value* closure = builder->CreateCall(mallocFn, {builder->getInt64(32)}, "closure_alloc");
+		// 0xCL05UR3E, "closure" in leet
+		builder->CreateStore(
+				builder->getInt64(0xC105023E), builder->CreateStructGEP(closureStructTy, closure, 0, "magic_slot"));
+		builder->CreateStore(builder->CreateBitCast(fn, ptrTy, "fn_ptr_cast"),
+				builder->CreateStructGEP(closureStructTy, closure, 1, "fn_ptr_slot"));
+		builder->CreateStore(env, builder->CreateStructGEP(closureStructTy, closure, 2, "env_ptr_slot"));
+		builder->CreateStore(builder->getInt64(captureCount),
+				builder->CreateStructGEP(closureStructTy, closure, 3, "cap_count_slot"));
+		builder->CreateCall(module->getOrInsertFunction("qd_closure_register",
+									llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false)),
+				{closure});
+		builder->CreateCall(pushPtrFn, {ctx, closure});
+	}
+
+	void LlvmGenerator::Impl::generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx) {
+		const std::string fullName = scopedIdent->scope() + "::" + scopedIdent->name();
+		if (scopedIdent->isMethodCall() && generateScopedMethodCall(scopedIdent, ctx)) {
+			return;
+		}
+		if (generateConstantPush(fullName, ctx)) {
+			return;
+		}
+		if (const StructLayout* structLayout = findStructDefinition(fullName)) {
+			generateCastInstructions(scopedIdent->parameterCasts(), structLayout->name, false, ctx);
 			generateStructConstruction(structLayout->name, ctx);
 			return;
 		}
+		generateModuleFunctionCall(scopedIdent, fullName, ctx);
+	}
 
-		// Not a constant or struct, must be a function
-		std::string mangledName = "usr_" + scope + "_" + name;
-
-		// Check if we have this function (first as regular function, then as method)
-		llvm::Function* fn = module->getFunction(mangledName);
-		bool isMethodFallback = false;
-		size_t methodParamCount = 0;
-		if (!fn) {
-			// Function not found with plain mangling — check if it's a method
-			// that the validator couldn't resolve (cross-module method calls)
-			// Try looking up in userFunctions with method-mangled names
-			for (const auto& entry : userFunctions) {
-				// Match pattern: "scope::StructType::methodName" where methodName == name
-				const std::string& key = entry.first;
-				if (key.size() > name.size() + 2 && key.substr(key.size() - name.size()) == name &&
-						key[key.size() - name.size() - 2] == ':' && key[key.size() - name.size() - 1] == ':' &&
-						key.find(scope + "::") == 0) {
-					fn = entry.second;
-					isMethodFallback = true;
-					// Get receiver position from methodReceiverPosition map
-					auto posIt = methodReceiverPosition.find(key);
-					if (posIt != methodReceiverPosition.end()) {
-						methodParamCount = posIt->second;
-					}
-					break;
-				}
-			}
-		}
-		if (!fn) {
-			// Still not found — declare it as external
-			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
-			auto fnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			fn = llvm::Function::Create(fnTy, linkage, mangledName, *module);
+	// `Type::method`, or `module::method` on a struct of the module, as the validator resolved
+	// it: false when no such function was generated
+	bool LlvmGenerator::Impl::generateScopedMethodCall(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx) {
+		const std::string& name = scopedIdent->name();
+		const std::string callee =
+				(scopedIdent->receiverType().empty() ? scopedIdent->scope() : scopedIdent->receiverType()) +
+				"::" + name;
+		auto it = userFunctions.find(callee);
+		if (it == userFunctions.end()) {
+			return false;
 		}
 
-		// If this is a method found via fallback, roll the receiver to top of stack
-		if (isMethodFallback && methodParamCount > 0) {
-			builder->CreateCall(pushIntFn, {ctx, builder->getInt64(methodParamCount)});
-			auto rollFnTy = llvm::FunctionType::get(execResultTy, {contextPtrTy}, false);
-			auto rollFn = module->getOrInsertFunction("qd_roll", rollFnTy);
-			builder->CreateCall(rollFn, {ctx});
-		}
+		// The receiver is under its arguments unless it was written on top, `Type::method`
+		const size_t receiverPosition = scopedIdent->methodReceiverPositionFromTop();
+		generateCastInstructions(scopedIdent->parameterCasts(), callee, receiverPosition > 0, ctx);
 
-		// Compile-time stack path: call native bridge directly if available
-		if (useCompileTimeStack) {
-			auto calleeNativeIt = nativeFunctions.find(fullName);
-			if (calleeNativeIt != nativeFunctions.end()) {
-				auto& calleeInfo = nativeFuncInfo[fullName];
-				std::vector<llvm::Value*> args;
-				args.push_back(ctx);
-				std::vector<llvm::Value*> poppedArgs;
-				for (size_t i = 0; i < calleeInfo.inputCount; i++) {
-					poppedArgs.push_back(compileTimeStack.back());
-					compileTimeStack.pop_back();
-				}
-				for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
-					args.push_back(*rit);
-				}
-				if (calleeInfo.outputCount == 1) {
-					llvm::Value* result = builder->CreateCall(calleeNativeIt->second, args, "call_result");
-					compileTimeStack.push_back(result);
-				} else {
-					builder->CreateCall(calleeNativeIt->second, args);
-				}
-				return;
-			}
-		}
-
-		// Generate any needed type casts before the function call
-		generateCastInstructions(scopedIdent->parameterCasts(), ctx);
-
-		// For fallible functions, clear the error state before the call
-		// This ensures each call starts with a clean state
-		auto preFallibleIt = fallibleFunctions.find(fullName);
-		if (preFallibleIt != fallibleFunctions.end() && preFallibleIt->second) {
+		auto fallibleIt = fallibleFunctions.find(callee);
+		const bool fallible = fallibleIt != fallibleFunctions.end() && fallibleIt->second;
+		if (fallible) {
 			generateClearErrorState(ctx);
 		}
+		generateReceiverRoll(receiverPosition, ctx);
+		builder->CreateCall(it->second, {ctx});
 
-		// Call the scoped function — use native bridge (A optimization) if available
-		auto nativeIt = nativeFunctions.find(fullName);
-		llvm::Value* callResult;
-		if (nativeIt != nativeFunctions.end()) {
-			auto& info = nativeFuncInfo[fullName];
-			std::vector<llvm::Value*> nativeArgs;
-			nativeArgs.push_back(ctx);
-			std::vector<llvm::Value*> poppedArgs;
-			for (size_t j = info.inputCount; j > 0; j--) {
-				if (info.inputTypes[j - 1] == NativeParamType::F64) {
-					poppedArgs.push_back(generateInlinePopFloat(ctx));
-				} else {
-					poppedArgs.push_back(generateInlinePopInt(ctx));
-				}
-			}
-			for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
-				nativeArgs.push_back(*rit);
-			}
-			if (info.outputCount == 1) {
-				llvm::Value* result = builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
-				if (info.outputType == NativeParamType::F64) {
-					generateInlinePushFloatValue(ctx, result);
-				} else {
-					generateInlinePushIntValue(ctx, result);
-				}
-			} else {
-				builder->CreateCall(nativeIt->second, nativeArgs);
-			}
-			// Synthesize a zero call result for downstream error checking
-			callResult = builder->getInt32(0);
-		} else {
-			callResult = builder->CreateCall(fn, {ctx}, "call_result");
+		// Track return struct type for local variable binding (-> name)
+		auto returnTypeIt = functionReturnStructType.find(callee);
+		if (returnTypeIt != functionReturnStructType.end()) {
+			lastStructConstructed = returnTypeIt->second;
 		}
+
+		if (fallible) {
+			generateFallibleCallEpilogue(
+					ctx, name.c_str(), scopedIdent, scopedIdent->abortOnError(), scopedIdent->propagateOnError());
+		}
+		return true;
+	}
+
+	// `module::function`: one generated here, one in a library, or an imported C function
+	void LlvmGenerator::Impl::generateModuleFunctionCall(
+			AstNodeScopedIdentifier* scopedIdent, const std::string& fullName, llvm::Value* ctx) {
+		if (useCompileTimeStack && generateCompileTimeNativeCall(fullName, ctx)) {
+			return;
+		}
+
+		const std::string mangledName = "usr_" + scopedIdent->scope() + "_" + scopedIdent->name();
+		llvm::Function* fn = module->getFunction(mangledName);
+		if (!fn) {
+			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
+			fn = llvm::Function::Create(
+					llvm::FunctionType::get(execResultTy, {contextPtrTy}, false), linkage, mangledName, *module);
+		}
+
+		generateCastInstructions(scopedIdent->parameterCasts(), fullName, false, ctx);
+
+		auto fallibleIt = fallibleFunctions.find(fullName);
+		const bool fallible = fallibleIt != fallibleFunctions.end() && fallibleIt->second;
+		if (fallible) {
+			generateClearErrorState(ctx);
+		}
+		llvm::Value* callResult = generateDirectCall(fullName, fn, ctx);
 
 		// Track return struct type for local variable binding (-> name)
 		auto returnTypeIt = functionReturnStructType.find(fullName);
@@ -1394,563 +1092,318 @@ namespace Qd {
 			lastStructConstructed = returnTypeIt->second;
 		}
 
-		// If in test mode, track errors from testing:: assertion functions only
-		if (testErrorAlloca && scope == "testing") {
+		// In test mode, a failed testing:: assertion fails the test
+		if (testErrorAlloca && scopedIdent->scope() == "testing") {
 			auto hasError = builder->CreateICmpNE(callResult, builder->getInt32(0), "has_err");
 			auto currentError = builder->CreateLoad(int32Ty, testErrorAlloca, "cur_err");
 			auto newError = builder->CreateSelect(hasError, callResult, currentError, "new_err");
 			builder->CreateStore(newError, testErrorAlloca);
 		}
 
-		// Check if this is a fallible function (same logic as for regular identifiers)
-		auto fallibleIt = fallibleFunctions.find(fullName);
-		if (fallibleIt != fallibleFunctions.end() && fallibleIt->second) {
-			// This is a fallible function - push error status after the call
-			auto errorState = generateReadErrorState(ctx);
-			auto hasError = errorState.failed;
-			auto errorCode = errorState.code;
-
-			if (scopedIdent->abortOnError()) {
-				// ! operator: check error and abort if set
-				llvm::BasicBlock* errorBlock =
-						llvm::BasicBlock::Create(*context, "error_abort", builder->GetInsertBlock()->getParent());
-				llvm::BasicBlock* continueBlock =
-						llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
-
-				builder->CreateCondBr(hasError, errorBlock, continueBlock);
-
-				// Error block: print message and abort
-				builder->SetInsertPoint(errorBlock);
-
-				// Print error message with context->error_msg if available
-				auto funcNameStr = builder->CreateGlobalString(name);
-				builder->CreateCall(fatalRecoverFn, {ctx, funcNameStr, llvm::ConstantPointerNull::get(ptrTy)});
-				builder->CreateCall(printErrorMsgFn, {ctx, funcNameStr});
-				builder->CreateCall(printStackTraceFn, {ctx});
-				builder->CreateCall(exitFn, {builder->getInt32(1)});
-				builder->CreateUnreachable();
-
-				// Continue block
-				builder->SetInsertPoint(continueBlock);
-
-				// For imported C functions, pop the success status they pushed
-				// (since ! operator handles error via error_code, not stack-based status)
-				if (importedCFunctions.find(fullName) != importedCFunctions.end()) {
-					generateInlineDrop(ctx);
-				}
-			} else if (scopedIdent->propagateOnError()) {
-				// ? operator: propagate error to caller
-				llvm::BasicBlock* errorBlock =
-						llvm::BasicBlock::Create(*context, "error_propagate", builder->GetInsertBlock()->getParent());
-				llvm::BasicBlock* continueBlock =
-						llvm::BasicBlock::Create(*context, "no_error", builder->GetInsertBlock()->getParent());
-
-				builder->CreateCondBr(hasError, errorBlock, continueBlock);
-
-				builder->SetInsertPoint(errorBlock);
-				// For imported C functions, drop the error status they pushed before returning
-				if (importedCFunctions.find(fullName) != importedCFunctions.end()) {
-					generateInlineDrop(ctx);
-				}
-				if (currentFunctionReturnBlock) {
-					builder->CreateBr(currentFunctionReturnBlock);
-				} else {
-					builder->CreateUnreachable();
-				}
-
-				builder->SetInsertPoint(continueBlock);
-
-				// For imported C functions, pop the success status they pushed
-				if (importedCFunctions.find(fullName) != importedCFunctions.end()) {
-					generateInlineDrop(ctx);
-				}
-			} else {
-				// No ! operator: leave a status shaped for whoever consumes it. Don't clear
-				// error_code -- `err` still needs it, and the next fallible call overwrites it.
-				const auto consumer = fallibleConsumerOf(scopedIdent);
-				const bool isImported = importedCFunctions.find(fullName) != importedCFunctions.end();
-
-				if (!isImported) {
-					// User-defined: we push the status ourselves.
-					llvm::Value* onFailure = (consumer == FallibleConsumer::Switch)
-													 ? static_cast<llvm::Value*>(errorCode)
-													 : builder->getInt64(0);
-					auto successStatus =
-							builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
-					builder->CreateCall(pushIntFn, {ctx, successStatus});
-				} else if (consumer == FallibleConsumer::If) {
-					// Imported C functions push their own status, and it is the raw error code
-					// (see e.g. usr_io_open pushing IO_ERR_NOT_FOUND). Any code >= 2 is truthy,
-					// so handing it to `if` selected the success branch on failure and then
-					// underflowed on the first drop. Replace it with a boolean.
-					generateInlineDrop(ctx);
-					auto successStatus = builder->CreateSelect(
-							hasError, builder->getInt64(0), builder->getInt64(1), "success_status");
-					builder->CreateCall(pushIntFn, {ctx, successStatus});
-				}
-				// Imported + switch: the pushed code is already what switch wants.
-			}
+		if (fallible) {
+			generateFallibleCallEpilogue(ctx, scopedIdent->name().c_str(), scopedIdent, scopedIdent->abortOnError(),
+					scopedIdent->propagateOnError(), importedCFunctions.count(fullName) > 0);
 		}
 	}
 
 	void LlvmGenerator::Impl::generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx) {
-		// Get current function
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
 
-		// On the native path (integer-only functions) operands live in compileTimeStack as
-		// SSA values and are never materialised to the runtime stack, so the scrutinee has
-		// to come from there instead. Reading it off the runtime stack finds whatever
-		// happens to be there, which made every literal case fall through to the wildcard.
-		const bool nativePath = useCompileTimeStack;
+		SwitchScrutinee scrutinee;
+		if (!takeSwitchScrutinee(scrutinee, ctx)) {
+			return;
+		}
+		const bool fallibleStatus = switchReadsFallibleStatus(switchStmt);
 
-		// The runtime pops into it, so it is a qd_stack_element_t, value words and all
-		auto* switchElemTy = stackElementTy;
-
-		llvm::Value* nativeScrutinee = nullptr;
-		llvm::Value* switchElem = nullptr;
-
-		if (nativePath) {
-			if (compileTimeStack.empty()) {
-				std::cerr << "quadc: error: switch has no value to match on" << std::endl;
-				compilationFailed = true;
-				return;
+		std::vector<AstNodeCase*> labelled;
+		AstNodeCase* wildcard = nullptr;
+		for (auto* caseNode : switchStmt->cases()) {
+			if (!caseNode->isDefault()) {
+				labelled.push_back(caseNode);
+			} else if (!wildcard) {
+				wildcard = caseNode;
 			}
-			nativeScrutinee = compileTimeStack.back();
-			compileTimeStack.pop_back();
-		} else {
-			// Get the runtime stack pop function
-			auto stackPopFunc = module->getFunction("qd_stack_pop");
-
-			// Pop the value to switch on from the stack
-			auto stackFieldPtr = builder->CreateStructGEP(llvm::StructType::get(*context,
-																  {ptrTy,		   // qd_stack* st
-																		  int64Ty, // int64_t error_code
-																		  ptrTy,   // char* error_msg
-																		  int32Ty, // int argc
-																		  ptrTy,   // char** argv
-																		  ptrTy}), // char* program_name
-					ctx, 0, "st_ptr");
-			auto stack = builder->CreateLoad(ptrTy, stackFieldPtr, "st");
-
-			// Create alloca in entry block to avoid stack growth in loops
-			llvm::BasicBlock& entryBlock = currentFn->getEntryBlock();
-			llvm::IRBuilder<> entryBuilder(&entryBlock, entryBlock.getFirstInsertionPt());
-			switchElem = entryBuilder.CreateAlloca(switchElemTy, nullptr, "switch_elem");
-
-			builder->CreateCall(stackPopFunc, {stack, switchElem});
 		}
 
-		// Is this switch reading the status left by a *user-defined* fallible call? If so, `Ok`
-		// must mean "no error" rather than "the value equals 1". Error codes are user-chosen and
-		// `Ok` is 1, so comparing by value makes a `panic` with code 1 indistinguishable from
-		// success.
-		//
-		// Deliberately excludes imported C functions: they are inconsistent about setting
-		// ctx->error_code (io::open sets it, net::connect only pushes the code), so testing the
-		// error state there would report success on a genuine failure. They keep the by-value
-		// comparison, which is sound because their codes start at 2 by convention.
-		const bool scrutineeIsFallibleStatus = [&]() -> bool {
-			IAstNode* parent = switchStmt->parent();
-			if (!parent) {
-				return false;
-			}
-			for (size_t i = 1; i < parent->childCount(); i++) {
-				if (parent->child(i) != switchStmt) {
-					continue;
-				}
-				IAstNode* prev = parent->child(i - 1);
-				if (!prev) {
-					return false;
-				}
-				std::string callee;
-				if (prev->type() == IAstNode::Type::IDENTIFIER) {
-					callee = static_cast<AstNodeIdentifier*>(prev)->name();
-				} else if (prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-					auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
-					callee = sc->scope() + "::" + sc->name();
-				} else {
-					return false;
-				}
-				if (importedCFunctions.find(callee) != importedCFunctions.end()) {
-					return false;
-				}
-				auto it = fallibleFunctions.find(callee);
-				return it != fallibleFunctions.end() && it->second;
-			}
-			return false;
-		}();
-
-		// Scrutinee accessors: SSA value on the native path, a load from the popped stack
-		// element otherwise. Native functions are integer-only, so only the integer accessor
-		// is reachable there.
-		auto switchValueInt = [&]() -> llvm::Value* {
-			if (nativePath) {
-				return nativeScrutinee;
-			}
-			auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-			return builder->CreateLoad(int64Ty, valuePtr, "switch_val");
-		};
-		// Float and string scrutinees only exist off the native path -- native functions are
-		// integer-only, and `switchElem` is null there. Returning null rather than building a
-		// GEP on a null operand lets the caller fall through to the unresolved-case-label
-		// diagnostic below instead of handing LLVM a null Value.
-		auto switchValueFloat = [&]() -> llvm::Value* {
-			if (nativePath) {
-				return nullptr;
-			}
-			auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-			return builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
-		};
-		auto switchValueStr = [&]() -> llvm::Value* {
-			if (nativePath) {
-				return nullptr;
-			}
-			auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-			return builder->CreateLoad(ptrTy, valuePtr, "switch_str");
-		};
-
-		// A d128 case label: the runtime compares, against a literal it reads once and caches,
-		// as a pushed d128 literal is. Null on the native path, which never holds a d128.
-		auto d128CaseMatch = [&](const std::string& text) -> llvm::Value* {
-			if (nativePath) {
-				return nullptr;
-			}
-			uint64_t low = 0;
-			uint64_t high = 0;
-			if (!d128LiteralWords(text, low, high)) {
-				return nullptr;
-			}
-			llvm::Function* matchFn = module->getFunction("qd_d128_matches_bits");
-			if (!matchFn) {
-				matchFn = llvm::Function::Create(llvm::FunctionType::get(int32Ty, {ptrTy, int64Ty, int64Ty}, false),
-						llvm::Function::ExternalLinkage, "qd_d128_matches_bits", module.get());
-			}
-			auto* found = builder->CreateCall(
-					matchFn, {switchElem, builder->getInt64(low), builder->getInt64(high)}, "d128_case");
-			return builder->CreateICmpNE(found, builder->getInt32(0), "case_match");
-		};
-
-		// Compare the scrutinee against a string label, as written: null on the native path,
-		// where there is no string to compare
-		auto stringCaseMatch = [&](const std::string& literal) -> llvm::Value* {
-			auto switchStrPtr = switchValueStr();
-			if (!switchStrPtr) {
-				return nullptr;
-			}
-			auto strcmpFn = module->getFunction("strcmp");
-			if (!strcmpFn) {
-				auto strcmpTy = llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, false);
-				strcmpFn = llvm::Function::Create(strcmpTy, llvm::Function::ExternalLinkage, "strcmp", module.get());
-			}
-			auto switchStrData = builder->CreateCall(qdStringDataFn, {switchStrPtr}, "switch_str_data");
-			auto caseStr = builder->CreateGlobalString(decodeStringLiteral(literal));
-			auto cmpResult = builder->CreateCall(strcmpFn, {switchStrData, caseStr}, "strcmp_result");
-			return builder->CreateICmpEQ(cmpResult, builder->getInt32(0), "case_match");
-		};
-
-		// Compare the scrutinee against a named constant or enum variant. Shared by the scoped
-		// (module::Name, Enum::Variant) and unqualified (bare const) case-label forms. Returns
-		// null when the name does not resolve, so the caller can diagnose it.
-		auto compareAgainstNamedConstant = [&](const std::string& name) -> llvm::Value* {
-			auto constIt = moduleConstants.find(name);
-			if (constIt == moduleConstants.end()) {
-				return nullptr;
-			}
-			const std::string& value = constIt->second;
-
-			// Determine the type from the value string
-			if (!value.empty() && value[0] == '"') {
-				return stringCaseMatch(value);
-			}
-
-			if (isD128LiteralText(value)) {
-				return d128CaseMatch(value);
-			}
-
-			if (isFloatLiteralText(value)) {
-				// Float constant
-				auto switchVal = switchValueFloat();
-				if (!switchVal) {
-					return nullptr;
-				}
-				auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), floatLiteralOr(value, 0.0));
-				return builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
-			}
-
-			// Integer constant
-			auto switchVal = switchValueInt();
-			int64_t parsedVal = 0;
-			if (!parseIntegerLiteral(value, parsedVal)) {
-				std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for " << name << std::endl;
-				compilationFailed = true;
-			}
-			auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
-			return builder->CreateICmpEQ(switchVal, caseVal, "case_match");
-		};
-
-		// Create merge block (after all cases)
+		// Without a `_` arm, nothing matching runs an empty one: the value still has to go
+		llvm::BasicBlock* defaultBB = llvm::BasicBlock::Create(*context, "switch.default", currentFn);
 		llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "switch.merge", currentFn);
 
-		// Generate cases as if-else chain
-		const auto& cases = switchStmt->cases();
-		llvm::BasicBlock* nextCaseBB = nullptr;
-		llvm::BasicBlock* defaultBB = nullptr;
-
-		// Find default case if present
-		for (auto* caseNode : cases) {
-			if (caseNode->isDefault()) {
-				defaultBB = llvm::BasicBlock::Create(*context, "switch.default", currentFn);
-				break;
-			}
-		}
-
-		// If no default, merge is the default
-		if (!defaultBB) {
-			defaultBB = mergeBB;
-		}
-
-		// Count non-default cases
-		size_t nonDefaultCaseCount = 0;
-		for (auto* caseNode : cases) {
-			if (!caseNode->isDefault()) {
-				nonDefaultCaseCount++;
-			}
-		}
-
 		// On the native path each arm starts from the same compile-time stack and may leave a
-		// different set of SSA values on it, so record every arm's exit block and resulting
-		// stack and reconcile them with PHI nodes at the merge block -- the same shape
-		// generateIf uses for its two arms.
+		// different set of SSA values on it; the arms are reconciled at the merge block
 		const std::vector<llvm::Value*> savedStack = compileTimeStack;
-		std::vector<std::pair<llvm::BasicBlock*, std::vector<llvm::Value*>>> armExits;
+		std::vector<ArmExit> armExits;
 
-		// Generate each case
-		size_t processedCases = 0;
-		for (size_t i = 0; i < cases.size(); i++) {
-			AstNodeCase* caseNode = cases[i];
+		// The value stays on the stack while the labels are tested and goes as an arm is
+		// entered, so an arm that returns or breaks has already released it
+		auto generateArm = [&](llvm::BasicBlock* armBB, IAstNode* body) {
+			builder->SetInsertPoint(armBB);
+			if (!scrutinee.native) {
+				builder->CreateCall(module->getOrInsertFunction(
+											"qd_drop", llvm::FunctionType::get(execResultTy, {contextPtrTy}, false)),
+						{ctx});
+			}
+			compileTimeStack = savedStack;
+			if (body) {
+				generateNode(body, ctx);
+			}
+			llvm::BasicBlock* exitBlock = builder->GetInsertBlock();
+			if (exitBlock && !isTerminated(exitBlock)) {
+				armExits.emplace_back(exitBlock, compileTimeStack);
+				builder->CreateBr(mergeBB);
+			}
+		};
 
-			if (caseNode->isDefault()) {
-				// Handle default case at the end
-				continue;
+		for (size_t i = 0; i < labelled.size(); i++) {
+			IAstNode* label = labelled[i]->value();
+
+			// The case's own line is its closing brace, so step on the label's
+			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && label && label->line() > 0) {
+				builder->SetCurrentDebugLocation(llvm::DILocation::get(*context, static_cast<unsigned>(label->line()),
+						static_cast<unsigned>(label->column()), debugScopeStack.back()));
 			}
 
-			// Create blocks for this case
-			llvm::BasicBlock* caseBB = llvm::BasicBlock::Create(*context, "switch.case", currentFn);
-			processedCases++;
-			nextCaseBB = (processedCases < nonDefaultCaseCount)
-								 ? llvm::BasicBlock::Create(*context, "switch.check", currentFn)
-								 : defaultBB;
-
-			// Generate comparison
-			IAstNode* caseValue = caseNode->value();
-
-			// Set debug location to the case value's line for proper stepping
-			// (caseNode->line() returns the closing brace position due to parsing order)
-			if (debugInfoEnabled && debugBuilder && !debugScopeStack.empty() && caseValue) {
-				unsigned caseLine = static_cast<unsigned>(caseValue->line());
-				unsigned caseColumn = static_cast<unsigned>(caseValue->column());
-				if (caseLine > 0) {
-					auto debugLoc = llvm::DILocation::get(*context, caseLine, caseColumn, debugScopeStack.back());
-					builder->SetCurrentDebugLocation(debugLoc);
-				}
-			}
-			llvm::Value* matches = nullptr;
-
-			if (caseValue->type() == IAstNode::Type::LITERAL) {
-				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(caseValue);
-
-				if (scrutineeIsFallibleStatus && lit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
-						(lit->value() == "Ok" || lit->value() == "true")) {
-					// `Ok` on a fallible status means "the call succeeded". Test the error state
-					// directly so that a panic carrying code 1 is not mistaken for success --
-					// and via has_error, so that a panic carrying code 0 is not either.
-					matches = builder->CreateNot(generateReadErrorState(ctx, "sw_has_error").failed, "case_ok");
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::INTEGER ||
-						   lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
-					// Compare switch value with case value (integer or bool)
-					auto switchVal = switchValueInt();
-
-					int64_t parsedVal = 0;
-					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
-						parsedVal = (lit->value() == "true" || lit->value() == "Ok") ? 1 : 0;
-					} else if (!parseIntegerLiteral(lit->value(), parsedVal)) {
-						std::cerr << "quadc: error: Invalid integer case label '" << lit->value()
-								  << "' (out of range or invalid format)" << std::endl;
-						compilationFailed = true;
-					}
-					auto caseVal = builder->getInt64(static_cast<uint64_t>(parsedVal));
-					matches = builder->CreateICmpEQ(switchVal, caseVal, "case_match");
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::FLOAT) {
-					// Compare float values (leaves `matches` null on the native path, which the
-					// unresolved-case-label diagnostic below reports)
-					auto switchVal = switchValueFloat();
-					if (switchVal) {
-						auto caseVal = llvm::ConstantFP::get(builder->getDoubleTy(), std::stod(lit->value()));
-						matches = builder->CreateFCmpOEQ(switchVal, caseVal, "case_match");
-					}
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::D128) {
-					matches = d128CaseMatch(lit->value());
-				} else if (lit->literalType() == AstNodeLiteral::LiteralType::STRING) {
-					// Null on the native path, which leaves `matches` null for the diagnostic below
-					matches = stringCaseMatch(lit->value());
-				}
-			} else if (caseValue->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-				// Handle scoped constants and enum variants (module::ConstName, Enum::Variant)
-				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(caseValue);
-				std::string fullName = scoped->scope() + "::" + scoped->name();
-				matches = compareAgainstNamedConstant(fullName);
-			} else if (caseValue->type() == IAstNode::Type::IDENTIFIER) {
-				// Handle unqualified constants (a module-level `const` referenced by bare name).
-				// Without this the case label resolved to nothing, `matches` stayed null, no
-				// conditional branch was emitted and the enclosing block was left without a
-				// terminator -- which surfaced as "Basic Block ... does not have terminator!".
-				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(caseValue);
-				matches = compareAgainstNamedConstant(ident->name());
-			}
-
+			llvm::Value* matches = generateCaseMatch(label, scrutinee, fallibleStatus, ctx);
 			if (!matches) {
-				// Nothing resolved this case label. Emitting no branch here leaves the current
-				// block unterminated and produces invalid IR, so fail loudly instead.
+				// A label that resolves to nothing would leave this block without a branch
 				std::cerr << "quadc: error: Unsupported or unresolved switch case label";
-				if (caseValue && caseValue->line() > 0) {
-					std::cerr << " at line " << caseValue->line();
+				if (label && label->line() > 0) {
+					std::cerr << " at line " << label->line();
 				}
 				std::cerr << " (case labels must be a literal, a constant, or an enum variant)" << std::endl;
 				compilationFailed = true;
 				matches = builder->getFalse();
 			}
 
-			// When there is no default arm, the last case's false edge lands straight on the
-			// merge block. That edge carries the unmodified entry stack and is a merge
-			// predecessor like any arm, so record it.
-			llvm::BasicBlock* compareBlock = builder->GetInsertBlock();
-			if (nextCaseBB == mergeBB && compareBlock) {
-				armExits.emplace_back(compareBlock, savedStack);
-			}
-
-			builder->CreateCondBr(matches, caseBB, nextCaseBB);
-
-			// Generate case body
-			builder->SetInsertPoint(caseBB);
-			compileTimeStack = savedStack;
-			if (caseNode->body()) {
-				generateNode(caseNode->body(), ctx);
-			}
-			// Branch to merge (automatic break)
-			llvm::BasicBlock* caseBlock = builder->GetInsertBlock();
-			if (caseBlock && !isTerminated(caseBlock)) {
-				armExits.emplace_back(caseBlock, compileTimeStack);
-				builder->CreateBr(mergeBB);
-			}
-
-			// Set up for next case
-			builder->SetInsertPoint(nextCaseBB);
-			compileTimeStack = savedStack;
+			llvm::BasicBlock* caseBB = llvm::BasicBlock::Create(*context, "switch.case", currentFn);
+			llvm::BasicBlock* nextBB =
+					i + 1 < labelled.size() ? llvm::BasicBlock::Create(*context, "switch.check", currentFn) : defaultBB;
+			builder->CreateCondBr(matches, caseBB, nextBB);
+			generateArm(caseBB, labelled[i]->body());
+			builder->SetInsertPoint(nextBB);
 		}
 
-		// Generate default case if present
-		if (defaultBB != mergeBB) {
-			// A switch whose only arm is the wildcard emits no comparison, so nothing has
-			// branched to the default block yet. Wire the current block to it.
-			if (nonDefaultCaseCount == 0) {
-				llvm::BasicBlock* entryBlock = builder->GetInsertBlock();
-				if (entryBlock && !isTerminated(entryBlock)) {
-					builder->CreateBr(defaultBB);
-				}
-			}
-
-			builder->SetInsertPoint(defaultBB);
-			compileTimeStack = savedStack;
-			for (auto* caseNode : cases) {
-				if (caseNode->isDefault() && caseNode->body()) {
-					// Debug location will be set by generateNode for the body
-					generateNode(caseNode->body(), ctx);
-					break;
-				}
-			}
-			llvm::BasicBlock* defaultBlock = builder->GetInsertBlock();
-			if (defaultBlock && !isTerminated(defaultBlock)) {
-				armExits.emplace_back(defaultBlock, compileTimeStack);
-				builder->CreateBr(mergeBB);
-			}
+		if (labelled.empty()) {
+			builder->CreateBr(defaultBB);
 		}
+		generateArm(defaultBB, wildcard ? wildcard->body() : nullptr);
 
-		// Continue with merge block
 		builder->SetInsertPoint(mergeBB);
+		if (scrutinee.native) {
+			mergeArmStacks(armExits, savedStack, "switch", switchStmt->line());
+		}
+	}
 
-		if (nativePath) {
-			// Reconcile the arms. Mirrors generateIf: identical values pass through untouched,
-			// differing ones become PHI nodes. Arms that leave differing depths are merged at
-			// the shallowest common depth, matching generateIf's existing behaviour -- making
-			// that an error is the separate branch-unification work.
-			if (armExits.empty()) {
-				// Every arm terminated; the merge block is unreachable.
-				compileTimeStack = savedStack;
-			} else {
-				size_t mergeSize = armExits[0].second.size();
-				for (const auto& arm : armExits) {
-					mergeSize = std::min(mergeSize, arm.second.size());
-				}
-
-				std::vector<llvm::Value*> merged;
-				merged.reserve(mergeSize);
-				for (size_t slot = 0; slot < mergeSize; slot++) {
-					llvm::Value* first = armExits[0].second[slot];
-					bool allSame = true;
-					for (const auto& arm : armExits) {
-						if (arm.second[slot] != first) {
-							allSame = false;
-							break;
-						}
-					}
-
-					if (allSame) {
-						merged.push_back(first);
-						continue;
-					}
-
-					auto* phi = builder->CreatePHI(
-							first->getType(), static_cast<unsigned>(armExits.size()), "switch.merge.val");
-					for (const auto& arm : armExits) {
-						phi->addIncoming(arm.second[slot], arm.first);
-					}
-					merged.push_back(phi);
-				}
-				compileTimeStack = std::move(merged);
+	bool LlvmGenerator::Impl::takeSwitchScrutinee(SwitchScrutinee& scrutinee, llvm::Value* ctx) {
+		// On the native path (integer-only functions) operands live in compileTimeStack as
+		// SSA values and are never materialised to the runtime stack, so the scrutinee has
+		// to come from there instead
+		if (useCompileTimeStack) {
+			if (compileTimeStack.empty()) {
+				std::cerr << "quadc: error: switch has no value to match on" << std::endl;
+				compilationFailed = true;
+				return false;
 			}
-			return;
+			scrutinee.native = compileTimeStack.back();
+			compileTimeStack.pop_back();
+			return true;
 		}
 
-		// Clean up switch value if it's a string (need to free the allocated memory)
-		auto typePtr = builder->CreateStructGEP(switchElemTy, switchElem, 1, "type_ptr");
-		auto switchType = builder->CreateLoad(int32Ty, typePtr, "switch_type");
-		auto isString = builder->CreateICmpEQ(switchType, builder->getInt32(3), "is_string"); // QD_STACK_TYPE_STR = 3
+		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "switch.underflow", currentFn);
+		llvm::BasicBlock* peekBB = llvm::BasicBlock::Create(*context, "switch.peek", currentFn);
 
-		llvm::BasicBlock* freeStringBB = llvm::BasicBlock::Create(*context, "free_string", currentFn);
-		llvm::BasicBlock* skipFreeBB = llvm::BasicBlock::Create(*context, "skip_free", currentFn);
+		auto sa = getStackAccess(ctx);
+		builder->CreateCondBr(builder->CreateICmpEQ(sa.size, builder->getInt64(0), "is_empty"), underflowBB, peekBB);
+		builder->SetInsertPoint(underflowBB);
+		emitFatalError(ctx, "Fatal error in switch: Stack underflow (requires 1 value to match)\n");
 
-		builder->CreateCondBr(isString, freeStringBB, skipFreeBB);
+		builder->SetInsertPoint(peekBB);
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
+		scrutinee.slot = builder->CreateGEP(stackElementTy, sa.data, topIdx, "switch_slot");
+		return true;
+	}
 
-		// Release string reference
-		builder->SetInsertPoint(freeStringBB);
-		auto valuePtr = builder->CreateStructGEP(switchElemTy, switchElem, 0, "value_ptr");
-		auto strPtr = builder->CreateLoad(ptrTy, valuePtr, "str_ptr");
-		builder->CreateCall(qdStringReleaseFn, {strPtr});
-		builder->CreateBr(skipFreeBB);
+	// Is this switch reading the status left by a *user-defined* fallible call? If so, `Ok`
+	// must mean "no error" rather than "the value equals 1". Error codes are user-chosen and
+	// `Ok` is 1, so comparing by value makes a `panic` with code 1 indistinguishable from
+	// success.
+	//
+	// Deliberately excludes imported C functions: they are inconsistent about setting
+	// ctx->error_code (io::open sets it, net::connect only pushes the code), so testing the
+	// error state there would report success on a genuine failure. They keep the by-value
+	// comparison, which is sound because their codes start at 2 by convention.
+	bool LlvmGenerator::Impl::switchReadsFallibleStatus(AstNodeSwitchStatement* switchStmt) {
+		IAstNode* parent = switchStmt->parent();
+		if (!parent) {
+			return false;
+		}
+		for (size_t i = 1; i < parent->childCount(); i++) {
+			if (parent->child(i) != switchStmt) {
+				continue;
+			}
+			IAstNode* prev = parent->child(i - 1);
+			std::string callee;
+			if (prev && prev->type() == IAstNode::Type::IDENTIFIER) {
+				callee = static_cast<AstNodeIdentifier*>(prev)->name();
+			} else if (prev && prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+				auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
+				callee = sc->scope() + "::" + sc->name();
+			} else {
+				return false;
+			}
+			if (importedCFunctions.count(callee)) {
+				return false;
+			}
+			auto it = fallibleFunctions.find(callee);
+			return it != fallibleFunctions.end() && it->second;
+		}
+		return false;
+	}
 
-		// Skip free block
-		builder->SetInsertPoint(skipFreeBB);
+	// Whether the scrutinee matches one case label, or null when the label means nothing
+	// here: it names nothing, or asks for a float, string or d128 on the native path,
+	// which is integer-only
+	llvm::Value* LlvmGenerator::Impl::generateCaseMatch(
+			IAstNode* label, const SwitchScrutinee& scrutinee, bool fallibleStatus, llvm::Value* ctx) {
+		if (!label) {
+			return nullptr;
+		}
+		if (label->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+			auto* scoped = static_cast<AstNodeScopedIdentifier*>(label);
+			return generateNamedConstantMatch(scoped->scope() + "::" + scoped->name(), scrutinee);
+		}
+		if (label->type() == IAstNode::Type::IDENTIFIER) {
+			return generateNamedConstantMatch(static_cast<AstNodeIdentifier*>(label)->name(), scrutinee);
+		}
+		if (label->type() != IAstNode::Type::LITERAL) {
+			return nullptr;
+		}
+
+		auto* lit = static_cast<AstNodeLiteral*>(label);
+		const std::string& text = lit->value();
+		switch (lit->literalType()) {
+		case AstNodeLiteral::LiteralType::BOOL: {
+			const bool truthy = text == "true" || text == "Ok";
+			if (fallibleStatus && truthy) {
+				// `Ok` on a fallible status means "the call succeeded". Test the error state
+				// directly so that a panic carrying code 1 is not mistaken for success --
+				// and via has_error, so that a panic carrying code 0 is not either.
+				return builder->CreateNot(generateReadErrorState(ctx, "sw_has_error").failed, "case_ok");
+			}
+			return generateIntCaseMatch(truthy ? 1 : 0, scrutinee);
+		}
+		case AstNodeLiteral::LiteralType::INTEGER: {
+			int64_t value = 0;
+			if (!parseIntegerLiteral(text, value)) {
+				std::cerr << "quadc: error: Invalid integer case label '" << text
+						  << "' (out of range or invalid format)" << std::endl;
+				compilationFailed = true;
+			}
+			return generateIntCaseMatch(value, scrutinee);
+		}
+		case AstNodeLiteral::LiteralType::FLOAT:
+			return generateFloatCaseMatch(std::stod(text), scrutinee);
+		case AstNodeLiteral::LiteralType::D128:
+			return generateD128CaseMatch(text, scrutinee);
+		case AstNodeLiteral::LiteralType::STRING:
+			return generateStringCaseMatch(text, scrutinee);
+		default:
+			return nullptr;
+		}
+	}
+
+	// A named constant or enum variant, compared as the literal it stands for
+	llvm::Value* LlvmGenerator::Impl::generateNamedConstantMatch(
+			const std::string& name, const SwitchScrutinee& scrutinee) {
+		auto constIt = moduleConstants.find(name);
+		if (constIt == moduleConstants.end()) {
+			return nullptr;
+		}
+		const std::string& value = constIt->second;
+		if (!value.empty() && value[0] == '"') {
+			return generateStringCaseMatch(value, scrutinee);
+		}
+		if (isD128LiteralText(value)) {
+			return generateD128CaseMatch(value, scrutinee);
+		}
+		if (isFloatLiteralText(value)) {
+			return generateFloatCaseMatch(floatLiteralOr(value, 0.0), scrutinee);
+		}
+		int64_t parsed = 0;
+		if (!parseIntegerLiteral(value, parsed)) {
+			std::cerr << "quadc: error: Invalid integer constant value '" << value << "' for " << name << std::endl;
+			compilationFailed = true;
+		}
+		return generateIntCaseMatch(parsed, scrutinee);
+	}
+
+	llvm::Value* LlvmGenerator::Impl::generateIntCaseMatch(int64_t label, const SwitchScrutinee& scrutinee) {
+		llvm::Value* value = scrutinee.native;
+		if (!value) {
+			auto* valuePtr = builder->CreateStructGEP(stackElementTy, scrutinee.slot, 0, "value_ptr");
+			value = builder->CreateLoad(int64Ty, valuePtr, "switch_val");
+		}
+		return builder->CreateICmpEQ(value, builder->getInt64(static_cast<uint64_t>(label)), "case_match");
+	}
+
+	llvm::Value* LlvmGenerator::Impl::generateFloatCaseMatch(double label, const SwitchScrutinee& scrutinee) {
+		if (!scrutinee.slot) {
+			return nullptr;
+		}
+		auto* valuePtr = builder->CreateStructGEP(stackElementTy, scrutinee.slot, 0, "value_ptr");
+		auto* value = builder->CreateLoad(builder->getDoubleTy(), valuePtr, "switch_val_f");
+		return builder->CreateFCmpOEQ(value, llvm::ConstantFP::get(builder->getDoubleTy(), label), "case_match");
+	}
+
+	// The runtime compares, against a literal it reads once and caches, as a pushed d128
+	// literal is
+	llvm::Value* LlvmGenerator::Impl::generateD128CaseMatch(const std::string& text, const SwitchScrutinee& scrutinee) {
+		uint64_t low = 0;
+		uint64_t high = 0;
+		if (!scrutinee.slot || !d128LiteralWords(text, low, high)) {
+			return nullptr;
+		}
+		auto matchFn = module->getOrInsertFunction(
+				"qd_d128_matches_bits", llvm::FunctionType::get(int32Ty, {ptrTy, int64Ty, int64Ty}, false));
+		auto* found = builder->CreateCall(
+				matchFn, {scrutinee.slot, builder->getInt64(low), builder->getInt64(high)}, "d128_case");
+		return builder->CreateICmpNE(found, builder->getInt32(0), "case_match");
+	}
+
+	// Equal bytes up to the label's end and equal lengths: a string holding a NUL is not
+	// equal to the part of it before the NUL
+	llvm::Value* LlvmGenerator::Impl::generateStringCaseMatch(
+			const std::string& literal, const SwitchScrutinee& scrutinee) {
+		if (!scrutinee.slot) {
+			return nullptr;
+		}
+		const std::string label = decodeStringLiteral(literal);
+		auto* valuePtr = builder->CreateStructGEP(stackElementTy, scrutinee.slot, 0, "value_ptr");
+		auto* str = builder->CreateLoad(ptrTy, valuePtr, "switch_str");
+
+		auto strcmpFn = module->getOrInsertFunction("strcmp", llvm::FunctionType::get(int32Ty, {ptrTy, ptrTy}, false));
+		auto lengthFn =
+				module->getOrInsertFunction("qd_string_length", llvm::FunctionType::get(int64Ty, {ptrTy}, false));
+		auto* data = builder->CreateCall(qdStringDataFn, {str}, "switch_str_data");
+		auto* order = builder->CreateCall(strcmpFn, {data, builder->CreateGlobalString(label)}, "strcmp_result");
+		auto* length = builder->CreateCall(lengthFn, {str}, "switch_str_len");
+		return builder->CreateAnd(builder->CreateICmpEQ(order, builder->getInt32(0)),
+				builder->CreateICmpEQ(length, builder->getInt64(strlen(label.c_str()))), "case_match");
 	}
 
 	// generateLocal, generateLocalOne, generateLocalCleanup, collectAllCapturesFromAST are in generator_nodes_locals.cc
 
 	// The casts a call implies on its arguments, each converted where it lies: casts[i] is
-	// for parameter i, the deepest being 0. In place, because swapping an argument to the
-	// top and back only works for the one under it -- two swaps put the stack back as it was.
-	void LlvmGenerator::Impl::generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx) {
-		llvm::Function* castFn = module->getFunction("qd_cast_param");
+	// for the argument i deep from the bottom of the call's arguments. In place, because
+	// swapping an argument to the top and back only works for the one under it -- two swaps
+	// put the stack back as it was. An `any` argument is checked against its parameter, which
+	// the message numbers as `callee` does, after the receiver when `receiverFirst`.
+	void LlvmGenerator::Impl::generateCastInstructions(
+			const std::vector<CastDirection>& casts, const std::string& callee, bool receiverFirst, llvm::Value* ctx) {
 		for (size_t i = 0; i < casts.size(); i++) {
 			uint64_t type = 0;
+			bool check = false;
 			switch (casts[i]) {
 			case CastDirection::NONE:
 				continue;
@@ -1963,13 +1416,46 @@ namespace Qd {
 			case CastDirection::INT_TO_D128:
 				type = kStackTypeD128;
 				break;
+			case CastDirection::ANY_TO_INT:
+				type = 0; // QD_STACK_TYPE_INT
+				check = true;
+				break;
+			case CastDirection::ANY_TO_FLOAT:
+				type = 1; // QD_STACK_TYPE_FLOAT
+				check = true;
+				break;
+			case CastDirection::ANY_TO_D128:
+				type = kStackTypeD128;
+				check = true;
+				break;
+			case CastDirection::ANY_TO_STR:
+				type = 3; // QD_STACK_TYPE_STR
+				check = true;
+				break;
+			case CastDirection::ANY_TO_PTR:
+				type = 2; // QD_STACK_TYPE_PTR
+				check = true;
+				break;
 			}
+			const uint64_t depth = casts.size() - 1 - i;
+			if (check) {
+				llvm::Function* checkFn = module->getFunction("qd_check_param");
+				if (!checkFn) {
+					checkFn = llvm::Function::Create(llvm::FunctionType::get(execResultTy,
+															 {contextPtrTy, int64Ty, int64Ty, int64Ty, ptrTy}, false),
+							llvm::Function::ExternalLinkage, "qd_check_param", *module);
+				}
+				const uint64_t param = receiverFirst ? i : i + 1;
+				builder->CreateCall(checkFn, {ctx, builder->getInt64(depth), builder->getInt64(type),
+													 builder->getInt64(param), getOrCreateGlobalString(callee)});
+				continue;
+			}
+			llvm::Function* castFn = module->getFunction("qd_cast_param");
 			if (!castFn) {
 				castFn = llvm::Function::Create(
 						llvm::FunctionType::get(execResultTy, {contextPtrTy, int64Ty, int64Ty}, false),
 						llvm::Function::ExternalLinkage, "qd_cast_param", *module);
 			}
-			const uint64_t depth = casts.size() - 1 - i;
 			builder->CreateCall(castFn, {ctx, builder->getInt64(depth), builder->getInt64(type)});
 		}
 	}

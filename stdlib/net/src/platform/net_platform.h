@@ -31,12 +31,12 @@ net_socket_t net_platform_listen(int port);
 // Returns client socket descriptor on success, NET_SOCKET_INVALID on failure
 net_socket_t net_platform_accept(net_socket_t server_socket);
 
-// Connect to a remote host and port
-// Returns socket descriptor on success, NET_SOCKET_INVALID on failure
+// Connect to a remote host and port, IPv4 or IPv6
+// Returns socket descriptor on success, NET_SOCKET_INVALID on failure with errno set
 net_socket_t net_platform_connect(const char* host, int port);
 
-// Send data to a socket
-// Returns number of bytes sent on success, -1 on failure
+// Send all of the data, without raising SIGPIPE when the peer has gone
+// Returns NET_SUCCESS, or NET_ERROR with errno set
 int net_platform_send(net_socket_t socket, const char* data, size_t len);
 
 // Receive data from a socket

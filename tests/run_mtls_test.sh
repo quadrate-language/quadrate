@@ -46,17 +46,18 @@ if [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ]; then
     INCLUDE_FLAGS="-I $QUADRATE_EXTERNAL_MODULES"
 fi
 
-# Check if tls module is available (in-tree at stdlib/tls/ or via QUADRATE_EXTERNAL_MODULES)
+# The tls module ships in dist/share/quadrate after `make`. This looked in lib/tls, which
+# the module left when it moved to stdlib/, so the test skipped and still counted as a pass.
 TLS_FOUND=0
-if [ -d "$PROJECT_ROOT/lib/tls" ] && ls "$PROJECT_ROOT/lib/tls"/*.qd >/dev/null 2>&1; then
-    INCLUDE_FLAGS="-I $PROJECT_ROOT/lib"
+if [ -f "$PROJECT_ROOT/dist/share/quadrate/tls/tls.qd" ]; then
+    export QUADRATE_ROOT="$PROJECT_ROOT/dist/share/quadrate"
     TLS_FOUND=1
 elif [ -n "${QUADRATE_EXTERNAL_MODULES:-}" ] && [ -f "$QUADRATE_EXTERNAL_MODULES/tls/tls.qd" ]; then
     TLS_FOUND=1
 fi
 
 if [ "$TLS_FOUND" -eq 0 ]; then
-    echo -e "${RED}SKIP${NC}: tls module not found (not in stdlib/tls/ or QUADRATE_EXTERNAL_MODULES)"
+    echo -e "${RED}SKIP${NC}: tls module not found (not in dist/share/quadrate or QUADRATE_EXTERNAL_MODULES)"
     exit 0
 fi
 
@@ -136,9 +137,7 @@ cat >> "$CERT_DIR/mtls_test.qd" << EOF
     // Connect to local server
     "127.0.0.1" $PORT net::connect! -> sock
 
-    // Connect with mTLS
-    // Note: With self-signed certs, we expect certificate validation to fail
-    // The mTLS handshake is still exercised, which is the main goal of the test
+    // Connect with mTLS; the test runs with SSL_CERT_FILE set to the test CA
     sock "localhost" "$CERT_DIR/client.crt" "$CERT_DIR/client.key" tls::connect_mtls switch {
         Ok {
             -> conn
@@ -146,8 +145,8 @@ cat >> "$CERT_DIR/mtls_test.qd" << EOF
             conn tls::close
         }
         _ {
-            // Error handling - certificate errors are expected with self-signed certs
-            "MTLS_CERT_ERROR_AS_EXPECTED" print nl
+            err -> code -> msg
+            "MTLS_FAILED " print msg print nl
         }
     }
 
@@ -168,25 +167,15 @@ if ! "$QUADC" $INCLUDE_FLAGS -o "$CERT_DIR/mtls_test" "$CERT_DIR/mtls_test.qd" 2
     exit 1
 fi
 
-# Run test
-if output=$($VALGRIND_CMD "$CERT_DIR/mtls_test" 2>&1); then
-    # Check for either successful connection OR expected certificate error
-    if echo "$output" | grep -q "MTLS_CONNECTED\|MTLS_CERT_ERROR_AS_EXPECTED"; then
-        if echo "$output" | grep -q "MTLS_DONE"; then
-            echo -e "${GREEN}PASS${NC}"
-            echo ""
-            echo "=== Test Output ==="
-            echo "$output"
-            echo ""
-            if echo "$output" | grep -q "MTLS_CONNECTED"; then
-                echo -e "${GREEN}mTLS test passed (full connection)!${NC}"
-            else
-                echo -e "${GREEN}mTLS test passed (cert error handling verified)!${NC}"
-                echo "Note: Self-signed test certs cause expected cert validation error."
-                echo "The mTLS code path was exercised and error handling works correctly."
-            fi
-            exit 0
-        fi
+# Run test, trusting the test CA. Without it the handshake failed on the certificate and
+# the test passed anyway, so it never showed that a client certificate was accepted.
+if output=$(SSL_CERT_FILE="$CERT_DIR/ca.crt" $VALGRIND_CMD "$CERT_DIR/mtls_test" 2>&1); then
+    if echo "$output" | grep -q "MTLS_CONNECTED" && echo "$output" | grep -q "MTLS_DONE"; then
+        echo -e "${GREEN}PASS${NC}"
+        echo ""
+        echo "=== Test Output ==="
+        echo "$output"
+        exit 0
     fi
     echo -e "${RED}FAIL${NC} (unexpected output)"
     echo "Output:"

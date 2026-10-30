@@ -1,0 +1,9 @@
+// Test: fmt::fprintf takes its arguments as declared, ( args... fd format -- ), and its
+// output comes after what stdout already holds
+use fmt
+
+fn main() {
+	"first " fmt::print
+	"second" 1 "%s\n" fmt::fprintf
+	1 2 1 "%d+%d\n" fmt::fprintf
+}

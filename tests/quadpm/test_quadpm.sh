@@ -1035,6 +1035,61 @@ else
     fail "Installation failed" "$output"
 fi
 
+# Tests 33b-33d: a program uses what quadpm installed. The compiler, the validator and the
+# language server resolve `use` through one search (lib/qc/module_resolver), and these are
+# what it is for: before, the validator looked for packages in a directory quadpm no longer
+# writes, and nothing here compiled a program against an installed package at all.
+QUADC="${QUADC:-$(pwd)/dist/bin/quadc}"
+compile_and_run() { # compile_and_run <dir> <source>: prints the program's output, or its errors
+    printf '%s\n' "$2" > "$1/main.qd"
+    (cd "$1" && QUADRATE_PATH="$TEST_CACHE_DIR/cache" QUADRATE_ROOT="$(pwd)/dist/share/quadrate" \
+        QUADRATE_LIBDIR="$(pwd)/dist/lib" "$QUADC" main.qd -r 2>&1)
+}
+mkdir -p "$NAMESPACE_DIR/greeter" "$TEST_CACHE_DIR/program"
+printf 'pub fn hello( -- s:str) {\n\t"hello from greeter"\n}\n' > "$NAMESPACE_DIR/greeter/greeter.qd"
+printf '{\n  "name": "greeter",\n  "namespace": "gr"\n}\n' > "$NAMESPACE_DIR/greeter/qd.json"
+(cd "$NAMESPACE_DIR/greeter" && git init -q && git -c user.name=t -c user.email=t@t -c commit.gpgSign=false add . &&
+    git -c user.name=t -c user.email=t@t -c commit.gpgSign=false commit -q -m init &&
+    git -c user.name=t -c user.email=t@t -c tag.gpgSign=false tag -a v1.0.0 -m v1.0.0)
+QUADRATE_PATH="$TEST_CACHE_DIR/cache" "$QUADPM" get "$NAMESPACE_DIR/greeter@v1.0.0" > /dev/null 2>&1
+
+echo ""
+echo "Test 33b: A program uses an installed package by its namespace"
+output=$(compile_and_run "$TEST_CACHE_DIR/program" 'use gr
+fn main() {
+	gr::hello print nl
+}')
+if [ "$output" = "hello from greeter" ]; then
+    pass "use gr finds the package installed as greeter"
+else
+    fail "Installed package not found by namespace" "$output"
+fi
+
+echo ""
+echo "Test 33c: A namespace two packages claim is an error naming both"
+output=$(compile_and_run "$TEST_CACHE_DIR/program" 'use ml
+fn main() {
+}')
+if echo "$output" | grep -q "Ambiguous module 'ml'" && echo "$output" | grep -q "use local/.*/mylib" &&
+        echo "$output" | grep -q "use local/.*/conflicting"; then
+    pass "Ambiguous namespace reported with both full paths"
+else
+    fail "Ambiguous namespace not reported" "$output"
+fi
+
+echo ""
+echo "Test 33d: A full-path import is found, and refused by name until it can be compiled"
+GREETER_PATH="local${NAMESPACE_DIR}/greeter"
+output=$(compile_and_run "$TEST_CACHE_DIR/program" "use \"$GREETER_PATH\"
+fn main() {
+	gr::hello print nl
+}")
+if echo "$output" | grep -q "a full-path import cannot be compiled yet; write 'use gr'"; then
+    pass "Full-path import resolved to its namespace and reported"
+else
+    fail "Full-path import not resolved" "$output"
+fi
+
 # Test 34: Go-style directory structure
 echo ""
 echo "Test 34: Go-style directory structure"

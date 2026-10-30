@@ -272,7 +272,7 @@
       "name": "wait",
       "signature": "( -- signum:i64)",
       "failable": false,
-      "description": "Block until any trapped signal is received. Returns the signal number that was received.",
+      "description": "Block until any trapped signal is received, and take it: its pending flag is cleared, so the next wait waits for the next signal. With no signal trapped, nothing could end the wait, and it is a runtime error.",
       "params": [],
       "returns": [{"name": "signum", "type": "i64", "description": "The signal that was received"}],
       "errors": [],

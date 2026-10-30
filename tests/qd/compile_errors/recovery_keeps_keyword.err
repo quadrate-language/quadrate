@@ -1,0 +1,4 @@
+Expected '{' after enum name
+Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'
+!at top level
+!Unmatched

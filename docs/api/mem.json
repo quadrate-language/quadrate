@@ -1,6 +1,6 @@
 {
   "name": "mem",
-  "description": "Low-level memory allocation and manipulation.  SAFETY: These are unsafe operations with no bounds checking. Improper use can cause segmentation faults and memory corruption.  Allocation failure is reported as ErrAlloc, so a program with something useful to do when memory runs out can handle it like any other error. The standard library does not: its own allocation sites use `!`, which aborts with a message naming the allocation. See specification 11.1 -- a library function has no way to report the failure that would not make every one of its callers fallible for a condition none of them can act on.",
+  "description": "Low-level memory allocation and manipulation.  SAFETY: These are unsafe operations with no bounds checking. Improper use can cause segmentation faults and memory corruption. A null address, or a negative size, is a runtime error.  Allocation failure is reported as ErrAlloc, so a program with something useful to do when memory runs out can handle it like any other error. The standard library does not: its own allocation sites use `!`, which aborts with a message naming the allocation. See specification 11.1 -- a library function has no way to report the failure that would not make every one of its callers fallible for a condition none of them can act on.",
   "constants": [
     {
       "name": "AnySize",
@@ -246,7 +246,7 @@
       "name": "set_any",
       "signature": "(value:any address:ptr offset:i64 -- )",
       "failable": false,
-      "description": "Store a value of any type, with its type, in the slot at offset.  The slot takes over the reference the value came with, and gives it back when the slot is overwritten or cleared, so a string or a struct kept in one stays alive as long as the slot does. The region must be zeroed before first use -- `mem::zero` does it, and a zeroed slot reads back as the integer 0.",
+      "description": "Store a value of any type, with its type, in the slot at offset.  The slot takes over the reference the value came with, and gives it back when the slot is overwritten or cleared, so a string or a struct kept in one stays alive as long as the slot does. A d128, sixteen bytes, is kept in a copy of its own that the slot owns. The region must be zeroed before first use -- `mem::zero` does it, and a zeroed slot reads back as the integer 0.",
       "params": [{"name": "value", "type": "any", "description": "Value to store"}, {"name": "address", "type": "ptr", "description": "Base address"}, {"name": "offset", "type": "i64", "description": "Byte offset from base, a multiple of AnySize"}],
       "returns": [],
       "errors": [],

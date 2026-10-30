@@ -2,12 +2,17 @@
 // Common file utilities for Quadrate CLI tools
 
 #include "quadrate/cli/file_utils.h"
+#include <jansson.h>
+#include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/module_resolver.h>
 
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -148,6 +153,34 @@ namespace qdcli {
 		return true;
 	}
 
+	std::unordered_set<std::string> qdFileImports(const std::string& filePath) {
+		std::unordered_set<std::string> names;
+		std::ifstream file(filePath);
+		if (!file) {
+			return names;
+		}
+		std::stringstream buffer;
+		buffer << file.rdbuf();
+		const std::string source = buffer.str();
+		Qd::Ast ast;
+		std::function<void(Qd::IAstNode*)> collect = [&](Qd::IAstNode* node) {
+			if (!node) {
+				return;
+			}
+			if (node->type() == Qd::IAstNode::Type::USE_STATEMENT) {
+				const std::string& used = static_cast<Qd::AstNodeUse*>(node)->module();
+				if (used.size() > 3 && used.compare(used.size() - 3, 3, ".qd") == 0) {
+					names.insert(fs::path(used).filename().string());
+				}
+			}
+			for (size_t i = 0; i < node->childCount(); i++) {
+				collect(node->child(i));
+			}
+		};
+		collect(ast.generate(source.c_str(), false, filePath.c_str()));
+		return names;
+	}
+
 	std::vector<std::string> getSiblingQdFiles(const std::string& filePath) {
 		std::vector<std::string> siblings;
 
@@ -160,20 +193,6 @@ namespace qdcli {
 
 			// Get canonical path of the input file for comparison
 			std::string canonicalInput = std::filesystem::canonical(filePath).string();
-
-			// Don't auto-merge siblings in test directories
-			// Test files are meant to be standalone
-			// Exception: tests/qd/namespaces/ is for testing directory namespace feature
-			if (canonicalInput.find("/tests/") != std::string::npos &&
-					canonicalInput.find("/tests/qd/namespaces/") == std::string::npos) {
-				return siblings;
-			}
-
-			// Don't auto-merge for stdlib/library module directories
-			// These use explicit `use module` imports
-			if (canonicalInput.find("/lib/") != std::string::npos) {
-				return siblings;
-			}
 
 			// Helper: check if a file has a main() function (quick text search)
 			auto hasMainFunction = [](const std::string& file) -> bool {
@@ -235,13 +254,57 @@ namespace qdcli {
 				siblings.push_back(canonicalEntry);
 			}
 
-			// Sort for deterministic order
+			// A file the program `use`s, or that `use`s it, comes in through that `use`, as in a
+			// module's own directory
+			siblings.push_back(canonicalInput);
+			siblings = Qd::moduleSiblings(canonicalInput, siblings, qdFileImports);
 			std::sort(siblings.begin(), siblings.end());
 		} catch (...) {
 			// Ignore filesystem errors
 		}
 
 		return siblings;
+	}
+
+	std::vector<std::string> manifestIncludePaths(const std::string& directory) {
+		std::vector<std::string> includePaths;
+		json_error_t error;
+		json_t* root = json_load_file((directory + "/qd.json").c_str(), 0, &error);
+		if (!root) {
+			return includePaths;
+		}
+		json_t* dependencies = json_object_get(root, "dependencies");
+		const char* depName;
+		json_t* depValue;
+		json_object_foreach(dependencies, depName, depValue) {
+			// "name": "url-or-path", or "name": { "url": "url-or-path", ... }
+			json_t* url = json_is_object(depValue) ? json_object_get(depValue, "url") : depValue;
+			const std::string written = json_is_string(url) ? json_string_value(url) : "";
+			if (written.empty()) {
+				continue;
+			}
+			std::error_code ec;
+			const bool isPath = written[0] == '/' || written[0] == '.' || written.rfind("~/", 0) == 0;
+			if (isPath) {
+				std::filesystem::path path(Qd::expandTilde(written));
+				if (path.is_relative()) {
+					path = std::filesystem::path(directory) / path;
+				}
+				path = std::filesystem::weakly_canonical(path, ec);
+				if (!ec && std::filesystem::exists(path, ec)) {
+					includePaths.push_back(path.string());
+				}
+				continue;
+			}
+			// A git dependency, found where quadpm installed it
+			const std::string link = Qd::packagesDirectory() + "/_namespaces/" + depName;
+			if (std::filesystem::exists(link, ec)) {
+				const std::filesystem::path target = std::filesystem::canonical(link, ec);
+				includePaths.push_back(ec ? link : target.string());
+			}
+		}
+		json_decref(root);
+		return includePaths;
 	}
 
 } // namespace qdcli

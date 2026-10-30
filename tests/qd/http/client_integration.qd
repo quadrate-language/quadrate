@@ -1,0 +1,29 @@
+// Test: the HTTP client, against the servers tests/run_http_test.sh starts
+/// Usage: client_integration <url> [body]. Sends a GET, or a POST of `body`, with an
+/// X-Test header, and prints the status and then the body, or "error <code>".
+use http
+use os
+
+fn main() {
+	os::args -> args
+	args 0 nth http::new -> req
+	args len 1 gt if {
+		req "POST" http::method
+		req args 1 nth http::body
+	}
+	req "X-Test" "from-client" http::header
+	req http::send switch {
+		Ok {
+			-> resp
+			resp <<status print nl
+			resp <<body print nl
+			resp http::close
+		}
+		_ {
+			err -> code -> msg
+			"error " print code print nl
+		}
+	}
+	req http::free_request
+	args free
+}

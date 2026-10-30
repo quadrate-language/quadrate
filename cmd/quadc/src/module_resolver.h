@@ -16,35 +16,19 @@ inline bool isQdFile(const std::string& name) {
 	return name.size() >= 3 && name.substr(name.size() - 3) == ".qd";
 }
 
-// Expand tilde (~) in file paths
-std::string expandTilde(const std::string& path);
-
-// Get packages directory path (where quadpm installs third-party modules)
-std::string getPackagesDir();
-
-// Find a package in the packages directory
-// Checks g_moduleVersionPins first for pinned versions from -l flags
-// Returns the full path to the package directory, or empty string if not found
-std::string findLatestPackageVersion(const std::string& moduleName);
-
 // Get package name from a module identifier
 // For file paths (ending in .qd), returns the filename without extension
 // For module names, returns the module name as-is
 std::string getPackageFromModuleName(const std::string& moduleName);
 
-// Find a module file, searching in multiple locations
-// Returns the full path to the module file, or empty string if not found
-std::string findModuleFile(const std::string& moduleName, const std::string& sourceDir);
+// The files of `use moduleName` written in sourceDir: the one file of a `use "file.qd"`, or
+// every file of a module directory, found by the search every tool shares (qc/module_resolver.h)
+// with the -I paths and -l pins set above. Empty when there is no such module.
+struct ResolvedModule {
+	std::vector<std::string> files;
+	std::string namespaceName; // Its words' namespace: a full-path import's is the one its qd.json declares
+};
 
-// Find all module files, searching in multiple locations
-// For module.qd-based modules, returns just that file
-// For multi-file modules (no module.qd), returns all *.qd files in the directory
-// Returns empty vector if not found
-std::vector<std::string> findModuleFiles(const std::string& moduleName, const std::string& sourceDir);
-
-// Load dependencies from qd.json and add them as include paths
-// Looks for qd.json in the specified directory
-// Returns the list of include paths found
-std::vector<std::string> loadDependenciesFromManifest(const std::string& manifestDir);
+ResolvedModule findModuleFiles(const std::string& moduleName, const std::string& sourceDir);
 
 #endif

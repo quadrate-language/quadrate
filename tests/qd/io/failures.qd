@@ -1,0 +1,55 @@
+// Test: io failures carry the code that matches errno, and reads and writes report what
+// actually happened
+use io
+use os
+use strings
+
+fn report(label:str code:i64 -- ) {
+	label print ": " print
+	code switch {
+		io::ErrNotFound { "ErrNotFound" }
+		io::ErrPermission { "ErrPermission" }
+		io::ErrWrite { "ErrWrite" }
+		_ { "other" }
+	} print nl
+}
+
+fn main() {
+	"io_failures.txt" "hello" io::write_file!
+
+	// tell takes the handle, as its signature says; it used to leave it on the stack
+	"io_failures.txt" io::Read io::open! -> f
+	f 2 io::SeekSet io::seek! drop
+	f io::tell! -> pos
+	"tell " print pos print " depth " print depth print nl
+	f io::close
+
+	// A missing directory is ErrNotFound, not ErrPermission
+	"no_such_dir/x.txt" "data" io::write_file switch {
+		Ok { "wrote?" print nl }
+		_ { err -> code -> msg "write_file" code report }
+	}
+	"no_such_dir/x.txt" io::Read io::open switch {
+		Ok { -> g g io::close "opened?" print nl }
+		_ { err -> code -> msg "open" code report }
+	}
+
+	// A full disk shows when the file is closed; that write used to report success
+	"/dev/full" os::exists if {
+		"/dev/full" "data" io::write_file switch {
+			Ok { "full: ok?" print nl }
+			_ { err -> code -> msg "full" code report }
+		}
+	} else {
+		"full: ErrWrite" print nl
+	}
+
+	// A /proc file says its size is 0; it used to read as empty
+	"/proc/self/status" os::exists if {
+		"/proc/self/status" io::read_file! strings::len 0 gt print nl
+	} else {
+		1 print nl
+	}
+
+	"io_failures.txt" os::delete!
+}

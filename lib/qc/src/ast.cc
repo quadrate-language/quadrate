@@ -314,6 +314,403 @@ namespace Qd {
 		program->addChild(varDecl);
 	}
 
+	// Hands a parsed top-level node to the program. A parser that failed has already
+	// reported why and returns nullptr.
+	static void addToProgram(AstProgram* program, IAstNode* node) {
+		if (node != nullptr) {
+			node->setParent(program);
+			program->addChild(node);
+		}
+	}
+
+	// Strips the quotes the scanner leaves on a string token
+	static std::string unquoted(const char* literal) {
+		std::string text(literal);
+		if (text.length() >= 2 && text.front() == '"' && text.back() == '"') {
+			return text.substr(1, text.length() - 2);
+		}
+		return text;
+	}
+
+	// `-t`: every token of `src` with its position and kind
+	static void printTokens(const char* src) {
+		u8t_scanner scanner;
+		u8t_scanner_init(&scanner, src);
+		char32_t token;
+		while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
+			size_t n;
+			const char* text = u8t_scanner_token_text(&scanner, &n);
+			std::cout << Colors::cyan() << u8t_scanner_token_start(&scanner) << Colors::reset() << " ";
+			switch (token) {
+			case U8T_IDENTIFIER:
+				std::cout << Colors::green() << "IDENTIFIER" << Colors::reset();
+				break;
+			case U8T_INTEGER:
+				std::cout << Colors::cyan() << "INTEGER   " << Colors::reset();
+				break;
+			case U8T_FLOAT:
+				std::cout << Colors::cyan() << "FLOAT     " << Colors::reset();
+				break;
+			case U8T_STRING:
+				std::cout << Colors::magenta() << "STRING    " << Colors::reset();
+				break;
+			default:
+				// Character token
+				std::cout << Colors::red() << "CHAR      " << Colors::reset();
+				break;
+			}
+			std::cout << " \"" << text << "\"" << std::endl;
+		}
+		std::cout << std::endl;
+	}
+
+	// A `#!` first line becomes a SHEBANG comment, and the scanner moves past it
+	static void parseShebang(u8t_scanner* scanner, const char* src, AstProgram* program) {
+		if (src[0] != '#' || src[1] != '!') {
+			return;
+		}
+		const char* shebangEnd = src + 2;
+		while (*shebangEnd != '\0' && *shebangEnd != '\n' && *shebangEnd != '\r') {
+			shebangEnd++;
+		}
+		std::string shebangText(src + 2, static_cast<size_t>(shebangEnd - (src + 2)));
+		AstNodeComment* shebang = new AstNodeComment(shebangText, AstNodeComment::CommentType::SHEBANG);
+		shebang->setPosition(1, 1);
+		addToProgram(program, shebang);
+
+		size_t skipBytes = static_cast<size_t>(shebangEnd - src);
+		if (*shebangEnd == '\r' && *(shebangEnd + 1) == '\n') {
+			skipBytes += 2;
+		} else if (*shebangEnd == '\n' || *shebangEnd == '\r') {
+			skipBytes++;
+		}
+		scanner->_str = src + skipBytes;
+		scanner->_token_start = skipBytes;
+	}
+
+	// `const name = value`, after the `const` keyword
+	static void parseConstAfterKeyword(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic, AstProgram* program) {
+		size_t n;
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected constant name after 'const'");
+			return;
+		}
+		std::string name(u8t_scanner_token_text(scanner, &n));
+		if (u8t_scanner_scan(scanner) != '=') {
+			errorReporter->reportError(scanner, "Expected '=' after constant name");
+			return;
+		}
+		std::string value = parseConstantValue(scanner, errorReporter, src);
+		if (!value.empty()) {
+			AstNodeConstant* constDecl = new AstNodeConstant(name, value.c_str(), isPublic);
+			setNodePosition(constDecl, scanner, src);
+			addToProgram(program, constDecl);
+		}
+	}
+
+	// `use module`, `use module.qd` or `use "path/to/file.qd"`, after the `use` keyword
+	static void parseUseAfterKeyword(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, AstProgram* program) {
+		size_t n;
+		char32_t token = u8t_scanner_scan(scanner);
+		std::string moduleName;
+		if (token == U8T_STRING) {
+			noteUnterminatedString(scanner, src);
+			moduleName = unquoted(u8t_scanner_token_text(scanner, &n));
+		} else if (token == U8T_IDENTIFIER) {
+			moduleName = u8t_scanner_token_text(scanner, &n);
+			if (u8t_scanner_peek(scanner) == static_cast<char32_t>('.')) {
+				u8t_scanner_scan(scanner);
+				if (u8t_scanner_scan(scanner) == U8T_IDENTIFIER &&
+						strcmp(u8t_scanner_token_text(scanner, &n), "qd") == 0) {
+					moduleName += ".qd";
+				}
+			}
+		} else {
+			errorReporter->reportError(scanner, "Expected module name or quoted path after 'use'");
+		}
+
+		if (!moduleName.empty()) {
+			AstNodeUse* useStmt = new AstNodeUse(moduleName.c_str());
+			setNodePosition(useStmt, scanner, src);
+			addToProgram(program, useStmt);
+		}
+	}
+
+	// One `[pub] [inline] fn name(inputs -- outputs)[!]` of an import block, after the
+	// `fn` keyword. Null when it is malformed, which is reported.
+	static std::unique_ptr<ImportedFunction> parseImportedFunction(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic) {
+		size_t n;
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+			errorReporter->reportError(scanner, "Expected function name after 'fn'");
+			return nullptr;
+		}
+		auto func = std::make_unique<ImportedFunction>();
+		func->name = u8t_scanner_token_text(scanner, &n);
+		func->isPublic = isPublic;
+
+		// token_start is a character index and fastLineColumn wants a byte
+		// offset, so it has to go through the map the way every other call
+		// site does. Without the conversion the line drifts by one for each
+		// multi-byte character earlier in the file, which put every imported
+		// function after the first non-ASCII doc comment on the wrong line.
+		size_t funcLine, funcColumn;
+		size_t pos = fastCharToByteOffset(src, u8t_scanner_token_start(scanner));
+		fastLineColumn(src, pos, &funcLine, &funcColumn);
+		func->line = funcLine;
+		func->column = funcColumn;
+
+		if (u8t_scanner_scan(scanner) != '(') {
+			errorReporter->reportError(scanner, "Expected '(' after function name");
+			return nullptr;
+		}
+
+		// An import block's list takes the same forms a named function's does,
+		// so it is read by the same `parseTypeFrom`. It used to have its own
+		// reader that scanned exactly one identifier after the ':', which meant
+		// every other form came apart silently: `[]str` was read as two stray
+		// tokens `[` `]` and then an unnamed parameter of type `str`, so
+		// `pub fn args( -- args:[]str)` declared a function returning a string.
+		// `fn(...)`, `*T` and, in an output, `mod::T` were lost the same way.
+		// Nothing reported any of it.
+		char32_t token;
+		bool isOutput = false;
+		while (true) {
+			token = u8t_scanner_scan(scanner);
+			if (token == ')' || token == U8T_EOF) {
+				break;
+			}
+			if (token == '-') {
+				token = u8t_scanner_scan(scanner);
+				if (token == '-') {
+					isOutput = true;
+					continue;
+				}
+				errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
+				break;
+			}
+			// `name:type`, or a bare type. A name is always written with its
+			// type, so a lone identifier here can only be the type.
+			std::string paramName;
+			std::string paramType;
+			if (token == U8T_IDENTIFIER && u8t_scanner_peek(scanner) == ':') {
+				paramName = u8t_scanner_token_text(scanner, &n);
+				u8t_scanner_scan(scanner); // consume ':'
+				paramType = parseType(scanner, errorReporter);
+			} else {
+				paramType = parseTypeFrom(token, scanner, errorReporter);
+			}
+			if (paramType.empty()) {
+				// parseType has already reported and consumed it; carrying on
+				// would read the rest of the signature as more parameters.
+				break;
+			}
+			auto* param = new AstNodeParameter(paramName, paramType, isOutput);
+			setNodePosition(param, scanner, src);
+			if (isOutput) {
+				func->outputParameters.emplace_back(param);
+			} else {
+				func->inputParameters.emplace_back(param);
+			}
+		}
+
+		// An optional '!' marks it fallible
+		if (token == ')' && u8t_scanner_peek(scanner) == '!') {
+			u8t_scanner_scan(scanner);
+			func->throws = true;
+		}
+		return func;
+	}
+
+	// `import "libname.so" as "namespace" { fn ... }`, after the `import` keyword
+	static void parseImportAfterKeyword(
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, AstProgram* program) {
+		size_t n;
+		if (u8t_scanner_scan(scanner) != U8T_STRING) {
+			errorReporter->reportError(scanner, "Expected library name (string) after 'import'");
+			return;
+		}
+		noteUnterminatedString(scanner, src);
+		std::string library = unquoted(u8t_scanner_token_text(scanner, &n));
+
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER || strcmp(u8t_scanner_token_text(scanner, &n), "as") != 0) {
+			errorReporter->reportError(scanner, "Expected 'as' after library name");
+			return;
+		}
+		if (u8t_scanner_scan(scanner) != U8T_STRING) {
+			errorReporter->reportError(scanner, "Expected namespace name (string) after 'as'");
+			return;
+		}
+		noteUnterminatedString(scanner, src);
+		std::string namespaceName = unquoted(u8t_scanner_token_text(scanner, &n));
+
+		if (u8t_scanner_scan(scanner) != '{') {
+			errorReporter->reportError(scanner, "Expected '{' after namespace name");
+			return;
+		}
+
+		AstNodeImport* importStmt = new AstNodeImport(library, namespaceName);
+		setNodePosition(importStmt, scanner, src);
+
+		size_t slashPos = SIZE_MAX;
+		bool skipping = false; // past an error, to the next declaration
+		while (true) {
+			char32_t token = u8t_scanner_scan(scanner);
+			if (token == '}' || token == U8T_EOF) {
+				break;
+			}
+
+			// Comments inside an import block are discarded
+			AstNodeComment* comment = parseComment(scanner, src, slashPos, token);
+			slashPos = SIZE_MAX;
+			if (comment != nullptr) {
+				delete comment;
+				continue;
+			}
+			if (token == '/') {
+				slashPos = u8t_scanner_token_start(scanner);
+				continue;
+			}
+
+			// [pub] [inline] fn. `inline` is accepted for consistency but is a
+			// no-op here: an imported function has no body to inline.
+			bool isPublic = false;
+			const char* keyword = token == U8T_IDENTIFIER ? u8t_scanner_token_text(scanner, &n) : nullptr;
+			if (keyword != nullptr && strcmp(keyword, "pub") == 0) {
+				isPublic = true;
+				keyword = u8t_scanner_scan(scanner) == U8T_IDENTIFIER ? u8t_scanner_token_text(scanner, &n) : nullptr;
+			}
+			if (keyword != nullptr && strcmp(keyword, "inline") == 0) {
+				keyword = u8t_scanner_scan(scanner) == U8T_IDENTIFIER ? u8t_scanner_token_text(scanner, &n) : nullptr;
+			}
+			// Anything else used to be skipped a token at a time, so a typo such as
+			// `fm` dropped its declaration without a word.
+			if (keyword == nullptr || strcmp(keyword, "fn") != 0) {
+				if (!skipping) {
+					errorReporter->reportError(scanner, "Expected 'fn' in import block");
+					skipping = true;
+				}
+				continue;
+			}
+			std::unique_ptr<ImportedFunction> func = parseImportedFunction(scanner, errorReporter, src, isPublic);
+			skipping = func == nullptr;
+			if (func) {
+				importStmt->addFunction(func.release());
+			}
+		}
+
+		addToProgram(program, importStmt);
+	}
+
+	// A declaration at the top level, from its first identifier `text`:
+	// `[pub] [inline|stack]... fn`, `[pub] [packed] struct`, `[pub] enum|type|const|var`,
+	// and the never-exported `use`, `import` and `test`.
+	static void parseTopLevelDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
+			AstProgram* program, const char* text) {
+		static const char* const AFTER_PUB = "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'";
+		size_t n;
+		char32_t token = U8T_IDENTIFIER;
+		bool isPublic = false;
+		if (strcmp(text, "pub") == 0) {
+			isPublic = true;
+			token = u8t_scanner_scan(scanner);
+			if (token != U8T_IDENTIFIER) {
+				errorReporter->reportError(scanner, AFTER_PUB);
+				synchronize(scanner, errorReporter, src);
+				return;
+			}
+			text = u8t_scanner_token_text(scanner, &n);
+		}
+
+		// Modifiers apply to a `fn` only. `pub` used to accept them before anything,
+		// so `pub inline struct` and `pub packed fn` compiled with the modifier dropped.
+		bool isInline = false;
+		bool isStack = false;
+		if (strcmp(text, "inline") == 0 || strcmp(text, "stack") == 0) {
+			text = consumeFunctionModifiers(scanner, text, token, isInline, isStack);
+			if (text == nullptr || strcmp(text, "fn") != 0) {
+				errorReporter->reportError(scanner, "Expected 'fn' after function modifier");
+				synchronize(scanner, errorReporter, src);
+				return;
+			}
+		} else if (strcmp(text, "packed") == 0) {
+			if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER ||
+					strcmp(u8t_scanner_token_text(scanner, &n), "struct") != 0) {
+				errorReporter->reportError(scanner, "Expected 'struct' after 'packed'");
+				synchronize(scanner, errorReporter, src);
+				return;
+			}
+			IAstNode* structDecl = parseStructDeclaration(scanner, errorReporter, src, isPublic);
+			if (structDecl != nullptr) {
+				static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
+			}
+			addToProgram(program, structDecl);
+			return;
+		}
+
+		if (strcmp(text, "fn") == 0) {
+			IAstNode* func = parseFunctionDeclaration(scanner, errorReporter, src, isPublic);
+			if (func != nullptr) {
+				static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
+				static_cast<AstNodeFunctionDeclaration*>(func)->setStack(isStack);
+			}
+			addToProgram(program, func);
+		} else if (strcmp(text, "struct") == 0) {
+			addToProgram(program, parseStructDeclaration(scanner, errorReporter, src, isPublic));
+		} else if (strcmp(text, "enum") == 0) {
+			addToProgram(program, parseEnumDeclaration(scanner, errorReporter, src, isPublic));
+		} else if (strcmp(text, "type") == 0) {
+			addToProgram(program, parseTypeAliasDeclaration(scanner, errorReporter, src, isPublic));
+		} else if (strcmp(text, "const") == 0) {
+			parseConstAfterKeyword(scanner, errorReporter, src, isPublic, program);
+		} else if (strcmp(text, "var") == 0) {
+			parseGlobalVarAfterKeyword(scanner, errorReporter, src, isPublic, program);
+		} else if (isPublic) {
+			errorReporter->reportError(scanner, AFTER_PUB);
+			synchronize(scanner, errorReporter, src);
+		} else if (strcmp(text, "use") == 0) {
+			parseUseAfterKeyword(scanner, errorReporter, src, program);
+		} else if (strcmp(text, "import") == 0) {
+			parseImportAfterKeyword(scanner, errorReporter, src, program);
+		} else if (strcmp(text, "test") == 0) {
+			addToProgram(program, parseTestDeclaration(scanner, errorReporter, src));
+		} else {
+			std::string msg = "Unexpected identifier '" + std::string(text) +
+							  "' at top level. Expected 'fn', 'struct', 'const', 'use', or 'test'";
+			errorReporter->reportError(scanner, msg.c_str());
+		}
+	}
+
+	// Errors sorted by position. The index breaks ties, so reports at one position keep
+	// the order they were made in. (An index rather than std::stable_sort: that
+	// allocates a temporary buffer through libstdc++'s get_temporary_buffer, which ASan
+	// reports as an alloc-dealloc mismatch and which aborts every fuzz run.)
+	static std::vector<ErrorInfo> inSourceOrder(const std::vector<ErrorInfo>& errors) {
+		std::vector<size_t> order(errors.size());
+		for (size_t i = 0; i < order.size(); i++) {
+			order[i] = i;
+		}
+		std::sort(order.begin(), order.end(), [&errors](size_t a, size_t b) {
+			const ErrorInfo& x = errors[a];
+			const ErrorInfo& y = errors[b];
+			if (x.line != y.line) {
+				return x.line < y.line;
+			}
+			if (x.column != y.column) {
+				return x.column < y.column;
+			}
+			return a < b;
+		});
+		std::vector<ErrorInfo> ordered;
+		ordered.reserve(errors.size());
+		for (size_t i : order) {
+			ordered.push_back(errors[i]);
+		}
+		return ordered;
+	}
+
 	IAstNode* Ast::generate(const char* src, bool dumpTokens, const char* filename) {
 		// For this parse only, however it returns
 		struct FloatDefault {
@@ -329,6 +726,10 @@ namespace Qd {
 			FloatDefault& operator=(const FloatDefault&) = delete;
 		} floatDefault(mDefaultFloatD128);
 
+		ErrorReporter errorReporter(src, filename);
+		errorReporter.setStoreErrors(true);
+		mRoot = std::make_unique<AstProgram>();
+
 		u8t_scanner scanner;
 		if (!u8t_scanner_init(&scanner, src)) {
 			// Invalid UTF-8 input - return an empty program, but record the error the
@@ -336,58 +737,19 @@ namespace Qd {
 			// see it through hasErrors()/getErrors() and report it themselves. Leaving
 			// those unset made a file the scanner could not read look like a clean
 			// empty one, and quadlint exited 0 on it.
-			ErrorReporter errorReporter(src, filename);
-			errorReporter.setStoreErrors(true);
 			errorReporter.reportError(0, 0, "Invalid UTF-8 encoding in source file");
 			mErrorCount = errorReporter.errorCount();
 			mErrors = errorReporter.getErrors();
-			mRoot = std::make_unique<AstProgram>();
 			return mRoot.get();
+		}
+
+		if (dumpTokens) {
+			printTokens(src);
 		}
 
 		// Build source position lookup tables - O(n) once, then O(log n) for each lookup
 		SourceMaps sourceMaps(src);
 		tCurrentSourceMaps = &sourceMaps;
-
-		// If dumpTokens is true, scan and print all tokens, then reset the scanner
-		if (dumpTokens) {
-			char32_t token;
-			while ((token = u8t_scanner_scan(&scanner)) != U8T_EOF) {
-				size_t n;
-				const char* text = u8t_scanner_token_text(&scanner, &n);
-				size_t start = u8t_scanner_token_start(&scanner);
-
-				std::cout << Colors::cyan() << start << Colors::reset() << " ";
-
-				switch (token) {
-				case U8T_IDENTIFIER:
-					std::cout << Colors::green() << "IDENTIFIER" << Colors::reset();
-					break;
-				case U8T_INTEGER:
-					std::cout << Colors::cyan() << "INTEGER   " << Colors::reset();
-					break;
-				case U8T_FLOAT:
-					std::cout << Colors::cyan() << "FLOAT     " << Colors::reset();
-					break;
-				case U8T_STRING:
-					std::cout << Colors::magenta() << "STRING    " << Colors::reset();
-					break;
-				default:
-					// Character token
-					std::cout << Colors::red() << "CHAR      " << Colors::reset();
-					break;
-				}
-
-				std::cout << " \"" << text << "\"" << std::endl;
-			}
-			std::cout << std::endl;
-
-			// Reset scanner for actual parsing
-			u8t_scanner_init(&scanner, src);
-		}
-
-		ErrorReporter errorReporter(src, filename);
-		errorReporter.setStoreErrors(true);
 
 		// parseComment and noteUnterminatedString record an unterminated /* or " here
 		// rather than reporting it themselves; reset both so a previous parse on this
@@ -397,42 +759,16 @@ namespace Qd {
 		gUnterminatedStringLine = 0;
 		gUnterminatedStringColumn = 0;
 
-		mRoot = std::make_unique<AstProgram>();
 		setNodePosition(mRoot.get(), &scanner, src);
 		AstProgram* program = static_cast<AstProgram*>(mRoot.get());
-
-		// Check for shebang at the very beginning of the file
-		// Shebang must be on the first line, starting with #!
-		if (src[0] == '#' && src[1] == '!') {
-			// Read until end of line
-			const char* shebangEnd = src + 2;
-			while (*shebangEnd != '\0' && *shebangEnd != '\n' && *shebangEnd != '\r') {
-				shebangEnd++;
-			}
-			std::string shebangText(src + 2, static_cast<size_t>(shebangEnd - (src + 2)));
-			AstNodeComment* shebang = new AstNodeComment(shebangText, AstNodeComment::CommentType::SHEBANG);
-			shebang->setPosition(1, 1);
-			shebang->setParent(program);
-			program->addChild(shebang);
-
-			// Advance scanner past shebang line
-			size_t skipBytes = static_cast<size_t>(shebangEnd - src);
-			if (*shebangEnd == '\r' && *(shebangEnd + 1) == '\n') {
-				skipBytes += 2;
-			} else if (*shebangEnd == '\n' || *shebangEnd == '\r') {
-				skipBytes++;
-			}
-			scanner._str = src + skipBytes;
-			scanner._token_start = skipBytes;
-		}
+		parseShebang(&scanner, src, program);
 
 		// Auto-inject 'use sb' if source contains $"..." string interpolation
 		// and doesn't already have 'use sb'
 		if (strstr(src, "$\"") != nullptr && strstr(src, "use sb") == nullptr) {
 			auto* useSb = new AstNodeUse("sb");
 			useSb->setPosition(0, 0);
-			useSb->setParent(program);
-			program->addChild(useSb);
+			addToProgram(program, useSb);
 		}
 
 		char32_t token;
@@ -442,441 +778,20 @@ namespace Qd {
 
 			// Handle comments (// and /* */)
 			AstNodeComment* comment = parseComment(&scanner, src, slashPos, token);
+			slashPos = SIZE_MAX;
 			if (comment != nullptr) {
-				slashPos = SIZE_MAX;
-				comment->setParent(program);
-				program->addChild(comment);
+				addToProgram(program, comment);
 				continue;
 			}
-
-			// If we saw a slash but it wasn't a comment, reset the flag
-			if (slashPos != SIZE_MAX) {
-				slashPos = SIZE_MAX;
-			}
-
 			if (token == '/') {
 				slashPos = u8t_scanner_token_start(&scanner);
 				continue; // Wait for next token to see if it's a comment
 			}
 
 			switch (token) {
-			case U8T_IDENTIFIER: {
-				const char* text = u8t_scanner_token_text(&scanner, &n);
-
-				if (strcmp(text, "pub") == 0) {
-					// Check if next token is "fn", "inline", "stack", "packed", "const", or "struct"
-					token = u8t_scanner_scan(&scanner);
-					if (token == U8T_IDENTIFIER) {
-						const char* nextText = u8t_scanner_token_text(&scanner, &n);
-						bool isInline = false;
-						bool isStack = false;
-						bool isPacked = false;
-						nextText = consumeFunctionModifiers(&scanner, nextText, token, isInline, isStack);
-						if (nextText == nullptr) {
-							errorReporter.reportError(&scanner, "Expected 'fn' after function modifier");
-							synchronize(&scanner);
-							continue;
-						}
-						if (strcmp(nextText, "packed") == 0) {
-							isPacked = true;
-							token = u8t_scanner_scan(&scanner);
-							nextText = u8t_scanner_token_text(&scanner, &n);
-						}
-						if (strcmp(nextText, "fn") == 0) {
-							IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, true);
-							if (func) {
-								static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
-								static_cast<AstNodeFunctionDeclaration*>(func)->setStack(isStack);
-								func->setParent(program);
-								program->addChild(func);
-							}
-						} else if (strcmp(nextText, "struct") == 0) {
-							IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, true);
-							if (structDecl) {
-								if (isPacked) {
-									static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
-								}
-								structDecl->setParent(program);
-								program->addChild(structDecl);
-							}
-						} else if (strcmp(nextText, "enum") == 0) {
-							IAstNode* enumDecl = parseEnumDeclaration(&scanner, &errorReporter, src, true);
-							if (enumDecl) {
-								enumDecl->setParent(program);
-								program->addChild(enumDecl);
-							}
-						} else if (strcmp(nextText, "type") == 0) {
-							IAstNode* typeAlias = parseTypeAliasDeclaration(&scanner, &errorReporter, src, true);
-							if (typeAlias) {
-								typeAlias->setParent(program);
-								program->addChild(typeAlias);
-							}
-						} else if (strcmp(nextText, "const") == 0) {
-							// Parse public constant
-							token = u8t_scanner_scan(&scanner);
-							if (token == U8T_IDENTIFIER) {
-								const char* constName = u8t_scanner_token_text(&scanner, &n);
-								std::string constNameStr(constName);
-								token = u8t_scanner_scan(&scanner);
-								if (token == '=') {
-									std::string value = parseConstantValue(&scanner, &errorReporter, src);
-									if (!value.empty()) {
-										AstNodeConstant* constDecl =
-												new AstNodeConstant(constNameStr, value.c_str(), true);
-										setNodePosition(constDecl, &scanner, src);
-										constDecl->setParent(program);
-										program->addChild(constDecl);
-									}
-								} else {
-									errorReporter.reportError(&scanner, "Expected '=' after constant name");
-								}
-							} else {
-								errorReporter.reportError(&scanner, "Expected constant name after 'pub const'");
-								synchronize(&scanner);
-							}
-						} else if (strcmp(nextText, "var") == 0) {
-							parseGlobalVarAfterKeyword(&scanner, &errorReporter, src, true, program);
-						} else {
-							errorReporter.reportError(
-									&scanner, "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'");
-							synchronize(&scanner);
-						}
-					} else {
-						errorReporter.reportError(
-								&scanner, "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'");
-						synchronize(&scanner);
-					}
-				} else if (strcmp(text, "inline") == 0 || strcmp(text, "stack") == 0) {
-					// `inline fn` / `stack fn` — private function with modifiers
-					bool isInline = false;
-					bool isStack = false;
-					const char* nextText = consumeFunctionModifiers(&scanner, text, token, isInline, isStack);
-					if (nextText != nullptr && strcmp(nextText, "fn") == 0) {
-						IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, false);
-						if (func) {
-							static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
-							static_cast<AstNodeFunctionDeclaration*>(func)->setStack(isStack);
-							func->setParent(program);
-							program->addChild(func);
-						}
-					} else {
-						errorReporter.reportError(&scanner, "Expected 'fn' after function modifier");
-						synchronize(&scanner);
-					}
-				} else if (strcmp(text, "fn") == 0) {
-					IAstNode* func = parseFunctionDeclaration(&scanner, &errorReporter, src, false);
-					if (func) {
-						func->setParent(program);
-						program->addChild(func);
-					}
-				} else if (strcmp(text, "struct") == 0) {
-					IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, false);
-					if (structDecl) {
-						structDecl->setParent(program);
-						program->addChild(structDecl);
-					}
-				} else if (strcmp(text, "packed") == 0) {
-					// `packed struct ...` — non-public packed struct.
-					token = u8t_scanner_scan(&scanner);
-					if (token == U8T_IDENTIFIER && strcmp(u8t_scanner_token_text(&scanner, &n), "struct") == 0) {
-						IAstNode* structDecl = parseStructDeclaration(&scanner, &errorReporter, src, false);
-						if (structDecl) {
-							static_cast<AstNodeStructDeclaration*>(structDecl)->setPacked(true);
-							structDecl->setParent(program);
-							program->addChild(structDecl);
-						}
-					} else {
-						errorReporter.reportError(&scanner, "Expected 'struct' after 'packed'");
-						synchronize(&scanner);
-					}
-				} else if (strcmp(text, "enum") == 0) {
-					IAstNode* enumDecl = parseEnumDeclaration(&scanner, &errorReporter, src, false);
-					if (enumDecl) {
-						enumDecl->setParent(program);
-						program->addChild(enumDecl);
-					}
-				} else if (strcmp(text, "type") == 0) {
-					IAstNode* typeAlias = parseTypeAliasDeclaration(&scanner, &errorReporter, src, false);
-					if (typeAlias) {
-						typeAlias->setParent(program);
-						program->addChild(typeAlias);
-					}
-				} else if (strcmp(text, "use") == 0) {
-					token = u8t_scanner_scan(&scanner);
-					std::string moduleNameStr;
-
-					if (token == U8T_STRING) {
-						// Quoted path: use "path/to/file.qd"
-						noteUnterminatedString(&scanner, src);
-						const char* pathLiteral = u8t_scanner_token_text(&scanner, &n);
-						std::string path(pathLiteral);
-						// Strip quotes from string literal
-						if (path.length() >= 2 && path.front() == '"' && path.back() == '"') {
-							moduleNameStr = path.substr(1, path.length() - 2);
-						} else {
-							moduleNameStr = path;
-						}
-					} else if (token == U8T_IDENTIFIER) {
-						// Unquoted module name: use module or use module.qd
-						const char* moduleName = u8t_scanner_token_text(&scanner, &n);
-						moduleNameStr = std::string(moduleName);
-
-						// Check if this is a .qd file import (module.qd)
-						// Peek at next token to see if it's a dot
-						char32_t nextToken = u8t_scanner_peek(&scanner);
-						if (nextToken == static_cast<char32_t>('.')) {
-							// Consume the dot
-							u8t_scanner_scan(&scanner);
-							// Check if next token is 'qd'
-							token = u8t_scanner_scan(&scanner);
-							if (token == U8T_IDENTIFIER) {
-								const char* ext = u8t_scanner_token_text(&scanner, &n);
-								if (strcmp(ext, "qd") == 0) {
-									moduleNameStr += ".qd";
-								}
-							}
-						}
-					} else {
-						errorReporter.reportError(&scanner, "Expected module name or quoted path after 'use'");
-					}
-
-					if (!moduleNameStr.empty()) {
-						AstNodeUse* useStmt = new AstNodeUse(moduleNameStr.c_str());
-						setNodePosition(useStmt, &scanner, src);
-						useStmt->setParent(program);
-						program->addChild(useStmt);
-					}
-				} else if (strcmp(text, "import") == 0) {
-					// Parse: import "libname.so" as "namespace" { fn ... }
-					token = u8t_scanner_scan(&scanner);
-					if (token != U8T_STRING) {
-						errorReporter.reportError(&scanner, "Expected library name (string) after 'import'");
-						break;
-					}
-					noteUnterminatedString(&scanner, src);
-					const char* libName = u8t_scanner_token_text(&scanner, &n);
-					// Strip quotes from string literal
-					std::string library(libName);
-					if (library.length() >= 2 && library.front() == '"' && library.back() == '"') {
-						library = library.substr(1, library.length() - 2);
-					}
-
-					// Expect 'as'
-					token = u8t_scanner_scan(&scanner);
-					if (token != U8T_IDENTIFIER) {
-						errorReporter.reportError(&scanner, "Expected 'as' after library name");
-						break;
-					}
-					const char* asKeyword = u8t_scanner_token_text(&scanner, &n);
-					if (strcmp(asKeyword, "as") != 0) {
-						errorReporter.reportError(&scanner, "Expected 'as' after library name");
-						break;
-					}
-
-					// Expect namespace string
-					token = u8t_scanner_scan(&scanner);
-					if (token != U8T_STRING) {
-						errorReporter.reportError(&scanner, "Expected namespace name (string) after 'as'");
-						break;
-					}
-					noteUnterminatedString(&scanner, src);
-					const char* nsName = u8t_scanner_token_text(&scanner, &n);
-					// Strip quotes from string literal
-					std::string namespaceName(nsName);
-					if (namespaceName.length() >= 2 && namespaceName.front() == '"' && namespaceName.back() == '"') {
-						namespaceName = namespaceName.substr(1, namespaceName.length() - 2);
-					}
-
-					// Expect '{'
-					token = u8t_scanner_scan(&scanner);
-					if (token != '{') {
-						errorReporter.reportError(&scanner, "Expected '{' after namespace name");
-						break;
-					}
-
-					AstNodeImport* importStmt = new AstNodeImport(library, namespaceName);
-					setNodePosition(importStmt, &scanner, src);
-
-					// Parse function declarations
-					size_t importSlashPos = SIZE_MAX;
-					while (true) {
-						token = u8t_scanner_scan(&scanner);
-						if (token == '}' || token == U8T_EOF) {
-							break;
-						}
-
-						// Handle comments (// and /* */) inside import block
-						AstNodeComment* importComment = parseComment(&scanner, src, importSlashPos, token);
-						if (importComment != nullptr) {
-							importSlashPos = SIZE_MAX;
-							delete importComment; // Discard comments inside import block
-							continue;
-						}
-
-						// If we saw a slash but it wasn't a comment, reset
-						if (importSlashPos != SIZE_MAX) {
-							importSlashPos = SIZE_MAX;
-						}
-
-						// Track slashes for potential comments
-						if (token == '/') {
-							importSlashPos = u8t_scanner_token_start(&scanner);
-							continue;
-						}
-
-						if (token == U8T_IDENTIFIER) {
-							const char* keyword = u8t_scanner_token_text(&scanner, &n);
-							bool isPublic = false;
-							// Check for 'pub' keyword
-							if (strcmp(keyword, "pub") == 0) {
-								isPublic = true;
-								token = u8t_scanner_scan(&scanner);
-								if (token != U8T_IDENTIFIER) {
-									errorReporter.reportError(&scanner, "Expected 'fn' or 'const' after 'pub'");
-									continue;
-								}
-								keyword = u8t_scanner_token_text(&scanner, &n);
-							}
-							if (strcmp(keyword, "inline") == 0) {
-								// 'inline' is accepted for consistency but is a no-op
-								// in import blocks (imported functions have no body to inline).
-								token = u8t_scanner_scan(&scanner);
-								if (token != U8T_IDENTIFIER) {
-									errorReporter.reportError(&scanner, "Expected 'fn' after 'inline'");
-									continue;
-								}
-								keyword = u8t_scanner_token_text(&scanner, &n);
-							}
-							if (strcmp(keyword, "fn") == 0) {
-								// Parse function declaration
-								token = u8t_scanner_scan(&scanner);
-								if (token != U8T_IDENTIFIER) {
-									errorReporter.reportError(&scanner, "Expected 'fn' after 'pub'");
-									continue;
-								}
-								const char* funcName = u8t_scanner_token_text(&scanner, &n);
-								auto func = std::make_unique<ImportedFunction>();
-								func->name = funcName;
-								func->isPublic = isPublic;
-
-								size_t funcLine, funcColumn;
-								// token_start is a character index and fastLineColumn wants a byte
-								// offset, so it has to go through the map the way every other call
-								// site does. Without the conversion the line drifts by one for each
-								// multi-byte character earlier in the file, which put every imported
-								// function after the first non-ASCII doc comment on the wrong line.
-								size_t pos = fastCharToByteOffset(src, u8t_scanner_token_start(&scanner));
-								fastLineColumn(src, pos, &funcLine, &funcColumn);
-								func->line = funcLine;
-								func->column = funcColumn;
-
-								// Expect '('
-								token = u8t_scanner_scan(&scanner);
-								if (token != '(') {
-									errorReporter.reportError(&scanner, "Expected '(' after function name");
-									continue; // func auto-deleted by unique_ptr
-								}
-
-								// Parse parameters. An import block's list takes the same forms a named
-								// function's does, so it is read by the same `parseTypeFrom`. It used to
-								// have its own reader that scanned exactly one identifier after the ':',
-								// which meant every other form came apart silently: `[]str` was read as
-								// two stray tokens `[` `]` and then an unnamed parameter of type `str`,
-								// so `pub fn args( -- args:[]str)` declared a function returning a
-								// string. `fn(...)`, `*T` and, in an output, `mod::T` were lost the same
-								// way. Nothing reported any of it.
-								bool isOutput = false;
-								while (true) {
-									token = u8t_scanner_scan(&scanner);
-									if (token == ')' || token == U8T_EOF) {
-										break;
-									}
-									if (token == '-') {
-										token = u8t_scanner_scan(&scanner);
-										if (token == '-') {
-											isOutput = true;
-											continue;
-										}
-										errorReporter.reportError(&scanner, "Expected '--' between inputs and outputs");
-										break;
-									}
-									// `name:type`, or a bare type. A name is always written with its
-									// type, so a lone identifier here can only be the type.
-									std::string paramNameStr;
-									std::string paramTypeStr;
-									if (token == U8T_IDENTIFIER && u8t_scanner_peek(&scanner) == ':') {
-										paramNameStr = u8t_scanner_token_text(&scanner, &n);
-										u8t_scanner_scan(&scanner); // consume ':'
-										paramTypeStr = parseType(&scanner, &errorReporter);
-									} else {
-										paramTypeStr = parseTypeFrom(token, &scanner, &errorReporter);
-									}
-									if (paramTypeStr.empty()) {
-										// parseType has already reported and consumed it; carrying on
-										// would read the rest of the signature as more parameters.
-										break;
-									}
-									auto* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
-									setNodePosition(param, &scanner, src);
-									if (isOutput) {
-										func->outputParameters.emplace_back(param);
-									} else {
-										func->inputParameters.emplace_back(param);
-									}
-								}
-
-								// Check for optional '!' marker (fallible function)
-								if (token == ')') {
-									char32_t nextToken = u8t_scanner_peek(&scanner);
-									if (nextToken == '!') {
-										u8t_scanner_scan(&scanner); // Consume the '!'
-										func->throws = true;
-									}
-									// The outer loop at line 1574 will scan the next token
-								}
-
-								importStmt->addFunction(func.release());
-							}
-						}
-					}
-
-					importStmt->setParent(program);
-					program->addChild(importStmt);
-				} else if (strcmp(text, "const") == 0) {
-					token = u8t_scanner_scan(&scanner);
-					if (token == U8T_IDENTIFIER) {
-						const char* constName = u8t_scanner_token_text(&scanner, &n);
-						std::string constNameStr(constName);
-						token = u8t_scanner_scan(&scanner);
-						if (token == '=') {
-							std::string value = parseConstantValue(&scanner, &errorReporter, src);
-							if (!value.empty()) {
-								AstNodeConstant* constDecl = new AstNodeConstant(constNameStr, value.c_str());
-								setNodePosition(constDecl, &scanner, src);
-								constDecl->setParent(program);
-								program->addChild(constDecl);
-							}
-						} else {
-							errorReporter.reportError(&scanner, "Expected '=' after constant name");
-						}
-					} else {
-						errorReporter.reportError(&scanner, "Expected constant name after 'const'");
-					}
-				} else if (strcmp(text, "var") == 0) {
-					parseGlobalVarAfterKeyword(&scanner, &errorReporter, src, false, program);
-				} else if (strcmp(text, "test") == 0) {
-					IAstNode* testDecl = parseTestDeclaration(&scanner, &errorReporter, src);
-					if (testDecl) {
-						testDecl->setParent(program);
-						program->addChild(testDecl);
-					}
-				} else {
-					std::string msg = "Unexpected identifier '" + std::string(text) +
-									  "' at top level. Expected 'fn', 'struct', 'const', 'use', or 'test'";
-					errorReporter.reportError(&scanner, msg.c_str());
-				}
+			case U8T_IDENTIFIER:
+				parseTopLevelDeclaration(&scanner, &errorReporter, src, program, u8t_scanner_token_text(&scanner, &n));
 				break;
-			}
 			case U8T_INTEGER:
 				errorReporter.reportError(&scanner, "Unexpected integer literal at top level");
 				break;
@@ -925,38 +840,10 @@ namespace Qd {
 		// Expand STRING_INTERPOLATION nodes before semantic validation sees them
 		expandAllStringInterpolations(mRoot.get());
 
-		// Store the error count and details for later checking
-		mErrorCount = errorReporter.errorCount();
-		mErrors = errorReporter.getErrors();
-
 		// Parsing runs left to right, so the errors come out in source order -- except the
 		// two reported just above, which are only known once the whole file has been read.
-		// Sorting by position puts those back where they belong; the index breaks ties, so
-		// reports at one position keep the order they were made in. (An index rather than
-		// std::stable_sort: that allocates a temporary buffer through libstdc++'s
-		// get_temporary_buffer, which ASan reports as an alloc-dealloc mismatch and which
-		// aborts every fuzz run.)
-		std::vector<size_t> order(mErrors.size());
-		for (size_t i = 0; i < order.size(); i++) {
-			order[i] = i;
-		}
-		std::sort(order.begin(), order.end(), [this](size_t a, size_t b) {
-			const ErrorInfo& x = mErrors[a];
-			const ErrorInfo& y = mErrors[b];
-			if (x.line != y.line) {
-				return x.line < y.line;
-			}
-			if (x.column != y.column) {
-				return x.column < y.column;
-			}
-			return a < b;
-		});
-		std::vector<ErrorInfo> ordered;
-		ordered.reserve(mErrors.size());
-		for (size_t i : order) {
-			ordered.push_back(mErrors[i]);
-		}
-		mErrors = std::move(ordered);
+		mErrorCount = errorReporter.errorCount();
+		mErrors = inSourceOrder(errorReporter.getErrors());
 
 		// Clear thread-local source maps pointer
 		tCurrentSourceMaps = nullptr;

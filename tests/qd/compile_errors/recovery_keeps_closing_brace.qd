@@ -1,0 +1,8 @@
+// Error recovery inside a body leaves the body's own `}` to close it, so the next
+// function is read as one.
+fn main() {
+	1 if print
+}
+
+fn other() {
+}

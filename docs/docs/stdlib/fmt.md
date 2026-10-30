@@ -2,6 +2,12 @@
 
 Formatted output functions.
 
+printf, sprintf and fprintf take one value per conversion from under the format string,
+the first value deepest: `%d %i %x %X %o %u %c` an i64, `%f %e %E %g %G` an f64 (an i64
+widens), `%s` a str and `%p` a ptr. `%%` is a percent sign. Flags, width and precision
+work as in C; a length modifier such as `l` is accepted and ignored. Too few values, or
+one of the wrong type, is a runtime error, raised before anything is taken off the stack.
+
 ## Functions
 
 ### `fn` eprintln
@@ -23,7 +29,7 @@ Print a string to stderr followed by a newline.
 
 ### `fn` fprintf
 
-Print formatted output to a file descriptor.
+Print formatted output to a file descriptor. The values go under the fd, as for printf they go under the format. Anything still buffered for stdout or stderr is written first.
 
 **Signature:** `(fd:i64 format:str -- )`
 
@@ -35,7 +41,7 @@ Print formatted output to a file descriptor.
 **Example:**
 
 ```qd
-"error: %s\n" "not found" 2 fmt::fprintf
+"not found" 2 "error: %s\n" fmt::fprintf
 ```
 ---
 

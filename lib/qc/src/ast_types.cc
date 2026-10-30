@@ -9,7 +9,7 @@ namespace Qd {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected enum name after 'enum'");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -20,7 +20,7 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after enum name");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -109,7 +109,7 @@ namespace Qd {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected struct name after 'struct'");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -145,7 +145,7 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after struct name");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -805,7 +805,7 @@ namespace Qd {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected type alias name after 'type'");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -816,7 +816,7 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '=') {
 			errorReporter->reportError(scanner, "Expected '=' after type alias name");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -825,7 +825,7 @@ namespace Qd {
 
 		if (targetType.empty()) {
 			// parseType has already reported what was wrong with it.
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 

@@ -91,7 +91,6 @@ import "liblog.a" as "log" {
 	fn raw_add_file(path:str logger:ptr -- err:i64)
 	fn raw_add_file_rotate(max_files:i64 max_size:i64 mode:i64 path:str logger:ptr -- err:i64)
 	fn raw_log(msg:str level:i64 logger:ptr -- )
-	fn raw_log_kv(pairs_count:i64 pairs:ptr msg:str level:i64 logger:ptr -- )
 	fn raw_flush(logger:ptr -- )
 	fn raw_check_rotate(logger:ptr -- )
 }
@@ -223,7 +222,8 @@ pub fn (logger:Logger) error(msg:str -- ) {
 	msg LevelError logger <<handle log::raw_log
 }
 
-/// Log a message at specified level.
+/// Log a message at specified level. A level other than LevelDebug, LevelInfo, LevelWarn
+/// or LevelError is a runtime error.
 ///
 /// @param level i64 Log level
 /// @param msg str Message to log

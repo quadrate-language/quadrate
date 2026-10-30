@@ -1,0 +1,16 @@
+// Test: an `any` holding a str, passed to a function whose signature is all i64, stops at the
+// call; such a function checks nothing itself, so without the call-site check it read the
+// string's address as a number.
+fn next(x:i64 -- r:i64) {
+	x 1 +
+}
+
+fn relay(a:any -- r:i64) {
+	a next
+}
+
+fn main() {
+	1 relay print nl
+	"two" relay print nl
+	"FAIL: should not be reached" print nl
+}

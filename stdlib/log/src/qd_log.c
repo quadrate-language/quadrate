@@ -1,223 +1,126 @@
 // Quadrate wrapper functions for qdlog
-
 #define _POSIX_C_SOURCE 200809L
 #include "../include/quadrate/log/log.h"
-#include <quadrate/rt/context.h>
+#include <inttypes.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/stack.h>
-#include <quadrate/rt/qd_string.h>
-#include <stdlib.h>
-#include <string.h>
 
-// Helper to set error message
-static void set_error_msg(qd_context* ctx, const char* msg) {
-	if (ctx->error_msg) free(ctx->error_msg);
-	ctx->error_msg = strdup(msg);
-}
+// The raw words take the logger on top, the other arguments under it, as the private
+// import block in log.qd declares them.
 
-// Pop a pointer argument, validating both the pop and the element type so we
-// never dereference an uninitialized or wrongly-typed stack slot.
-static int pop_ptr_arg(qd_context* ctx, void** out) {
-	qd_stack_element_t elem;
-	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK || elem.type != QD_STACK_TYPE_PTR) {
-		set_error_msg(ctx, "log: expected pointer argument");
-		ctx->error_code = -1;
-		return -1;
+// A level, format or rotation mode outside its constants raises: the level indexed a table
+// of names, and `logger 9 "x" log::log` printed whatever lay past its end.
+static int64_t check_range(qd_context* ctx, const char* op, const char* what, int64_t value, int64_t last) {
+	if (value < 0 || value > last) {
+		qd_fatal_raise(ctx, op, "%s %" PRId64 " is not one of the module's constants", what, value);
 	}
-	*out = elem.value.p;
-	return 0;
+	return value;
 }
 
-// Pop an integer argument with the same validation.
-static int pop_int_arg(qd_context* ctx, int64_t* out) {
-	qd_stack_element_t elem;
-	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK || elem.type != QD_STACK_TYPE_INT) {
-		set_error_msg(ctx, "log: expected integer argument");
-		ctx->error_code = -1;
-		return -1;
-	}
-	*out = elem.value.i;
-	return 0;
+static qdlog_logger_t* logger_arg(qd_context* ctx, const char* op) {
+	void* logger;
+	qd_args(ctx, op, "p", &logger);
+	return (qdlog_logger_t*)logger;
 }
 
-// Pop a string argument. On success the caller owns a reference to *out and
-// must release it. Returns -1 (and releases nothing) on bad input.
-static int pop_str_arg(qd_context* ctx, qd_string_t** out) {
-	qd_stack_element_t elem;
-	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK || elem.type != QD_STACK_TYPE_STR) {
-		set_error_msg(ctx, "log: expected string argument");
-		ctx->error_code = -1;
-		return -1;
-	}
-	*out = elem.value.s;
-	return 0;
-}
-
-// raw_new( -- logger:ptr)
+// raw_new( -- logger:ptr ), null when it could not be made, which log::new checks for
 int usr_log_raw_new(qd_context* ctx) {
-	qdlog_logger_t* logger = qdlog_new();
-	if (!logger) {
-		set_error_msg(ctx, "log::new: failed to create logger");
-		ctx->error_code = QDLOG_ERR_ALLOC;
-		return (int){QDLOG_ERR_ALLOC};
-	}
-	qd_push_p(ctx, logger);
-	return 0;
+	return qd_push_p(ctx, qdlog_new());
 }
 
 // raw_free(logger:ptr -- )
 int usr_log_raw_free(qd_context* ctx) {
-	void* logger;
-	if (pop_ptr_arg(ctx, &logger) != 0) {
-		return -1;
-	}
-	qdlog_free((qdlog_logger_t*)logger);
+	qdlog_free(logger_arg(ctx, "log::free"));
 	return 0;
 }
 
 // raw_set_level(level:i64 logger:ptr -- )
 int usr_log_raw_set_level(qd_context* ctx) {
-	void* logger;
 	int64_t level;
-	if (pop_ptr_arg(ctx, &logger) != 0 || pop_int_arg(ctx, &level) != 0) {
-		return -1;
-	}
+	void* logger;
+	qd_args(ctx, "log::set_level", "ip", &level, &logger);
+	check_range(ctx, "log::set_level", "Level", level, QDLOG_LEVEL_OFF);
 	qdlog_set_level((qdlog_logger_t*)logger, (qdlog_level_t)level);
 	return 0;
 }
 
 // raw_get_level(logger:ptr -- level:i64)
 int usr_log_raw_get_level(qd_context* ctx) {
-	void* logger;
-	if (pop_ptr_arg(ctx, &logger) != 0) {
-		return -1;
-	}
-	int64_t level = (int64_t)qdlog_get_level((qdlog_logger_t*)logger);
-	qd_push_i(ctx, level);
-	return 0;
+	return qd_push_i(ctx, (int64_t)qdlog_get_level(logger_arg(ctx, "log::get_level")));
 }
 
 // raw_set_format(format:i64 logger:ptr -- )
 int usr_log_raw_set_format(qd_context* ctx) {
-	void* logger;
 	int64_t format;
-	if (pop_ptr_arg(ctx, &logger) != 0 || pop_int_arg(ctx, &format) != 0) {
-		return -1;
-	}
+	void* logger;
+	qd_args(ctx, "log::set_format", "ip", &format, &logger);
+	check_range(ctx, "log::set_format", "Format", format, QDLOG_FORMAT_JSON);
 	qdlog_set_format((qdlog_logger_t*)logger, (qdlog_format_t)format);
 	return 0;
 }
 
 // raw_enable_stdout(logger:ptr -- )
 int usr_log_raw_enable_stdout(qd_context* ctx) {
-	void* logger;
-	if (pop_ptr_arg(ctx, &logger) != 0) {
-		return -1;
-	}
-	qdlog_enable_stdout((qdlog_logger_t*)logger);
+	qdlog_enable_stdout(logger_arg(ctx, "log::enable_stdout"));
 	return 0;
 }
 
 // raw_disable_stdout(logger:ptr -- )
 int usr_log_raw_disable_stdout(qd_context* ctx) {
-	void* logger;
-	if (pop_ptr_arg(ctx, &logger) != 0) {
-		return -1;
-	}
-	qdlog_disable_stdout((qdlog_logger_t*)logger);
+	qdlog_disable_stdout(logger_arg(ctx, "log::disable_stdout"));
 	return 0;
 }
 
 // raw_add_file(path:str logger:ptr -- err:i64)
 int usr_log_raw_add_file(qd_context* ctx) {
+	qd_string_t* path;
 	void* logger;
-	qd_string_t* path_str;
-	if (pop_ptr_arg(ctx, &logger) != 0 || pop_str_arg(ctx, &path_str) != 0) {
-		return -1;
-	}
-	int64_t err = qdlog_add_file((qdlog_logger_t*)logger, qd_string_data(path_str));
-	qd_string_release(path_str);
-	qd_push_i(ctx, err);
-	return 0;
+	qd_args(ctx, "log::add_file", "sp", &path, &logger);
+	const int64_t err = qdlog_add_file((qdlog_logger_t*)logger, qd_string_data(path));
+	qd_string_release(path);
+	return qd_push_i(ctx, err);
 }
 
 // raw_add_file_rotate(max_files:i64 max_size:i64 mode:i64 path:str logger:ptr -- err:i64)
 int usr_log_raw_add_file_rotate(qd_context* ctx) {
+	int64_t max_files;
+	int64_t max_size;
+	int64_t mode;
+	qd_string_t* path;
 	void* logger;
-	qd_string_t* path_str;
-	int64_t mode, max_size, max_files;
-	if (pop_ptr_arg(ctx, &logger) != 0 || pop_str_arg(ctx, &path_str) != 0) {
-		return -1;
+	qd_args(ctx, "log::add_file_rotate", "iiisp", &max_files, &max_size, &mode, &path, &logger);
+	if (mode < 0 || mode > QDLOG_ROTATE_HOURLY) {
+		qd_string_release(path);
+		check_range(ctx, "log::add_file_rotate", "Rotation mode", mode, QDLOG_ROTATE_HOURLY);
 	}
-	if (pop_int_arg(ctx, &mode) != 0 || pop_int_arg(ctx, &max_size) != 0 || pop_int_arg(ctx, &max_files) != 0) {
-		qd_string_release(path_str);
-		return -1;
-	}
-
-	int64_t err = qdlog_add_file_rotate(
-			(qdlog_logger_t*)logger, qd_string_data(path_str), (qdlog_rotate_t)mode, max_size, max_files);
-	qd_string_release(path_str);
-	qd_push_i(ctx, err);
-	return 0;
+	const int64_t err = qdlog_add_file_rotate(
+			(qdlog_logger_t*)logger, qd_string_data(path), (qdlog_rotate_t)mode, max_size, max_files);
+	qd_string_release(path);
+	return qd_push_i(ctx, err);
 }
 
 // raw_log(msg:str level:i64 logger:ptr -- )
 int usr_log_raw_log(qd_context* ctx) {
-	void* logger;
+	qd_string_t* msg;
 	int64_t level;
-	qd_string_t* msg_str;
-	if (pop_ptr_arg(ctx, &logger) != 0 || pop_int_arg(ctx, &level) != 0) {
-		return -1;
-	}
-	if (pop_str_arg(ctx, &msg_str) != 0) {
-		return -1;
-	}
-
-	qdlog_log((qdlog_logger_t*)logger, (qdlog_level_t)level, qd_string_data(msg_str));
-	qd_string_release(msg_str);
-	return 0;
-}
-
-// raw_log_kv(pairs_count:i64 pairs:ptr msg:str level:i64 logger:ptr -- )
-int usr_log_raw_log_kv(qd_context* ctx) {
 	void* logger;
-	int64_t level;
-	qd_string_t* msg_str;
-	void* pairs;
-	int64_t pairs_count;
-	if (pop_ptr_arg(ctx, &logger) != 0 || pop_int_arg(ctx, &level) != 0) {
-		return -1;
+	qd_args(ctx, "log::log", "sip", &msg, &level, &logger);
+	if (level < 0 || level >= QDLOG_LEVEL_OFF) {
+		qd_string_release(msg);
+		check_range(ctx, "log::log", "Level", level, QDLOG_LEVEL_OFF - 1);
 	}
-	if (pop_str_arg(ctx, &msg_str) != 0) {
-		return -1;
-	}
-	if (pop_ptr_arg(ctx, &pairs) != 0 || pop_int_arg(ctx, &pairs_count) != 0) {
-		qd_string_release(msg_str);
-		return -1;
-	}
-
-	qdlog_log_kv((qdlog_logger_t*)logger, (qdlog_level_t)level, qd_string_data(msg_str), (const char**)pairs,
-			pairs_count);
-	qd_string_release(msg_str);
+	qdlog_log((qdlog_logger_t*)logger, (qdlog_level_t)level, qd_string_data(msg));
+	qd_string_release(msg);
 	return 0;
 }
 
 // raw_flush(logger:ptr -- )
 int usr_log_raw_flush(qd_context* ctx) {
-	void* logger;
-	if (pop_ptr_arg(ctx, &logger) != 0) {
-		return -1;
-	}
-	qdlog_flush((qdlog_logger_t*)logger);
+	qdlog_flush(logger_arg(ctx, "log::flush"));
 	return 0;
 }
 
 // raw_check_rotate(logger:ptr -- )
 int usr_log_raw_check_rotate(qd_context* ctx) {
-	void* logger;
-	if (pop_ptr_arg(ctx, &logger) != 0) {
-		return -1;
-	}
-	qdlog_check_rotate((qdlog_logger_t*)logger);
+	qdlog_check_rotate(logger_arg(ctx, "log::check_rotate"));
 	return 0;
 }

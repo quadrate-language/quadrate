@@ -1,0 +1,29 @@
+// bool is a built-in alias for i64, accepted wherever a type is written
+
+struct Switch {
+	on: bool
+}
+
+fn flip(x:bool -- y:bool) {
+	x not
+}
+
+fn count_on(flags:[]bool -- n:i64) {
+	0 -> n
+	0 flags len 1 for i {
+		flags i nth if {
+			n 1 + -> n
+		}
+	}
+	n
+}
+
+fn main() {
+	0 flip print nl
+	Switch {
+		on = 1
+	} <<on print nl
+	[1 0 1] count_on print nl
+	[2]bool 1 nth print nl
+	5 true + print nl
+}

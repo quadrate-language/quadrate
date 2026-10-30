@@ -60,7 +60,7 @@ import "libtime.a" as "time" {
 	/// @example time::now -> start
 	pub fn now( -- nanoseconds:i64)
 
-	/// Sleep for duration in nanoseconds.
+	/// Sleep for duration in nanoseconds. A signal does not cut it short.
 	/// @param duration i64 Duration to sleep (use time constants)
 	/// @example time::Second time::sleep
 	pub fn sleep(duration:i64 -- )
@@ -78,7 +78,7 @@ import "libtime.a" as "time" {
 	/// @example time::unix "%Y-%m-%d %H:%M:%S" time::format! print
 	pub fn format(timestamp:i64 format:str -- result:str)!
 
-	/// Parse string to timestamp using strptime format string.
+	/// Parse string to timestamp using strptime format string. The whole input must match.
 	/// @param input str String to parse
 	/// @param format str strptime format string
 	/// @return timestamp i64 Unix timestamp in seconds

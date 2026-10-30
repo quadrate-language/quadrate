@@ -217,7 +217,7 @@ namespace Qd {
 			token = u8t_scanner_scan(scanner);
 			if (token != U8T_IDENTIFIER) {
 				errorReporter->reportError(scanner, "Expected receiver name after '(' in method declaration");
-				synchronize(scanner);
+				synchronize(scanner, errorReporter, src);
 				return nullptr;
 			}
 			size_t n;
@@ -227,7 +227,7 @@ namespace Qd {
 			token = u8t_scanner_scan(scanner);
 			if (token != ':') {
 				errorReporter->reportError(scanner, "Expected ':' after receiver name in method declaration");
-				synchronize(scanner);
+				synchronize(scanner, errorReporter, src);
 				return nullptr;
 			}
 
@@ -235,7 +235,7 @@ namespace Qd {
 			token = u8t_scanner_scan(scanner);
 			if (token != U8T_IDENTIFIER) {
 				errorReporter->reportError(scanner, "Expected receiver type after ':' in method declaration");
-				synchronize(scanner);
+				synchronize(scanner, errorReporter, src);
 				return nullptr;
 			}
 			receiverType = u8t_scanner_token_text(scanner, &n);
@@ -253,7 +253,7 @@ namespace Qd {
 							receiverType += "::" + std::string(u8t_scanner_token_text(scanner, &n));
 						} else {
 							errorReporter->reportError(scanner, "Expected type name after '::' in receiver type");
-							synchronize(scanner);
+							synchronize(scanner, errorReporter, src);
 							return nullptr;
 						}
 					} else {
@@ -281,7 +281,7 @@ namespace Qd {
 						}
 					} else if (token != ',') {
 						errorReporter->reportError(scanner, "Expected type parameter or '>' in receiver type");
-						synchronize(scanner);
+						synchronize(scanner, errorReporter, src);
 						return nullptr;
 					}
 				}
@@ -291,7 +291,7 @@ namespace Qd {
 			token = u8t_scanner_scan(scanner);
 			if (token != ')') {
 				errorReporter->reportError(scanner, "Expected ')' after receiver type in method declaration");
-				synchronize(scanner);
+				synchronize(scanner, errorReporter, src);
 				return nullptr;
 			}
 
@@ -301,7 +301,7 @@ namespace Qd {
 
 		if (token != U8T_IDENTIFIER) {
 			errorReporter->reportError(scanner, "Expected function name after 'fn'");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -343,7 +343,7 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '(') {
 			errorReporter->reportError(scanner, "Expected '(' after function name");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -491,7 +491,7 @@ namespace Qd {
 			setNodePosition(body, scanner, src);
 			body->setParent(func.get());
 			func->setBody(body);
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return func.release();
 		}
 
@@ -510,7 +510,7 @@ namespace Qd {
 		char32_t token = u8t_scanner_scan(scanner);
 		if (token != U8T_STRING) {
 			errorReporter->reportError(scanner, "Expected test name (string) after 'test'");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 
@@ -529,7 +529,7 @@ namespace Qd {
 		token = u8t_scanner_scan(scanner);
 		if (token != '{') {
 			errorReporter->reportError(scanner, "Expected '{' after test name");
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return nullptr;
 		}
 

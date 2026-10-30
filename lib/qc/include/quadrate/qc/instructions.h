@@ -150,6 +150,25 @@ namespace Qd {
 		return nullptr;
 	}
 
+	// Every keyword reference.def documents -- `fn`, `if`, `->`, `_` and the rest -- so the
+	// tools that colour, complete or reserve keywords read the list the manual is made from
+	inline constexpr const char* KEYWORDS[] = {
+#define KEYWORD(name, description) #name,
+#define BUILTIN(name, signature, description)
+#include "reference.def"
+#undef KEYWORD
+#undef BUILTIN
+	};
+
+	inline bool isKeyword(const std::string& name) {
+		for (const char* keyword : KEYWORDS) {
+			if (name == keyword) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// Helper function to check if an identifier is a built-in instruction
 	inline bool isBuiltInInstruction(const char* name) {
 		for (size_t i = 0; i < BUILTIN_INSTRUCTION_COUNT; i++) {

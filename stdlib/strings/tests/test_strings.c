@@ -448,6 +448,7 @@ int usr_strings_capitalize(qd_context* ctx);
 int usr_strings_title(qd_context* ctx);
 int usr_strings_trim_prefix(qd_context* ctx);
 int usr_strings_trim_suffix(qd_context* ctx);
+int usr_strings_split_n(qd_context* ctx);
 int usr_strings_replace_first(qd_context* ctx);
 int usr_strings_insert(qd_context* ctx);
 int usr_strings_remove_range(qd_context* ctx);
@@ -720,6 +721,45 @@ TEST(StrIsBlankFalseTest) {
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(0, (int)elem.value.i, "is_blank on non-blank string");
 
+	destroy_test_context(ctx);
+}
+
+TEST(StrIsBlankUnicodeSpacesTest) {
+	qd_context* ctx = create_test_context();
+
+	/* Two no-break spaces (U+00A0) around an ASCII one. Stepping a byte at a time decoded
+	 * the second byte of the first on its own, which is not a space. */
+	qd_push_s(ctx, "\xc2\xa0 \xc2\xa0");
+	usr_strings_is_blank(ctx);
+
+	qd_stack_element_t elem;
+	qd_stack_pop(ctx->st, &elem);
+	ASSERT_EQ(1, (int)elem.value.i, "is_blank on no-break spaces");
+
+	destroy_test_context(ctx);
+}
+
+/* ---------- split_n ---------- */
+
+TEST(StrSplitNEmptyDelimiterTest) {
+	qd_context* ctx = create_test_context();
+
+	/* The whole string as the one part, then the status: nothing else. A stray count used to
+	 * sit between them. */
+	qd_push_s(ctx, "a,b");
+	qd_push_s(ctx, "");
+	qd_push_i(ctx, 2);
+	usr_strings_split_n(ctx);
+
+	ASSERT_EQ(2, (int)qd_stack_size(ctx->st), "the parts and the status");
+	qd_stack_element_t status, parts;
+	qd_stack_pop(ctx->st, &status);
+	qd_stack_pop(ctx->st, &parts);
+	ASSERT_EQ(QD_STACK_TYPE_INT, status.type, "status on top");
+	ASSERT_EQ(QD_STACK_TYPE_PTR, parts.type, "the parts below it");
+	ASSERT_EQ(1, (int)qd_array_length((qd_array_t*)parts.value.p), "one part");
+
+	qd_array_release((qd_array_t*)parts.value.p);
 	destroy_test_context(ctx);
 }
 

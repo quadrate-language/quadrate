@@ -2,6 +2,79 @@
 
 namespace Qd {
 
+	// Whether the token just scanned is a keyword that starts a declaration or statement
+	static bool isRecoveryKeyword(u8t_scanner* scanner) {
+		static const char* const KEYWORDS_STARTING[] = {"pub", "inline", "stack", "packed", "fn", "const", "var",
+				"struct", "enum", "type", "use", "import", "test", "if", "for", "while", "loop", "switch", "return"};
+		size_t n;
+		const char* text = u8t_scanner_token_text(scanner, &n);
+		for (const char* keyword : KEYWORDS_STARTING) {
+			if (strcmp(text, keyword) == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// Recovery after an error at the token just scanned. It skips to where the next
+	// declaration or statement can start:
+	//
+	// - a keyword that starts one is left for the caller's loop to scan, the error token
+	//   too when it is one, so `enum E` followed by `fn main` reports the missing `{` and
+	//   still reads `main`;
+	// - a `}` is left too, for the body it closes;
+	// - a `{` opens the broken construct's block, which is read and dropped. Reading it
+	//   with parseBlockBody keeps comments and nested braces accounted for.
+	//
+	// It used to consume the keyword or brace it stopped at. A lost keyword lost its
+	// declaration, a lost `}` its body's end, and a `{` let the block's own `}` close the
+	// enclosing body; each turned one error into a cascade of stray-token ones.
+	void synchronize(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+		// A token is never put back twice, so a loop that reports an error on the token
+		// it dispatched on still moves on.
+		static thread_local const char* lastPutBack = nullptr;
+		const auto putBack = [scanner]() {
+			if (scanner->_str == lastPutBack) {
+				return false;
+			}
+			lastPutBack = scanner->_str;
+			scanner->_str -= scanner->_token_text_pos;
+			scanner->_token_len = 0;
+			return true;
+		};
+		const auto skipBlock = [&]() {
+			std::unique_ptr<AstNodeBlock> discarded(new AstNodeBlock());
+			parseBlockBody(discarded.get(), scanner, errorReporter, src);
+		};
+
+		// The error token first. A string token's text keeps its quotes, so only a brace
+		// reads as one.
+		size_t n;
+		const char* errorText = u8t_scanner_token_text(scanner, &n);
+		if (strcmp(errorText, "{") == 0) {
+			skipBlock();
+			return;
+		}
+		if ((strcmp(errorText, "}") == 0 || isRecoveryKeyword(scanner)) && putBack()) {
+			return;
+		}
+
+		while (true) {
+			const char32_t token = u8t_scanner_scan(scanner);
+			if (token == U8T_EOF || token == ';') {
+				return;
+			}
+			if (token == '{') {
+				skipBlock();
+				return;
+			}
+			if (token == '}' || (token == U8T_IDENTIFIER && isRecoveryKeyword(scanner))) {
+				putBack();
+				return;
+			}
+		}
+	}
+
 	// Helper function to parse a block body with proper else-handling.
 	// When inFunctionBody is true, also handles >>field, ctx blocks, and EOF detection.
 	void parseBlockBody(AstNodeBlock* block, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
@@ -383,7 +456,7 @@ namespace Qd {
 			setNodePosition(body, scanner, src);
 			body->setParent(forStmt);
 			forStmt->setBody(body);
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return forStmt;
 		}
 
@@ -413,7 +486,7 @@ namespace Qd {
 			setNodePosition(body, scanner, src);
 			body->setParent(loopStmt);
 			loopStmt->setBody(body);
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return loopStmt;
 		}
 
@@ -447,7 +520,7 @@ namespace Qd {
 			errorReporter->reportError(scanner, "Expected '{' after 'while'");
 			body->setParent(whileStmt);
 			whileStmt->setBody(body);
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return whileStmt;
 		}
 
@@ -473,7 +546,7 @@ namespace Qd {
 			setNodePosition(thenBody, scanner, src);
 			thenBody->setParent(ifStmt);
 			ifStmt->setThenBody(thenBody);
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return ifStmt;
 		}
 
@@ -500,7 +573,7 @@ namespace Qd {
 			// Recovery: create empty switch statement and synchronize
 			AstNodeSwitchStatement* switchStmt = new AstNodeSwitchStatement();
 			setNodePosition(switchStmt, scanner, src);
-			synchronize(scanner);
+			synchronize(scanner, errorReporter, src);
 			return switchStmt;
 		}
 

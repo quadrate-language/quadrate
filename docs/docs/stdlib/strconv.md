@@ -15,6 +15,9 @@ Functions:
 - format_bool: Format boolean to string ("true"/"false")
 - parse_bool: Parse string to boolean
 
+The parse functions take the whole string as the value: " 42", "42 " and "12abc"
+are errors, ErrInvalid, not 42 and 12.
+
 ## Functions
 
 ### `fn` atoi
@@ -61,7 +64,7 @@ Format boolean to string. Non-zero becomes "true", zero becomes "false".
 
 ### `fn` format_float
 
-Format float to string. Uses compact %g format (removes trailing zeros).
+Format float to string: the shortest text that parse_float reads back as the same value, so 1234567.0 is "1234567", where %g would write "1.23457e+06".
 
 **Signature:** `(value:f64 -- s:str)`
 
@@ -167,7 +170,7 @@ Parse string to d128, rounding to 34 digits. Takes an optional sign, digits with
 
 ### `fn` parse_float
 
-Parse string to float.
+Parse string to float. A value too large for an f64 is an error, not infinity.
 
 **Signature:** `(s:str -- value:f64)!`
 
@@ -188,7 +191,7 @@ Parse string to float.
 
 ### `fn` parse_int
 
-Parse integer from string in given base.
+Parse integer from string in given base: an optional sign, then digits of the base. The whole i64 range reads, -9223372036854775808 included; beyond it is an error.
 
 **Signature:** `(s:str base:i64 -- value:i64)!`
 

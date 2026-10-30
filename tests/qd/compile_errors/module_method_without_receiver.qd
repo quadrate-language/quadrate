@@ -1,0 +1,7 @@
+// A module's method called without its receiver is an error. It compiled, as a guess at
+// which method was meant, and the guess rolled a receiver out of whatever was on the stack.
+use receiver_geo
+
+fn main() {
+	2.0 receiver_geo::scale print nl
+}

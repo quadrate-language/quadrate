@@ -197,7 +197,7 @@
       "name": "log",
       "signature": "(logger:Logger) log(level:i64 msg:str -- )",
       "failable": false,
-      "description": "Log a message at specified level. ",
+      "description": "Log a message at specified level. A level other than LevelDebug, LevelInfo, LevelWarn or LevelError is a runtime error. ",
       "params": [{"name": "level", "type": "i64", "description": "Log level"}, {"name": "msg", "type": "str", "description": "Message to log"}],
       "returns": [],
       "errors": [],

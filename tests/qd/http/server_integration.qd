@@ -1,6 +1,7 @@
 // Test: Integration test for HTTP server
 /// This test starts a server and handles requests
 use http
+use strings
 
 fn handle_hello(c:ptr -- ) {
 	c 200 "Hello, World!" http::string
@@ -29,6 +30,16 @@ fn handle_echo_header(c:ptr -- ) {
 	c 200 val http::string
 }
 
+fn handle_body(c:ptr -- ) {
+	c http::request_body -> body
+	c 200 body http::string
+}
+
+fn handle_big_header(c:ptr -- ) {
+	c "X-Big" "x" 6000 strings::repeat http::set_header
+	c 200 "ok" http::string
+}
+
 fn main() {
 	// Create engine with routes
 	http::engine -> e
@@ -39,6 +50,8 @@ fn main() {
 	e "/users/:id" &handle_user http::GET
 	e "/search" &handle_search http::GET
 	e "/echo" &handle_echo_header http::GET
+	e "/body" &handle_body http::POST
+	e "/big-header" &handle_big_header http::GET
 
 	// Start server (blocking) - use with run.sh script
 	e ":8765" http::run!

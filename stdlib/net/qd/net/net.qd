@@ -26,6 +26,7 @@ import "libnet.a" as "net" {
 	/// @param port i64 Port number to listen on
 	/// @return socket i64 Server socket descriptor
 	/// @error ErrListen Port may be in use or permission denied
+	/// @error ErrInvalidArg The port is not between 0 and 65535
 	/// @example 8080 net::listen! -> server
 	pub fn listen(port:i64 -- socket:i64)!
 
@@ -36,28 +37,33 @@ import "libnet.a" as "net" {
 	/// @example server net::accept! -> client
 	pub fn accept(server_socket:i64 -- client_socket:i64)!
 
-	/// Connect to a remote host.
+	/// Connect to a remote host, over IPv4 or IPv6.
 	/// @param host str Hostname or IP address
 	/// @param port i64 Port number
 	/// @return socket i64 Connected socket descriptor
-	/// @error ErrConnect Host unreachable or connection refused
+	/// @error ErrConnect Host not found, unreachable or refusing connections
+	/// @error ErrInvalidArg The port is not between 0 and 65535
 	/// @example "localhost" 8080 net::connect! -> sock
 	pub fn connect(host:str port:i64 -- socket:i64)!
 
-	/// Send data over socket.
+	/// Send data over socket. All of it is sent, which may take several writes; a peer that
+	/// has gone fails the send rather than ending the program with SIGPIPE.
 	/// @param socket i64 Socket descriptor
 	/// @param data str Data to send
 	/// @return bytes_sent i64 Number of bytes sent
 	/// @error ErrSend Failed to send data
+	/// @error ErrTimeout The timeout set with set_timeout ran out
 	/// @example sock "Hello" net::send! -> n
 	pub fn send(socket:i64 data:str -- bytes_sent:i64)!
 
-	/// Receive data from socket.
+	/// Receive data from socket. At the end of the stream, the data is "" and bytes_read 0.
 	/// @param socket i64 Socket descriptor
-	/// @param max_bytes i64 Maximum bytes to receive
+	/// @param max_bytes i64 Maximum bytes to receive, from 1 to 1048576
 	/// @return data str Received data
 	/// @return bytes_read i64 Actual bytes received
 	/// @error ErrReceive Failed to receive data
+	/// @error ErrTimeout The timeout set with set_timeout ran out
+	/// @error ErrInvalidArg max_bytes is out of range
 	/// @example sock 1024 net::receive! -> n -> data
 	pub fn receive(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)!
 

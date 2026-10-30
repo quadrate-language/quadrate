@@ -2,6 +2,8 @@
 #define QD_QC_SEMANTIC_VALIDATOR_H
 
 #include "ast.h"
+#include "ast_types.h"
+#include "type_names.h"
 #include <cctype>
 #include <functional>
 #include <map>
@@ -16,6 +18,8 @@ namespace Qd {
 
 	class IAstNode;
 	class AstNodeFunctionDeclaration;
+	class AstNodeScopedIdentifier;
+	struct StructFieldInit;
 
 	// Stack value type for type checking
 	enum class StackValueType {
@@ -75,14 +79,6 @@ namespace Qd {
 	public:
 		SemanticValidator();
 
-		// Validate an AST and return error count
-		// Returns 0 if valid, > 0 if errors were found
-		// If isModuleFile is true, missing module imports will not be reported as errors
-		// If werror is true, warnings are treated as errors
-		// Writes every computed signature to stderr when QUADC_DUMP_SIGNATURES is set. The
-		// reference for consolidating the five signature builders (see the definition).
-		void dumpFunctionSignatures() const;
-
 		// Whether a value of type `actual` may initialise a field declared `expected`.
 		bool fieldTypesCompatible(const std::string& expected, const std::string& actual) const;
 		bool isPointerField(const std::string& structName, const std::string& fieldName) const;
@@ -130,7 +126,17 @@ namespace Qd {
 		void pushCallResults(const FunctionSignature& sig, const std::map<std::string, std::string>& bindings,
 				const std::vector<std::string>& consumedStructTypes, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack);
+		// What a call does to its argument for parameter `paramNumber`, which has type `actual`
+		// where the parameter takes `expected`: an i64 widened to f64 or d128, an f64 narrowed
+		// to i64 (with a warning), or an `any` checked when the call runs. A type that cannot
+		// reach the parameter is reported at `site`. `actual` becomes what the parameter receives.
+		CastDirection argumentCast(const IAstNode* site, const char* callKind, const std::string& callee,
+				size_t paramNumber, StackValueType expected, StackValueType& actual);
 
+		// Validate an AST and return error count
+		// Returns 0 if valid, > 0 if errors were found
+		// If isModuleFile is true, missing module imports will not be reported as errors
+		// If werror is true, warnings are treated as errors
 		size_t validate(
 				IAstNode* program, const char* filename = nullptr, bool isModuleFile = false, bool werror = false);
 
@@ -182,6 +188,11 @@ namespace Qd {
 		}
 
 		// Set additional module search paths (from -I flags)
+		// `-l name@version`: which installed version of a package a `use` resolves to
+		void setModuleVersionPins(const std::unordered_map<std::string, std::string>& pins) {
+			mModuleVersionPins = pins;
+		}
+
 		void setIncludePaths(const std::vector<std::string>& paths) {
 			mIncludePaths = paths;
 		}
@@ -241,7 +252,7 @@ namespace Qd {
 				bool reportErrors = true, const std::string& importerDirectory = "");
 
 		// Helper: Try to load a module from a directory (module.qd or glob *.qd)
-		bool tryLoadModuleFromDirectory(const std::string& moduleDir, const std::string& moduleName);
+		void loadModuleDirectory(const std::string& moduleDir, const std::string& moduleName);
 
 		void parseModuleAndCollectFunctions(const std::string& moduleName, const std::string& source,
 				const std::string& filePath, bool mergeIntoMain = false);
@@ -301,6 +312,93 @@ namespace Qd {
 		void typeCheckBlock(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
+		// typeCheckBlock, one node kind each: `child` is the node, the i-th of the block `node`
+		// A call that names a method of a struct on the stack, by identifier or (for a method named
+		// like a builtin) by instruction. False, with nothing done, when it names none.
+		template <typename Call>
+		bool typeCheckMethodCall(Call* call, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckInstructionNode(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckIf(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckDefer(IAstNode* child, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckSwitch(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckFor(IAstNode* child, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckWhile(IAstNode* child, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckLocal(IAstNode* child, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckStructConstruction(IAstNode* child, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		std::string constructedStructKey(const std::string& name) const;
+		std::string qualifiedModuleStructName(const std::string& name) const;
+		void typeCheckFieldInit(class AstNodeStructConstruction* construct, const std::string& lookupKey, size_t index,
+				const std::unordered_map<std::string, StackValueType>& localVariables);
+		bool fieldTypeOrReport(const class AstNodeStructConstruction* construct, const std::string& structKey,
+				const std::string& fieldName, StackValueType& fieldType);
+		bool typeCheckFieldValue(class AstNodeStructConstruction* construct, const StructFieldInit& fieldInit,
+				const std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<StackValueType>& valueTypes, std::vector<std::string>& valueStructTypes);
+		std::string fieldStructType(const std::string& structKey, const std::string& fieldName) const;
+		CastDirection checkFieldValue(const IAstNode* site, const std::string& writtenName,
+				const std::string& structKey, const std::string& fieldName, StackValueType expectedType,
+				StackValueType actualType, const std::string& actualStructType);
+		void checkMissingFields(class AstNodeStructConstruction* construct, const std::string& lookupKey,
+				const std::unordered_set<std::string>& providedFields);
+		// `x y Point`: one value per field in `fieldOrder` consumed and checked against the field
+		// tables under `structKey`, then the struct pushed as `pushedType`. Without a field order
+		// only the struct is pushed. Messages name it `writtenName`, as the source does. Returns
+		// the cast each field's value needs, bottom to top.
+		std::vector<CastDirection> typeCheckPositionalConstruction(const IAstNode* site, const std::string& writtenName,
+				const std::string& structKey, const std::vector<std::string>* fieldOrder, const std::string& pushedType,
+				std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		std::string positionalStructKey(const std::string& name) const;
+		std::optional<std::vector<std::string>> declaredFieldOrder(const std::string& structKey) const;
+		void pushLocalVariable(const std::string& name, StackValueType type, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack);
+		static std::vector<std::string> fieldNames(const class AstNodeStructDeclaration* structDecl);
+		void typeCheckIdentifier(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+				std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
+		void typeCheckFieldAccess(
+				IAstNode* child, std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		void typeCheckFieldSet(
+				IAstNode* child, std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		void typeCheckScopedIdentifier(IAstNode* child, IAstNode* node, size_t i,
+				std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		std::string moduleMethodOwner(const std::string& module, const std::string& name) const;
+		bool typeCheckScopedConstant(const std::string& scope, const std::string& name,
+				std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		bool typeCheckExplicitMethodCall(AstNodeScopedIdentifier* scoped, IAstNode* node, size_t i,
+				std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		bool typeCheckModuleMethodCall(AstNodeScopedIdentifier* scoped, IAstNode* node, size_t i,
+				std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		// The parts of a call that every kind of call shares
+		template <typename Call>
+		void typeCheckFunctionCall(Call* call, const FunctionSignature& sig, const std::string& name, IAstNode* node,
+				size_t i, std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack);
+		template <typename Call>
+		void checkFallibleCall(Call* call, const FunctionSignature& sig, bool isMethod, const std::string& name,
+				IAstNode* node, size_t i);
+		template <typename Call>
+		void applyCallEffect(Call* call, const FunctionSignature& sig,
+				const std::map<std::string, std::string>& typeBindings,
+				const std::vector<std::string>& consumedStructTypes, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack);
+		void checkParameterFields(const IAstNode* site, const FunctionSignature& sig, const std::string& name,
+				const std::vector<StackValueType>& typeStack, const std::vector<std::string>& structTypeStack);
 		// Checks an anonymous function's body the way a named function's body is checked: on its
 		// own empty stack, with its named parameters bound and its captures typed from the scope
 		// it was written in.
@@ -313,11 +411,28 @@ namespace Qd {
 		void typeCheckInstruction(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack);
 
-		// Helper: Analyze a block in isolation (for determining function signatures)
-		void analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack,
-				const std::unordered_map<std::string, StackValueType>& initialLocalVars = {});
-
 		// Helper: Type check an instruction (with optional error suppression for signature analysis)
+		// typeCheckInstructionInternal, a builtin or a family of them each
+		void checkBuiltinArithmetic(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinComparison(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinCast(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinCall(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinNth(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinSet(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinAppend(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		void checkBuiltinClone(IAstNode* node, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		bool checkBuiltinMachine(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
+		bool checkBuiltinShuffle(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool reportErrors);
 		void typeCheckInstructionInternal(IAstNode* node, const char* name, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack, bool reportErrors);
 
@@ -336,6 +451,19 @@ namespace Qd {
 		// sized-type rejection (specification 3.1.1) at every position that rejects it.
 		// Bounded, so a cyclic alias returns rather than spins.
 		std::string resolveTypeAliasChain(const std::string& typeStr) const;
+
+		// What a declared parameter or result type puts in a signature
+		struct SignatureType {
+			StackValueType stack;
+			std::string name;	 // The type with its aliases resolved
+			std::string tracked; // A struct, array or fn type, kept beside a PTR; empty otherwise
+		};
+
+		// The one mapping every signature builder uses. `qualifyIn` is the module an unqualified
+		// struct name belongs to, or empty to leave the name as written.
+		SignatureType signatureType(const std::string& written, const std::string& qualifyIn) const;
+		void addSignatureInput(FunctionSignature& sig, const std::string& written, const std::string& qualifyIn) const;
+		void addSignatureOutput(FunctionSignature& sig, const std::string& written, const std::string& qualifyIn) const;
 
 		// The sized integer type `typeStr` finally names, directly or through aliases, or ""
 		// when it names something else.
@@ -568,6 +696,7 @@ namespace Qd {
 
 		// Additional module search paths from -I flags
 		std::vector<std::string> mIncludePaths;
+		std::unordered_map<std::string, std::string> mModuleVersionPins;
 
 		// Freestanding mode: see setFreestandingMode().
 		bool mFreestandingMode = false;

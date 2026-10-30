@@ -2,6 +2,7 @@
 // POSIX socket implementation
 #include "../net_platform.h"
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -56,54 +57,89 @@ net_socket_t net_platform_listen(int port) {
 	return server_fd;
 }
 
+// Where a send cannot say MSG_NOSIGNAL, the socket says SO_NOSIGPIPE instead, so that
+// writing to a peer that has gone fails the send rather than ending the process
+static void no_sigpipe(int fd) {
+#if !defined(MSG_NOSIGNAL) && defined(SO_NOSIGPIPE)
+	int on = 1;
+	setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
+#else
+	(void)fd;
+#endif
+}
+
 // Accept an incoming connection on a server socket
 net_socket_t net_platform_accept(net_socket_t server_socket) {
-	int client_fd = accept(server_socket, NULL, NULL);
+	int client_fd;
+	do {
+		client_fd = accept(server_socket, NULL, NULL);
+	} while (client_fd < 0 && errno == EINTR);
 	if (client_fd < 0) {
 		return NET_SOCKET_INVALID;
 	}
+	no_sigpipe(client_fd);
 	return client_fd;
 }
 
-// Connect to a remote host and port
+// Connect to a remote host and port, trying each address the name resolves to, IPv6 too.
+// On failure errno says why; a name that does not resolve is EHOSTUNREACH.
 net_socket_t net_platform_connect(const char* host, int port) {
-	// Create socket
-	int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock_fd < 0) {
+	char service[8];
+	snprintf(service, sizeof(service), "%d", port);
+	struct addrinfo hints = {0};
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	struct addrinfo* found = NULL;
+	if (getaddrinfo(host, service, &hints, &found) != 0) {
+		errno = EHOSTUNREACH;
 		return NET_SOCKET_INVALID;
 	}
-
-	// Resolve hostname
-	struct hostent* server = gethostbyname(host);
-	if (server == NULL) {
-		close(sock_fd);
+	int fd = -1;
+	int err = ECONNREFUSED;
+	for (struct addrinfo* a = found; a != NULL && fd < 0; a = a->ai_next) {
+		fd = socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+		if (fd >= 0 && connect(fd, a->ai_addr, a->ai_addrlen) != 0) {
+			err = errno;
+			close(fd);
+			fd = -1;
+		}
+	}
+	freeaddrinfo(found);
+	if (fd < 0) {
+		errno = err;
 		return NET_SOCKET_INVALID;
 	}
-
-	// Setup address
-	struct sockaddr_in addr = {0};
-	addr.sin_family = AF_INET;
-	memcpy(&addr.sin_addr.s_addr, server->h_addr_list[0], (size_t)server->h_length);
-	addr.sin_port = htons((uint16_t)port);
-
-	// Connect
-	if (connect(sock_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-		close(sock_fd);
-		return NET_SOCKET_INVALID;
-	}
-
-	return sock_fd;
+	no_sigpipe(fd);
+	return fd;
 }
 
-// Send data to a socket
+// Send all of the data: one send may take only part of it
 int net_platform_send(net_socket_t socket, const char* data, size_t len) {
-	ssize_t bytes_sent = write(socket, data, len);
-	return (int)bytes_sent;
+#ifdef MSG_NOSIGNAL
+	const int flags = MSG_NOSIGNAL;
+#else
+	const int flags = 0;
+#endif
+	size_t off = 0;
+	while (off < len) {
+		const ssize_t sent = send(socket, data + off, len - off, flags);
+		if (sent < 0 && errno == EINTR) {
+			continue;
+		}
+		if (sent <= 0) {
+			return NET_ERROR;
+		}
+		off += (size_t)sent;
+	}
+	return NET_SUCCESS;
 }
 
 // Receive data from a socket
 int net_platform_receive(net_socket_t socket, char* buffer, size_t max_bytes) {
-	ssize_t bytes_read = read(socket, buffer, max_bytes);
+	ssize_t bytes_read;
+	do {
+		bytes_read = read(socket, buffer, max_bytes);
+	} while (bytes_read < 0 && errno == EINTR);
 	return (int)bytes_read;
 }
 

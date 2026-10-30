@@ -3,13 +3,15 @@
  * @brief Unit tests for the qdthread threading primitives library
  */
 
-#include <quadrate/thread/thread.h>
 #include <quadrate/rt/context.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
-#include <unit-check/uc.h>
+#include <quadrate/thread/thread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
+#include <time.h>
+#include <unit-check/uc.h>
 
 static qd_context* create_test_context(void) {
 	return qd_create_context(256);
@@ -334,7 +336,14 @@ TEST(ChannelCloseTest) {
 	qd_push_i(ctx, 99);
 	qd_push_p(ctx, ch_ptr);
 	int ret = usr_thread_raw_chan_send(ctx);
-	ASSERT_NE(0, ret, "send on closed channel should return error");
+	ASSERT_EQ(THREAD_ERR_CLOSED, ret, "send on closed channel should return error");
+	// The generated code reads the failure from error_code and drops the status pushed
+	// for it; without either, the failure read as success or cost the caller a value
+	ASSERT_EQ(THREAD_ERR_CLOSED, (int)ctx->error_code, "send on closed channel should set error_code");
+	ASSERT_EQ(1, (int)qd_stack_size(ctx->st), "send on closed channel should push exactly its status");
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	ASSERT_EQ(THREAD_ERR_CLOSED, (int)status.value.i, "the pushed status should be the error code");
 
 	// Clear error state
 	qd_clear_error(ctx);
@@ -420,6 +429,154 @@ TEST(ChannelUnbufferedCreateTest) {
 	qd_push_p(ctx, ch_elem.value.p);
 	usr_thread_raw_chan_free(ctx);
 
+	destroy_test_context(ctx);
+}
+
+static void* new_unbuffered_channel(qd_context* ctx) {
+	usr_thread_raw_chan_new(ctx);
+	qd_stack_element_t result, ch_elem;
+	qd_stack_pop(ctx->st, &result);
+	qd_stack_pop(ctx->st, &ch_elem);
+	return ch_elem.value.p;
+}
+
+static void sleep_ms(long ms) {
+	struct timespec ts = {ms / 1000, (ms % 1000) * 1000000L};
+	thrd_sleep(&ts, NULL);
+}
+
+static double now_ms(void) {
+	struct timespec ts;
+	timespec_get(&ts, TIME_UTC);
+	return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1e6;
+}
+
+typedef struct {
+	void* ch;
+	long delay_ms;
+	int ret;
+	int64_t value;
+} channel_peer;
+
+// Receives one value on its own context, after a delay
+static int delayed_receiver(void* arg) {
+	channel_peer* peer = arg;
+	qd_context* ctx = create_test_context();
+	sleep_ms(peer->delay_ms);
+	qd_push_p(ctx, peer->ch);
+	peer->ret = usr_thread_raw_chan_recv(ctx);
+	qd_stack_element_t result, val;
+	qd_stack_pop(ctx->st, &result);
+	qd_stack_pop(ctx->st, &val);
+	peer->value = val.value.i;
+	destroy_test_context(ctx);
+	return 0;
+}
+
+static int delayed_closer(void* arg) {
+	channel_peer* peer = arg;
+	qd_context* ctx = create_test_context();
+	sleep_ms(peer->delay_ms);
+	qd_push_p(ctx, peer->ch);
+	usr_thread_raw_chan_close(ctx);
+	destroy_test_context(ctx);
+	return 0;
+}
+
+TEST(ChannelUnbufferedSendWaitsForReceiverTest) {
+	qd_context* ctx = create_test_context();
+	void* ch = new_unbuffered_channel(ctx);
+
+	channel_peer peer = {ch, 100, -1, 0};
+	thrd_t receiver;
+	thrd_create(&receiver, delayed_receiver, &peer);
+
+	// The send used to return at once, leaving the value in a one-slot buffer
+	const double start = now_ms();
+	qd_push_i(ctx, 42);
+	qd_push_p(ctx, ch);
+	int ret = usr_thread_raw_chan_send(ctx);
+	const double waited = now_ms() - start;
+	thrd_join(receiver, NULL);
+
+	ASSERT_EQ(0, ret, "unbuffered send should succeed");
+	qd_stack_element_t result;
+	qd_stack_pop(ctx->st, &result);
+	ASSERT_EQ(THREAD_OK, (int)result.value.i, "unbuffered send should push THREAD_OK");
+	ASSERT_TRUE(waited >= 90.0, "unbuffered send should wait for the receiver");
+	ASSERT_EQ(42, (int)peer.value, "receiver should get the sent value");
+
+	qd_push_p(ctx, ch);
+	usr_thread_raw_chan_free(ctx);
+	destroy_test_context(ctx);
+}
+
+TEST(ChannelUnbufferedTrySendNeedsReceiverTest) {
+	qd_context* ctx = create_test_context();
+	void* ch = new_unbuffered_channel(ctx);
+
+	qd_stack_element_t success;
+	qd_push_i(ctx, 7);
+	qd_push_p(ctx, ch);
+	usr_thread_raw_chan_try_send(ctx);
+	qd_stack_pop(ctx->st, &success);
+	ASSERT_EQ(0, (int)success.value.i, "try_send with no receiver waiting should fail");
+
+	channel_peer peer = {ch, 0, -1, 0};
+	thrd_t receiver;
+	thrd_create(&receiver, delayed_receiver, &peer);
+
+	// Retry until the receiver is waiting
+	int sent = 0;
+	for (int i = 0; i < 2000 && !sent; i++) {
+		qd_push_i(ctx, 7);
+		qd_push_p(ctx, ch);
+		usr_thread_raw_chan_try_send(ctx);
+		qd_stack_pop(ctx->st, &success);
+		sent = (int)success.value.i;
+		if (!sent) {
+			sleep_ms(1);
+		}
+	}
+	thrd_join(receiver, NULL);
+
+	ASSERT_EQ(1, sent, "try_send should succeed once a receiver is waiting");
+	ASSERT_EQ(7, (int)peer.value, "receiver should get the try_sent value");
+
+	qd_push_p(ctx, ch);
+	usr_thread_raw_chan_free(ctx);
+	destroy_test_context(ctx);
+}
+
+TEST(ChannelUnbufferedSendFailsOnCloseTest) {
+	qd_context* ctx = create_test_context();
+	void* ch = new_unbuffered_channel(ctx);
+
+	channel_peer peer = {ch, 50, -1, 0};
+	thrd_t closer;
+	thrd_create(&closer, delayed_closer, &peer);
+
+	qd_push_i(ctx, 42);
+	qd_push_p(ctx, ch);
+	int ret = usr_thread_raw_chan_send(ctx);
+	thrd_join(closer, NULL);
+	ASSERT_EQ(THREAD_ERR_CLOSED, ret, "send should fail when closed before the value is received");
+	ASSERT_EQ(THREAD_ERR_CLOSED, (int)ctx->error_code, "the failed send should set error_code");
+	ASSERT_EQ(1, (int)qd_stack_size(ctx->st), "the failed send should push exactly its status");
+	qd_stack_element_t status;
+	qd_stack_pop(ctx->st, &status);
+	qd_clear_error(ctx);
+
+	// A send that failed must not have delivered
+	qd_push_p(ctx, ch);
+	usr_thread_raw_chan_try_recv(ctx);
+	qd_stack_element_t success, val;
+	qd_stack_pop(ctx->st, &success);
+	qd_stack_pop(ctx->st, &val);
+	ASSERT_EQ(0, (int)success.value.i, "the failed send's value should not be receivable");
+
+	qd_push_p(ctx, ch);
+	usr_thread_raw_chan_free(ctx);
 	destroy_test_context(ctx);
 }
 

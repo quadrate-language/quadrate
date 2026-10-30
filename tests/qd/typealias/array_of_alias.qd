@@ -1,0 +1,20 @@
+// An alias is the type it names inside an array type too: []Score is []i64
+type Score = i64
+type Scores = []Score
+
+fn total(xs:Scores -- t:i64) {
+	0 -> t
+	0 xs len 1 for i {
+		t xs i nth + -> t
+	}
+	t
+}
+
+fn first(xs:[]Score -- x:Score) {
+	xs 0 nth
+}
+
+fn main() {
+	[3 4 5] total print nl
+	[7 8] first print nl
+}

@@ -137,19 +137,12 @@ namespace Qd {
 				   typeName + "'";
 		}
 		return "Invalid type '" + typeStr + "'" + where +
-			   ". Valid types are: i64, f64, d128, str, ptr, any, or a struct name";
+			   ". Valid types are: i64, f64, d128, str, ptr, any, bool, or a struct name";
 	}
 
 	bool SemanticValidator::isValidTypeName(const std::string& typeStr) const {
-		// Primitive types
-		if (typeStr == "i64" || typeStr == "f64" || typeStr == "d128" || typeStr == "str" || typeStr == "ptr" ||
-				typeStr == "any") {
-			return true;
-		}
-		// Sized integer types: all live in memory/signatures only;
-		// on the stack they're represented as i64 (sign- or zero-extended on load).
-		if (typeStr == "i8" || typeStr == "i16" || typeStr == "i32" || typeStr == "u8" || typeStr == "u16" ||
-				typeStr == "u32" || typeStr == "u64") {
+		// Primitives, sized integers (memory widths, an i64 on the stack) and built-in aliases
+		if (isBuiltinTypeName(typeStr)) {
 			return true;
 		}
 		// Array types: []i64, []f64, []str, []StructName
@@ -839,88 +832,7 @@ namespace Qd {
 		mSource = savedSource;
 		printTiming("typeCheck");
 
-		dumpFunctionSignatures();
-
 		return mErrorCount;
-	}
-
-	// Writes every signature this compilation unit computed, when QUADC_DUMP_SIGNATURES is set.
-	//
-	// Five separate builders populate mFunctionSignatures -- main-module functions, main-module
-	// import blocks, module functions, module import blocks -- each with its own mapping from a
-	// declared type name to a stack type and its own struct-qualification rules. They have
-	// already drifted apart more than once: one substituted a body residual for declared outputs,
-	// another mapped the sized integers to `any`. This dump is the reference for consolidating
-	// them: capture it over the whole corpus, refactor, and require the output to be identical.
-	void SemanticValidator::dumpFunctionSignatures() const {
-		static const bool enabled = std::getenv("QUADC_DUMP_SIGNATURES") != nullptr;
-		if (!enabled) {
-			return;
-		}
-		// validate() runs more than once per compile (the driver validates the program and each
-		// module it pulls in), and the signature map is refined between runs -- a struct type
-		// unqualified on an early pass becomes qualified once the module is registered. Tag each
-		// dump with its pass number so a consumer can take the final one; comparing across passes
-		// compares a snapshot with a later refinement of itself, not two builders disagreeing.
-		static int pass = 0;
-		pass++;
-		std::cerr << "PASS " << pass << std::endl;
-		auto render = [this](const FunctionSignature& sig, bool inputs) {
-			const std::vector<StackValueType>& types = inputs ? sig.consumes : sig.produces;
-			const auto& names = inputs ? sig.parameterTypeNames : sig.producesTypeNames;
-			const auto& structs = inputs ? sig.parameterStructTypes : sig.producesStructTypes;
-			std::string out;
-			for (size_t i = 0; i < types.size(); i++) {
-				if (i > 0) {
-					out += ",";
-				}
-				auto n = names.find(i);
-				auto st = structs.find(i);
-				out += typeToString(types[i]);
-				out += "/";
-				out += n != names.end() ? n->second : "-";
-				out += "/";
-				out += st != structs.end() ? st->second : "-";
-			}
-			return out.empty() ? std::string("-") : out;
-		};
-		std::vector<std::string> lines;
-		lines.reserve(mFunctionSignatures.size());
-		for (const auto& entry : mFunctionSignatures) {
-			const FunctionSignature& sig = entry.second;
-			std::string tp;
-			for (size_t i = 0; i < sig.typeParams.size(); i++) {
-				if (i > 0) {
-					tp += ",";
-				}
-				tp += sig.typeParams[i];
-			}
-			std::string line = "SIG " + entry.first + " |tp=" + (tp.empty() ? "-" : tp) + " |in=" + render(sig, true) +
-							   " |out=" + render(sig, false) + " |throws=" + (sig.throws ? "1" : "0");
-			// Field-access expectations are collected per parameter name, so they are part of
-			// what a builder produces and must survive the consolidation too.
-			if (!sig.parameterFieldAccess.empty()) {
-				std::vector<std::string> fields;
-				for (const auto& pf : sig.parameterFieldAccess) {
-					for (const auto& f : pf.second) {
-						fields.push_back(pf.first + "." + f.first + ":" + typeToString(f.second));
-					}
-				}
-				std::sort(fields.begin(), fields.end());
-				line += " |fields=";
-				for (size_t i = 0; i < fields.size(); i++) {
-					if (i > 0) {
-						line += ",";
-					}
-					line += fields[i];
-				}
-			}
-			lines.push_back(line);
-		}
-		std::sort(lines.begin(), lines.end());
-		for (const std::string& l : lines) {
-			std::cerr << l << std::endl;
-		}
 	}
 
 	bool SemanticValidator::isNumericType(StackValueType type) const {
@@ -965,7 +877,53 @@ namespace Qd {
 			}
 			resolved = aliasIt->second;
 		}
+		if (const std::string_view builtin = builtinTypeAliasTarget(resolved); !builtin.empty()) {
+			resolved = builtin;
+		}
+		// `[]Flag` is `[]i64` when Flag is: the element resolves as a type of its own
+		if (isArrayTypeName(resolved)) {
+			resolved = "[]" + resolveTypeAliasChain(resolved.substr(2));
+		}
 		return resolved;
+	}
+
+	// Every builder of a signature -- a function or an `import` declaration, in the program or in
+	// a module -- maps declared types here. Four builders each used to keep a mapping of their
+	// own, and they drifted: one sent `i8` to `any`, one made `bool` a pointer, one dropped arrays.
+	SemanticValidator::SignatureType SemanticValidator::signatureType(
+			const std::string& written, const std::string& qualifyIn) const {
+		SignatureType out;
+		out.name = resolveTypeAliasChain(written);
+		out.stack = stringToStackValueType(out.name);
+		const bool isStruct = isStructTypeName(out.name);
+		if (out.stack == StackValueType::PTR &&
+				(isStruct || isArrayTypeName(out.name) || out.name.compare(0, 3, "fn(") == 0)) {
+			const bool qualify = isStruct && !qualifyIn.empty() && out.name.find("::") == std::string::npos;
+			out.tracked = qualify ? qualifyIn + "::" + out.name : out.name;
+		}
+		return out;
+	}
+
+	void SemanticValidator::addSignatureInput(
+			FunctionSignature& sig, const std::string& written, const std::string& qualifyIn) const {
+		const size_t index = sig.consumes.size();
+		SignatureType type = signatureType(written, qualifyIn);
+		sig.consumes.push_back(type.stack);
+		sig.parameterTypeNames[index] = type.name;
+		if (!type.tracked.empty()) {
+			sig.parameterStructTypes[index] = type.tracked;
+		}
+	}
+
+	void SemanticValidator::addSignatureOutput(
+			FunctionSignature& sig, const std::string& written, const std::string& qualifyIn) const {
+		const size_t index = sig.produces.size();
+		SignatureType type = signatureType(written, qualifyIn);
+		sig.produces.push_back(type.stack);
+		sig.producesTypeNames[index] = type.name;
+		if (!type.tracked.empty()) {
+			sig.producesStructTypes[index] = type.tracked;
+		}
 	}
 
 	std::string SemanticValidator::sizedIntTypeThroughAliases(const std::string& typeStr) const {
@@ -991,8 +949,7 @@ namespace Qd {
 			return StackValueType::INT;
 		}
 		// Sized integer types promote to i64 on the stack.
-		if (typeStr == "i8" || typeStr == "i16" || typeStr == "i32" || typeStr == "u8" || typeStr == "u16" ||
-				typeStr == "u32" || typeStr == "u64") {
+		if (isSizedIntTypeName(typeStr)) {
 			return StackValueType::INT;
 		}
 		if (typeStr == "f64") {

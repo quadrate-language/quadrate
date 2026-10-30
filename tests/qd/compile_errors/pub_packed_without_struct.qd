@@ -1,0 +1,7 @@
+// `packed` must be followed by `struct`, after `pub` too. It used to be dropped, and
+// the function compiled.
+pub packed fn foo() {
+}
+
+fn main() {
+}

@@ -1,0 +1,13 @@
+// Test: signal::wait takes the signal it returns. Its pending flag stayed set, so the
+// second wait returned SIGUSR1 again instead of waiting for SIGUSR2.
+use signal
+
+fn main() {
+	signal::SigUsr1 signal::trap
+	signal::SigUsr2 signal::trap
+	signal::SigUsr1 signal::raise drop
+	signal::SigUsr2 signal::raise drop
+	signal::wait signal::SigUsr1 == print nl
+	signal::wait signal::SigUsr2 == print nl
+	signal::SigUsr1 signal::pending print nl
+}

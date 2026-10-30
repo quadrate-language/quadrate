@@ -24,6 +24,7 @@
 #include <quadrate/qc/ast_node_struct_field.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/type_names.h>
 #include <set>
 #include <string>
 #include <vector>
@@ -63,10 +64,9 @@ struct References {
 	std::set<std::string> definedNames;
 };
 
+// A name inside a type string that refers to no module: a built-in type, or the `fn` of `fn(...)`
 static bool isPrimitiveTypeName(const std::string& name) {
-	static const std::set<std::string> primitives = {"i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "f32", "f64",
-			"d128", "str", "ptr", "any", "bool", "void", "fn", "int", "float", "char", "byte"};
-	return primitives.count(name) > 0;
+	return Qd::isBuiltinTypeName(name) || name == "fn";
 }
 
 static bool isIdentChar(char c) {

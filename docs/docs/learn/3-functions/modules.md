@@ -65,7 +65,7 @@ fn main() {
 }
 ```
 
-No `use` statement is needed for files in the same directory.
+No `use` statement is needed for files in the same directory. Files with their own `fn main` and test files (`*_test.qd`) are left out; the [specification](../../specification.md#97-a-programs-directory) has the full rule.
 
 ## Standard library modules
 
@@ -272,11 +272,9 @@ fn square(x:f64 -- result:f64) {
 
 ## Module search path
 
-Quadrate looks for modules in:
-
-1. Current directory
-2. `$QUADRATE_ROOT` if set
-3. Standard library locations
+Quadrate looks for a module beside the file that writes the `use` first, then in the `-I`
+paths and `qd.json` dependencies, the packages quadpm installed, and the standard library.
+[Specification §9.2](../../specification.md#92-module-resolution) gives the full order.
 
 ## Conventions
 

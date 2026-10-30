@@ -1,0 +1,33 @@
+// Test: net failures reach `!` and `switch`, and writing to a peer that has gone fails the
+// send instead of killing the program with SIGPIPE
+use net
+
+fn main() {
+	// set_timeout pushed a failure status without setting the error, so `!` let it pass
+	-1 1000 net::set_timeout switch {
+		Ok { "set_timeout: Ok?" print nl }
+		_ { err -> code -> msg "set_timeout: " print code net::ErrTimeout eq print nl }
+	}
+	"127.0.0.1" 70000 net::connect switch {
+		Ok { -> s s net::close "connect: Ok?" print nl }
+		_ { err -> code -> msg "bad port: " print code net::ErrInvalidArg eq print nl }
+	}
+
+	18791 net::listen! -> server
+	"127.0.0.1" 18791 net::connect! -> client
+	server net::accept! -> peer
+	peer net::close
+
+	// The first send after the peer closed can still succeed; a later one fails
+	0 -> failed
+	0 20 1 for i {
+		client "ping" net::send switch {
+			Ok { drop }
+			_ { err -> code -> msg 1 -> failed }
+		}
+	}
+	"send to a closed peer failed: " print failed print nl
+
+	client net::close
+	server net::close
+}

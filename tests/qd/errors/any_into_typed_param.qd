@@ -1,0 +1,14 @@
+// Test: an `any` holding an i64, passed on to a str parameter, stops at the call naming both types.
+fn shout(s:str -- r:str) {
+	s
+}
+
+fn relay(a:any -- r:str) {
+	a shout
+}
+
+fn main() {
+	"ok" relay print nl
+	7 relay print nl
+	"FAIL: should not be reached" print nl
+}

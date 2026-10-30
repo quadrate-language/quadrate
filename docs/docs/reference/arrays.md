@@ -111,8 +111,9 @@ The size may be any expression leaving one `i64`:
 
 | `T` | zero value |
 |-----|------------|
-| `i64`, `i32`, `i16`, `i8`, `u64`, `u32`, `u16`, `u8` | `0` |
-| `f64`, `f32` | `0.0` |
+| `i64`, `i32`, `i16`, `i8`, `u64`, `u32`, `u16`, `u8`, `bool` | `0` |
+| `f64` | `0.0` |
+| `d128` | `0` |
 | `str` | `""` — an empty string, not null |
 | `ptr` | null |
 | a struct | a distinct `T {}` per element — see below |

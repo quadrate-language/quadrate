@@ -1,0 +1,10 @@
+// An i64 argument to an f64 parameter of a method called as `module::method` is cast,
+// as it is when the method is called by its bare name. The qualified call left the
+// argument as it was, and the method stopped on a type mismatch.
+use scaled_point
+
+fn main() {
+	scaled_point::P { x = 1.5 } -> p
+	p 2 scaled_point::scale print nl
+	p 2 scale print nl
+}

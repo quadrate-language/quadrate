@@ -32,8 +32,11 @@ extern "C" {
 #define HTTP_ERR_ACCEPT 21
 #define HTTP_ERR_PARSE_REQUEST 22
 
-/** Maximum header size */
+/** Maximum size of a request's head, its request line and headers */
 #define HTTP_MAX_HEADERS 8192
+
+/** Maximum size of a request body the server reads; a larger one gets 413 */
+#define HTTP_MAX_BODY (1024 * 1024)
 
 /** Maximum URL length */
 #define HTTP_MAX_URL 4096

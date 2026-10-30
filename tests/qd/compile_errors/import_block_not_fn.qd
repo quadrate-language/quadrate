@@ -1,0 +1,8 @@
+// Anything but a function in an import block is an error. It used to be skipped a
+// token at a time, so a typo dropped the declaration without a word.
+import "libc.so.6" as "c" {
+	fm abs(x:i32 -- r:i32)
+}
+
+fn main() {
+}

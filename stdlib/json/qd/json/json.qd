@@ -11,7 +11,6 @@
 /// doccheck: page-setup json::new_array -> arr
 /// doccheck: page-setup json::new_object -> obj
 use bits
-use fmt
 use mem
 use strconv
 use strings
@@ -1793,23 +1792,12 @@ fn (b:Buf) finish( -- s:str) {
 	result
 }
 
-// Shortest representation that reads back as the same double. %g with a fixed
-// precision is either lossy (1e21 written to six digits is a different number)
-// or noisy (0.1 written to seventeen is 0.10000000000000001).
+// Shortest representation that reads back as the same double, which is what
+// strconv::format_float writes.
 fn float_text(f:f64 -- s:str) {
 	// Infinities and NaN subtract to NaN, which equals nothing, itself included.
 	f f - 0.0 == if {
-		f "%.15g" fmt::sprintf -> s
-		s strconv::parse_float! f == if {
-			s
-		} else {
-			f "%.16g" fmt::sprintf -> s
-			s strconv::parse_float! f == if {
-				s
-			} else {
-				f "%.17g" fmt::sprintf
-			}
-		}
+		f strconv::format_float
 	} else {
 		// JSON has no spelling for these.
 		"null"

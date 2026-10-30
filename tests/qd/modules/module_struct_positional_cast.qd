@@ -1,0 +1,9 @@
+// A module's struct built by position casts its fields, by qualified name and by bare name
+use scaled_point
+
+fn main() {
+	3 scaled_point::P -> p
+	p <<x print nl
+	3 P -> q
+	q 2.0 scale print nl
+}

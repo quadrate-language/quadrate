@@ -6,6 +6,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
@@ -35,6 +36,7 @@
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
+#include <type_traits>
 #include <unordered_set>
 
 namespace Qd {
@@ -131,7 +133,7 @@ namespace Qd {
 	// Helper: Check if a block ends with a diverging instruction (like `panic`)
 	// Diverging instructions never return, so stack effects don't need to balance
 	// The stdlib entry points that consume more of the stack than their signature says.
-	// `fmt::printf`/`sprintf` pop one value per `%` in the format string, a count known only at
+	// `fmt::printf`/`sprintf`/`fprintf` pop one value per `%` in the format string, a count known only at
 	// runtime, so no static model applies inside them. Call sites already special-case exactly
 	// these names; this is the same list seen from the definition side.
 	//
@@ -143,7 +145,7 @@ namespace Qd {
 		// depending on which pass is validating the module.
 		const std::string module = filename ? std::filesystem::path(filename).stem().string() : std::string();
 		if (module == "fmt") {
-			return functionName == "printf" || functionName == "sprintf";
+			return functionName == "printf" || functionName == "sprintf" || functionName == "fprintf";
 		}
 		return false;
 	}
@@ -382,6 +384,58 @@ namespace Qd {
 		return bindings;
 	}
 
+	CastDirection SemanticValidator::argumentCast(const IAstNode* site, const char* callKind, const std::string& callee,
+			size_t paramNumber, StackValueType expected, StackValueType& actual) {
+		// A parameter of type any, or a generic one, takes whatever it is given
+		if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
+				expected == StackValueType::TYPEVAR) {
+			return CastDirection::NONE;
+		}
+		// An `any` is whatever it holds, which only the running program knows
+		if (actual == StackValueType::ANY) {
+			actual = expected;
+			switch (expected) {
+			case StackValueType::INT:
+				return CastDirection::ANY_TO_INT;
+			case StackValueType::FLOAT:
+				return CastDirection::ANY_TO_FLOAT;
+			case StackValueType::D128:
+				return CastDirection::ANY_TO_D128;
+			case StackValueType::STRING:
+				return CastDirection::ANY_TO_STR;
+			case StackValueType::PTR:
+				return CastDirection::ANY_TO_PTR;
+			default:
+				return CastDirection::NONE;
+			}
+		}
+		if (actual == StackValueType::UNKNOWN || actual == StackValueType::TYPEVAR || actual == expected) {
+			return CastDirection::NONE;
+		}
+		// An i64 widens to a d128 exactly, so there is nothing to warn about
+		if (actual == StackValueType::INT && expected == StackValueType::D128) {
+			actual = expected;
+			return CastDirection::INT_TO_D128;
+		}
+
+		std::string message = std::string(callKind) + " '" + callee + "': Parameter " + std::to_string(paramNumber) +
+							  " expects " + stackValueTypeToString(expected) + ", but got " +
+							  stackValueTypeToString(actual);
+		if (!isImplicitCastAllowed(actual, expected)) {
+			reportError(site, ("Type error in " + message).c_str());
+			return CastDirection::NONE;
+		}
+		reportWarning(site, ("Implicit cast in " + message).c_str());
+		CastDirection cast = CastDirection::NONE;
+		if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
+			cast = CastDirection::INT_TO_FLOAT;
+		} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
+			cast = CastDirection::FLOAT_TO_INT;
+		}
+		actual = expected;
+		return cast;
+	}
+
 	void SemanticValidator::pushCallResults(const FunctionSignature& sig,
 			const std::map<std::string, std::string>& bindings, const std::vector<std::string>& consumedStructTypes,
 			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
@@ -549,7 +603,9 @@ namespace Qd {
 		reportWarning(switchNode, msg.c_str());
 	}
 
-	std::string SemanticValidator::canonicalStructName(const std::string& name) const {
+	std::string SemanticValidator::canonicalStructName(const std::string& written) const {
+		// An alias is the type it names, so `[]Flag` unifies with `[]i64` when Flag is i64
+		const std::string name = resolveTypeAliasChain(written);
 		if (name.empty() || name.find("::") != std::string::npos || mDefinedStructs.count(name) > 0) {
 			return name;
 		}
@@ -562,11 +618,7 @@ namespace Qd {
 	}
 
 	std::optional<FunctionSignature> SemanticValidator::parseFnTypeString(const std::string& typeStr) const {
-		std::string resolved = typeStr;
-		auto aliasIt = mTypeAliases.find(typeStr);
-		if (aliasIt != mTypeAliases.end()) {
-			resolved = aliasIt->second;
-		}
+		const std::string resolved = resolveTypeAliasChain(typeStr);
 		std::vector<std::string> ins, outs;
 		if (!splitFnType(resolved, ins, outs)) {
 			return std::nullopt;
@@ -576,11 +628,7 @@ namespace Qd {
 						   std::unordered_map<size_t, std::string>& structTypes,
 						   std::unordered_map<size_t, std::string>& typeNames) {
 			for (size_t i = 0; i < names.size(); i++) {
-				std::string name = names[i];
-				auto a = mTypeAliases.find(name);
-				if (a != mTypeAliases.end()) {
-					name = a->second;
-				}
+				const std::string name = resolveTypeAliasChain(names[i]);
 				StackValueType t = stringToStackValueType(name);
 				types.push_back(t);
 				typeNames[i] = name;
@@ -669,338 +717,6 @@ namespace Qd {
 		return type;
 	}
 
-	// Check if a type string is a known struct name (local or imported)
-	// Supports both unqualified names (Response) and qualified names (http::Response)
-
-	void SemanticValidator::analyzeBlockInIsolation(IAstNode* node, std::vector<StackValueType>& typeStack,
-			const std::unordered_map<std::string, StackValueType>& initialLocalVars) {
-		if (!node) {
-			return;
-		}
-
-		// Dummy structTypeStack for signature analysis (not used, but required by API)
-		std::vector<std::string> structTypeStack;
-
-		// Track local variable types for accurate signature analysis
-		// Start with any initial local variables (e.g., function parameters)
-		std::unordered_map<std::string, StackValueType> localVarTypes = initialLocalVars;
-
-		// Process each child in the block (using index-based loop for peek-ahead access)
-		for (size_t i = 0; i < node->childCount(); i++) {
-			IAstNode* child = node->child(i);
-			if (!child) {
-				continue;
-			}
-			if (mUndefinedNodes.count(child)) {
-				typeStack.push_back(StackValueType::UNKNOWN);
-				structTypeStack.push_back("");
-				mHasUnpredictableStack = true;
-				continue;
-			}
-
-			switch (child->type()) {
-			case IAstNode::Type::LITERAL: {
-				AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(child);
-				typeStack.push_back(getLiteralStackType(lit->literalType()));
-				break;
-			}
-
-			case IAstNode::Type::ARRAY_LITERAL: {
-				// Array literal pushes a pointer (array reference) onto the stack
-				typeStack.push_back(StackValueType::PTR);
-				break;
-			}
-
-			case IAstNode::Type::INSTRUCTION: {
-				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
-				const std::string& instrName = instr->name();
-
-				// Check if instruction name shadows a local variable - if so, treat as variable reference
-				auto localIt = localVarTypes.find(instrName);
-				if (localIt != localVarTypes.end()) {
-					// Push the local variable's type onto the stack
-					typeStack.push_back(localIt->second);
-					break;
-				}
-
-				// During signature analysis, don't report errors - just simulate the stack
-				typeCheckInstructionInternal(child, instrName.c_str(), typeStack, structTypeStack, false);
-				break;
-			}
-
-			case IAstNode::Type::BLOCK: {
-				// Recursively analyze nested blocks
-				analyzeBlockInIsolation(child, typeStack);
-				break;
-			}
-
-			case IAstNode::Type::IDENTIFIER: {
-				// Apply function signature if known (for iterative analysis)
-				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
-				const std::string& name = ident->name();
-
-				// First check if it's a local variable reference
-				auto localIt = localVarTypes.find(name);
-				if (localIt != localVarTypes.end()) {
-					// Push the local variable's type
-					typeStack.push_back(localIt->second);
-					// Push the struct type if this is a struct variable
-					auto structTypeIt = mLocalVariableStructTypes.find(name);
-					if (structTypeIt != mLocalVariableStructTypes.end()) {
-						structTypeStack.push_back(structTypeIt->second);
-					} else {
-						structTypeStack.push_back("");
-					}
-					break;
-				}
-
-				auto sigIt = mFunctionSignatures.find(name);
-				if (sigIt != mFunctionSignatures.end()) {
-					// Apply the known signature: pop consumes, push produces
-					const FunctionSignature& sig = sigIt->second;
-					// Pop consumed types
-					for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
-						typeStack.pop_back();
-					}
-					// Push produced types
-					for (const auto& type : sig.produces) {
-						typeStack.push_back(type);
-					}
-					break;
-				}
-
-				// Check if it's a struct construction
-				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
-					// Struct construction produces a pointer
-					const auto* structFields = lookupStructFieldTypes(name);
-					if (structFields != nullptr) {
-						size_t fieldCount = structFields->size();
-						// Pop field values from both stacks
-						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-					}
-					typeStack.push_back(StackValueType::PTR);
-					structTypeStack.push_back(name); // Track the struct type
-					break;
-				}
-
-				// Check if it's a struct from an imported module
-				for (const auto& moduleEntry : mModuleStructs) {
-					const std::string& moduleName = moduleEntry.first;
-					const auto& structs = moduleEntry.second;
-					if (structs.find(name) != structs.end()) {
-						std::string qualifiedName = moduleName + "::" + name;
-						const auto* structFields = lookupStructFieldTypes(qualifiedName);
-						if (structFields != nullptr) {
-							size_t fieldCount = structFields->size();
-							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-								typeStack.pop_back();
-								if (!structTypeStack.empty()) {
-									structTypeStack.pop_back();
-								}
-							}
-						}
-						typeStack.push_back(StackValueType::PTR);
-						structTypeStack.push_back(qualifiedName); // Track the qualified struct type
-						break;
-					}
-				}
-
-				// Check if it's a constant
-				auto constIt = mConstantValues.find(name);
-				if (constIt != mConstantValues.end()) {
-					// Push the constant's type onto the stack
-					StackValueType constType = getConstantType(constIt->second);
-					typeStack.push_back(constType);
-				}
-				// Check if it's a module-level mutable `var` — push its
-				// declared type. Lives on the runtime stack.
-				auto gvIt = mGlobalVarTypes.find(name);
-				if (gvIt != mGlobalVarTypes.end()) {
-					typeStack.push_back(stringToStackValueType(gvIt->second));
-				}
-				// If signature not known yet, skip (will be resolved in next iteration)
-				break;
-			}
-
-			case IAstNode::Type::FIELD_ACCESS: {
-				// Field access pushes a value onto the stack
-				// Detailed validation is done in the main type checking pass (case at line ~3266)
-				// Here we just handle the stack effect for signature analysis
-				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
-				const std::string& fieldName = fieldAccess->fieldName();
-
-				StackValueType fieldType = StackValueType::UNKNOWN;
-				// Search in all known structs to determine the field type
-				for (const auto& structEntry : mStructFieldTypes) {
-					const auto& fields = structEntry.second;
-					auto it = fields.find(fieldName);
-					if (it != fields.end()) {
-						fieldType = it->second;
-						break;
-					}
-				}
-
-				// If still unknown, use ANY as fallback
-				if (fieldType == StackValueType::UNKNOWN) {
-					fieldType = StackValueType::ANY;
-				}
-
-				// The struct being read is on the stack (its producer is a separate node); replace it.
-				if (!typeStack.empty()) {
-					typeStack.pop_back();
-				}
-				typeStack.push_back(fieldType);
-				break;
-			}
-			case IAstNode::Type::FIELD_SET: {
-				// >>field : pop value, struct stays (net: -1)
-				if (!typeStack.empty()) {
-					typeStack.pop_back();
-				}
-				break;
-			}
-			case IAstNode::Type::SCOPED_IDENTIFIER: {
-				// Apply module function signature if known
-				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
-
-				// In pass 1 (signature analysis), don't resolve sb::append_any —
-				// just apply the same stack effect as sb::append (ptr, any -> ptr)
-				if (scoped->scope() == "sb" && scoped->name() == "append_any") {
-					if (!typeStack.empty()) {
-						typeStack.pop_back(); // pop value
-					}
-					if (!typeStack.empty()) {
-						typeStack.pop_back(); // pop sb ptr
-					}
-					typeStack.push_back(StackValueType::PTR); // push result sb ptr
-					break;
-				}
-
-				const std::string& moduleName = scoped->scope();
-				const std::string& functionName = scoped->name();
-				std::string qualifiedName = moduleName + "::" + functionName;
-
-				auto sigIt = mFunctionSignatures.find(qualifiedName);
-				if (sigIt != mFunctionSignatures.end()) {
-					// Apply the known signature: pop consumes, push produces
-					const FunctionSignature& sig = sigIt->second;
-					// Pop consumed types
-					for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
-						typeStack.pop_back();
-					}
-					// Push produced types
-					for (const auto& type : sig.produces) {
-						typeStack.push_back(type);
-					}
-				} else {
-					// Try as a method call — search module's struct methods
-					bool foundMethod = false;
-					for (const auto& structEntry : mStructMethods) {
-						const std::string& structType = structEntry.first;
-						// Check if struct belongs to this module
-						if (structType.find(moduleName + "::") != 0 &&
-								!mStructMethods.count(moduleName + "::" + structType)) {
-							// Also check unqualified struct names from this module
-							bool belongsToModule = false;
-							for (const auto& methodEntry : structEntry.second) {
-								std::string methodKey = structType + "::" + methodEntry.first;
-								if (mFunctionSignatures.count(methodKey)) {
-									belongsToModule = true;
-									break;
-								}
-							}
-							if (!belongsToModule) {
-								continue;
-							}
-						}
-						if (structEntry.second.count(functionName)) {
-							std::string methodKey = structType + "::" + functionName;
-							auto methodSigIt = mFunctionSignatures.find(methodKey);
-							if (methodSigIt != mFunctionSignatures.end()) {
-								const FunctionSignature& sig = methodSigIt->second;
-								for (size_t j = 0; j < sig.consumes.size() && !typeStack.empty(); j++) {
-									typeStack.pop_back();
-								}
-								for (const auto& type : sig.produces) {
-									typeStack.push_back(type);
-								}
-								foundMethod = true;
-								break;
-							}
-						}
-					}
-					// If not found, skip (will be resolved in next iteration)
-					(void)foundMethod;
-				}
-				break;
-			}
-
-			case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
-				// Function pointer references push a pointer type onto the stack
-				typeStack.push_back(StackValueType::PTR);
-				break;
-
-			case IAstNode::Type::ANONYMOUS_FUNCTION:
-				// Anonymous functions push a function pointer onto the stack. The body is checked
-				// by typeCheckAnonymousFunction, from the walk in typeCheckBlock; this walk is
-				// measuring an enclosing block's stack effect and only needs what the lambda
-				// leaves behind.
-				typeStack.push_back(StackValueType::PTR);
-				break;
-
-			case IAstNode::Type::STRUCT_CONSTRUCTION: {
-				// Struct construction with named fields: StructName { field: expr ... }
-				// Field expressions are self-contained, so struct construction just pushes PTR
-				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
-				const std::string& structName = construct->structName();
-				typeStack.push_back(StackValueType::PTR);
-
-				// Check if struct is from a module - use qualified name for method resolution
-				std::string qualifiedStructName = structName;
-				if (structName.find("::") == std::string::npos) {
-					// Unqualified name - check if it's from a module
-					for (const auto& moduleEntry : mModuleStructs) {
-						const auto& structs = moduleEntry.second;
-						if (structs.find(structName) != structs.end() && structs.at(structName)) {
-							qualifiedStructName = moduleEntry.first + "::" + structName;
-							break;
-						}
-					}
-				}
-				structTypeStack.push_back(qualifiedStructName);
-				break;
-			}
-
-			case IAstNode::Type::LOCAL: {
-				// Local variable binding: pop value(s) from stack and store type(s)
-				// Supports multiple assignment: -> a b c
-				// Special case: -> _ discards the value (like drop)
-				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
-				for (const std::string& varName : local->names()) {
-					if (!typeStack.empty()) {
-						StackValueType varType = typeStack.back();
-						typeStack.pop_back();
-						// Don't store _ as a variable - it's a discard
-						if (varName != "_") {
-							localVarTypes[varName] = varType;
-						}
-					}
-				}
-				break;
-			}
-
-			default:
-				// Other node types don't affect the type stack during signature analysis
-				break;
-			}
-		}
-	}
-
 	void SemanticValidator::typeCheckFunction(IAstNode* node) {
 		if (!node) {
 			return;
@@ -1045,11 +761,7 @@ namespace Qd {
 				}
 
 				// Resolve type aliases
-				std::string resolvedType = typeStr;
-				auto tcAliasIt = mTypeAliases.find(typeStr);
-				if (tcAliasIt != mTypeAliases.end()) {
-					resolvedType = tcAliasIt->second;
-				}
+				const std::string resolvedType = resolveTypeAliasChain(typeStr);
 
 				StackValueType paramType = stringToStackValueType(resolvedType);
 				std::string structType = "";
@@ -1512,11 +1224,7 @@ namespace Qd {
 				reportError(param, invalidTypeMessage(param->typeString(), where).c_str());
 			}
 
-			std::string resolvedType = param->typeString();
-			auto aliasIt = mTypeAliases.find(resolvedType);
-			if (aliasIt != mTypeAliases.end()) {
-				resolvedType = aliasIt->second;
-			}
+			const std::string resolvedType = resolveTypeAliasChain(param->typeString());
 			const StackValueType paramType = stringToStackValueType(resolvedType);
 			std::string structType;
 			if (paramType == StackValueType::PTR &&
@@ -1671,12 +1379,8 @@ namespace Qd {
 			return;
 		}
 
-		static const char* const kScalarTypes[] = {"i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "f32",
-				"d128", "str", "string", "ptr", "bool", "any"};
-		for (const char* scalar : kScalarTypes) {
-			if (elem == scalar) {
-				return;
-			}
+		if (isBuiltinTypeName(elem)) {
+			return;
 		}
 		if (isTypeParamName(elem, mCurrentTypeParams)) {
 			return;
@@ -1696,11 +1400,7 @@ namespace Qd {
 			return;
 		}
 
-		std::string resolved = elem;
-		auto aliasIt = mTypeAliases.find(resolved);
-		if (aliasIt != mTypeAliases.end()) {
-			resolved = aliasIt->second;
-		}
+		const std::string resolved = resolveTypeAliasChain(elem);
 
 		const auto* fieldTypes = lookupStructFieldTypes(resolved);
 		if (fieldTypes == nullptr) {
@@ -1805,171 +1505,9 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::INSTRUCTION: {
-				AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
-				const std::string& instrName = instr->name();
-
-				// Check if instruction name shadows a local variable - if so, treat as variable reference
-				auto localIt = localVariables.find(instrName);
-				if (localIt != localVariables.end()) {
-					// Push the local variable's type onto the stack (variable shadowing)
-					typeStack.push_back(localIt->second);
-					if (localIt->second == StackValueType::PTR) {
-						auto structTypeIt = mLocalVariableStructTypes.find(instrName);
-						if (structTypeIt != mLocalVariableStructTypes.end()) {
-							structTypeStack.push_back(structTypeIt->second);
-						} else {
-							structTypeStack.push_back("");
-						}
-					} else {
-						structTypeStack.push_back("");
-					}
-					break;
-				}
-
-				// Check if this is a method call on a struct
-				// Methods require: receiver pushed first, then parameters on top
-				// e.g., for method set(idx, elem): v idx elem set!
-				std::string receiverStructType;
-				std::string registeredStructType;
-
-				// First pass: find any struct on the stack that has this method
-				// to determine the method signature and expected parameter count
-				size_t searchLimit = std::min(structTypeStack.size(), typeStack.size());
-				for (size_t idx = searchLimit; idx > 0; idx--) {
-					const std::string& structType = structTypeStack[idx - 1];
-					if (!structType.empty()) {
-						std::string potentialRegisteredType = findMethodStructType(structType, instrName);
-						if (!potentialRegisteredType.empty()) {
-							registeredStructType = potentialRegisteredType;
-							break;
-						}
-					}
-				}
-
-				if (!registeredStructType.empty()) {
-					// This is a method call - look up the signature with mangled name
-					std::string mangledName = registeredStructType + "::" + instrName;
-					auto methodSigIt = mFunctionSignatures.find(mangledName);
-					if (methodSigIt != mFunctionSignatures.end()) {
-						const FunctionSignature& sig = methodSigIt->second;
-
-						// Calculate expected receiver position based on parameter count
-						// With receiver-first: receiver should be at position additionalParams from top
-						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-
-						// Second pass: check if there's a valid receiver at the expected position
-						// Expected receiver index in stack (0-indexed from bottom)
-						// For additionalParams=1 and stack [receiver, param], receiver is at index 0
-						if (typeStack.size() <= additionalParams) {
-							std::string errorMsg = "Type error in method call '";
-							errorMsg += instrName;
-							errorMsg += "': Stack underflow (requires receiver + ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " values)";
-							reportError(instr, errorMsg.c_str());
-							break;
-						}
-
-						size_t expectedReceiverIdx = typeStack.size() - 1 - additionalParams;
-
-						// Verify the struct at expected position has this method
-						bool foundValidReceiver = false;
-						if (expectedReceiverIdx < structTypeStack.size()) {
-							const std::string& structAtExpectedPos = structTypeStack[expectedReceiverIdx];
-							std::string actualRegisteredType = findMethodStructType(structAtExpectedPos, instrName);
-							if (!actualRegisteredType.empty()) {
-								// Valid receiver-first call
-								receiverStructType = structAtExpectedPos;
-								registeredStructType = actualRegisteredType;
-								foundValidReceiver = true;
-							}
-						}
-
-						if (!foundValidReceiver) {
-							std::string errorMsg = "Method call '";
-							errorMsg += instrName;
-							errorMsg += "': receiver must be pushed first, then ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " parameter(s) on top (e.g., 'receiver";
-							for (size_t p = 0; p < additionalParams; p++) {
-								errorMsg += " param";
-							}
-							errorMsg += " ";
-							errorMsg += instrName;
-							errorMsg += "')";
-							reportError(instr, errorMsg.c_str());
-							break;
-						}
-
-						// receiverPositionFromTop equals additionalParams by construction
-						// (we verified the receiver is at the expected position above)
-						size_t receiverPositionFromTop = additionalParams;
-
-						// Save consumed struct types before popping (for pass-through tracking)
-						std::vector<std::string> consumedStructTypes;
-						if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
-							size_t startIdx = structTypeStack.size() - sig.consumes.size();
-							for (size_t j = 0; j < sig.consumes.size(); j++) {
-								consumedStructTypes.push_back(structTypeStack[startIdx + j]);
-							}
-						}
-
-						// Pop all consumed values (receiver + params)
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-
-						// Push return values, with whatever the receiver's type arguments bound
-						pushCallResults(sig, receiverTypeBindings(receiverStructType), consumedStructTypes, typeStack,
-								structTypeStack);
-
-						// Mark instruction as a method call for code generation
-						// Use registeredStructType (the generic type) for proper function name lookup
-						instr->setIsMethodCall(true);
-						instr->setReceiverType(registeredStructType);
-						instr->setMethodInputParamCount(additionalParams);
-						// Use the receiver position calculated earlier (before stack modifications)
-						instr->setMethodReceiverPositionFromTop(receiverPositionFromTop);
-						break;
-					}
-				}
-
-				// A literal zero *integer* divisor is knowable now, and reaching it at run time
-				// is a fatal error that kills the process. Report it here instead, the way C,
-				// Go and Rust all do. Only the immediately preceding literal is examined --
-				// this is a peephole check, not constant propagation, so `0 -> z x z /`
-				// still fails at run time.
-				//
-				// Floats are deliberately excluded: `x 0.0 /` is a defined IEEE 754 operation
-				// yielding +/-infinity (or NaN for 0.0/0.0), not an error. The integer rule had
-				// been applied to them, which made the language contradict itself -- the inlined
-				// float path emits a bare fdiv and produces `inf`, so `1.0 0.0 d` through a
-				// typed function already returned infinity while `1.0 z /` on a local killed the
-				// process.
-				if ((instrName == "div" || instrName == "/" || instrName == "mod" || instrName == "%") && i > 0) {
-					IAstNode* prev = node->child(i - 1);
-					if (prev != nullptr && prev->type() == IAstNode::Type::LITERAL) {
-						auto* lit = static_cast<AstNodeLiteral*>(prev);
-						const std::string& text = lit->value();
-						const bool zeroInt = lit->literalType() == AstNodeLiteral::LiteralType::INTEGER && text == "0";
-						if (zeroInt) {
-							std::string errorMsg = "Division by zero in '";
-							errorMsg += instrName;
-							errorMsg += "': the divisor is the literal ";
-							errorMsg += text;
-							reportError(child, errorMsg.c_str());
-						}
-					}
-				}
-
-				// Fall back to builtin instruction handling
-				typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
+			case IAstNode::Type::INSTRUCTION:
+				typeCheckInstructionNode(child, node, i, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
 			case IAstNode::Type::BLOCK: {
 				// Recursively check nested blocks
@@ -1977,375 +1515,21 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::IF_STATEMENT: {
-				// Check that stack has a condition value
-				if (typeStack.empty()) {
-					reportErrorWithHint(child, "Type error in 'if': Stack underflow (requires 1 condition value)",
-							"push a condition before 'if', e.g. 'x 0 > if { ... }'");
-					break;
-				}
-				// Pop the condition value
-				typeStack.pop_back();
-				if (!structTypeStack.empty()) {
-					structTypeStack.pop_back();
-				}
-
-				// Analyze branches to track stack effects
-				AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(child);
-				IAstNode* thenBody = ifStmt->thenBody();
-				IAstNode* elseBody = ifStmt->elseBody();
-
-				if (thenBody && elseBody) {
-					// A bare fallible call before this `if` leaves its results for the success arm
-					// only; the failure arm starts from the stack as it was before the call.
-					const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
-
-					// Analyze then branch
-					std::vector<StackValueType> thenStack = typeStack;
-					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
-					std::vector<std::string> thenStructStack = structTypeStack;
-					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
-
-					// Analyze else branch
-					std::vector<StackValueType> elseStack = typeStack;
-					std::unordered_map<std::string, StackValueType> elseVars = localVariables;
-					std::vector<std::string> elseStructStack = structTypeStack;
-					if (fallible) {
-						removeProducedValues(*fallible, elseStack, elseStructStack);
-					}
-					typeCheckBlock(elseBody, elseStack, elseVars, elseStructStack);
-
-					// A diverging arm never reaches the merge point and contributes no stack effect.
-					bool thenDiverges = blockEndsDiverging(thenBody);
-					bool elseDiverges = blockEndsDiverging(elseBody);
-
-					if (thenDiverges && elseDiverges) {
-						// Both arms diverge -- nothing reaches the code after the `if`.
-					} else if (thenDiverges) {
-						typeStack = elseStack;
-						structTypeStack = elseStructStack;
-					} else if (elseDiverges) {
-						typeStack = thenStack;
-						structTypeStack = thenStructStack;
-					} else if (thenStack.size() != elseStack.size()) {
-						// The arms leave the stack at different depths, so whatever follows reads a
-						// value whose identity depends on which arm ran -- and codegen silently
-						// truncates to the shallower arm. Only report when the model is trustworthy:
-						// mHasUnpredictableStack means something in this function consumed an amount
-						// its signature does not describe, so the effects were computed from a model
-						// already known to be wrong.
-						if (!mHasUnpredictableStack) {
-							std::string msg = "if/else arms leave the stack at different depths (then: " +
-											  std::to_string(thenStack.size()) +
-											  " value(s), else: " + std::to_string(elseStack.size()) +
-											  "); both arms must leave the same depth, since whatever follows "
-											  "reads a value whose identity would otherwise depend on which arm ran";
-							if (fallible) {
-								reportErrorWithHint(child, msg.c_str(),
-										"the failure arm never receives the call's result(s); consume or drop them "
-										"in the success arm so both arms leave the same depth");
-							} else {
-								reportError(child, msg.c_str());
-							}
-						}
-						// Use the then (success) arm as authoritative.
-						typeStack = thenStack;
-						structTypeStack = thenStructStack;
-					} else {
-						// Balanced arms: the stack after the `if` is what either arm left, including
-						// any values the arms changed in place. Keeping the pre-`if` types here was what
-						// made `x if { -> s  s parse } else { ... }` report the *input's* type as the
-						// function's output.
-						typeStack = thenStack;
-						structTypeStack = thenStructStack;
-					}
-				} else if (thenBody) {
-					const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
-					std::vector<StackValueType> thenStack = typeStack;
-					std::unordered_map<std::string, StackValueType> thenVars = localVariables;
-					std::vector<std::string> thenStructStack = structTypeStack;
-					typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
-
-					if (fallible) {
-						// `call if { ... }` with no else: on failure nothing was produced and nothing
-						// runs, so what follows sees the stack as it was before the call. The success
-						// arm must therefore consume the results (or diverge) to leave that same depth.
-						removeProducedValues(*fallible, typeStack, structTypeStack);
-						if (!blockEndsDiverging(thenBody) && thenStack.size() != typeStack.size() &&
-								!mHasUnpredictableStack) {
-							std::string msg = "success arm of a fallible call leaves the stack at a different depth (" +
-											  std::to_string(thenStack.size()) +
-											  " value(s)) than the not-taken failure path (" +
-											  std::to_string(typeStack.size()) + " value(s))";
-							reportErrorWithHint(child, msg.c_str(),
-									"consume or drop the call's result(s) inside the arm, or add an else arm");
-						}
-					} else if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack &&
-							   thenStack.size() != typeStack.size()) {
-						// An `if` with no `else` is an `if` whose other arm is empty, so the same rule
-						// applies: the arm has to leave the stack as it found it. This used to be
-						// unconstrained, on the reasoning that the enclosing function's declared effect
-						// would govern -- but the arm's effect was never applied to the model, so that
-						// check ran against a stack that pretended the arm did nothing. A body could
-						// leave values behind and nothing anywhere reported it, which is how fourteen
-						// guards in `ct` came to push their error message onto the stack as data and
-						// fall through into the code they were guarding.
-						const long long delta =
-								static_cast<long long>(thenStack.size()) - static_cast<long long>(typeStack.size());
-						std::string msg = "'if' without an 'else' leaves the stack " +
-										  std::to_string(delta < 0 ? -delta : delta) + " value" +
-										  ((delta == 1 || delta == -1) ? "" : "s") +
-										  (delta > 0 ? " deeper" : " shallower") +
-										  " than it found it; the arm may not run, so what follows cannot "
-										  "read a value whose presence depends on it";
-						reportErrorWithHint(child, msg.c_str(),
-								"consume what the arm produces inside it, or add an 'else' arm that leaves "
-								"the same depth");
-					}
-					// The pre-`if` stack stands: the arm is neutral, or the error above was reported.
-				}
+			case IAstNode::Type::IF_STATEMENT:
+				typeCheckIf(child, node, i, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::DEFER_STATEMENT: {
-				// Defer blocks must have zero net stack effect
-				size_t stackSizeBefore = typeStack.size();
-
-				// Type check the defer body
-				for (auto* deferChild : child->children()) {
-					if (deferChild && deferChild->type() == IAstNode::Type::BLOCK) {
-						typeCheckBlock(deferChild, typeStack, localVariables, structTypeStack);
-					}
-				}
-
-				int deferEffect = static_cast<int>(typeStack.size()) - static_cast<int>(stackSizeBefore);
-				if (deferEffect != 0 && !mHasUnpredictableStack) {
-					std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but "
-										   "changes stack by ";
-					errorMsg += std::to_string(deferEffect);
-					reportError(child, errorMsg.c_str());
-				}
-
-				// Restore stack to before defer (defer shouldn't affect the surrounding stack)
-				while (typeStack.size() > stackSizeBefore) {
-					typeStack.pop_back();
-					if (!structTypeStack.empty()) {
-						structTypeStack.pop_back();
-					}
-				}
+			case IAstNode::Type::DEFER_STATEMENT:
+				typeCheckDefer(child, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::SWITCH_STATEMENT: {
-				// Check that stack has a value to switch on
-				if (typeStack.empty()) {
-					reportErrorWithHint(child, "Type error in 'switch': Stack underflow (requires 1 value to match)",
-							"push a value before 'switch', e.g. 'x switch { case 1 { ... } }'");
-					break;
-				}
-				// Pop the switch value
-				const StackValueType scrutineeType = typeStack.back();
-				typeStack.pop_back();
-				if (!structTypeStack.empty()) {
-					structTypeStack.pop_back();
-				}
-
-				// Analyze all case branches to track stack effects
-				AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
-				const auto& cases = switchStmt->cases();
-
-				// A d128 matches only d128 labels, and a d128 label matches only a d128. The
-				// other way round the arm could never be taken -- 1.5 and 1.5d are different
-				// numbers -- and the program would say nothing about it.
-				for (const auto* caseNode : cases) {
-					if (caseNode->isDefault() || caseNode->value() == nullptr) {
-						continue;
-					}
-					StackValueType labelType = StackValueType::UNKNOWN;
-					IAstNode* label = caseNode->value();
-					if (label->type() == IAstNode::Type::LITERAL) {
-						labelType = getLiteralStackType(static_cast<AstNodeLiteral*>(label)->literalType());
-					} else if (label->type() == IAstNode::Type::IDENTIFIER) {
-						auto constIt = mConstantValues.find(static_cast<AstNodeIdentifier*>(label)->name());
-						if (constIt != mConstantValues.end()) {
-							labelType = getConstantType(constIt->second);
-						}
-					}
-					const bool concreteScrutinee =
-							scrutineeType == StackValueType::INT || scrutineeType == StackValueType::FLOAT ||
-							scrutineeType == StackValueType::D128 || scrutineeType == StackValueType::STRING;
-					if (labelType == StackValueType::UNKNOWN || !concreteScrutinee ||
-							(labelType == StackValueType::D128) == (scrutineeType == StackValueType::D128)) {
-						continue;
-					}
-					std::string msg = "Type error in 'switch': the case label is ";
-					msg += typeToString(labelType);
-					msg += " but the value switched on is ";
-					msg += typeToString(scrutineeType);
-					reportErrorWithHint(label, msg.c_str(),
-							scrutineeType == StackValueType::D128 ? "write the label as a d128: '1.5d'"
-																  : "a d128 label matches only a d128 value");
-				}
-
-				checkEnumSwitchExhaustive(child, cases);
-
-				// After a bare fallible call the status carries the error code: the `Ok` arm sees the
-				// call's results, every other arm sees the stack as it was before the call.
-				const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
-				std::vector<StackValueType> failureStack = typeStack;
-				std::vector<std::string> failureStructStack = structTypeStack;
-				if (fallible) {
-					removeProducedValues(*fallible, failureStack, failureStructStack);
-				}
-
-				bool hasDefault = false;
-				bool hasOkCase = false;
-				std::vector<StackValueType> okCaseStack;
-				std::vector<std::string> okCaseStructStack;
-				// The first non-diverging arm fixes the depth the others must match.
-				bool haveReference = false;
-				int referenceEffect = 0;
-				std::vector<StackValueType> referenceStack;
-				std::vector<std::string> referenceStructStack;
-				bool allDiverge = true;
-				bool armsDisagree = false;
-				int disagreeingEffect = 0;
-
-				for (const auto* caseNode : cases) {
-					if (caseNode->isDefault()) {
-						hasDefault = true;
-					}
-					IAstNode* caseBody = caseNode->body();
-					if (!caseBody) {
-						continue;
-					}
-
-					bool isOk = false;
-					if (!caseNode->isDefault() && caseNode->value() &&
-							caseNode->value()->type() == IAstNode::Type::LITERAL) {
-						AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
-						// `Ok`/`true` keep their keyword text as BOOL literals. A literal `1` is an error
-						// *code* arm, not the success arm (spec 10.3: a panic carrying code 1 does not
-						// match Ok), so it must be seeded from the failure stack like any other code.
-						isOk = caseLit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
-							   (caseLit->value() == "Ok" || caseLit->value() == "true");
-					}
-					bool seedFromSuccess = !fallible || isOk;
-
-					std::vector<StackValueType> caseStack = seedFromSuccess ? typeStack : failureStack;
-					std::unordered_map<std::string, StackValueType> caseVars = localVariables;
-					std::vector<std::string> caseStructStack = seedFromSuccess ? structTypeStack : failureStructStack;
-					size_t base = caseStack.size();
-					typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
-					int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(base);
-
-					if (isOk && fallible) {
-						okCaseStack = caseStack;
-						okCaseStructStack = caseStructStack;
-						hasOkCase = true;
-					}
-
-					if (blockEndsDiverging(caseBody)) {
-						continue;
-					}
-					allDiverge = false;
-
-					if (fallible) {
-						// Arms of a fallible switch legitimately differ (Ok has the results); the Ok arm,
-						// when present, is authoritative for what follows.
-						continue;
-					}
-					if (!haveReference) {
-						haveReference = true;
-						referenceEffect = caseEffect;
-						referenceStack = caseStack;
-						referenceStructStack = caseStructStack;
-					} else if (caseEffect != referenceEffect && !armsDisagree) {
-						armsDisagree = true;
-						disagreeingEffect = caseEffect;
-					}
-				}
-
-				if (fallible) {
-					if (hasOkCase) {
-						typeStack = okCaseStack;
-						structTypeStack = okCaseStructStack;
-					} else {
-						// No Ok arm: the results were never handled, so nothing of them survives.
-						typeStack = failureStack;
-						structTypeStack = failureStructStack;
-					}
-					break;
-				}
-
-				// The same rule as for `if`/`else`: every arm that reaches the merge point must leave
-				// the stack at the same depth. Without a `_` arm the switch may match nothing, so
-				// the arms must additionally leave it at the depth it had before the switch.
-				if (!mHasUnpredictableStack && !allDiverge) {
-					if (armsDisagree) {
-						std::string msg = "switch arms leave different numbers of values on the stack (" +
-										  std::to_string(referenceEffect) + " and " +
-										  std::to_string(disagreeingEffect) +
-										  "); every arm must leave the same number, since whatever follows reads a "
-										  "value whose identity would otherwise depend on which arm ran";
-						reportError(child, msg.c_str());
-					} else if (!hasDefault && haveReference && referenceEffect != 0) {
-						std::string msg = "switch without a '_' arm changes the stack by " +
-										  std::to_string(referenceEffect) +
-										  "; when no arm matches nothing runs, so the arms must leave the stack "
-										  "as they found it (add a '_' arm with the same effect, or balance the arms)";
-						reportError(child, msg.c_str());
-					}
-				}
-				if (haveReference && (hasDefault || referenceEffect == 0)) {
-					// Balanced arms: what follows sees what an arm left, in-place changes included.
-					typeStack = referenceStack;
-					structTypeStack = referenceStructStack;
-				}
+			case IAstNode::Type::SWITCH_STATEMENT:
+				typeCheckSwitch(child, node, i, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::FOR_STATEMENT: {
-				// For loops: pop 3 values (start, end, step), type check body with iterator variable
-				AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(child);
-
-				// Pop start, end, step from type stack
-				for (int popIdx = 0; popIdx < 3; popIdx++) {
-					if (!typeStack.empty()) {
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-					}
-				}
-
-				// Type check body with a copy of the state (loop body effects are complex with break/continue)
-				std::vector<StackValueType> loopStack = typeStack;
-				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
-				std::vector<std::string> loopStructStack = structTypeStack;
-
-				// Add iterator variable as INT
-				const std::string& iterName = forStmt->iteratorName();
-				loopVars[iterName] = StackValueType::INT;
-
-				// Type check the body with error suppression (marks method calls without reporting type errors)
-				// This is necessary because loop bodies can have complex stack effects that are hard to analyze
-				bool wasInLoopBody = mInLoopBody;
-				mInLoopBody = true;
-				auto savedJumps = std::move(mLoopJumps);
-				mLoopJumps.clear();
-				if (forStmt->body()) {
-					typeCheckBlock(forStmt->body(), loopStack, loopVars, loopStructStack);
-				}
-				checkLoopStackEffect(forStmt->body(), "for", true, typeStack, structTypeStack, loopStack.size());
-				mLoopJumps = std::move(savedJumps);
-				mInLoopBody = wasInLoopBody;
-
-				// A `for` always leaves the stack at the head depth, so the parent stack already
-				// describes what follows. (Types a neutral body rewrote in place are still not
-				// modelled; only the depth is.)
+			case IAstNode::Type::FOR_STATEMENT:
+				typeCheckFor(child, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
 			case IAstNode::Type::LOOP_STATEMENT: {
 				std::vector<StackValueType> loopStack = typeStack;
@@ -2367,2145 +1551,33 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::WHILE_STATEMENT: {
-				AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
-
-				// The condition runs before every iteration, including the first, so it is checked
-				// against the stack as it stands here and must leave exactly one value -- the flag
-				// the loop tests. The parser hands over the run of expression nodes that preceded
-				// the keyword; a run that nets to anything else is the author having written
-				// something the condition was never going to mean.
-				const size_t headDepth = typeStack.size();
-				std::vector<size_t> condDepths;
-				if (whileStmt->condition()) {
-					const IAstNode* savedProbeBlock = mDepthProbeBlock;
-					std::vector<size_t>* savedProbe = mDepthProbe;
-					mDepthProbeBlock = whileStmt->condition();
-					mDepthProbe = &condDepths;
-					typeCheckBlock(whileStmt->condition(), typeStack, localVariables, structTypeStack);
-					mDepthProbeBlock = savedProbeBlock;
-					mDepthProbe = savedProbe;
-				}
-
-				// Trim to the shortest suffix that produces the flag: the last point where the stack
-				// stood at the head depth, with nothing after it dipping below. What precedes it is a
-				// statement that happened to be expression-shaped, and is generated once.
-				if (!mHasUnpredictableStack && typeStack.size() == headDepth + 1) {
-					size_t start = 0;
-					for (size_t d = condDepths.size(); d-- > 0;) {
-						if (condDepths[d] < headDepth) {
-							break;
-						}
-						if (condDepths[d] == headDepth) {
-							// First match scanning backwards is the shortest such suffix.
-							start = d;
-							break;
-						}
-					}
-					whileStmt->setConditionStart(start);
-				}
-				if (!mHasUnpredictableStack) {
-					if (typeStack.size() != headDepth + 1) {
-						long long delta = static_cast<long long>(typeStack.size()) - static_cast<long long>(headDepth);
-						std::string msg = "the 'while' condition must leave exactly one value for the loop to "
-										  "test, but it leaves ";
-						msg += std::to_string(delta);
-						msg += (delta == 1 || delta == -1) ? " value" : " values";
-						msg += "; the condition is the words between the previous statement and 'while'";
-						reportErrorConditional(child, msg.c_str(), true);
-					} else {
-						// Pop the flag the loop consumes.
-						typeStack.pop_back();
-						structTypeStack.pop_back();
-					}
-				}
-
-				std::vector<StackValueType> loopStack = typeStack;
-				std::unordered_map<std::string, StackValueType> loopVars = localVariables;
-				std::vector<std::string> loopStructStack = structTypeStack;
-
-				bool wasInLoopBody = mInLoopBody;
-				mInLoopBody = true;
-				auto savedJumps = std::move(mLoopJumps);
-				mLoopJumps.clear();
-				if (whileStmt->body()) {
-					typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
-				}
-				// A `while` may run zero times, so unlike `loop` it cannot leave anything behind:
-				// the body has to be neutral, which is what the fallthrough flag asks for.
-				checkLoopStackEffect(whileStmt->body(), "while", true, typeStack, structTypeStack, loopStack.size());
-				mLoopJumps = std::move(savedJumps);
-				mInLoopBody = wasInLoopBody;
+			case IAstNode::Type::WHILE_STATEMENT:
+				typeCheckWhile(child, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::LOCAL: {
-				// Handle local variable declaration: pop value from stack and store
-				// Supports multiple assignment: -> a b c pops 3 values
-				// Special case: -> _ discards the value (like drop)
-				AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
-				const std::vector<std::string>& varNames = local->names();
-
-				// Process each variable name (in order: first name gets top of stack)
-				for (const std::string& varName : varNames) {
-					// Special case: _ is discard (drop), not a variable
-					if (varName == "_") {
-						// Check if stack is empty
-						if (typeStack.empty()) {
-							reportError(local, "Type error in discard '-> _': Stack underflow (no value to discard)");
-							continue;
-						}
-						// Pop the value type from the stack but don't store it
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-						continue;
-					}
-
-					// Check if variable name shadows a function
-					if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
-						std::string errorMsg = "Local variable '";
-						errorMsg += varName;
-						errorMsg += "' shadows function with same name";
-						reportError(local, errorMsg.c_str());
-						continue;
-					}
-
-					// Check if stack is empty
-					if (typeStack.empty()) {
-						std::string errorMsg = "Type error in local variable '";
-						errorMsg += varName;
-						errorMsg += "': Stack underflow (no value to store)";
-						reportError(local, errorMsg.c_str());
-						continue;
-					}
-
-					// Pop the value type from the stack and store it as the variable's type
-					StackValueType varType = typeStack.back();
-					typeStack.pop_back();
-					localVariables[varName] = varType;
-
-					// If it's a PTR type, also store which struct type it is (if any)
-					if (varType == StackValueType::PTR && !structTypeStack.empty()) {
-						std::string structType = structTypeStack.back();
-						structTypeStack.pop_back();
-						mLocalVariableStructTypes[varName] = structType;
-						static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
-						if (debug) {
-							std::cerr << "[DEBUG TC] Store -> " << varName << " with struct type: " << structType
-									  << std::endl;
-						}
-
-						// If there's a pending function signature, store it with this variable
-						if (mPendingFnSignature.has_value()) {
-							mLocalVariableFnSignatures[varName] = mPendingFnSignature.value();
-							mPendingFnSignature.reset();
-						}
-					} else if (!structTypeStack.empty()) {
-						structTypeStack.pop_back();
-					}
-				}
+			case IAstNode::Type::LOCAL:
+				typeCheckLocal(child, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::STRUCT_CONSTRUCTION: {
-				// Handle struct construction with named fields: StructName { field: expr ... }
-				AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
-				checkAnonymousFunctionsWithin(construct, localVariables);
-				const std::string& name = construct->structName();
-				const auto& fieldInits = construct->fieldInits();
-
-				// Get struct declaration - try local first, then module structs
-				// For module structs, we need to look up with qualified key
-				AstNodeStructDeclaration* structDecl = nullptr;
-				std::string lookupKey = name; // Key for mStructFieldTypes lookup
-				auto structDeclIt = mStructDeclarations.find(name);
-				if (structDeclIt != mStructDeclarations.end()) {
-					structDecl = structDeclIt->second;
-				} else {
-					// Try qualified lookup first (for qualified names like "vec2::Vec2")
-					auto moduleDeclIt = mModuleStructDeclarations.find(name);
-					if (moduleDeclIt != mModuleStructDeclarations.end()) {
-						structDecl = moduleDeclIt->second;
-						lookupKey = name;
-					} else if (name.find("::") == std::string::npos) {
-						// Unqualified name - search in modules
-						for (const auto& modulePair : mModuleStructs) {
-							const std::string& moduleName = modulePair.first;
-							if (modulePair.second.find(name) != modulePair.second.end()) {
-								std::string qualifiedName = moduleName + "::" + name;
-								auto qualIt = mModuleStructDeclarations.find(qualifiedName);
-								if (qualIt != mModuleStructDeclarations.end()) {
-									structDecl = qualIt->second;
-									lookupKey = qualifiedName;
-									break;
-								}
-							}
-						}
-					}
-				}
-
-				if (structDecl) {
-					std::unordered_set<std::string> providedFields;
-
-					// Process each field initializer
-					for (const auto& fieldInit : fieldInits) {
-						const std::string& fieldName = fieldInit.fieldName;
-						providedFields.insert(fieldName);
-
-						// Check if field exists in struct using mStructFieldTypes
-						// (don't use structDecl->fields() as it may have been freed for imported modules)
-						bool fieldExists = false;
-						StackValueType expectedType = StackValueType::UNKNOWN;
-						std::string expectedStructType;
-
-						const auto* structFieldTypes = lookupStructFieldTypes(lookupKey);
-						if (structFieldTypes != nullptr) {
-							auto fieldTypeIt = structFieldTypes->find(fieldName);
-							if (fieldTypeIt != structFieldTypes->end()) {
-								fieldExists = true;
-								expectedType = fieldTypeIt->second;
-							}
-						}
-
-						// Also check mStructFieldStructTypes for PTR field types
-						auto structFieldStructTypesIt = mStructFieldStructTypes.find(lookupKey);
-						if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
-							auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
-							if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
-								expectedStructType = fieldStructTypeIt->second;
-							}
-						}
-
-						if (!fieldExists) {
-							std::string errorMsg = "Unknown field '";
-							errorMsg += fieldName;
-							errorMsg += "' in struct '";
-							errorMsg += name;
-							errorMsg += "'";
-							// Try to suggest a similar field name
-							if (structFieldTypes != nullptr) {
-								std::string suggestion = findSimilarNameInMap(fieldName, *structFieldTypes);
-								if (!suggestion.empty()) {
-									errorMsg += "; did you mean '";
-									errorMsg += suggestion;
-									errorMsg += "'?";
-								}
-							}
-							reportError(construct, errorMsg.c_str());
-							continue;
-						}
-
-						// Process the field's expression nodes to determine the type it produces
-						// We create a temporary type stack to track what the expression produces
-						std::vector<StackValueType> exprTypeStack;
-						std::vector<std::string> exprStructTypeStack;
-
-						for (const auto& exprNodePtr : fieldInit.valueNodes) {
-							IAstNode* exprNode = exprNodePtr.get();
-							// Recursively type-check the expression node
-							// For simplicity, we simulate basic type inference here
-							switch (exprNode->type()) {
-							case IAstNode::Type::LITERAL: {
-								AstNodeLiteral* lit = static_cast<AstNodeLiteral*>(exprNode);
-								exprTypeStack.push_back(getLiteralStackType(lit->literalType()));
-								exprStructTypeStack.push_back("");
-								break;
-							}
-							case IAstNode::Type::IDENTIFIER: {
-								AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(exprNode);
-								auto localIt = localVariables.find(ident->name());
-								if (localIt != localVariables.end()) {
-									exprTypeStack.push_back(localIt->second);
-									if (localIt->second == StackValueType::PTR) {
-										auto structTypeIt = mLocalVariableStructTypes.find(ident->name());
-										if (structTypeIt != mLocalVariableStructTypes.end()) {
-											exprStructTypeStack.push_back(structTypeIt->second);
-										} else {
-											exprStructTypeStack.push_back("");
-										}
-									} else {
-										exprStructTypeStack.push_back("");
-									}
-								} else {
-									exprTypeStack.push_back(StackValueType::UNKNOWN);
-									exprStructTypeStack.push_back("");
-								}
-								break;
-							}
-							case IAstNode::Type::STRUCT_CONSTRUCTION: {
-								// Nested struct construction
-								AstNodeStructConstruction* nested = static_cast<AstNodeStructConstruction*>(exprNode);
-								exprTypeStack.push_back(StackValueType::PTR);
-								// Qualify struct name if from module
-								std::string nestedStructName = nested->structName();
-								if (nestedStructName.find("::") == std::string::npos) {
-									for (const auto& moduleEntry : mModuleStructs) {
-										const auto& structs = moduleEntry.second;
-										if (structs.find(nestedStructName) != structs.end() &&
-												structs.at(nestedStructName)) {
-											nestedStructName = moduleEntry.first + "::" + nestedStructName;
-											break;
-										}
-									}
-								}
-								exprStructTypeStack.push_back(nestedStructName);
-								break;
-							}
-							case IAstNode::Type::ARRAY_LITERAL: {
-								// Array literal pushes a pointer with element type info
-								AstNodeArrayLiteral* arrLit = static_cast<AstNodeArrayLiteral*>(exprNode);
-								exprTypeStack.push_back(StackValueType::PTR);
-								// Same inference as a literal anywhere else. This used to be a third
-								// copy that read element zero and recognised only the three scalar
-								// literals, so `xs = [[1 2]]` typed as `[]any` and a field declared
-								// `[][]i64` rejected the one literal that can fill it.
-								exprStructTypeStack.push_back(arrayLiteralTypeName(arrLit, localVariables));
-								break;
-							}
-							case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
-								// `&f` in a field initializer: carry the function's type so a field declared
-								// `fn(...)` is checked against it. Without these two cases the initializer was
-								// UNKNOWN and any function pointer satisfied any fn-typed field.
-								auto* fnRef = static_cast<AstNodeFunctionPointerReference*>(exprNode);
-								exprTypeStack.push_back(StackValueType::PTR);
-								auto refSig = mFunctionSignatures.find(fnRef->functionName());
-								exprStructTypeStack.push_back(
-										refSig != mFunctionSignatures.end() ? buildFnTypeString(refSig->second) : "");
-								break;
-							}
-							case IAstNode::Type::ANONYMOUS_FUNCTION: {
-								auto* anonFn = static_cast<AstNodeAnonymousFunction*>(exprNode);
-								FunctionSignature anonSig;
-								for (const auto& pn : anonFn->inputParameters()) {
-									anonSig.consumes.push_back(stringToStackValueType(
-											static_cast<AstNodeParameter*>(pn.get())->typeString()));
-								}
-								for (const auto& pn : anonFn->outputParameters()) {
-									anonSig.produces.push_back(stringToStackValueType(
-											static_cast<AstNodeParameter*>(pn.get())->typeString()));
-								}
-								anonSig.throws = anonFn->throws();
-								exprTypeStack.push_back(StackValueType::PTR);
-								exprStructTypeStack.push_back(buildFnTypeString(anonSig));
-								break;
-							}
-							case IAstNode::Type::FIELD_ACCESS: {
-								// `<<field` replaces the struct on top with the field's value. Before the
-								// parser stopped folding the operand into this node there was no operand
-								// here to pop, and no case at all: the struct itself was reported as the
-								// field's value ("expects float, but got Vec2").
-								AstNodeFieldAccess* fa = static_cast<AstNodeFieldAccess*>(exprNode);
-								std::string operandStruct;
-								if (!exprTypeStack.empty()) {
-									exprTypeStack.pop_back();
-								}
-								if (!exprStructTypeStack.empty()) {
-									operandStruct = exprStructTypeStack.back();
-									exprStructTypeStack.pop_back();
-								}
-								StackValueType faType = StackValueType::UNKNOWN;
-								std::string faStruct;
-								const auto* faFields =
-										operandStruct.empty() ? nullptr : lookupStructFieldTypes(operandStruct);
-								if (faFields != nullptr) {
-									if (faFields->find(fa->fieldName()) != faFields->end()) {
-										faType = resolveFieldType(operandStruct, fa->fieldName(), faStruct);
-									}
-								} else {
-									for (const auto& structEntry : mStructFieldTypes) {
-										auto it = structEntry.second.find(fa->fieldName());
-										if (it != structEntry.second.end()) {
-											faType = it->second;
-											break;
-										}
-									}
-								}
-								exprTypeStack.push_back(faType);
-								exprStructTypeStack.push_back(faStruct);
-								break;
-							}
-							case IAstNode::Type::INSTRUCTION: {
-								// Instructions modify the stack - simplified handling
-								AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(exprNode);
-								const std::string& instrName = instr->name();
-								// Handle common arithmetic operations
-								if (instrName == "+" || instrName == "-" || instrName == "*" || instrName == "/" ||
-										instrName == "add" || instrName == "sub" || instrName == "mul" ||
-										instrName == "div") {
-									if (exprTypeStack.size() >= 2) {
-										exprTypeStack.pop_back();
-										exprStructTypeStack.pop_back();
-									}
-								}
-								break;
-							}
-							default:
-								// For other node types, assume they push one value
-								exprTypeStack.push_back(StackValueType::UNKNOWN);
-								exprStructTypeStack.push_back("");
-								break;
-							}
-						}
-
-						// After processing expression, check the resulting type
-						if (!exprTypeStack.empty()) {
-							StackValueType actualType = exprTypeStack.back();
-							std::string actualStructType =
-									exprStructTypeStack.empty() ? "" : exprStructTypeStack.back();
-
-							// Skip type checking if expected type is a type parameter (for generics)
-							bool isGenericField = !expectedStructType.empty() && isCurrentTypeParam(expectedStructType);
-
-							if (!isGenericField && actualType != StackValueType::UNKNOWN &&
-									expectedType != StackValueType::UNKNOWN) {
-								if (actualType != expectedType) {
-									if (isImplicitCastAllowed(actualType, expectedType)) {
-										// Only warn for casts that should be warned about
-										if (shouldWarnImplicitCast(actualType, expectedType)) {
-											std::string warnMsg = "Implicit cast in struct construction '";
-											warnMsg += name;
-											warnMsg += "': Field '";
-											warnMsg += fieldName;
-											warnMsg += "' expects ";
-											warnMsg += stackValueTypeToString(expectedType);
-											warnMsg += ", but got ";
-											warnMsg += stackValueTypeToString(actualType);
-											reportWarning(construct, warnMsg.c_str());
-										}
-									} else {
-										std::string errorMsg = "Type error in struct construction '";
-										errorMsg += name;
-										errorMsg += "': Field '";
-										errorMsg += fieldName;
-										errorMsg += "' expects ";
-										errorMsg += expectedStructType.empty() ? stackValueTypeToString(expectedType)
-																			   : expectedStructType;
-										errorMsg += ", but got ";
-										errorMsg += actualStructType.empty() ? stackValueTypeToString(actualType)
-																			 : actualStructType;
-										reportError(construct, errorMsg.c_str());
-									}
-								} else if (std::string why; fieldValueRejected(
-												   lookupKey, fieldName, expectedStructType, actualStructType, why)) {
-									// Both are the coarse type the field declared, so what separates them is
-									// the pointer's real type. Structural rather than by string: `fn( -- f64)`
-									// and the `fn(-- f64)` buildFnTypeString emits are the same type, and so
-									// are `Point` and `mod::Point`.
-									std::string errorMsg = "Type error in struct construction '";
-									errorMsg += name;
-									errorMsg += "': Field '";
-									errorMsg += fieldName;
-									errorMsg += "' ";
-									errorMsg += why;
-									reportError(construct, errorMsg.c_str());
-								}
-							}
-						}
-					}
-
-					// Check for missing fields using mStructFieldTypes (safe for imported modules)
-					const auto* structFieldTypesForMissing = lookupStructFieldTypes(lookupKey);
-					if (structFieldTypesForMissing != nullptr) {
-						// Get fields with defaults for this struct
-						const std::unordered_set<std::string>* fieldsWithDefaults = nullptr;
-						auto defaultsIt = mStructFieldsWithDefaults.find(lookupKey);
-						if (defaultsIt != mStructFieldsWithDefaults.end()) {
-							fieldsWithDefaults = &defaultsIt->second;
-						}
-
-						for (const auto& fieldEntry : *structFieldTypesForMissing) {
-							if (providedFields.find(fieldEntry.first) == providedFields.end()) {
-								// Check if field has a default value
-								bool hasDefault =
-										fieldsWithDefaults != nullptr &&
-										fieldsWithDefaults->find(fieldEntry.first) != fieldsWithDefaults->end();
-								if (!hasDefault) {
-									std::string errorMsg = "Missing field '";
-									errorMsg += fieldEntry.first;
-									errorMsg += "' in struct construction '";
-									errorMsg += name;
-									errorMsg += "'";
-									reportError(construct, errorMsg.c_str());
-								}
-							}
-						}
-					}
-				}
-
-				// Push pointer type for the constructed struct. An instantiated generic keeps its
-				// arguments (`Box<i64>`) so that its fields resolve to concrete types later.
-				std::string typeArgSuffix;
-				if (!construct->typeArgs().empty()) {
-					typeArgSuffix = "<";
-					for (size_t ta = 0; ta < construct->typeArgs().size(); ta++) {
-						if (ta > 0) {
-							typeArgSuffix += ", ";
-						}
-						typeArgSuffix += construct->typeArgs()[ta];
-					}
-					typeArgSuffix += ">";
-				}
-				typeStack.push_back(StackValueType::PTR);
-				// Use qualified name for method resolution (already computed in lookupKey for module structs)
-				if (lookupKey.find("::") != std::string::npos) {
-					structTypeStack.push_back(lookupKey + typeArgSuffix);
-				} else {
-					// Check if struct is from a module - use qualified name
-					std::string qualifiedStructName = name;
-					for (const auto& moduleEntry : mModuleStructs) {
-						const auto& structs = moduleEntry.second;
-						if (structs.find(name) != structs.end() && structs.at(name)) {
-							qualifiedStructName = moduleEntry.first + "::" + name;
-							break;
-						}
-					}
-					structTypeStack.push_back(qualifiedStructName + typeArgSuffix);
-				}
+			case IAstNode::Type::STRUCT_CONSTRUCTION:
+				typeCheckStructConstruction(child, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::IDENTIFIER: {
-				// Handle function calls - apply their stack effect
-				AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
-				const std::string& name = ident->name();
-
-				// Check if it's a local variable reference
-				auto localIt = localVariables.find(name);
-				if (localIt != localVariables.end()) {
-					// Push the local variable's type onto the stack
-					typeStack.push_back(localIt->second);
-					// If it's a PTR, also push its struct type (if any)
-					if (localIt->second == StackValueType::PTR) {
-						auto structTypeIt = mLocalVariableStructTypes.find(name);
-						if (structTypeIt != mLocalVariableStructTypes.end()) {
-							structTypeStack.push_back(structTypeIt->second);
-							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
-							if (debug) {
-								std::cerr << "[DEBUG TC] Local var '" << name
-										  << "' pushed struct type: " << structTypeIt->second << std::endl;
-							}
-						} else {
-							structTypeStack.push_back(""); // Unknown struct type
-							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
-							if (debug) {
-								std::cerr << "[DEBUG TC] Local var '" << name
-										  << "' has no struct type in mLocalVariableStructTypes" << std::endl;
-							}
-						}
-
-						// If the variable has a known function signature, set it as pending
-						auto fnSigIt = mLocalVariableFnSignatures.find(name);
-						if (fnSigIt != mLocalVariableFnSignatures.end()) {
-							mPendingFnSignature = fnSigIt->second;
-						}
-					} else {
-						structTypeStack.push_back("");
-					}
-					break;
-				}
-
-				// Check if it's a constant
-				auto constIt = mConstantValues.find(name);
-				if (constIt != mConstantValues.end()) {
-					// Push the constant's type onto the stack
-					StackValueType constType = getConstantType(constIt->second);
-					typeStack.push_back(constType);
-					structTypeStack.push_back("");
-					break;
-				}
-
-				// Module-level `var`. Pushes its declared type on the stack.
-				// If the declared type is a struct name, carry the struct type
-				// forward so a following `<<field` access resolves to the
-				// right layout.
-				auto gvIt2 = mGlobalVarTypes.find(name);
-				if (gvIt2 != mGlobalVarTypes.end()) {
-					const std::string& gvType = gvIt2->second;
-					typeStack.push_back(stringToStackValueType(gvType));
-					structTypeStack.push_back(isStructTypeName(gvType) ? gvType : "");
-					break;
-				}
-
-				// Check if it's a struct construction
-				if (mDefinedStructs.find(name) != mDefinedStructs.end()) {
-					// Struct construction: consumes field values, produces pointer
-					auto structDeclIt = mStructDeclarations.find(name);
-					if (structDeclIt != mStructDeclarations.end()) {
-						AstNodeStructDeclaration* structDecl = structDeclIt->second;
-						const auto& fields = structDecl->fields();
-						size_t fieldCount = fields.size();
-
-						// Check if we have enough values on the stack
-						if (typeStack.size() < fieldCount) {
-							std::string errorMsg = "Type error in struct construction '";
-							errorMsg += name;
-							errorMsg += "': Stack underflow (requires ";
-							errorMsg += std::to_string(fieldCount);
-							errorMsg += " values, have ";
-							errorMsg += std::to_string(typeStack.size());
-							errorMsg += ")";
-							reportError(ident, errorMsg.c_str());
-						} else {
-							// Validate each field type (fields are in declaration order)
-							// Fields are consumed bottom-to-top from the stack
-							for (size_t fi = 0; fi < fieldCount; fi++) {
-								size_t stackIdx = typeStack.size() - fieldCount + fi;
-								StackValueType actual = typeStack[stackIdx];
-								std::string actualStructType =
-										(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
-								const AstNodeStructField* field = fields[fi].get();
-								const std::string& fieldName = field->name();
-
-								// Get expected type from mStructFieldTypes
-								const auto* structFieldTypesPtr = lookupStructFieldTypes(name);
-								if (structFieldTypesPtr == nullptr) {
-									continue;
-								}
-								auto fieldTypeIt = structFieldTypesPtr->find(fieldName);
-								if (fieldTypeIt == structFieldTypesPtr->end()) {
-									continue;
-								}
-								StackValueType expected = fieldTypeIt->second;
-
-								// Check if this field expects a specific struct type
-								std::string expectedStructType;
-								auto structFieldStructTypesIt = mStructFieldStructTypes.find(name);
-								if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
-									auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
-									if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
-										expectedStructType = fieldStructTypeIt->second;
-									}
-								}
-
-								// Skip check if expected type is a type parameter (for generics)
-								bool isGenericField =
-										!expectedStructType.empty() && isCurrentTypeParam(expectedStructType);
-								if (isGenericField) {
-									continue;
-								}
-
-								// Skip check if actual type is UNKNOWN (can't determine type)
-								if (actual == StackValueType::UNKNOWN) {
-									continue;
-								}
-
-								// Check for type mismatch
-								if (actual != expected) {
-									// Check if implicit cast is allowed (int <-> float)
-									if (isImplicitCastAllowed(actual, expected)) {
-										// Only warn for casts that should be warned about
-										if (shouldWarnImplicitCast(actual, expected)) {
-											std::string warnMsg = "Implicit cast in struct construction '";
-											warnMsg += name;
-											warnMsg += "': Field '";
-											warnMsg += fieldName;
-											warnMsg += "' expects ";
-											warnMsg += stackValueTypeToString(expected);
-											warnMsg += ", but got ";
-											warnMsg += stackValueTypeToString(actual);
-											reportWarning(ident, warnMsg.c_str());
-										}
-									} else {
-										// Type mismatch error
-										std::string errorMsg = "Type error in struct construction '";
-										errorMsg += name;
-										errorMsg += "': Field '";
-										errorMsg += fieldName;
-										errorMsg += "' expects ";
-										errorMsg += expectedStructType.empty() ? stackValueTypeToString(expected)
-																			   : expectedStructType;
-										errorMsg += ", but got ";
-										errorMsg += actualStructType.empty() ? stackValueTypeToString(actual)
-																			 : actualStructType;
-										reportError(ident, errorMsg.c_str());
-									}
-								} else if (std::string why; fieldValueRejected(
-												   name, fieldName, expectedStructType, actualStructType, why)) {
-									// Both are PTR, so the pointer's real type is what separates them.
-									std::string errorMsg = "Type error in struct construction '";
-									errorMsg += name;
-									errorMsg += "': Field '";
-									errorMsg += fieldName;
-									errorMsg += "' ";
-									errorMsg += why;
-									reportError(ident, errorMsg.c_str());
-								}
-							}
-						}
-
-						// Pop field values from stack
-						for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-					}
-
-					// Struct pointers can now be used:
-					// - Stored to variable with -> var
-					// - Accessed with @field
-					// - As arguments to other struct constructors
-					// - Returned on stack
-					// The code generator handles all these cases correctly.
-
-					// Push pointer type for the constructed struct, along with its struct type
-					typeStack.push_back(StackValueType::PTR);
-					structTypeStack.push_back(name); // Track which struct type this is
-					break;
-				}
-
-				// Check if it's a struct from an imported module
-				for (const auto& moduleEntry : mModuleStructs) {
-					const std::string& moduleName = moduleEntry.first;
-					const auto& structs = moduleEntry.second;
-					if (structs.find(name) != structs.end() && structs.at(name)) {
-						// Struct construction from module - use qualified name for lookups
-						std::string qualifiedStructName = moduleName + "::" + name;
-						// Try to find struct declaration
-						auto structDeclIt = mModuleStructDeclarations.find(qualifiedStructName);
-						if (structDeclIt != mModuleStructDeclarations.end()) {
-							AstNodeStructDeclaration* structDecl = structDeclIt->second;
-							const auto& fields = structDecl->fields();
-							size_t fieldCount = fields.size();
-
-							// Check if we have enough values on the stack
-							if (typeStack.size() < fieldCount) {
-								std::string errorMsg = "Type error in struct construction '";
-								errorMsg += name;
-								errorMsg += "': Stack underflow (requires ";
-								errorMsg += std::to_string(fieldCount);
-								errorMsg += " values, have ";
-								errorMsg += std::to_string(typeStack.size());
-								errorMsg += ")";
-								reportError(ident, errorMsg.c_str());
-							} else {
-								// Validate each field type (fields are in declaration order)
-								// Fields are consumed bottom-to-top from the stack
-								for (size_t fi = 0; fi < fieldCount; fi++) {
-									size_t stackIdx = typeStack.size() - fieldCount + fi;
-									StackValueType actual = typeStack[stackIdx];
-									const std::string actualStructType =
-											(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
-									const AstNodeStructField* field = fields[fi].get();
-									const std::string& fieldName = field->name();
-
-									// Get expected type from mStructFieldTypes
-									const auto* structFieldTypesPtr = lookupStructFieldTypes(qualifiedStructName);
-									if (structFieldTypesPtr == nullptr) {
-										continue;
-									}
-									auto fieldTypeIt = structFieldTypesPtr->find(fieldName);
-									if (fieldTypeIt == structFieldTypesPtr->end()) {
-										continue;
-									}
-									StackValueType expected = fieldTypeIt->second;
-
-									// Check if field expects a struct type (including type parameters)
-									std::string expectedStructType;
-									auto structFieldStructTypesIt = mStructFieldStructTypes.find(qualifiedStructName);
-									if (structFieldStructTypesIt != mStructFieldStructTypes.end()) {
-										auto fieldStructTypeIt = structFieldStructTypesIt->second.find(fieldName);
-										if (fieldStructTypeIt != structFieldStructTypesIt->second.end()) {
-											expectedStructType = fieldStructTypeIt->second;
-										}
-									}
-
-									// Skip check if expected type is a type parameter (for generics)
-									bool isGenericField =
-											!expectedStructType.empty() && isCurrentTypeParam(expectedStructType);
-									if (isGenericField) {
-										continue;
-									}
-
-									// Skip check if actual type is UNKNOWN (can't determine type)
-									if (actual == StackValueType::UNKNOWN) {
-										continue;
-									}
-
-									// Check for type mismatch
-									if (actual != expected) {
-										// Check if implicit cast is allowed (int <-> float)
-										if (isImplicitCastAllowed(actual, expected)) {
-											// Only warn for casts that should be warned about
-											if (shouldWarnImplicitCast(actual, expected)) {
-												std::string warnMsg = "Implicit cast in struct construction '";
-												warnMsg += name;
-												warnMsg += "': Field '";
-												warnMsg += fieldName;
-												warnMsg += "' expects ";
-												warnMsg += stackValueTypeToString(expected);
-												warnMsg += ", but got ";
-												warnMsg += stackValueTypeToString(actual);
-												reportWarning(ident, warnMsg.c_str());
-											}
-										} else {
-											// Type mismatch error
-											std::string errorMsg = "Type error in struct construction '";
-											errorMsg += name;
-											errorMsg += "': Field '";
-											errorMsg += fieldName;
-											errorMsg += "' expects ";
-											errorMsg += stackValueTypeToString(expected);
-											errorMsg += ", but got ";
-											errorMsg += stackValueTypeToString(actual);
-											reportError(ident, errorMsg.c_str());
-										}
-									} else if (std::string why; fieldValueRejected(qualifiedStructName, fieldName,
-													   expectedStructType, actualStructType, why)) {
-										// A module's struct gets the same pointer-type check a local one
-										// does. This form had only the coarse compare above.
-										std::string errorMsg = "Type error in struct construction '";
-										errorMsg += name;
-										errorMsg += "': Field '";
-										errorMsg += fieldName;
-										errorMsg += "' ";
-										errorMsg += why;
-										reportError(ident, errorMsg.c_str());
-									}
-								}
-							}
-
-							// Pop field values from stack
-							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-								typeStack.pop_back();
-								if (!structTypeStack.empty()) {
-									structTypeStack.pop_back();
-								}
-							}
-						}
-
-						// Struct pointers can now be used flexibly - codegen handles all cases
-
-						typeStack.push_back(StackValueType::PTR);
-						structTypeStack.push_back(qualifiedStructName); // Track the qualified struct type
-						break;
-					}
-				}
-
-				// Check if this is a method call on a struct
-				// Methods require: receiver pushed first, then parameters on top
-				// e.g., for method set(idx, elem): v idx elem set!
-				std::string receiverStructType;
-				std::string registeredStructType;
-				size_t receiverStackIdx = 0;
-
-				{
-					static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
-					if (debug) {
-						std::cerr << "[DEBUG TC] Checking for method call '" << name << "' - structTypeStack: [";
-						for (size_t k = 0; k < structTypeStack.size(); k++) {
-							if (k > 0) {
-								std::cerr << ", ";
-							}
-							std::cerr << "'" << structTypeStack[k] << "'";
-						}
-						std::cerr << "]" << std::endl;
-					}
-				}
-
-				// First pass: find any struct on the stack that has this method
-				// to determine the method signature and expected parameter count
-				size_t searchLimit = std::min(structTypeStack.size(), typeStack.size());
-				for (size_t idx = searchLimit; idx > 0; idx--) {
-					const std::string& structType = structTypeStack[idx - 1];
-					if (!structType.empty()) {
-						std::string potentialRegisteredType = findMethodStructType(structType, name);
-						if (!potentialRegisteredType.empty()) {
-							registeredStructType = potentialRegisteredType;
-							break;
-						}
-					}
-				}
-				if (!registeredStructType.empty()) {
-					// This is a method call - look up the signature with mangled name
-					std::string mangledName = registeredStructType + "::" + name;
-					auto methodSigIt = mFunctionSignatures.find(mangledName);
-					if (methodSigIt != mFunctionSignatures.end()) {
-						const FunctionSignature& sig = methodSigIt->second;
-
-						// Validate '!' and '?' usage
-						if ((ident->abortOnError() || ident->propagateOnError()) && !sig.throws) {
-							std::string op = ident->abortOnError() ? "!" : "?";
-							std::string errorMsg = "Cannot use '" + op + "' operator on method '" + name +
-												   "' which is not marked as fallible";
-							reportError(ident, errorMsg.c_str());
-						}
-
-						// Check '?' requires caller to be fallible
-						if (ident->propagateOnError() && !mCurrentFunctionFallible) {
-							std::string errorMsg =
-									"Cannot use '?' operator on method '" + name +
-									"': enclosing function must be fallible (add '!' to function signature)";
-							reportError(ident, errorMsg.c_str());
-						}
-
-						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
-						if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
-							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-								std::string errorMsg =
-										"Fallible method '" + name +
-										"' must be immediately followed by 'if' or 'switch' to check for "
-										"errors, or use '!' to abort on error, or '?' to propagate";
-								reportError(ident, errorMsg.c_str());
-							}
-						}
-
-						// Calculate expected receiver position based on parameter count
-						// With receiver-first: receiver should be at position additionalParams from top
-						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-
-						// Second pass: check if there's a valid receiver at the expected position
-						if (typeStack.size() <= additionalParams) {
-							std::string errorMsg = "Type error in method call '";
-							errorMsg += name;
-							errorMsg += "': Stack underflow (requires receiver + ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " values)";
-							reportError(ident, errorMsg.c_str());
-							break;
-						}
-
-						size_t expectedReceiverIdx = typeStack.size() - 1 - additionalParams;
-
-						// Verify the struct at expected position has this method
-						bool foundValidReceiver = false;
-						if (expectedReceiverIdx < structTypeStack.size()) {
-							const std::string& structAtExpectedPos = structTypeStack[expectedReceiverIdx];
-							std::string actualRegisteredType = findMethodStructType(structAtExpectedPos, name);
-							if (!actualRegisteredType.empty()) {
-								// Valid receiver-first call
-								receiverStructType = structAtExpectedPos;
-								registeredStructType = actualRegisteredType;
-								receiverStackIdx = expectedReceiverIdx;
-								foundValidReceiver = true;
-							}
-						}
-
-						if (!foundValidReceiver) {
-							std::string errorMsg = "Method call '";
-							errorMsg += name;
-							errorMsg += "': receiver must be pushed first, then ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " parameter(s) on top (e.g., 'receiver";
-							for (size_t p = 0; p < additionalParams; p++) {
-								errorMsg += " param";
-							}
-							errorMsg += " ";
-							errorMsg += name;
-							errorMsg += "')";
-							reportError(ident, errorMsg.c_str());
-							break;
-						}
-
-						// receiverPositionFromTop is now always additionalParams (by construction)
-						size_t receiverPositionFromTop = additionalParams;
-
-						if (typeStack.size() < sig.consumes.size()) {
-							std::string errorMsg = "Type error in method call '";
-							errorMsg += name;
-							errorMsg += "': Stack underflow (requires receiver + ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " values)";
-							reportError(ident, errorMsg.c_str());
-							break;
-						}
-
-						// Validate parameter types (skip receiver at index 0)
-						// Stack order: [receiver, param1, param2, ..., paramN] with receiver at bottom
-						// Signature: [receiver, param1, param2, ..., paramN]
-						// For sig index j (1 to N), stack index is: receiverIdx + j
-						for (size_t j = 1; j < sig.consumes.size(); j++) {
-							size_t stackIdx = receiverStackIdx + j;
-							// Bounds check before accessing typeStack
-							if (stackIdx >= typeStack.size()) {
-								break;
-							}
-							StackValueType expected = sig.consumes[j];
-							StackValueType actual = typeStack[stackIdx];
-
-							// ANY and UNKNOWN cannot be checked; a TYPEVAR is a generic parameter that accepts
-							// any concrete type at the call site, exactly as in the function-call path.
-							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
-									expected == StackValueType::TYPEVAR) {
-								continue;
-							}
-							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
-									actual == StackValueType::TYPEVAR) {
-								continue;
-							}
-
-							if (actual != expected) {
-								if (isImplicitCastAllowed(actual, expected)) {
-									std::string warnMsg = "Implicit cast in method call '";
-									warnMsg += name;
-									warnMsg += "': Parameter ";
-									warnMsg += std::to_string(j);
-									warnMsg += " expects ";
-									warnMsg += stackValueTypeToString(expected);
-									warnMsg += ", but got ";
-									warnMsg += stackValueTypeToString(actual);
-									reportWarning(ident, warnMsg.c_str());
-								} else {
-									std::string errorMsg = "Type error in method call '";
-									errorMsg += name;
-									errorMsg += "': Parameter ";
-									errorMsg += std::to_string(j);
-									errorMsg += " expects ";
-									errorMsg += stackValueTypeToString(expected);
-									errorMsg += ", but got ";
-									errorMsg += stackValueTypeToString(actual);
-									reportError(ident, errorMsg.c_str());
-								}
-							}
-						}
-
-						// Pop all consumed values (receiver + params)
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-
-						// Push return values
-						{
-							// The receiver's type arguments bind the method's type parameters.
-							std::vector<std::string> noConsumed;
-							pushCallResults(sig, receiverTypeBindings(receiverStructType), noConsumed, typeStack,
-									structTypeStack);
-						}
-						if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
-							typeStack.push_back(StackValueType::INT); // Error status
-							structTypeStack.push_back("");
-						}
-
-						// Mark identifier as a method call for code generation
-						// Use registeredStructType (the generic type) for proper function name lookup
-						{
-							static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
-							if (debug) {
-								std::cerr << "[DEBUG TC] Marking '" << name << "' as method call on "
-										  << registeredStructType << std::endl;
-							}
-						}
-						ident->setIsMethodCall(true);
-						ident->setReceiverType(registeredStructType);
-						ident->setMethodInputParamCount(additionalParams);
-						// Use the receiver position calculated earlier (before stack modifications)
-						ident->setMethodReceiverPositionFromTop(receiverPositionFromTop);
-						break;
-					}
-				}
-
-				// Check if this is a user-defined function
-				auto sigIt = mFunctionSignatures.find(name);
-				if (sigIt != mFunctionSignatures.end()) {
-					const FunctionSignature& sig = sigIt->second;
-
-					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
-					if ((ident->abortOnError() || ident->propagateOnError()) && !sig.throws) {
-						std::string op = ident->abortOnError() ? "!" : "?";
-						std::string errorMsg = "Cannot use '" + op + "' operator on function '" + name +
-											   "' which is not marked as fallible (add '!' after signature)";
-						reportError(ident, errorMsg.c_str());
-					}
-
-					// Check '?' requires caller to be fallible
-					if (ident->propagateOnError() && !mCurrentFunctionFallible) {
-						std::string errorMsg = "Cannot use '?' operator on function '" + name +
-											   "': enclosing function must be fallible (add '!' to function signature)";
-						reportError(ident, errorMsg.c_str());
-					}
-
-					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
-					if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
-						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-							std::string errorMsg = "Fallible function '" + name +
-												   "' must be immediately followed by 'if' or 'switch' to check for "
-												   "errors, or use '!' to abort on error, or '?' to propagate";
-							reportError(ident, errorMsg.c_str());
-						}
-					}
-
-					// Check if stack has enough values for function parameters
-					if (typeStack.size() < sig.consumes.size()) {
-						std::string errorMsg = "Type error in function call '";
-						errorMsg += name;
-						errorMsg += "': Stack underflow (requires ";
-						errorMsg += std::to_string(sig.consumes.size());
-						errorMsg += " values, have ";
-						errorMsg += std::to_string(typeStack.size());
-						errorMsg += ")";
-						reportError(ident, errorMsg.c_str());
-						break;
-					}
-
-					// Track which parameters need casts
-					std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
-
-					// Check if the types match
-					for (size_t j = 0; j < sig.consumes.size(); j++) {
-						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
-						StackValueType expected = sig.consumes[j];
-						StackValueType actual = typeStack[stackIdx];
-
-						// Skip check if expected type is ANY, UNKNOWN, or TYPEVAR (generic type parameter)
-						// TYPEVAR accepts any concrete type at the call site
-						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
-								expected == StackValueType::TYPEVAR) {
-							continue;
-						}
-
-						// Skip check if actual type is UNKNOWN, ANY, or TYPEVAR (can't determine type at compile time)
-						// TYPEVAR occurs when a generic type parameter (like T) is passed to a typed function
-						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
-								actual == StackValueType::TYPEVAR) {
-							continue;
-						}
-
-						// An i64 widens to a d128 parameter exactly, so there is nothing to warn about
-						if (actual == StackValueType::INT && expected == StackValueType::D128) {
-							paramCasts[j] = CastDirection::INT_TO_D128;
-							typeStack[stackIdx] = StackValueType::D128;
-							continue;
-						}
-
-						// Check for type mismatch
-						if (actual != expected) {
-							// Check if implicit cast is allowed (int <-> float)
-							if (isImplicitCastAllowed(actual, expected)) {
-								// Warn about implicit cast
-								std::string warnMsg = "Implicit cast in function call '";
-								warnMsg += name;
-								warnMsg += "': Parameter ";
-								warnMsg += std::to_string(j + 1);
-								warnMsg += " expects ";
-								warnMsg += stackValueTypeToString(expected);
-								warnMsg += ", but got ";
-								warnMsg += stackValueTypeToString(actual);
-								reportWarning(ident, warnMsg.c_str());
-
-								// Record the cast direction
-								if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
-									paramCasts[j] = CastDirection::INT_TO_FLOAT;
-									// Update type stack to reflect the cast
-									typeStack[stackIdx] = StackValueType::FLOAT;
-								} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
-									paramCasts[j] = CastDirection::FLOAT_TO_INT;
-									// Update type stack to reflect the cast
-									typeStack[stackIdx] = StackValueType::INT;
-								}
-							} else {
-								// Type mismatch error
-								std::string errorMsg = "Type error in function call '";
-								errorMsg += name;
-								errorMsg += "': Parameter ";
-								errorMsg += std::to_string(j + 1);
-								errorMsg += " expects ";
-								errorMsg += stackValueTypeToString(expected);
-								errorMsg += ", but got ";
-								errorMsg += stackValueTypeToString(actual);
-								reportError(ident, errorMsg.c_str());
-							}
-						}
-					}
-
-					// Store cast information in the identifier node
-					ident->setParameterCasts(paramCasts);
-
-					// Validate struct field requirements for PTR parameters
-					if (!sig.parameterFieldAccess.empty()) {
-						// Build a mapping from struct type name to required fields
-						// by matching parameterStructTypes to parameterFieldAccess
-						std::unordered_map<std::string, const std::unordered_map<std::string, StackValueType>*>
-								structTypeToRequiredFields;
-						for (const auto& paramField : sig.parameterFieldAccess) {
-							// Find the struct type for this parameter by scanning parameterStructTypes
-							for (const auto& pst : sig.parameterStructTypes) {
-								// We need to match by name somehow - check if the parameter name matches
-								// Since we don't have direct name->index, we'll use struct type matching
-								const std::string& expectedStructType = pst.second;
-								// If this struct type hasn't been assigned required fields yet, assign them
-								if (structTypeToRequiredFields.find(expectedStructType) ==
-										structTypeToRequiredFields.end()) {
-									// Check if this param's field accesses match this struct type's fields
-									const auto* structFieldPtr = lookupStructFieldTypes(expectedStructType);
-									if (structFieldPtr != nullptr) {
-										const auto& availableFields = *structFieldPtr;
-										bool allFieldsMatch = true;
-										for (const auto& reqField : paramField.second) {
-											if (availableFields.find(reqField.first) == availableFields.end()) {
-												allFieldsMatch = false;
-												break;
-											}
-										}
-										if (allFieldsMatch && !paramField.second.empty()) {
-											structTypeToRequiredFields[expectedStructType] = &paramField.second;
-										}
-									}
-								}
-							}
-						}
-
-						// Validate each PTR parameter on the stack
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							if (sig.consumes[j] == StackValueType::PTR) {
-								size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
-								std::string actualStructType = "";
-								if (stackIdx < structTypeStack.size()) {
-									actualStructType = structTypeStack[stackIdx];
-								}
-
-								// Get expected struct type for this parameter index
-								std::string expectedStructType = "";
-								auto pstIt = sig.parameterStructTypes.find(j);
-								if (pstIt != sig.parameterStructTypes.end()) {
-									expectedStructType = pstIt->second;
-								}
-
-								// Validate struct type matches expectation
-								if (!expectedStructType.empty() && !actualStructType.empty() &&
-										actualStructType != expectedStructType) {
-									std::string errorMsg = "Type error in function call '";
-									errorMsg += name;
-									errorMsg += "': Parameter ";
-									errorMsg += std::to_string(j + 1);
-									errorMsg += " expects struct '";
-									errorMsg += expectedStructType;
-									errorMsg += "', but got '";
-									errorMsg += actualStructType;
-									errorMsg += "'";
-									reportError(ident, errorMsg.c_str());
-								}
-
-								// Validate field requirements for this specific struct type
-								if (!actualStructType.empty()) {
-									auto reqFieldsIt = structTypeToRequiredFields.find(actualStructType);
-									if (reqFieldsIt != structTypeToRequiredFields.end()) {
-										const auto& requiredFields = *reqFieldsIt->second;
-										const auto* structFieldPtr = lookupStructFieldTypes(actualStructType);
-										if (structFieldPtr != nullptr) {
-											const auto& availableFields = *structFieldPtr;
-
-											for (const auto& requiredFieldEntry : requiredFields) {
-												const std::string& requiredField = requiredFieldEntry.first;
-												StackValueType expectedType = requiredFieldEntry.second;
-
-												auto fieldIt = availableFields.find(requiredField);
-												if (fieldIt == availableFields.end()) {
-													std::string errorMsg = "Type error in function call '";
-													errorMsg += name;
-													errorMsg += "': Struct '";
-													errorMsg += actualStructType;
-													errorMsg += "' is missing required field '";
-													errorMsg += requiredField;
-													errorMsg += "'";
-													reportError(ident, errorMsg.c_str());
-												} else {
-													StackValueType actualType = fieldIt->second;
-													if (actualType != expectedType &&
-															expectedType != StackValueType::UNKNOWN &&
-															actualType != StackValueType::UNKNOWN) {
-														if (!isImplicitCastAllowed(actualType, expectedType)) {
-															std::string errorMsg = "Type error in function call '";
-															errorMsg += name;
-															errorMsg += "': Field '";
-															errorMsg += requiredField;
-															errorMsg += "' in struct '";
-															errorMsg += actualStructType;
-															errorMsg += "' has type ";
-															errorMsg += stackValueTypeToString(actualType);
-															errorMsg += ", but function expects ";
-															errorMsg += stackValueTypeToString(expectedType);
-															reportError(ident, errorMsg.c_str());
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-
-					// Save consumed struct types before popping (for pass-through tracking)
-					std::vector<std::string> consumedStructTypes;
-					if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
-						// Save struct types in order (bottom to top of consumed portion)
-						size_t startIdx = structTypeStack.size() - sig.consumes.size();
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							consumedStructTypes.push_back(structTypeStack[startIdx + j]);
-						}
-					}
-
-					// Check struct, array and fn-pointer argument types and bind generic type parameters.
-					std::map<std::string, std::string> typeBindings;
-					bindCallTypeParams(sig, typeStack, structTypeStack, ident, name, typeBindings);
-
-					// Check if any parameter is PTR (function pointer) before consuming
-					bool consumesPtrParam = false;
-					for (const auto& paramType : sig.consumes) {
-						if (paramType == StackValueType::PTR) {
-							consumesPtrParam = true;
-							break;
-						}
-					}
-
-					// Consume the parameters from the stack
-					for (size_t j = 0; j < sig.consumes.size(); j++) {
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-					}
-
-					// Reset pending function signature only if we consumed a PTR parameter -
-					// this ensures signatures from input function pointers don't leak to
-					// returned function pointers, but preserves signatures for functions
-					// that return closures without taking function pointer parameters
-					if (consumesPtrParam) {
-						mPendingFnSignature.reset();
-					}
-
-					// Results, with bound type parameters substituted; a bare fallible call also
-					// leaves the status for the following `if`/`switch`.
-					pushCallResults(sig, typeBindings, consumedStructTypes, typeStack, structTypeStack);
-					if (sig.throws && !ident->abortOnError() && !ident->propagateOnError()) {
-						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
-						structTypeStack.push_back("");
-					}
-				} else {
-					// Not a local, not a method, not a user function: unresolved, so its stack
-					// effect is unknown and the function-level checks cannot be trusted.
-					// This must stay inside the else: placed after the block it ran for every
-					// call, which switched off the arity, if-arm and defer checks in any
-					// function that called anything.
-					mHasUnpredictableStack = true;
-				}
+			case IAstNode::Type::IDENTIFIER:
+				typeCheckIdentifier(child, node, i, typeStack, localVariables, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::FIELD_ACCESS: {
-				// `struct <<field`: pop the struct, push the field. The struct's type is what its
-				// producer left on the struct-type stack -- a local, a call, a construction, `as`,
-				// or a previous `<<` of a struct-typed field -- so nothing here needs to know what
-				// the operand *was*, only what it is.
-				AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
-				const std::string& fieldName = fieldAccess->fieldName();
-
-				if (typeStack.empty()) {
-					std::string msg =
-							"Type error in field access '<<" + fieldName + "': Stack underflow (requires a struct)";
-					reportErrorWithHint(fieldAccess, msg.c_str(), "push the struct first, e.g. 'p <<x'");
-					typeStack.push_back(StackValueType::UNKNOWN);
-					structTypeStack.push_back("");
-					break;
-				}
-				StackValueType operandType = typeStack.back();
-				std::string structType = structTypeStack.empty() ? "" : structTypeStack.back();
-				typeStack.pop_back();
-				if (!structTypeStack.empty()) {
-					structTypeStack.pop_back();
-				}
-
-				StackValueType fieldType = StackValueType::UNKNOWN;
-				std::string fieldStructType;
-				const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
-				if (operandType == StackValueType::INT || operandType == StackValueType::FLOAT ||
-						operandType == StackValueType::D128 || operandType == StackValueType::STRING) {
-					std::string msg = "Type error in field access '<<" + fieldName + "': the value on the stack is " +
-									  stackValueTypeToString(operandType) + ", not a struct";
-					reportError(fieldAccess, msg.c_str());
-					fieldType = StackValueType::ANY;
-				} else if (knownFields != nullptr) {
-					auto fieldIt = knownFields->find(fieldName);
-					if (fieldIt != knownFields->end()) {
-						fieldType = resolveFieldType(structType, fieldName, fieldStructType);
-					} else {
-						std::string msg = "Type error in field access '<<" + fieldName + "': Struct '" + structType +
-										  "' has no field named '" + fieldName + "'";
-						std::string suggestion = findSimilarNameInMap(fieldName, *knownFields);
-						if (!suggestion.empty()) {
-							msg += "; did you mean '" + suggestion + "'?";
-						}
-						reportError(fieldAccess, msg.c_str());
-						fieldType = StackValueType::ANY;
-					}
-				} else {
-					// An untyped pointer: the first struct with a field of this name supplies the type.
-					bool found = false;
-					for (const auto& structEntry : mStructFieldTypes) {
-						auto it = structEntry.second.find(fieldName);
-						if (it != structEntry.second.end()) {
-							fieldType = it->second;
-							found = true;
-							break;
-						}
-					}
-					if (!found) {
-						std::unordered_set<std::string> allFields;
-						for (const auto& structEntry : mStructFieldTypes) {
-							for (const auto& field : structEntry.second) {
-								allFields.insert(field.first);
-							}
-						}
-						std::string msg = "Type error in field access '<<" + fieldName +
-										  "': no struct has a field named '" + fieldName + "'";
-						std::string suggestion = findSimilarName(fieldName, allFields);
-						if (!suggestion.empty()) {
-							msg += "; did you mean '" + suggestion + "'?";
-						}
-						reportError(fieldAccess, msg.c_str());
-						fieldType = StackValueType::ANY;
-					}
-				}
-				typeStack.push_back(fieldType);
-				structTypeStack.push_back(fieldStructType);
+			case IAstNode::Type::FIELD_ACCESS:
+				typeCheckFieldAccess(child, typeStack, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::FIELD_SET: {
-				// `struct value >>field`: pop the value, check the field against the struct beneath
-				// it, and leave the struct on the stack for chaining.
-				AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(child);
-				const std::string& fieldName = fieldSet->fieldName();
-
-				if (typeStack.size() < 2) {
-					std::string msg = "Type error in field set '>>" + fieldName +
-									  "': Stack underflow (requires struct and value)";
-					reportErrorWithHint(fieldSet, msg.c_str(), "push the struct, then the value, e.g. 'p 42 >>x'");
-					if (!typeStack.empty()) {
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-					}
-					break;
-				}
-				std::string structType =
-						structTypeStack.size() >= 2 ? structTypeStack[structTypeStack.size() - 2] : std::string();
-				StackValueType valueType = typeStack.back();
-				const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
-				if (knownFields != nullptr) {
-					auto fieldIt = knownFields->find(fieldName);
-					if (fieldIt == knownFields->end()) {
-						std::string msg = "Field '" + fieldName + "' does not exist in struct '" + structType + "'";
-						std::string suggestion = findSimilarNameInMap(fieldName, *knownFields);
-						if (!suggestion.empty()) {
-							msg += "; did you mean '" + suggestion + "'?";
-						}
-						reportError(fieldSet, msg.c_str());
-					} else {
-						std::string fieldOwnType;
-						bool genericField = false;
-						StackValueType expected = resolveFieldType(structType, fieldName, fieldOwnType, &genericField);
-						if (!genericField && !fieldOwnType.empty()) {
-							genericField = isCurrentTypeParam(fieldOwnType);
-						}
-						bool checkable = !genericField && expected != StackValueType::ANY &&
-										 expected != StackValueType::UNKNOWN && expected != StackValueType::TYPEVAR &&
-										 valueType != StackValueType::ANY && valueType != StackValueType::UNKNOWN &&
-										 valueType != StackValueType::TYPEVAR;
-						if (checkable && valueType != expected && !isImplicitCastAllowed(valueType, expected)) {
-							std::string msg = "Type error in field set '>>" + fieldName + "': field '" + fieldName +
-											  "' of struct '" + structType + "' is " +
-											  stackValueTypeToString(expected) + ", but the value is " +
-											  stackValueTypeToString(valueType);
-							reportError(fieldSet, msg.c_str());
-						} else if (checkable && expected == StackValueType::PTR) {
-							// Both are pointers, which is where the coarse compare above stops. The
-							// field's own type is what separates them, and `>>field` is a definite
-							// assignment like a struct construction, so it gets the same rule.
-							std::string why;
-							const std::string valueStructType =
-									structTypeStack.empty() ? std::string() : structTypeStack.back();
-							if (fieldValueRejected(structType, fieldName, fieldOwnType, valueStructType, why)) {
-								std::string msg = "Type error in field set '>>" + fieldName + "': field '" + fieldName +
-												  "' of struct '" + structType + "' " + why;
-								reportError(fieldSet, msg.c_str());
-							}
-						}
-					}
-				} else {
-					bool fieldFound = false;
-					for (const auto& structEntry : mStructFieldTypes) {
-						if (structEntry.second.find(fieldName) != structEntry.second.end()) {
-							fieldFound = true;
-							break;
-						}
-					}
-					if (!fieldFound) {
-						std::unordered_set<std::string> allFields;
-						for (const auto& structEntry : mStructFieldTypes) {
-							for (const auto& field : structEntry.second) {
-								allFields.insert(field.first);
-							}
-						}
-						std::string msg = "Type error in field set '>>" + fieldName +
-										  "': no struct has a field named '" + fieldName + "'";
-						std::string suggestion = findSimilarName(fieldName, allFields);
-						if (!suggestion.empty()) {
-							msg += "; did you mean '" + suggestion + "'?";
-						}
-						reportError(fieldSet, msg.c_str());
-					}
-				}
-
-				// Pop the value; the struct stays.
-				typeStack.pop_back();
-				if (!structTypeStack.empty()) {
-					structTypeStack.pop_back();
-				}
+			case IAstNode::Type::FIELD_SET:
+				typeCheckFieldSet(child, typeStack, structTypeStack);
 				break;
-			}
 
-			case IAstNode::Type::SCOPED_IDENTIFIER: {
-				// Handle module constants, structs, or function calls
-				AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
-
-				// Resolve sb::append_any at type-check time based on the type stack
-				// This is generated by $"..." string interpolation
-				// Use mResolvedInterpolations to only resolve each node once
-				if (scoped->scope() == "sb" && scoped->name() == "append_any" &&
-						mResolvedInterpolations.find(scoped) == mResolvedInterpolations.end()) {
-					mResolvedInterpolations.insert(scoped);
-					// An integer has a path of its own that builds the digits in place. Anything
-					// else goes through cast<str>: sending an f64 to append_int died on the
-					// first `mod` it reached.
-					if (!typeStack.empty() && typeStack.back() == StackValueType::STRING) {
-						scoped->setName("append");
-					} else if (!typeStack.empty() && typeStack.back() == StackValueType::INT) {
-						scoped->setName("append_int");
-					} else {
-						scoped->setName("append_value");
-					}
-				}
-
-				const std::string& moduleName = scoped->scope();
-				const std::string& functionName = scoped->name();
-				std::string qualifiedName = moduleName + "::" + functionName;
-
-				// Imported C functions and variadic stdlib functions may have signatures
-				// that don't reflect all consumed values. Mark stack as unpredictable.
-				if (mImportedLibraryFunctions.find(qualifiedName) != mImportedLibraryFunctions.end() ||
-						qualifiedName == "fmt::printf" || qualifiedName == "fmt::sprintf") {
-					mHasUnpredictableStack = true;
-				}
-
-				// Check if this is a local enum variant (e.g., Color::Red)
-				if (mDefinedEnums.find(moduleName) != mDefinedEnums.end()) {
-					if (mConstantValues.find(qualifiedName) != mConstantValues.end()) {
-						typeStack.push_back(StackValueType::INT);
-						structTypeStack.push_back("");
-						break;
-					}
-				}
-
-				// Also check local constant values directly (for enum variants in module files)
-				if (mConstantValues.find(qualifiedName) != mConstantValues.end()) {
-					typeStack.push_back(StackValueType::INT);
-					structTypeStack.push_back("");
-					break;
-				}
-
-				// Self-qualified module constant. `time.qd` declares
-				// `import "libtime.a" as "time"` and reads its own `pub const Millisecond` as
-				// `time::Millisecond`; the constant is registered under the bare name, so the
-				// qualified lookup above misses it. Guarded on the scope being an FFI namespace
-				// so this cannot swallow a genuinely unresolved `othermodule::Name`. Without it
-				// the reference pushed nothing and the following `/` reported a spurious
-				// "Stack underflow (requires 2 numeric values)".
-				if (mImportedLibraries.find(moduleName) != mImportedLibraries.end()) {
-					auto selfConstIt = mConstantValues.find(functionName);
-					if (selfConstIt != mConstantValues.end()) {
-						const std::string& value = selfConstIt->second;
-						if (!value.empty() && value[0] == '"') {
-							typeStack.push_back(StackValueType::STRING);
-						} else if (isD128LiteralText(value)) {
-							typeStack.push_back(StackValueType::D128);
-						} else if (isFloatLiteralText(value)) {
-							typeStack.push_back(StackValueType::FLOAT);
-						} else {
-							typeStack.push_back(StackValueType::INT);
-						}
-						structTypeStack.push_back("");
-						break;
-					}
-				}
-
-				// Check if this is a constant first
-				auto constIt = mModuleConstants.find(moduleName);
-				if (constIt != mModuleConstants.end()) {
-					const auto& constants = constIt->second;
-					if (constants.find(functionName) != constants.end()) {
-						// This is a constant - determine its type and push onto the stack
-						std::string constQualifiedName = moduleName + "::" + functionName;
-						auto valueIt = mModuleConstantValues.find(constQualifiedName);
-						if (valueIt != mModuleConstantValues.end()) {
-							const std::string& value = valueIt->second;
-							// Infer type from value
-							if (!value.empty() && value[0] == '"') {
-								typeStack.push_back(StackValueType::STRING);
-							} else if (isD128LiteralText(value)) {
-								typeStack.push_back(StackValueType::D128);
-							} else if (isFloatLiteralText(value)) {
-								typeStack.push_back(StackValueType::FLOAT);
-							} else {
-								typeStack.push_back(StackValueType::INT);
-							}
-						} else {
-							typeStack.push_back(StackValueType::UNKNOWN);
-						}
-						structTypeStack.push_back("");
-						break;
-					}
-				}
-
-				// Check if this is a struct construction
-				auto moduleStructsIt = mModuleStructs.find(moduleName);
-				if (moduleStructsIt != mModuleStructs.end()) {
-					const auto& structs = moduleStructsIt->second;
-					auto structIt = structs.find(functionName);
-					if (structIt != structs.end() && structIt->second) {
-						// This is a struct construction from a module
-						// Use mStructFieldTypes and mStructFieldOrder since the AST node may be invalid
-						// Use qualified name for lookup since module structs are stored with qualified keys
-						const auto* structFieldTypesPtr = lookupStructFieldTypes(qualifiedName);
-						auto structFieldOrderIt = mStructFieldOrder.find(qualifiedName);
-
-						if (structFieldTypesPtr != nullptr && structFieldOrderIt != mStructFieldOrder.end()) {
-							const auto& fieldTypes = *structFieldTypesPtr;
-							const auto& fieldOrder = structFieldOrderIt->second;
-							size_t fieldCount = fieldOrder.size();
-
-							// Check if we have enough values on the stack
-							if (typeStack.size() < fieldCount) {
-								std::string errorMsg = "Type error in struct construction '";
-								errorMsg += qualifiedName;
-								errorMsg += "': Stack underflow (requires ";
-								errorMsg += std::to_string(fieldCount);
-								errorMsg += " values, have ";
-								errorMsg += std::to_string(typeStack.size());
-								errorMsg += ")";
-								reportError(scoped, errorMsg.c_str());
-							} else {
-								// Validate each field type (fields are in declaration order)
-								// Fields are consumed bottom-to-top from the stack
-								for (size_t fi = 0; fi < fieldOrder.size(); fi++) {
-									size_t stackIdx = typeStack.size() - fieldOrder.size() + fi;
-									StackValueType actual = typeStack[stackIdx];
-									const std::string actualStructType =
-											(stackIdx < structTypeStack.size()) ? structTypeStack[stackIdx] : "";
-									const std::string& fieldName = fieldOrder[fi];
-
-									// Get expected type from fieldTypes
-									auto fieldTypeIt = fieldTypes.find(fieldName);
-									if (fieldTypeIt == fieldTypes.end()) {
-										continue;
-									}
-									StackValueType expected = fieldTypeIt->second;
-
-									std::string expectedStructType;
-									auto fstIt = mStructFieldStructTypes.find(qualifiedName);
-									if (fstIt != mStructFieldStructTypes.end()) {
-										auto nm = fstIt->second.find(fieldName);
-										if (nm != fstIt->second.end()) {
-											expectedStructType = nm->second;
-										}
-									}
-									if (!expectedStructType.empty() && isCurrentTypeParam(expectedStructType)) {
-										continue; // a generic field binds to whatever it is given
-									}
-
-									// Skip check if actual type is UNKNOWN (can't determine type)
-									if (actual == StackValueType::UNKNOWN) {
-										continue;
-									}
-
-									// Check for type mismatch
-									if (actual != expected) {
-										// Check if implicit cast is allowed (int <-> float)
-										if (isImplicitCastAllowed(actual, expected)) {
-											// Only warn for casts that should be warned about
-											if (shouldWarnImplicitCast(actual, expected)) {
-												std::string warnMsg = "Implicit cast in struct construction '";
-												warnMsg += qualifiedName;
-												warnMsg += "': Field '";
-												warnMsg += fieldName;
-												warnMsg += "' expects ";
-												warnMsg += stackValueTypeToString(expected);
-												warnMsg += ", but got ";
-												warnMsg += stackValueTypeToString(actual);
-												reportWarning(scoped, warnMsg.c_str());
-											}
-										} else {
-											// Type mismatch error
-											std::string errorMsg = "Type error in struct construction '";
-											errorMsg += qualifiedName;
-											errorMsg += "': Field '";
-											errorMsg += fieldName;
-											errorMsg += "' expects ";
-											errorMsg += stackValueTypeToString(expected);
-											errorMsg += ", but got ";
-											errorMsg += stackValueTypeToString(actual);
-											reportError(scoped, errorMsg.c_str());
-										}
-									} else if (std::string why; fieldValueRejected(qualifiedName, fieldName,
-													   expectedStructType, actualStructType, why)) {
-										// `mod::Name` constructed positionally: the last of the five, and
-										// the one that had no pointer-type check of any kind.
-										std::string errorMsg = "Type error in struct construction '";
-										errorMsg += qualifiedName;
-										errorMsg += "': Field '";
-										errorMsg += fieldName;
-										errorMsg += "' ";
-										errorMsg += why;
-										reportError(scoped, errorMsg.c_str());
-									}
-								}
-							}
-
-							// Pop field values from stack
-							for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
-								typeStack.pop_back();
-								if (!structTypeStack.empty()) {
-									structTypeStack.pop_back();
-								}
-							}
-						}
-
-						// Struct pointers can now be used flexibly - codegen handles all cases
-
-						// Push pointer type for the constructed struct, with qualified name as type
-						typeStack.push_back(StackValueType::PTR);
-						structTypeStack.push_back(functionName); // Track the struct type (bare name)
-						break;
-					}
-				}
-
-				// Check if this is an explicit method call (StructType::method)
-				// The scope could be a struct type name
-				if ((mDefinedStructs.count(moduleName) || mStructMethods.count(moduleName)) &&
-						mStructMethods.count(moduleName) && mStructMethods.at(moduleName).count(functionName)) {
-					// Explicit method call - check that stack top matches the receiver type
-					std::string receiverStructType;
-					if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
-						receiverStructType = structTypeStack.back();
-					}
-
-					// Verify receiver type matches the explicit type (or is a subtype in the future)
-					if (!receiverStructType.empty() && receiverStructType != moduleName) {
-						std::string errorMsg = "Type error: Explicit method call '";
-						errorMsg += qualifiedName;
-						errorMsg += "' expects receiver of type '";
-						errorMsg += moduleName;
-						errorMsg += "' but stack top is '";
-						errorMsg += receiverStructType;
-						errorMsg += "'";
-						reportError(scoped, errorMsg.c_str());
-					}
-
-					// Look up method signature
-					auto methodSigIt = mFunctionSignatures.find(qualifiedName);
-					if (methodSigIt != mFunctionSignatures.end()) {
-						const FunctionSignature& sig = methodSigIt->second;
-
-						// Validate '!' and '?' usage
-						if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
-							std::string op = scoped->abortOnError() ? "!" : "?";
-							std::string errorMsg = "Cannot use '" + op + "' operator on method '" + functionName +
-												   "' which is not marked as fallible";
-							reportError(scoped, errorMsg.c_str());
-						}
-
-						// Check '?' requires caller to be fallible
-						if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
-							std::string errorMsg =
-									"Cannot use '?' operator on method '" + functionName +
-									"': enclosing function must be fallible (add '!' to function signature)";
-							reportError(scoped, errorMsg.c_str());
-						}
-
-						// Check fallible methods without ! or ? must be followed by 'if' or 'switch'
-						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-							IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-							if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-													 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-								std::string errorMsg =
-										"Fallible method '" + functionName +
-										"' must be immediately followed by 'if' or 'switch' to check for "
-										"errors, or use '!' to abort on error, or '?' to propagate";
-								reportError(scoped, errorMsg.c_str());
-							}
-						}
-
-						// Check if stack has enough values (receiver + params)
-						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-						if (typeStack.size() < 1 + additionalParams) {
-							std::string errorMsg = "Type error in method call '";
-							errorMsg += functionName;
-							errorMsg += "': Stack underflow (requires receiver + ";
-							errorMsg += std::to_string(additionalParams);
-							errorMsg += " values)";
-							reportError(scoped, errorMsg.c_str());
-							break;
-						}
-
-						// Validate parameter types (skip receiver at index 0)
-						// Stack order: [param1, param2, ..., paramN, receiver]
-						// Signature: [receiver, param1, param2, ..., paramN]
-						// For sig index j (1 to N), stack index is: size - consumes.size() + (j-1)
-						for (size_t j = 1; j < sig.consumes.size(); j++) {
-							size_t stackIdx = typeStack.size() - sig.consumes.size() + (j - 1);
-							StackValueType expected = sig.consumes[j];
-							StackValueType actual = typeStack[stackIdx];
-
-							// ANY and UNKNOWN cannot be checked; a TYPEVAR is a generic parameter that accepts
-							// any concrete type at the call site, exactly as in the function-call path.
-							if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
-									expected == StackValueType::TYPEVAR) {
-								continue;
-							}
-							if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
-									actual == StackValueType::TYPEVAR) {
-								continue;
-							}
-
-							if (actual != expected) {
-								if (isImplicitCastAllowed(actual, expected)) {
-									std::string warnMsg = "Implicit cast in method call '";
-									warnMsg += functionName;
-									warnMsg += "': Parameter ";
-									warnMsg += std::to_string(j);
-									warnMsg += " expects ";
-									warnMsg += stackValueTypeToString(expected);
-									warnMsg += ", but got ";
-									warnMsg += stackValueTypeToString(actual);
-									reportWarning(scoped, warnMsg.c_str());
-								} else {
-									std::string errorMsg = "Type error in method call '";
-									errorMsg += functionName;
-									errorMsg += "': Parameter ";
-									errorMsg += std::to_string(j);
-									errorMsg += " expects ";
-									errorMsg += stackValueTypeToString(expected);
-									errorMsg += ", but got ";
-									errorMsg += stackValueTypeToString(actual);
-									reportError(scoped, errorMsg.c_str());
-								}
-							}
-						}
-
-						// Pop all consumed values (receiver + params)
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-
-						// Push return values
-						{
-							std::vector<std::string> noConsumed;
-							pushCallResults(sig, receiverTypeBindings(receiverStructType), noConsumed, typeStack,
-									structTypeStack);
-						}
-						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-							typeStack.push_back(StackValueType::INT);
-							structTypeStack.push_back("");
-						}
-
-						// Mark as method call for code generation
-						scoped->setIsMethodCall(true);
-						scoped->setMethodInputParamCount(additionalParams);
-						// For explicit method calls, receiver is always on top of stack
-						scoped->setMethodReceiverPositionFromTop(0);
-						break;
-					}
-				}
-
-				// Check if this is a module method call (e.g., sb::append on a StringBuilder)
-				// Search the type stack for a struct from this module at the expected depth
-				if (!typeStack.empty() && !structTypeStack.empty()) {
-					// Try to find a method with this name on any struct from this module
-					// by searching the structTypeStack from top down
-					bool foundModuleMethod = false;
-					for (size_t searchDepth = 0; searchDepth < typeStack.size() && !foundModuleMethod; searchDepth++) {
-						size_t stackIdx = typeStack.size() - 1 - searchDepth;
-						if (typeStack[stackIdx] != StackValueType::PTR) {
-							continue;
-						}
-						if (stackIdx >= structTypeStack.size()) {
-							continue;
-						}
-						std::string receiverStructType = structTypeStack[stackIdx];
-						if (receiverStructType.empty()) {
-							continue;
-						}
-
-						// Check if receiver struct belongs to this module
-						bool isModuleStruct = receiverStructType.find(moduleName + "::") == 0;
-						if (!isModuleStruct) {
-							std::string qualified = moduleName + "::" + receiverStructType;
-							if (mStructMethods.count(qualified) || mStructMethods.count(receiverStructType)) {
-								isModuleStruct = true;
-							}
-						}
-						if (!isModuleStruct) {
-							continue;
-						}
-
-						// Find the registered struct type for method lookup
-						std::string registeredStructType = findMethodStructType(receiverStructType, functionName);
-						if (registeredStructType.empty() && receiverStructType.find("::") == std::string::npos) {
-							registeredStructType =
-									findMethodStructType(moduleName + "::" + receiverStructType, functionName);
-						}
-						if (registeredStructType.empty()) {
-							continue;
-						}
-
-						// Found a method — verify parameter count matches receiver position
-						std::string methodQualifiedName = registeredStructType + "::" + functionName;
-						auto methodSigIt = mFunctionSignatures.find(methodQualifiedName);
-						if (methodSigIt == mFunctionSignatures.end()) {
-							continue;
-						}
-						const FunctionSignature& sig = methodSigIt->second;
-						size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
-
-						// Receiver should be at exactly additionalParams from top
-						if (searchDepth != additionalParams) {
-							continue;
-						}
-
-						// Validate '!' and '?' usage
-						if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
-							std::string op = scoped->abortOnError() ? "!" : "?";
-							std::string errorMsg = "Cannot use '" + op + "' operator on method '" + functionName +
-												   "' which is not marked as fallible";
-							reportError(scoped, errorMsg.c_str());
-						}
-
-						// Check '?' requires caller to be fallible
-						if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
-							std::string errorMsg =
-									"Cannot use '?' operator on method '" + functionName +
-									"': enclosing function must be fallible (add '!' to function signature)";
-							reportError(scoped, errorMsg.c_str());
-						}
-
-						// Pop all consumed values (receiver + params)
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							typeStack.pop_back();
-							if (!structTypeStack.empty()) {
-								structTypeStack.pop_back();
-							}
-						}
-
-						// Push return values. A bare fallible call also leaves the status the
-						// following `if`/`switch` tests -- the explicit `Type::method` path above
-						// has always done this, and this one did not, so `f "--name"
-						// flag::string if { ... }` had the `if` consume the *result* as its
-						// condition and the success arm read an empty stack. It went unnoticed
-						// because the only callers sat downstream of `read`, whose sixteen
-						// synthetic strings left enough fiction on the type stack to absorb it.
-						{
-							std::vector<std::string> noConsumed;
-							pushCallResults(sig, receiverTypeBindings(receiverStructType), noConsumed, typeStack,
-									structTypeStack);
-						}
-						if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-							typeStack.push_back(StackValueType::INT);
-							structTypeStack.push_back("");
-						}
-
-						// Mark as method call for code generation
-						scoped->setIsMethodCall(true);
-						scoped->setReceiverType(registeredStructType);
-						scoped->setMethodInputParamCount(additionalParams);
-						scoped->setMethodReceiverPositionFromTop(additionalParams);
-						foundModuleMethod = true;
-						break;
-					}
-					if (foundModuleMethod) {
-						break;
-					}
-				}
-
-				// Look up the module function signature
-				auto sigIt = mFunctionSignatures.find(qualifiedName);
-				if (sigIt != mFunctionSignatures.end()) {
-					const FunctionSignature& sig = sigIt->second;
-
-					// Validate '!' and '?' usage: only allowed on fallible functions (marked with '!')
-					if ((scoped->abortOnError() || scoped->propagateOnError()) && !sig.throws) {
-						std::string op = scoped->abortOnError() ? "!" : "?";
-						std::string errorMsg = "Cannot use '" + op + "' operator on function '" + qualifiedName +
-											   "' which is not marked as fallible (add '!' after signature)";
-						reportError(scoped, errorMsg.c_str());
-					}
-
-					// Check '?' requires caller to be fallible
-					if (scoped->propagateOnError() && !mCurrentFunctionFallible) {
-						std::string errorMsg = "Cannot use '?' operator on function '" + qualifiedName +
-											   "': enclosing function must be fallible (add '!' to function signature)";
-						reportError(scoped, errorMsg.c_str());
-					}
-
-					// Check fallible functions without ! or ? must be followed by 'if' or 'switch'
-					if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-						IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-							std::string errorMsg = "Fallible function '" + qualifiedName +
-												   "' must be immediately followed by 'if' or 'switch' to check for "
-												   "errors, or use '!' to abort on error, or '?' to propagate";
-							reportError(scoped, errorMsg.c_str());
-						}
-					}
-
-					// Check if stack has enough values for function parameters
-					if (typeStack.size() < sig.consumes.size()) {
-						std::string errorMsg = "Type error in function call '";
-						errorMsg += qualifiedName;
-						errorMsg += "': Stack underflow (requires ";
-						errorMsg += std::to_string(sig.consumes.size());
-						errorMsg += " values, have ";
-						errorMsg += std::to_string(typeStack.size());
-						errorMsg += ")";
-						reportError(scoped, errorMsg.c_str());
-						break;
-					}
-
-					// Track which parameters need casts
-					std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
-
-					// Check if the types match
-					for (size_t j = 0; j < sig.consumes.size(); j++) {
-						size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
-						StackValueType expected = sig.consumes[j];
-						StackValueType actual = typeStack[stackIdx];
-
-						// Skip check if expected type is ANY, UNKNOWN, or TYPEVAR (generic type parameter)
-						// TYPEVAR accepts any concrete type at the call site
-						if (expected == StackValueType::ANY || expected == StackValueType::UNKNOWN ||
-								expected == StackValueType::TYPEVAR) {
-							continue;
-						}
-
-						// Skip check if actual type is UNKNOWN, ANY, or TYPEVAR (can't determine type at compile time)
-						// TYPEVAR occurs when a generic type parameter (like T) is passed to a typed function
-						if (actual == StackValueType::UNKNOWN || actual == StackValueType::ANY ||
-								actual == StackValueType::TYPEVAR) {
-							continue;
-						}
-
-						// An i64 widens to a d128 parameter exactly, so there is nothing to warn about
-						if (actual == StackValueType::INT && expected == StackValueType::D128) {
-							paramCasts[j] = CastDirection::INT_TO_D128;
-							typeStack[stackIdx] = StackValueType::D128;
-							continue;
-						}
-
-						// Check for type mismatch
-						if (actual != expected) {
-							// Check if implicit cast is allowed (int <-> float)
-							if (isImplicitCastAllowed(actual, expected)) {
-								// Warn about implicit cast
-								std::string warnMsg = "Implicit cast in function call '";
-								warnMsg += qualifiedName;
-								warnMsg += "': Parameter ";
-								warnMsg += std::to_string(j + 1);
-								warnMsg += " expects ";
-								warnMsg += stackValueTypeToString(expected);
-								warnMsg += ", but got ";
-								warnMsg += stackValueTypeToString(actual);
-								reportWarning(scoped, warnMsg.c_str());
-
-								// Record the cast direction
-								if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
-									paramCasts[j] = CastDirection::INT_TO_FLOAT;
-									// Update type stack to reflect the cast
-									typeStack[stackIdx] = StackValueType::FLOAT;
-								} else if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
-									paramCasts[j] = CastDirection::FLOAT_TO_INT;
-									// Update type stack to reflect the cast
-									typeStack[stackIdx] = StackValueType::INT;
-								}
-							} else {
-								// Type mismatch error
-								std::string errorMsg = "Type error in function call '";
-								errorMsg += qualifiedName;
-								errorMsg += "': Parameter ";
-								errorMsg += std::to_string(j + 1);
-								errorMsg += " expects ";
-								errorMsg += stackValueTypeToString(expected);
-								errorMsg += ", but got ";
-								errorMsg += stackValueTypeToString(actual);
-								reportError(scoped, errorMsg.c_str());
-							}
-						}
-					}
-
-					// Store cast information in the scoped identifier node
-					scoped->setParameterCasts(paramCasts);
-
-					// Struct types of the arguments, bottom to top, for pass-through results.
-					std::vector<std::string> consumedStructTypes;
-					if (sig.consumes.size() > 0 && structTypeStack.size() >= sig.consumes.size()) {
-						size_t startIdx = structTypeStack.size() - sig.consumes.size();
-						for (size_t j = 0; j < sig.consumes.size(); j++) {
-							consumedStructTypes.push_back(structTypeStack[startIdx + j]);
-						}
-					}
-
-					// Check struct, array and fn-pointer argument types and bind generic type parameters.
-					// Module-qualified calls never had this check; the identifier path always did.
-					std::map<std::string, std::string> typeBindings;
-					bindCallTypeParams(sig, typeStack, structTypeStack, scoped, qualifiedName, typeBindings);
-
-					// Check if any parameter is PTR (function pointer) before consuming
-					bool consumesPtrParam = false;
-					for (const auto& paramType : sig.consumes) {
-						if (paramType == StackValueType::PTR) {
-							consumesPtrParam = true;
-							break;
-						}
-					}
-
-					// Consume the parameters from the stack
-					for (size_t j = 0; j < sig.consumes.size(); j++) {
-						typeStack.pop_back();
-						if (!structTypeStack.empty()) {
-							structTypeStack.pop_back();
-						}
-					}
-
-					if (consumesPtrParam) {
-						mPendingFnSignature.reset();
-					}
-
-					pushCallResults(sig, typeBindings, consumedStructTypes, typeStack, structTypeStack);
-					if (sig.throws && !scoped->abortOnError() && !scoped->propagateOnError()) {
-						typeStack.push_back(StackValueType::INT); // Error status (0 or 1)
-						structTypeStack.push_back("");
-					}
-				} else {
-					// Signature not found: the module was not loaded or analysed, so the stack
-					// effect is unknown. Inside the else for the same reason as the IDENTIFIER case.
-					mHasUnpredictableStack = true;
-				}
+			case IAstNode::Type::SCOPED_IDENTIFIER:
+				typeCheckScopedIdentifier(child, node, i, typeStack, structTypeStack);
 				break;
-			}
 
 			case IAstNode::Type::FUNCTION_POINTER_REFERENCE: {
 				// Function pointer references push a pointer type onto the stack
@@ -4594,6 +1666,1729 @@ namespace Qd {
 				break;
 			}
 		}
+	}
+
+	// `!` and `?` only on a fallible callee, `?` only in a fallible caller, and a bare
+	// fallible call tested by the `if` or `switch` right after it
+	template <typename Call>
+	void SemanticValidator::checkFallibleCall(Call* call, const FunctionSignature& sig, bool isMethod,
+			const std::string& name, IAstNode* node, size_t i) {
+		const std::string what = isMethod ? "method '" + name + "'" : "function '" + name + "'";
+		if ((call->abortOnError() || call->propagateOnError()) && !sig.throws) {
+			std::string errorMsg = std::string("Cannot use '") + (call->abortOnError() ? "!" : "?") + "' operator on " +
+								   what + " which is not marked as fallible";
+			if (!isMethod) {
+				errorMsg += " (add '!' after signature)";
+			}
+			reportError(call, errorMsg.c_str());
+		}
+		if (call->propagateOnError() && !mCurrentFunctionFallible) {
+			std::string errorMsg = "Cannot use '?' operator on " + what +
+								   ": enclosing function must be fallible (add '!' to function signature)";
+			reportError(call, errorMsg.c_str());
+		}
+		if (sig.throws && !call->abortOnError() && !call->propagateOnError()) {
+			IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
+			if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
+									 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
+				std::string errorMsg = std::string("Fallible ") + what +
+									   " must be immediately followed by 'if' or 'switch' to check for "
+									   "errors, or use '!' to abort on error, or '?' to propagate";
+				reportError(call, errorMsg.c_str());
+			}
+		}
+	}
+
+	// A call's effect on the stack: its arguments off, its results on, and for a bare
+	// fallible call the status the `if` or `switch` after it tests
+	template <typename Call>
+	void SemanticValidator::applyCallEffect(Call* call, const FunctionSignature& sig,
+			const std::map<std::string, std::string>& typeBindings, const std::vector<std::string>& consumedStructTypes,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		for (size_t j = 0; j < sig.consumes.size(); j++) {
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+		pushCallResults(sig, typeBindings, consumedStructTypes, typeStack, structTypeStack);
+		if (sig.throws && !call->abortOnError() && !call->propagateOnError()) {
+			typeStack.push_back(StackValueType::INT); // Error status
+			structTypeStack.push_back("");
+		}
+	}
+
+	// The struct types of the top `count` values, bottom to top: what a result that passes
+	// an argument's struct type through reads. Empty when the model is shallower.
+	static std::vector<std::string> topStructTypes(const std::vector<std::string>& structTypeStack, size_t count) {
+		if (count == 0 || structTypeStack.size() < count) {
+			return {};
+		}
+		return {structTypeStack.end() - static_cast<std::ptrdiff_t>(count), structTypeStack.end()};
+	}
+
+	// A struct argument against what the function reads of it: the struct it declares, and
+	// the fields its body reads with their types
+	void SemanticValidator::checkParameterFields(const IAstNode* site, const FunctionSignature& sig,
+			const std::string& name, const std::vector<StackValueType>& typeStack,
+			const std::vector<std::string>& structTypeStack) {
+		if (sig.parameterFieldAccess.empty()) {
+			return;
+		}
+		// Build a mapping from struct type name to required fields
+		// by matching parameterStructTypes to parameterFieldAccess
+		std::unordered_map<std::string, const std::unordered_map<std::string, StackValueType>*>
+				structTypeToRequiredFields;
+		for (const auto& paramField : sig.parameterFieldAccess) {
+			// Find the struct type for this parameter by scanning parameterStructTypes
+			for (const auto& pst : sig.parameterStructTypes) {
+				// We need to match by name somehow - check if the parameter name matches
+				// Since we don't have direct name->index, we'll use struct type matching
+				const std::string& expectedStructType = pst.second;
+				// If this struct type hasn't been assigned required fields yet, assign them
+				if (structTypeToRequiredFields.find(expectedStructType) == structTypeToRequiredFields.end()) {
+					// Check if this param's field accesses match this struct type's fields
+					const auto* structFieldPtr = lookupStructFieldTypes(expectedStructType);
+					if (structFieldPtr != nullptr) {
+						const auto& availableFields = *structFieldPtr;
+						bool allFieldsMatch = true;
+						for (const auto& reqField : paramField.second) {
+							if (availableFields.find(reqField.first) == availableFields.end()) {
+								allFieldsMatch = false;
+								break;
+							}
+						}
+						if (allFieldsMatch && !paramField.second.empty()) {
+							structTypeToRequiredFields[expectedStructType] = &paramField.second;
+						}
+					}
+				}
+			}
+		}
+
+		// Validate each PTR parameter on the stack
+		for (size_t j = 0; j < sig.consumes.size(); j++) {
+			if (sig.consumes[j] == StackValueType::PTR) {
+				size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+				std::string actualStructType = "";
+				if (stackIdx < structTypeStack.size()) {
+					actualStructType = structTypeStack[stackIdx];
+				}
+
+				// Get expected struct type for this parameter index
+				std::string expectedStructType = "";
+				auto pstIt = sig.parameterStructTypes.find(j);
+				if (pstIt != sig.parameterStructTypes.end()) {
+					expectedStructType = pstIt->second;
+				}
+
+				// Validate struct type matches expectation
+				if (!expectedStructType.empty() && !actualStructType.empty() &&
+						actualStructType != expectedStructType) {
+					std::string errorMsg = "Type error in function call '";
+					errorMsg += name;
+					errorMsg += "': Parameter ";
+					errorMsg += std::to_string(j + 1);
+					errorMsg += " expects struct '";
+					errorMsg += expectedStructType;
+					errorMsg += "', but got '";
+					errorMsg += actualStructType;
+					errorMsg += "'";
+					reportError(site, errorMsg.c_str());
+				}
+
+				// Validate field requirements for this specific struct type
+				if (!actualStructType.empty()) {
+					auto reqFieldsIt = structTypeToRequiredFields.find(actualStructType);
+					if (reqFieldsIt != structTypeToRequiredFields.end()) {
+						const auto& requiredFields = *reqFieldsIt->second;
+						const auto* structFieldPtr = lookupStructFieldTypes(actualStructType);
+						if (structFieldPtr != nullptr) {
+							const auto& availableFields = *structFieldPtr;
+
+							for (const auto& requiredFieldEntry : requiredFields) {
+								const std::string& requiredField = requiredFieldEntry.first;
+								StackValueType expectedType = requiredFieldEntry.second;
+
+								auto fieldIt = availableFields.find(requiredField);
+								if (fieldIt == availableFields.end()) {
+									std::string errorMsg = "Type error in function call '";
+									errorMsg += name;
+									errorMsg += "': Struct '";
+									errorMsg += actualStructType;
+									errorMsg += "' is missing required field '";
+									errorMsg += requiredField;
+									errorMsg += "'";
+									reportError(site, errorMsg.c_str());
+								} else {
+									StackValueType actualType = fieldIt->second;
+									if (actualType != expectedType && expectedType != StackValueType::UNKNOWN &&
+											actualType != StackValueType::UNKNOWN) {
+										if (!isImplicitCastAllowed(actualType, expectedType)) {
+											std::string errorMsg = "Type error in function call '";
+											errorMsg += name;
+											errorMsg += "': Field '";
+											errorMsg += requiredField;
+											errorMsg += "' in struct '";
+											errorMsg += actualStructType;
+											errorMsg += "' has type ";
+											errorMsg += stackValueTypeToString(actualType);
+											errorMsg += ", but function expects ";
+											errorMsg += stackValueTypeToString(expectedType);
+											reportError(site, errorMsg.c_str());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// A call of a function, by bare or qualified name: its arguments against its
+	// parameters, then its effect on the stack
+	template <typename Call>
+	void SemanticValidator::typeCheckFunctionCall(Call* call, const FunctionSignature& sig, const std::string& name,
+			IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+			std::vector<std::string>& structTypeStack) {
+		checkFallibleCall(call, sig, false, name, node, i);
+
+		if (typeStack.size() < sig.consumes.size()) {
+			std::string errorMsg = "Type error in function call '" + name + "': Stack underflow (requires " +
+								   std::to_string(sig.consumes.size()) + " values, have " +
+								   std::to_string(typeStack.size()) + ")";
+			reportError(call, errorMsg.c_str());
+			return;
+		}
+
+		std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+		for (size_t j = 0; j < sig.consumes.size(); j++) {
+			const size_t stackIdx = typeStack.size() - sig.consumes.size() + j;
+			paramCasts[j] = argumentCast(call, "function call", name, j + 1, sig.consumes[j], typeStack[stackIdx]);
+		}
+		call->setParameterCasts(paramCasts);
+
+		checkParameterFields(call, sig, name, typeStack, structTypeStack);
+
+		// Struct, array and fn-pointer arguments, binding generic type parameters
+		std::map<std::string, std::string> typeBindings;
+		bindCallTypeParams(sig, typeStack, structTypeStack, call, name, typeBindings);
+
+		const bool consumesPtrParam =
+				std::find(sig.consumes.begin(), sig.consumes.end(), StackValueType::PTR) != sig.consumes.end();
+		applyCallEffect(call, sig, typeBindings, topStructTypes(structTypeStack, sig.consumes.size()), typeStack,
+				structTypeStack);
+
+		// A pending function signature belongs to a function pointer argument, so it goes
+		// with one: kept, it would be taken for the signature of a returned function pointer.
+		// A function that returns a closure without taking one keeps it.
+		if (consumesPtrParam) {
+			mPendingFnSignature.reset();
+		}
+	}
+
+	template <typename Call>
+	bool SemanticValidator::typeCheckMethodCall(Call* call, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		const std::string& name = call->name();
+
+		// Any struct on the stack with a method of this name gives the signature, and with it
+		// where the receiver has to be
+		std::string registeredStructType;
+		const size_t searchLimit = std::min(structTypeStack.size(), typeStack.size());
+		for (size_t idx = searchLimit; idx > 0 && registeredStructType.empty(); idx--) {
+			if (!structTypeStack[idx - 1].empty()) {
+				registeredStructType = findMethodStructType(structTypeStack[idx - 1], name);
+			}
+		}
+		if (registeredStructType.empty()) {
+			return false;
+		}
+		auto methodSigIt = mFunctionSignatures.find(registeredStructType + "::" + name);
+		if (methodSigIt == mFunctionSignatures.end()) {
+			return false;
+		}
+		const FunctionSignature& sig = methodSigIt->second;
+
+		checkFallibleCall(call, sig, true, name, node, i);
+
+		// The receiver goes first, its arguments above it: `v idx elem set!`
+		const size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+		if (typeStack.size() <= additionalParams) {
+			std::string errorMsg = "Type error in method call '";
+			errorMsg += name;
+			errorMsg += "': Stack underflow (requires receiver + ";
+			errorMsg += std::to_string(additionalParams);
+			errorMsg += " values)";
+			reportError(call, errorMsg.c_str());
+			return true;
+		}
+		const size_t receiverStackIdx = typeStack.size() - 1 - additionalParams;
+		std::string receiverStructType;
+		if (receiverStackIdx < structTypeStack.size()) {
+			std::string actualRegisteredType = findMethodStructType(structTypeStack[receiverStackIdx], name);
+			if (!actualRegisteredType.empty()) {
+				receiverStructType = structTypeStack[receiverStackIdx];
+				registeredStructType = actualRegisteredType;
+			}
+		}
+		if (receiverStructType.empty()) {
+			std::string errorMsg = "Method call '";
+			errorMsg += name;
+			errorMsg += "': receiver must be pushed first, then ";
+			errorMsg += std::to_string(additionalParams);
+			errorMsg += " parameter(s) on top (e.g., 'receiver";
+			for (size_t p = 0; p < additionalParams; p++) {
+				errorMsg += " param";
+			}
+			errorMsg += " ";
+			errorMsg += name;
+			errorMsg += "')";
+			reportError(call, errorMsg.c_str());
+			return true;
+		}
+
+		// Arguments, the receiver at index 0 skipped
+		std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+		for (size_t j = 1; j < sig.consumes.size() && receiverStackIdx + j < typeStack.size(); j++) {
+			paramCasts[j] =
+					argumentCast(call, "method call", name, j, sig.consumes[j], typeStack[receiverStackIdx + j]);
+		}
+		call->setParameterCasts(paramCasts);
+
+		// The receiver's type arguments bind the method's type parameters
+		applyCallEffect(call, sig, receiverTypeBindings(receiverStructType),
+				topStructTypes(structTypeStack, sig.consumes.size()), typeStack, structTypeStack);
+
+		// For code generation: the generic type registered the method, which names its function
+		call->setIsMethodCall(true);
+		call->setReceiverType(registeredStructType);
+		call->setMethodInputParamCount(additionalParams);
+		call->setMethodReceiverPositionFromTop(additionalParams);
+		if constexpr (std::is_same_v<Call, AstNodeInstruction>) {
+			// An identifier's callee is looked up by name; an instruction's is resolved here
+			call->setCalleeFallible(sig.throws);
+		}
+		return true;
+	}
+
+	void SemanticValidator::typeCheckInstructionNode(IAstNode* child, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		AstNodeInstruction* instr = static_cast<AstNodeInstruction*>(child);
+		const std::string& instrName = instr->name();
+
+		// Check if instruction name shadows a local variable - if so, treat as variable reference
+		auto localIt = localVariables.find(instrName);
+		if (localIt != localVariables.end()) {
+			// Push the local variable's type onto the stack (variable shadowing)
+			typeStack.push_back(localIt->second);
+			if (localIt->second == StackValueType::PTR) {
+				auto structTypeIt = mLocalVariableStructTypes.find(instrName);
+				if (structTypeIt != mLocalVariableStructTypes.end()) {
+					structTypeStack.push_back(structTypeIt->second);
+				} else {
+					structTypeStack.push_back("");
+				}
+			} else {
+				structTypeStack.push_back("");
+			}
+			return;
+		}
+
+		// A method named like a builtin, such as `len`
+		if (typeCheckMethodCall(instr, node, i, typeStack, structTypeStack)) {
+			return;
+		}
+
+		// A literal zero *integer* divisor is knowable now, and reaching it at run time
+		// is a fatal error that kills the process. Report it here instead, the way C,
+		// Go and Rust all do. Only the immediately preceding literal is examined --
+		// this is a peephole check, not constant propagation, so `0 -> z x z /`
+		// still fails at run time.
+		//
+		// Floats are deliberately excluded: `x 0.0 /` is a defined IEEE 754 operation
+		// yielding +/-infinity (or NaN for 0.0/0.0), not an error. The integer rule had
+		// been applied to them, which made the language contradict itself -- the inlined
+		// float path emits a bare fdiv and produces `inf`, so `1.0 0.0 d` through a
+		// typed function already returned infinity while `1.0 z /` on a local killed the
+		// process.
+		if ((instrName == "div" || instrName == "/" || instrName == "mod" || instrName == "%") && i > 0) {
+			IAstNode* prev = node->child(i - 1);
+			if (prev != nullptr && prev->type() == IAstNode::Type::LITERAL) {
+				auto* lit = static_cast<AstNodeLiteral*>(prev);
+				const std::string& text = lit->value();
+				const bool zeroInt = lit->literalType() == AstNodeLiteral::LiteralType::INTEGER && text == "0";
+				if (zeroInt) {
+					std::string errorMsg = "Division by zero in '";
+					errorMsg += instrName;
+					errorMsg += "': the divisor is the literal ";
+					errorMsg += text;
+					reportError(child, errorMsg.c_str());
+				}
+			}
+		}
+
+		// Fall back to builtin instruction handling
+		typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
+	}
+
+	void SemanticValidator::typeCheckIf(IAstNode* child, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		// Check that stack has a condition value
+		if (typeStack.empty()) {
+			reportErrorWithHint(child, "Type error in 'if': Stack underflow (requires 1 condition value)",
+					"push a condition before 'if', e.g. 'x 0 > if { ... }'");
+			return;
+		}
+		// Pop the condition value
+		typeStack.pop_back();
+		if (!structTypeStack.empty()) {
+			structTypeStack.pop_back();
+		}
+
+		// Analyze branches to track stack effects
+		AstNodeIfStatement* ifStmt = static_cast<AstNodeIfStatement*>(child);
+		IAstNode* thenBody = ifStmt->thenBody();
+		IAstNode* elseBody = ifStmt->elseBody();
+
+		if (thenBody && elseBody) {
+			// A bare fallible call before this `if` leaves its results for the success arm
+			// only; the failure arm starts from the stack as it was before the call.
+			const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
+
+			// Analyze then branch
+			std::vector<StackValueType> thenStack = typeStack;
+			std::unordered_map<std::string, StackValueType> thenVars = localVariables;
+			std::vector<std::string> thenStructStack = structTypeStack;
+			typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
+
+			// Analyze else branch
+			std::vector<StackValueType> elseStack = typeStack;
+			std::unordered_map<std::string, StackValueType> elseVars = localVariables;
+			std::vector<std::string> elseStructStack = structTypeStack;
+			if (fallible) {
+				removeProducedValues(*fallible, elseStack, elseStructStack);
+			}
+			typeCheckBlock(elseBody, elseStack, elseVars, elseStructStack);
+
+			// A diverging arm never reaches the merge point and contributes no stack effect.
+			bool thenDiverges = blockEndsDiverging(thenBody);
+			bool elseDiverges = blockEndsDiverging(elseBody);
+
+			if (thenDiverges && elseDiverges) {
+				// Both arms diverge -- nothing reaches the code after the `if`.
+			} else if (thenDiverges) {
+				typeStack = elseStack;
+				structTypeStack = elseStructStack;
+			} else if (elseDiverges) {
+				typeStack = thenStack;
+				structTypeStack = thenStructStack;
+			} else if (thenStack.size() != elseStack.size()) {
+				// The arms leave the stack at different depths, so whatever follows reads a
+				// value whose identity depends on which arm ran -- and codegen silently
+				// truncates to the shallower arm. Only report when the model is trustworthy:
+				// mHasUnpredictableStack means something in this function consumed an amount
+				// its signature does not describe, so the effects were computed from a model
+				// already known to be wrong.
+				if (!mHasUnpredictableStack) {
+					std::string msg = "if/else arms leave the stack at different depths (then: " +
+									  std::to_string(thenStack.size()) +
+									  " value(s), else: " + std::to_string(elseStack.size()) +
+									  "); both arms must leave the same depth, since whatever follows "
+									  "reads a value whose identity would otherwise depend on which arm ran";
+					if (fallible) {
+						reportErrorWithHint(child, msg.c_str(),
+								"the failure arm never receives the call's result(s); consume or drop them "
+								"in the success arm so both arms leave the same depth");
+					} else {
+						reportError(child, msg.c_str());
+					}
+				}
+				// Use the then (success) arm as authoritative.
+				typeStack = thenStack;
+				structTypeStack = thenStructStack;
+			} else {
+				// Balanced arms: the stack after the `if` is what either arm left, including
+				// any values the arms changed in place. Keeping the pre-`if` types here was what
+				// made `x if { -> s  s parse } else { ... }` report the *input's* type as the
+				// function's output.
+				typeStack = thenStack;
+				structTypeStack = thenStructStack;
+			}
+		} else if (thenBody) {
+			const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
+			std::vector<StackValueType> thenStack = typeStack;
+			std::unordered_map<std::string, StackValueType> thenVars = localVariables;
+			std::vector<std::string> thenStructStack = structTypeStack;
+			typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
+
+			if (fallible) {
+				// `call if { ... }` with no else: on failure nothing was produced and nothing
+				// runs, so what follows sees the stack as it was before the call. The success
+				// arm must therefore consume the results (or diverge) to leave that same depth.
+				removeProducedValues(*fallible, typeStack, structTypeStack);
+				if (!blockEndsDiverging(thenBody) && thenStack.size() != typeStack.size() && !mHasUnpredictableStack) {
+					std::string msg = "success arm of a fallible call leaves the stack at a different depth (" +
+									  std::to_string(thenStack.size()) +
+									  " value(s)) than the not-taken failure path (" +
+									  std::to_string(typeStack.size()) + " value(s))";
+					reportErrorWithHint(child, msg.c_str(),
+							"consume or drop the call's result(s) inside the arm, or add an else arm");
+				}
+			} else if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack &&
+					   thenStack.size() != typeStack.size()) {
+				// An `if` with no `else` is an `if` whose other arm is empty, so the same rule
+				// applies: the arm has to leave the stack as it found it. This used to be
+				// unconstrained, on the reasoning that the enclosing function's declared effect
+				// would govern -- but the arm's effect was never applied to the model, so that
+				// check ran against a stack that pretended the arm did nothing. A body could
+				// leave values behind and nothing anywhere reported it, which is how fourteen
+				// guards in `ct` came to push their error message onto the stack as data and
+				// fall through into the code they were guarding.
+				const long long delta =
+						static_cast<long long>(thenStack.size()) - static_cast<long long>(typeStack.size());
+				std::string msg = "'if' without an 'else' leaves the stack " +
+								  std::to_string(delta < 0 ? -delta : delta) + " value" +
+								  ((delta == 1 || delta == -1) ? "" : "s") + (delta > 0 ? " deeper" : " shallower") +
+								  " than it found it; the arm may not run, so what follows cannot "
+								  "read a value whose presence depends on it";
+				reportErrorWithHint(child, msg.c_str(),
+						"consume what the arm produces inside it, or add an 'else' arm that leaves "
+						"the same depth");
+			}
+			// The pre-`if` stack stands: the arm is neutral, or the error above was reported.
+		}
+	}
+
+	void SemanticValidator::typeCheckDefer(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		// Defer blocks must have zero net stack effect
+		size_t stackSizeBefore = typeStack.size();
+
+		// Type check the defer body
+		for (auto* deferChild : child->children()) {
+			if (deferChild && deferChild->type() == IAstNode::Type::BLOCK) {
+				typeCheckBlock(deferChild, typeStack, localVariables, structTypeStack);
+			}
+		}
+
+		int deferEffect = static_cast<int>(typeStack.size()) - static_cast<int>(stackSizeBefore);
+		if (deferEffect != 0 && !mHasUnpredictableStack) {
+			std::string errorMsg = "Stack effect error in 'defer': block must have zero net stack effect, but "
+								   "changes stack by ";
+			errorMsg += std::to_string(deferEffect);
+			reportError(child, errorMsg.c_str());
+		}
+
+		// Restore stack to before defer (defer shouldn't affect the surrounding stack)
+		while (typeStack.size() > stackSizeBefore) {
+			typeStack.pop_back();
+			if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+	}
+
+	void SemanticValidator::typeCheckSwitch(IAstNode* child, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		// Check that stack has a value to switch on
+		if (typeStack.empty()) {
+			reportErrorWithHint(child, "Type error in 'switch': Stack underflow (requires 1 value to match)",
+					"push a value before 'switch', e.g. 'x switch { case 1 { ... } }'");
+			return;
+		}
+		// Pop the switch value
+		const StackValueType scrutineeType = typeStack.back();
+		typeStack.pop_back();
+		if (!structTypeStack.empty()) {
+			structTypeStack.pop_back();
+		}
+
+		// Analyze all case branches to track stack effects
+		AstNodeSwitchStatement* switchStmt = static_cast<AstNodeSwitchStatement*>(child);
+		const auto& cases = switchStmt->cases();
+
+		// A d128 matches only d128 labels, and a d128 label matches only a d128. The
+		// other way round the arm could never be taken -- 1.5 and 1.5d are different
+		// numbers -- and the program would say nothing about it.
+		for (const auto* caseNode : cases) {
+			if (caseNode->isDefault() || caseNode->value() == nullptr) {
+				continue;
+			}
+			StackValueType labelType = StackValueType::UNKNOWN;
+			IAstNode* label = caseNode->value();
+			if (label->type() == IAstNode::Type::LITERAL) {
+				labelType = getLiteralStackType(static_cast<AstNodeLiteral*>(label)->literalType());
+			} else if (label->type() == IAstNode::Type::IDENTIFIER) {
+				auto constIt = mConstantValues.find(static_cast<AstNodeIdentifier*>(label)->name());
+				if (constIt != mConstantValues.end()) {
+					labelType = getConstantType(constIt->second);
+				}
+			}
+			const bool concreteScrutinee =
+					scrutineeType == StackValueType::INT || scrutineeType == StackValueType::FLOAT ||
+					scrutineeType == StackValueType::D128 || scrutineeType == StackValueType::STRING;
+			if (labelType == StackValueType::UNKNOWN || !concreteScrutinee ||
+					(labelType == StackValueType::D128) == (scrutineeType == StackValueType::D128)) {
+				continue;
+			}
+			std::string msg = "Type error in 'switch': the case label is ";
+			msg += typeToString(labelType);
+			msg += " but the value switched on is ";
+			msg += typeToString(scrutineeType);
+			reportErrorWithHint(label, msg.c_str(),
+					scrutineeType == StackValueType::D128 ? "write the label as a d128: '1.5d'"
+														  : "a d128 label matches only a d128 value");
+		}
+
+		checkEnumSwitchExhaustive(child, cases);
+
+		// After a bare fallible call the status carries the error code: the `Ok` arm sees the
+		// call's results, every other arm sees the stack as it was before the call.
+		const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
+		std::vector<StackValueType> failureStack = typeStack;
+		std::vector<std::string> failureStructStack = structTypeStack;
+		if (fallible) {
+			removeProducedValues(*fallible, failureStack, failureStructStack);
+		}
+
+		bool hasDefault = false;
+		bool hasOkCase = false;
+		std::vector<StackValueType> okCaseStack;
+		std::vector<std::string> okCaseStructStack;
+		// The first non-diverging arm fixes the depth the others must match.
+		bool haveReference = false;
+		int referenceEffect = 0;
+		std::vector<StackValueType> referenceStack;
+		std::vector<std::string> referenceStructStack;
+		bool allDiverge = true;
+		bool armsDisagree = false;
+		int disagreeingEffect = 0;
+
+		for (const auto* caseNode : cases) {
+			if (caseNode->isDefault()) {
+				hasDefault = true;
+			}
+			IAstNode* caseBody = caseNode->body();
+			if (!caseBody) {
+				continue;
+			}
+
+			bool isOk = false;
+			if (!caseNode->isDefault() && caseNode->value() && caseNode->value()->type() == IAstNode::Type::LITERAL) {
+				AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
+				// `Ok`/`true` keep their keyword text as BOOL literals. A literal `1` is an error
+				// *code* arm, not the success arm (spec 10.3: a panic carrying code 1 does not
+				// match Ok), so it must be seeded from the failure stack like any other code.
+				isOk = caseLit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
+					   (caseLit->value() == "Ok" || caseLit->value() == "true");
+			}
+			bool seedFromSuccess = !fallible || isOk;
+
+			std::vector<StackValueType> caseStack = seedFromSuccess ? typeStack : failureStack;
+			std::unordered_map<std::string, StackValueType> caseVars = localVariables;
+			std::vector<std::string> caseStructStack = seedFromSuccess ? structTypeStack : failureStructStack;
+			size_t base = caseStack.size();
+			typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
+			int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(base);
+
+			if (isOk && fallible) {
+				okCaseStack = caseStack;
+				okCaseStructStack = caseStructStack;
+				hasOkCase = true;
+			}
+
+			if (blockEndsDiverging(caseBody)) {
+				continue;
+			}
+			allDiverge = false;
+
+			if (fallible) {
+				// Arms of a fallible switch legitimately differ (Ok has the results); the Ok arm,
+				// when present, is authoritative for what follows.
+				continue;
+			}
+			if (!haveReference) {
+				haveReference = true;
+				referenceEffect = caseEffect;
+				referenceStack = caseStack;
+				referenceStructStack = caseStructStack;
+			} else if (caseEffect != referenceEffect && !armsDisagree) {
+				armsDisagree = true;
+				disagreeingEffect = caseEffect;
+			}
+		}
+
+		if (fallible) {
+			if (hasOkCase) {
+				typeStack = okCaseStack;
+				structTypeStack = okCaseStructStack;
+			} else {
+				// No Ok arm: the results were never handled, so nothing of them survives.
+				typeStack = failureStack;
+				structTypeStack = failureStructStack;
+			}
+			return;
+		}
+
+		// The same rule as for `if`/`else`: every arm that reaches the merge point must leave
+		// the stack at the same depth. Without a `_` arm the switch may match nothing, so
+		// the arms must additionally leave it at the depth it had before the switch.
+		if (!mHasUnpredictableStack && !allDiverge) {
+			if (armsDisagree) {
+				std::string msg = "switch arms leave different numbers of values on the stack (" +
+								  std::to_string(referenceEffect) + " and " + std::to_string(disagreeingEffect) +
+								  "); every arm must leave the same number, since whatever follows reads a "
+								  "value whose identity would otherwise depend on which arm ran";
+				reportError(child, msg.c_str());
+			} else if (!hasDefault && haveReference && referenceEffect != 0) {
+				std::string msg = "switch without a '_' arm changes the stack by " + std::to_string(referenceEffect) +
+								  "; when no arm matches nothing runs, so the arms must leave the stack "
+								  "as they found it (add a '_' arm with the same effect, or balance the arms)";
+				reportError(child, msg.c_str());
+			}
+		}
+		if (haveReference && (hasDefault || referenceEffect == 0)) {
+			// Balanced arms: what follows sees what an arm left, in-place changes included.
+			typeStack = referenceStack;
+			structTypeStack = referenceStructStack;
+		}
+	}
+
+	void SemanticValidator::typeCheckFor(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		// For loops: pop 3 values (start, end, step), type check body with iterator variable
+		AstNodeForStatement* forStmt = static_cast<AstNodeForStatement*>(child);
+
+		// Pop start, end, step from type stack
+		for (int popIdx = 0; popIdx < 3; popIdx++) {
+			if (!typeStack.empty()) {
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+			}
+		}
+
+		// Type check body with a copy of the state (loop body effects are complex with break/continue)
+		std::vector<StackValueType> loopStack = typeStack;
+		std::unordered_map<std::string, StackValueType> loopVars = localVariables;
+		std::vector<std::string> loopStructStack = structTypeStack;
+
+		// Add iterator variable as INT
+		const std::string& iterName = forStmt->iteratorName();
+		loopVars[iterName] = StackValueType::INT;
+
+		// Type check the body with error suppression (marks method calls without reporting type errors)
+		// This is necessary because loop bodies can have complex stack effects that are hard to analyze
+		bool wasInLoopBody = mInLoopBody;
+		mInLoopBody = true;
+		auto savedJumps = std::move(mLoopJumps);
+		mLoopJumps.clear();
+		if (forStmt->body()) {
+			typeCheckBlock(forStmt->body(), loopStack, loopVars, loopStructStack);
+		}
+		checkLoopStackEffect(forStmt->body(), "for", true, typeStack, structTypeStack, loopStack.size());
+		mLoopJumps = std::move(savedJumps);
+		mInLoopBody = wasInLoopBody;
+
+		// A `for` always leaves the stack at the head depth, so the parent stack already
+		// describes what follows. (Types a neutral body rewrote in place are still not
+		// modelled; only the depth is.)
+	}
+
+	void SemanticValidator::typeCheckWhile(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
+
+		// The condition runs before every iteration, including the first, so it is checked
+		// against the stack as it stands here and must leave exactly one value -- the flag
+		// the loop tests. The parser hands over the run of expression nodes that preceded
+		// the keyword; a run that nets to anything else is the author having written
+		// something the condition was never going to mean.
+		const size_t headDepth = typeStack.size();
+		std::vector<size_t> condDepths;
+		if (whileStmt->condition()) {
+			const IAstNode* savedProbeBlock = mDepthProbeBlock;
+			std::vector<size_t>* savedProbe = mDepthProbe;
+			mDepthProbeBlock = whileStmt->condition();
+			mDepthProbe = &condDepths;
+			typeCheckBlock(whileStmt->condition(), typeStack, localVariables, structTypeStack);
+			mDepthProbeBlock = savedProbeBlock;
+			mDepthProbe = savedProbe;
+		}
+
+		// Trim to the shortest suffix that produces the flag: the last point where the stack
+		// stood at the head depth, with nothing after it dipping below. What precedes it is a
+		// statement that happened to be expression-shaped, and is generated once.
+		if (!mHasUnpredictableStack && typeStack.size() == headDepth + 1) {
+			size_t start = 0;
+			for (size_t d = condDepths.size(); d-- > 0;) {
+				if (condDepths[d] < headDepth) {
+					break;
+				}
+				if (condDepths[d] == headDepth) {
+					// First match scanning backwards is the shortest such suffix.
+					start = d;
+					break;
+				}
+			}
+			whileStmt->setConditionStart(start);
+		}
+		if (!mHasUnpredictableStack) {
+			if (typeStack.size() != headDepth + 1) {
+				long long delta = static_cast<long long>(typeStack.size()) - static_cast<long long>(headDepth);
+				std::string msg = "the 'while' condition must leave exactly one value for the loop to "
+								  "test, but it leaves ";
+				msg += std::to_string(delta);
+				msg += (delta == 1 || delta == -1) ? " value" : " values";
+				msg += "; the condition is the words between the previous statement and 'while'";
+				reportErrorConditional(child, msg.c_str(), true);
+			} else {
+				// Pop the flag the loop consumes.
+				typeStack.pop_back();
+				structTypeStack.pop_back();
+			}
+		}
+
+		std::vector<StackValueType> loopStack = typeStack;
+		std::unordered_map<std::string, StackValueType> loopVars = localVariables;
+		std::vector<std::string> loopStructStack = structTypeStack;
+
+		bool wasInLoopBody = mInLoopBody;
+		mInLoopBody = true;
+		auto savedJumps = std::move(mLoopJumps);
+		mLoopJumps.clear();
+		if (whileStmt->body()) {
+			typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
+		}
+		// A `while` may run zero times, so unlike `loop` it cannot leave anything behind:
+		// the body has to be neutral, which is what the fallthrough flag asks for.
+		checkLoopStackEffect(whileStmt->body(), "while", true, typeStack, structTypeStack, loopStack.size());
+		mLoopJumps = std::move(savedJumps);
+		mInLoopBody = wasInLoopBody;
+	}
+
+	void SemanticValidator::typeCheckLocal(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		// Handle local variable declaration: pop value from stack and store
+		// Supports multiple assignment: -> a b c pops 3 values
+		// Special case: -> _ discards the value (like drop)
+		AstNodeLocal* local = static_cast<AstNodeLocal*>(child);
+		const std::vector<std::string>& varNames = local->names();
+
+		// Process each variable name (in order: first name gets top of stack)
+		for (const std::string& varName : varNames) {
+			// Special case: _ is discard (drop), not a variable
+			if (varName == "_") {
+				// Check if stack is empty
+				if (typeStack.empty()) {
+					reportError(local, "Type error in discard '-> _': Stack underflow (no value to discard)");
+					continue;
+				}
+				// Pop the value type from the stack but don't store it
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+				continue;
+			}
+
+			// Check if variable name shadows a function
+			if (mDefinedFunctions.find(varName) != mDefinedFunctions.end()) {
+				std::string errorMsg = "Local variable '";
+				errorMsg += varName;
+				errorMsg += "' shadows function with same name";
+				reportError(local, errorMsg.c_str());
+				continue;
+			}
+
+			// Check if stack is empty
+			if (typeStack.empty()) {
+				std::string errorMsg = "Type error in local variable '";
+				errorMsg += varName;
+				errorMsg += "': Stack underflow (no value to store)";
+				reportError(local, errorMsg.c_str());
+				continue;
+			}
+
+			// Pop the value type from the stack and store it as the variable's type
+			StackValueType varType = typeStack.back();
+			typeStack.pop_back();
+			localVariables[varName] = varType;
+
+			// If it's a PTR type, also store which struct type it is (if any)
+			if (varType == StackValueType::PTR && !structTypeStack.empty()) {
+				std::string structType = structTypeStack.back();
+				structTypeStack.pop_back();
+				mLocalVariableStructTypes[varName] = structType;
+				static bool debug = std::getenv("QUADC_DEBUG_MERGE") != nullptr;
+				if (debug) {
+					std::cerr << "[DEBUG TC] Store -> " << varName << " with struct type: " << structType << std::endl;
+				}
+
+				// If there's a pending function signature, store it with this variable
+				if (mPendingFnSignature.has_value()) {
+					mLocalVariableFnSignatures[varName] = mPendingFnSignature.value();
+					mPendingFnSignature.reset();
+				}
+			} else if (!structTypeStack.empty()) {
+				structTypeStack.pop_back();
+			}
+		}
+	}
+
+	// What storing a value of type `actual` in a field declared `expected` converts: a
+	// field holds its declared type's representation, whatever was pushed
+	static CastDirection fieldCast(StackValueType actual, StackValueType expected) {
+		if (actual == StackValueType::ANY) {
+			switch (expected) {
+			case StackValueType::INT:
+				return CastDirection::ANY_TO_INT;
+			case StackValueType::FLOAT:
+				return CastDirection::ANY_TO_FLOAT;
+			case StackValueType::D128:
+				return CastDirection::ANY_TO_D128;
+			case StackValueType::STRING:
+				return CastDirection::ANY_TO_STR;
+			case StackValueType::PTR:
+				return CastDirection::ANY_TO_PTR;
+			default:
+				return CastDirection::NONE;
+			}
+		}
+		if (actual == StackValueType::INT && expected == StackValueType::FLOAT) {
+			return CastDirection::INT_TO_FLOAT;
+		}
+		if (actual == StackValueType::FLOAT && expected == StackValueType::INT) {
+			return CastDirection::FLOAT_TO_INT;
+		}
+		if (actual == StackValueType::INT && expected == StackValueType::D128) {
+			return CastDirection::INT_TO_D128;
+		}
+		return CastDirection::NONE;
+	}
+
+	namespace {
+		// One field initializer's nodes as a block, so that they are checked as any other
+		// code is. It owns nothing; the construction node does.
+		class FieldValueBlock : public IAstNode {
+		public:
+			FieldValueBlock(IAstNode* construct, const StructFieldInit& init) : mConstruct(construct) {
+				for (const auto& node : init.valueNodes) {
+					mNodes.push_back(node.get());
+				}
+			}
+
+			Type type() const override {
+				return Type::BLOCK;
+			}
+
+			size_t childCount() const override {
+				return mNodes.size();
+			}
+
+			IAstNode* child(size_t index) const override {
+				return index < mNodes.size() ? mNodes[index] : nullptr;
+			}
+
+			IAstNode* parent() const override {
+				return mConstruct;
+			}
+
+			void setParent(IAstNode*) override {
+			}
+
+			size_t line() const override {
+				return mConstruct->line();
+			}
+
+			size_t column() const override {
+				return mConstruct->column();
+			}
+
+			void setPosition(size_t, size_t) override {
+			}
+
+		private:
+			IAstNode* mConstruct;
+			std::vector<IAstNode*> mNodes;
+		};
+	}
+
+	void SemanticValidator::typeCheckStructConstruction(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		// `Name { field = expr ... }`
+		AstNodeStructConstruction* construct = static_cast<AstNodeStructConstruction*>(child);
+		const std::string& name = construct->structName();
+
+		const std::string lookupKey = constructedStructKey(name);
+		if (lookupKey.empty()) {
+			// An undefined struct, reported where references are resolved. Its fields are not
+			// checked, but the functions written in them are.
+			checkAnonymousFunctionsWithin(construct, localVariables);
+		} else {
+			std::unordered_set<std::string> providedFields;
+			for (size_t index = 0; index < construct->fieldInits().size(); index++) {
+				providedFields.insert(construct->fieldInits()[index].fieldName);
+				typeCheckFieldInit(construct, lookupKey, index, localVariables);
+			}
+			checkMissingFields(construct, lookupKey, providedFields);
+		}
+
+		// An instantiated generic keeps its arguments (`Box<i64>`) so that its fields resolve
+		// to concrete types later
+		std::string typeArgSuffix;
+		if (!construct->typeArgs().empty()) {
+			typeArgSuffix = "<";
+			for (size_t ta = 0; ta < construct->typeArgs().size(); ta++) {
+				typeArgSuffix += (ta > 0 ? ", " : "") + construct->typeArgs()[ta];
+			}
+			typeArgSuffix += ">";
+		}
+		typeStack.push_back(StackValueType::PTR);
+		// The qualified name, which methods resolve by
+		structTypeStack.push_back((lookupKey.empty() ? qualifiedModuleStructName(name) : lookupKey) + typeArgSuffix);
+	}
+
+	// The key the tables hold a constructed struct under: its own name for a struct of this
+	// file, the qualified one for a module's. Empty when no struct has the name.
+	std::string SemanticValidator::constructedStructKey(const std::string& name) const {
+		if (mStructDeclarations.count(name) || mModuleStructDeclarations.count(name)) {
+			return name;
+		}
+		if (name.find("::") != std::string::npos) {
+			return "";
+		}
+		for (const auto& [moduleName, structs] : mModuleStructs) {
+			if (structs.count(name) && mModuleStructDeclarations.count(moduleName + "::" + name)) {
+				return moduleName + "::" + name;
+			}
+		}
+		return "";
+	}
+
+	// A struct a module defines, by its qualified name; any other name as it is
+	std::string SemanticValidator::qualifiedModuleStructName(const std::string& name) const {
+		if (name.find("::") == std::string::npos) {
+			for (const auto& [moduleName, structs] : mModuleStructs) {
+				auto it = structs.find(name);
+				if (it != structs.end() && it->second) {
+					return moduleName + "::" + name;
+				}
+			}
+		}
+		return name;
+	}
+
+	// One `field = expr`: the field exists, and its expression, checked on a stack of its
+	// own, leaves one value the field can hold
+	void SemanticValidator::typeCheckFieldInit(AstNodeStructConstruction* construct, const std::string& lookupKey,
+			size_t index, const std::unordered_map<std::string, StackValueType>& localVariables) {
+		const StructFieldInit& fieldInit = construct->fieldInits()[index];
+		const std::string& name = construct->structName();
+		const std::string& fieldName = fieldInit.fieldName;
+
+		StackValueType expectedType = StackValueType::UNKNOWN;
+		const bool fieldExists = fieldTypeOrReport(construct, lookupKey, fieldName, expectedType);
+		std::vector<StackValueType> valueTypes;
+		std::vector<std::string> valueStructTypes;
+		const bool countable = typeCheckFieldValue(construct, fieldInit, localVariables, valueTypes, valueStructTypes);
+		if (!fieldExists) {
+			return;
+		}
+		if (valueTypes.size() != 1) {
+			// The values go onto the stack the struct is built from, so one too many is taken
+			// for another field, and one too few takes what was already there
+			if (countable) {
+				std::string errorMsg = "Field '" + fieldName + "' in struct construction '" + name +
+									   "' must be given one value, but its expression leaves " +
+									   std::to_string(valueTypes.size());
+				reportError(construct, errorMsg.c_str());
+			}
+			return;
+		}
+		construct->setFieldCast(index, checkFieldValue(construct, name, lookupKey, fieldName, expectedType,
+											   valueTypes.back(), valueStructTypes.empty() ? "" : valueStructTypes.back()));
+	}
+
+	// The declared type of a field the struct under `structKey` has. Reports a field it
+	// lacks, which is false.
+	bool SemanticValidator::fieldTypeOrReport(const AstNodeStructConstruction* construct, const std::string& structKey,
+			const std::string& fieldName, StackValueType& fieldType) {
+		// The field tables rather than the declaration, which for a module's struct may be gone
+		const auto* fieldTypes = lookupStructFieldTypes(structKey);
+		if (fieldTypes != nullptr) {
+			if (auto it = fieldTypes->find(fieldName); it != fieldTypes->end()) {
+				fieldType = it->second;
+				return true;
+			}
+		}
+		std::string errorMsg = "Unknown field '" + fieldName + "' in struct '" + construct->structName() + "'";
+		if (fieldTypes != nullptr) {
+			std::string suggestion = findSimilarNameInMap(fieldName, *fieldTypes);
+			if (!suggestion.empty()) {
+				errorMsg += "; did you mean '" + suggestion + "'?";
+			}
+		}
+		reportError(construct, errorMsg.c_str());
+		return false;
+	}
+
+	// A field's expression, checked as code on an empty stack: what it binds or leaves
+	// pending belongs to it. False when what it leaves cannot be counted.
+	bool SemanticValidator::typeCheckFieldValue(AstNodeStructConstruction* construct, const StructFieldInit& fieldInit,
+			const std::unordered_map<std::string, StackValueType>& localVariables, std::vector<StackValueType>& valueTypes,
+			std::vector<std::string>& valueStructTypes) {
+		FieldValueBlock value(construct, fieldInit);
+		std::unordered_map<std::string, StackValueType> scope = localVariables;
+		const auto savedPendingSig = mPendingFnSignature;
+		const bool savedUnpredictable = mHasUnpredictableStack;
+		const size_t errorsBefore = mErrorCount;
+		mHasUnpredictableStack = false;
+		typeCheckBlock(&value, valueTypes, scope, valueStructTypes);
+		const bool countable = !mHasUnpredictableStack && mErrorCount == errorsBefore;
+		mHasUnpredictableStack = mHasUnpredictableStack || savedUnpredictable;
+		mPendingFnSignature = savedPendingSig;
+		return countable;
+	}
+
+	// The struct or type parameter a field of the struct under `structKey` declares, empty
+	// for a field of a value type
+	std::string SemanticValidator::fieldStructType(const std::string& structKey, const std::string& fieldName) const {
+		if (auto it = mStructFieldStructTypes.find(structKey); it != mStructFieldStructTypes.end()) {
+			if (auto fieldIt = it->second.find(fieldName); fieldIt != it->second.end()) {
+				return fieldIt->second;
+			}
+		}
+		return "";
+	}
+
+	// A value stored into a field of a struct being built, by name or by position: an error
+	// when the field cannot hold it, and the cast the store needs
+	CastDirection SemanticValidator::checkFieldValue(const IAstNode* site, const std::string& writtenName,
+			const std::string& structKey, const std::string& fieldName, StackValueType expectedType,
+			StackValueType actualType, const std::string& actualStructType) {
+		const std::string expectedStructType = fieldStructType(structKey, fieldName);
+		// A field of a type parameter takes whatever it is given
+		if ((!expectedStructType.empty() && isCurrentTypeParam(expectedStructType)) ||
+				actualType == StackValueType::UNKNOWN || expectedType == StackValueType::UNKNOWN) {
+			return CastDirection::NONE;
+		}
+		const CastDirection cast = fieldCast(actualType, expectedType);
+		// An i64 widens to a d128 exactly, and an `any` is checked when it is stored, as
+		// for an argument
+		if ((actualType == StackValueType::INT && expectedType == StackValueType::D128) ||
+				actualType == StackValueType::ANY) {
+			return cast;
+		}
+		const std::string prefix = "struct construction '" + writtenName + "': Field '" + fieldName + "' ";
+		if (actualType != expectedType) {
+			if (!isImplicitCastAllowed(actualType, expectedType)) {
+				std::string errorMsg =
+						"Type error in " + prefix + "expects " +
+						(expectedStructType.empty() ? stackValueTypeToString(expectedType) : expectedStructType) +
+						", but got " +
+						(actualStructType.empty() ? stackValueTypeToString(actualType) : actualStructType);
+				reportError(site, errorMsg.c_str());
+			} else if (shouldWarnImplicitCast(actualType, expectedType)) {
+				std::string warnMsg = "Implicit cast in " + prefix + "expects " + stackValueTypeToString(expectedType) +
+									  ", but got " + stackValueTypeToString(actualType);
+				reportWarning(site, warnMsg.c_str());
+			}
+		} else if (std::string why;
+				fieldValueRejected(structKey, fieldName, expectedStructType, actualStructType, why)) {
+			// Both are the coarse type the field declared, so what separates them is the
+			// pointer's real type. Structural rather than by string: `fn( -- f64)` and the
+			// `fn(-- f64)` buildFnTypeString emits are the same type, and so are `Point` and
+			// `mod::Point`.
+			std::string errorMsg = "Type error in " + prefix + why;
+			reportError(site, errorMsg.c_str());
+		}
+		return cast;
+	}
+
+	// Every field without a default has to be given
+	void SemanticValidator::checkMissingFields(AstNodeStructConstruction* construct, const std::string& lookupKey,
+			const std::unordered_set<std::string>& providedFields) {
+		const auto* fieldTypes = lookupStructFieldTypes(lookupKey);
+		if (fieldTypes == nullptr) {
+			return;
+		}
+		auto defaultsIt = mStructFieldsWithDefaults.find(lookupKey);
+		for (const auto& fieldEntry : *fieldTypes) {
+			const bool hasDefault =
+					defaultsIt != mStructFieldsWithDefaults.end() && defaultsIt->second.count(fieldEntry.first);
+			if (!providedFields.count(fieldEntry.first) && !hasDefault) {
+				std::string errorMsg = "Missing field '" + fieldEntry.first + "' in struct construction '" +
+									   construct->structName() + "'";
+				reportError(construct, errorMsg.c_str());
+			}
+		}
+	}
+
+	std::vector<std::string> SemanticValidator::fieldNames(const AstNodeStructDeclaration* structDecl) {
+		std::vector<std::string> names;
+		for (const auto& field : structDecl->fields()) {
+			names.push_back(field->name());
+		}
+		return names;
+	}
+
+	std::vector<CastDirection> SemanticValidator::typeCheckPositionalConstruction(const IAstNode* site,
+			const std::string& writtenName, const std::string& structKey, const std::vector<std::string>* fieldOrder,
+			const std::string& pushedType, std::vector<StackValueType>& typeStack,
+			std::vector<std::string>& structTypeStack) {
+		std::vector<CastDirection> casts;
+		if (fieldOrder != nullptr) {
+			const size_t fieldCount = fieldOrder->size();
+			if (typeStack.size() < fieldCount) {
+				std::string errorMsg = "Type error in struct construction '" + writtenName +
+									   "': Stack underflow (requires " + std::to_string(fieldCount) +
+									   " values, have " + std::to_string(typeStack.size()) + ")";
+				reportError(site, errorMsg.c_str());
+			} else if (const auto* fieldTypes = lookupStructFieldTypes(structKey)) {
+				// Fields are in declaration order, consumed bottom to top
+				casts.assign(fieldCount, CastDirection::NONE);
+				for (size_t fi = 0; fi < fieldCount; fi++) {
+					const size_t stackIdx = typeStack.size() - fieldCount + fi;
+					const std::string& fieldName = (*fieldOrder)[fi];
+					auto fieldTypeIt = fieldTypes->find(fieldName);
+					if (fieldTypeIt == fieldTypes->end()) {
+						continue;
+					}
+					casts[fi] = checkFieldValue(site, writtenName, structKey, fieldName, fieldTypeIt->second,
+							typeStack[stackIdx], stackIdx < structTypeStack.size() ? structTypeStack[stackIdx] : "");
+				}
+			}
+			for (size_t fi = 0; fi < fieldCount && !typeStack.empty(); fi++) {
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+			}
+		}
+		typeStack.push_back(StackValueType::PTR);
+		structTypeStack.push_back(pushedType);
+		return casts;
+	}
+
+	void SemanticValidator::typeCheckIdentifier(IAstNode* child, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<std::string>& structTypeStack) {
+		AstNodeIdentifier* ident = static_cast<AstNodeIdentifier*>(child);
+		const std::string& name = ident->name();
+
+		if (auto localIt = localVariables.find(name); localIt != localVariables.end()) {
+			pushLocalVariable(name, localIt->second, typeStack, structTypeStack);
+			return;
+		}
+		if (auto constIt = mConstantValues.find(name); constIt != mConstantValues.end()) {
+			typeStack.push_back(getConstantType(constIt->second));
+			structTypeStack.push_back("");
+			return;
+		}
+		// A module-level `var`, carrying its struct type so that a following `<<field` resolves
+		if (auto globalIt = mGlobalVarTypes.find(name); globalIt != mGlobalVarTypes.end()) {
+			typeStack.push_back(stringToStackValueType(globalIt->second));
+			structTypeStack.push_back(isStructTypeName(globalIt->second) ? globalIt->second : "");
+			return;
+		}
+		// Positional construction, `x y Point`
+		if (const std::string structKey = positionalStructKey(name); !structKey.empty()) {
+			const std::optional<std::vector<std::string>> fieldOrder = declaredFieldOrder(structKey);
+			ident->setParameterCasts(typeCheckPositionalConstruction(ident, name, structKey,
+					fieldOrder ? &*fieldOrder : nullptr, structKey, typeStack, structTypeStack));
+			return;
+		}
+		if (typeCheckMethodCall(ident, node, i, typeStack, structTypeStack)) {
+			return;
+		}
+		if (auto sigIt = mFunctionSignatures.find(name); sigIt != mFunctionSignatures.end()) {
+			typeCheckFunctionCall(ident, sigIt->second, name, node, i, typeStack, structTypeStack);
+		} else {
+			// Not a local, not a method, not a user function: unresolved, so its stack
+			// effect is unknown and the function-level checks cannot be trusted.
+			// This must stay inside the else: placed after the block it ran for every
+			// call, which switched off the arity, if-arm and defer checks in any
+			// function that called anything.
+			mHasUnpredictableStack = true;
+		}
+	}
+
+	// A local's type, and for a pointer the struct it holds and the signature of the
+	// function it may hold, which a following `call` checks against
+	void SemanticValidator::pushLocalVariable(const std::string& name, StackValueType type,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		typeStack.push_back(type);
+		if (type != StackValueType::PTR) {
+			structTypeStack.push_back("");
+			return;
+		}
+		auto structTypeIt = mLocalVariableStructTypes.find(name);
+		structTypeStack.push_back(structTypeIt != mLocalVariableStructTypes.end() ? structTypeIt->second : "");
+		if (auto fnSigIt = mLocalVariableFnSignatures.find(name); fnSigIt != mLocalVariableFnSignatures.end()) {
+			mPendingFnSignature = fnSigIt->second;
+		}
+	}
+
+	// The struct `x y Name` builds: one of this file, or an imported module's by its bare
+	// name, under its qualified one. Empty when no struct has the name.
+	std::string SemanticValidator::positionalStructKey(const std::string& name) const {
+		if (mDefinedStructs.count(name)) {
+			return name;
+		}
+		// Once a `break` that sent the identifier on to the call checks, which found no
+		// function and took it for an unresolved one
+		for (const auto& [moduleName, structs] : mModuleStructs) {
+			if (auto structIt = structs.find(name); structIt != structs.end() && structIt->second) {
+				return moduleName + "::" + name;
+			}
+		}
+		return "";
+	}
+
+	// A struct's fields in the order its declaration gives them; none when no declaration
+	// is at hand
+	std::optional<std::vector<std::string>> SemanticValidator::declaredFieldOrder(const std::string& structKey) const {
+		if (auto it = mStructDeclarations.find(structKey); it != mStructDeclarations.end()) {
+			return fieldNames(it->second);
+		}
+		if (auto it = mModuleStructDeclarations.find(structKey); it != mModuleStructDeclarations.end()) {
+			return fieldNames(it->second);
+		}
+		return std::nullopt;
+	}
+
+	void SemanticValidator::typeCheckFieldAccess(
+			IAstNode* child, std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		// `struct <<field`: pop the struct, push the field. The struct's type is what its
+		// producer left on the struct-type stack -- a local, a call, a construction, `as`,
+		// or a previous `<<` of a struct-typed field -- so nothing here needs to know what
+		// the operand *was*, only what it is.
+		AstNodeFieldAccess* fieldAccess = static_cast<AstNodeFieldAccess*>(child);
+		const std::string& fieldName = fieldAccess->fieldName();
+
+		if (typeStack.empty()) {
+			std::string msg = "Type error in field access '<<" + fieldName + "': Stack underflow (requires a struct)";
+			reportErrorWithHint(fieldAccess, msg.c_str(), "push the struct first, e.g. 'p <<x'");
+			typeStack.push_back(StackValueType::UNKNOWN);
+			structTypeStack.push_back("");
+			return;
+		}
+		StackValueType operandType = typeStack.back();
+		std::string structType = structTypeStack.empty() ? "" : structTypeStack.back();
+		typeStack.pop_back();
+		if (!structTypeStack.empty()) {
+			structTypeStack.pop_back();
+		}
+
+		StackValueType fieldType = StackValueType::UNKNOWN;
+		std::string fieldStructType;
+		const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
+		if (operandType == StackValueType::INT || operandType == StackValueType::FLOAT ||
+				operandType == StackValueType::D128 || operandType == StackValueType::STRING) {
+			std::string msg = "Type error in field access '<<" + fieldName + "': the value on the stack is " +
+							  stackValueTypeToString(operandType) + ", not a struct";
+			reportError(fieldAccess, msg.c_str());
+			fieldType = StackValueType::ANY;
+		} else if (knownFields != nullptr) {
+			auto fieldIt = knownFields->find(fieldName);
+			if (fieldIt != knownFields->end()) {
+				fieldType = resolveFieldType(structType, fieldName, fieldStructType);
+			} else {
+				std::string msg = "Type error in field access '<<" + fieldName + "': Struct '" + structType +
+								  "' has no field named '" + fieldName + "'";
+				std::string suggestion = findSimilarNameInMap(fieldName, *knownFields);
+				if (!suggestion.empty()) {
+					msg += "; did you mean '" + suggestion + "'?";
+				}
+				reportError(fieldAccess, msg.c_str());
+				fieldType = StackValueType::ANY;
+			}
+		} else {
+			// An untyped pointer: the first struct with a field of this name supplies the type.
+			bool found = false;
+			for (const auto& structEntry : mStructFieldTypes) {
+				auto it = structEntry.second.find(fieldName);
+				if (it != structEntry.second.end()) {
+					fieldType = it->second;
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				std::unordered_set<std::string> allFields;
+				for (const auto& structEntry : mStructFieldTypes) {
+					for (const auto& field : structEntry.second) {
+						allFields.insert(field.first);
+					}
+				}
+				std::string msg = "Type error in field access '<<" + fieldName + "': no struct has a field named '" +
+								  fieldName + "'";
+				std::string suggestion = findSimilarName(fieldName, allFields);
+				if (!suggestion.empty()) {
+					msg += "; did you mean '" + suggestion + "'?";
+				}
+				reportError(fieldAccess, msg.c_str());
+				fieldType = StackValueType::ANY;
+			}
+		}
+		typeStack.push_back(fieldType);
+		structTypeStack.push_back(fieldStructType);
+	}
+
+	void SemanticValidator::typeCheckFieldSet(
+			IAstNode* child, std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		// `struct value >>field`: pop the value, check the field against the struct beneath
+		// it, and leave the struct on the stack for chaining.
+		AstNodeFieldSet* fieldSet = static_cast<AstNodeFieldSet*>(child);
+		const std::string& fieldName = fieldSet->fieldName();
+
+		if (typeStack.size() < 2) {
+			std::string msg =
+					"Type error in field set '>>" + fieldName + "': Stack underflow (requires struct and value)";
+			reportErrorWithHint(fieldSet, msg.c_str(), "push the struct, then the value, e.g. 'p 42 >>x'");
+			if (!typeStack.empty()) {
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+			}
+			return;
+		}
+		std::string structType =
+				structTypeStack.size() >= 2 ? structTypeStack[structTypeStack.size() - 2] : std::string();
+		StackValueType valueType = typeStack.back();
+		const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
+		if (knownFields != nullptr) {
+			auto fieldIt = knownFields->find(fieldName);
+			if (fieldIt == knownFields->end()) {
+				std::string msg = "Field '" + fieldName + "' does not exist in struct '" + structType + "'";
+				std::string suggestion = findSimilarNameInMap(fieldName, *knownFields);
+				if (!suggestion.empty()) {
+					msg += "; did you mean '" + suggestion + "'?";
+				}
+				reportError(fieldSet, msg.c_str());
+			} else {
+				std::string fieldOwnType;
+				bool genericField = false;
+				StackValueType expected = resolveFieldType(structType, fieldName, fieldOwnType, &genericField);
+				if (!genericField && !fieldOwnType.empty()) {
+					genericField = isCurrentTypeParam(fieldOwnType);
+				}
+				if (!genericField) {
+					fieldSet->setCast(fieldCast(valueType, expected));
+				}
+				bool checkable = !genericField && expected != StackValueType::ANY &&
+								 expected != StackValueType::UNKNOWN && expected != StackValueType::TYPEVAR &&
+								 valueType != StackValueType::ANY && valueType != StackValueType::UNKNOWN &&
+								 valueType != StackValueType::TYPEVAR;
+				// An i64 widens to a d128 exactly, as an argument does
+				const bool widens = valueType == StackValueType::INT && expected == StackValueType::D128;
+				if (checkable && valueType != expected && !widens && !isImplicitCastAllowed(valueType, expected)) {
+					std::string msg = "Type error in field set '>>" + fieldName + "': field '" + fieldName +
+									  "' of struct '" + structType + "' is " + stackValueTypeToString(expected) +
+									  ", but the value is " + stackValueTypeToString(valueType);
+					reportError(fieldSet, msg.c_str());
+				} else if (checkable && expected == StackValueType::PTR) {
+					// Both are pointers, which is where the coarse compare above stops. The
+					// field's own type is what separates them, and `>>field` is a definite
+					// assignment like a struct construction, so it gets the same rule.
+					std::string why;
+					const std::string valueStructType =
+							structTypeStack.empty() ? std::string() : structTypeStack.back();
+					if (fieldValueRejected(structType, fieldName, fieldOwnType, valueStructType, why)) {
+						std::string msg = "Type error in field set '>>" + fieldName + "': field '" + fieldName +
+										  "' of struct '" + structType + "' " + why;
+						reportError(fieldSet, msg.c_str());
+					}
+				}
+			}
+		} else {
+			bool fieldFound = false;
+			for (const auto& structEntry : mStructFieldTypes) {
+				if (structEntry.second.find(fieldName) != structEntry.second.end()) {
+					fieldFound = true;
+					break;
+				}
+			}
+			if (!fieldFound) {
+				std::unordered_set<std::string> allFields;
+				for (const auto& structEntry : mStructFieldTypes) {
+					for (const auto& field : structEntry.second) {
+						allFields.insert(field.first);
+					}
+				}
+				std::string msg = "Type error in field set '>>" + fieldName + "': no struct has a field named '" +
+								  fieldName + "'";
+				std::string suggestion = findSimilarName(fieldName, allFields);
+				if (!suggestion.empty()) {
+					msg += "; did you mean '" + suggestion + "'?";
+				}
+				reportError(fieldSet, msg.c_str());
+			}
+		}
+
+		// Pop the value; the struct stays.
+		typeStack.pop_back();
+		if (!structTypeStack.empty()) {
+			structTypeStack.pop_back();
+		}
+	}
+
+	void SemanticValidator::typeCheckScopedIdentifier(IAstNode* child, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		AstNodeScopedIdentifier* scoped = static_cast<AstNodeScopedIdentifier*>(child);
+
+		// Resolve sb::append_any at type-check time based on the type stack
+		// This is generated by $"..." string interpolation
+		// Use mResolvedInterpolations to only resolve each node once
+		if (scoped->scope() == "sb" && scoped->name() == "append_any" &&
+				mResolvedInterpolations.find(scoped) == mResolvedInterpolations.end()) {
+			mResolvedInterpolations.insert(scoped);
+			// An integer has a path of its own that builds the digits in place. Anything
+			// else goes through cast<str>: sending an f64 to append_int died on the
+			// first `mod` it reached.
+			if (!typeStack.empty() && typeStack.back() == StackValueType::STRING) {
+				scoped->setName("append");
+			} else if (!typeStack.empty() && typeStack.back() == StackValueType::INT) {
+				scoped->setName("append_int");
+			} else {
+				scoped->setName("append_value");
+			}
+		}
+
+		const std::string& moduleName = scoped->scope();
+		const std::string& functionName = scoped->name();
+		const std::string qualifiedName = moduleName + "::" + functionName;
+
+		// Imported C functions and variadic stdlib functions may have signatures
+		// that don't reflect all consumed values. Mark stack as unpredictable.
+		if (mImportedLibraryFunctions.find(qualifiedName) != mImportedLibraryFunctions.end() ||
+				qualifiedName == "fmt::printf" || qualifiedName == "fmt::sprintf" || qualifiedName == "fmt::fprintf") {
+			mHasUnpredictableStack = true;
+		}
+
+		if (typeCheckScopedConstant(moduleName, functionName, typeStack, structTypeStack)) {
+			return;
+		}
+
+		// Positional construction of a module's struct, `x y mod::Point`
+		auto moduleStructsIt = mModuleStructs.find(moduleName);
+		if (moduleStructsIt != mModuleStructs.end()) {
+			auto structIt = moduleStructsIt->second.find(functionName);
+			if (structIt != moduleStructsIt->second.end() && structIt->second) {
+				// Its field order from the tables, since the AST node may be invalid
+				auto structFieldOrderIt = mStructFieldOrder.find(qualifiedName);
+				scoped->setParameterCasts(typeCheckPositionalConstruction(scoped, qualifiedName, qualifiedName,
+						structFieldOrderIt != mStructFieldOrder.end() ? &structFieldOrderIt->second : nullptr,
+						functionName, typeStack, structTypeStack));
+				return;
+			}
+		}
+
+		if (typeCheckExplicitMethodCall(scoped, node, i, typeStack, structTypeStack) ||
+				typeCheckModuleMethodCall(scoped, node, i, typeStack, structTypeStack)) {
+			return;
+		}
+
+		auto sigIt = mFunctionSignatures.find(qualifiedName);
+		if (sigIt != mFunctionSignatures.end()) {
+			typeCheckFunctionCall(scoped, sigIt->second, qualifiedName, node, i, typeStack, structTypeStack);
+		} else if (const std::string owner = moduleMethodOwner(moduleName, functionName); !owner.empty()) {
+			// A method of one of the module's structs, with no receiver where it would want one.
+			// Let through, it was compiled as a guess at which method was meant, and the guess
+			// rolled a receiver out of whatever was on the stack.
+			auto methodSigIt = mFunctionSignatures.find(owner + "::" + functionName);
+			const size_t params = methodSigIt != mFunctionSignatures.end() && !methodSigIt->second.consumes.empty()
+										  ? methodSigIt->second.consumes.size() - 1
+										  : 0;
+			std::string errorMsg = "Method call '" + qualifiedName + "': a '" + owner +
+								   "' must be pushed first, then " + std::to_string(params) +
+								   " parameter(s) on top (e.g., 'receiver";
+			for (size_t p = 0; p < params; p++) {
+				errorMsg += " param";
+			}
+			errorMsg += " " + qualifiedName + "')";
+			reportError(scoped, errorMsg.c_str());
+			mHasUnpredictableStack = true;
+		} else {
+			// Signature not found: the module was not loaded or analysed, so the stack
+			// effect is unknown. Inside the else for the same reason as the IDENTIFIER case.
+			mHasUnpredictableStack = true;
+		}
+	}
+
+	// The struct of `module` that has a method `name`, by its qualified name; empty if none does
+	std::string SemanticValidator::moduleMethodOwner(const std::string& module, const std::string& name) const {
+		const std::string prefix = module + "::";
+		for (const auto& [structType, methods] : mStructMethods) {
+			if (structType.compare(0, prefix.size(), prefix) == 0 && methods.count(name)) {
+				return structType;
+			}
+		}
+		return "";
+	}
+
+	// `scope::name` as a constant or an enum variant: false when it is neither
+	bool SemanticValidator::typeCheckScopedConstant(const std::string& scope, const std::string& name,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		const std::string qualifiedName = scope + "::" + name;
+		std::optional<StackValueType> type;
+
+		if (auto it = mConstantValues.find(qualifiedName); it != mConstantValues.end()) {
+			// An enum variant, or a constant of this file by its qualified name
+			type = getConstantType(it->second);
+		} else if (mImportedLibraries.count(scope) && mConstantValues.count(name)) {
+			// Self-qualified module constant. `time.qd` declares
+			// `import "libtime.a" as "time"` and reads its own `pub const Millisecond` as
+			// `time::Millisecond`; the constant is registered under the bare name. Guarded
+			// on the scope being an FFI namespace so this cannot swallow a genuinely
+			// unresolved `othermodule::Name`.
+			type = getConstantType(mConstantValues.at(name));
+		} else if (auto moduleIt = mModuleConstants.find(scope);
+				moduleIt != mModuleConstants.end() && moduleIt->second.count(name)) {
+			auto valueIt = mModuleConstantValues.find(qualifiedName);
+			type = valueIt != mModuleConstantValues.end() ? getConstantType(valueIt->second) : StackValueType::UNKNOWN;
+		}
+
+		if (!type) {
+			return false;
+		}
+		typeStack.push_back(*type);
+		structTypeStack.push_back("");
+		return true;
+	}
+
+	// `Type::method`, the receiver on top of the stack and the arguments under it: false,
+	// with nothing done, when the scope is no struct with that method
+	bool SemanticValidator::typeCheckExplicitMethodCall(AstNodeScopedIdentifier* scoped, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		const std::string& typeName = scoped->scope();
+		const std::string& methodName = scoped->name();
+		auto methodsIt = mStructMethods.find(typeName);
+		if (methodsIt == mStructMethods.end() || !methodsIt->second.count(methodName)) {
+			return false;
+		}
+		const std::string qualifiedName = typeName + "::" + methodName;
+		auto sigIt = mFunctionSignatures.find(qualifiedName);
+		if (sigIt == mFunctionSignatures.end()) {
+			return false;
+		}
+		const FunctionSignature& sig = sigIt->second;
+
+		std::string receiverStructType;
+		if (!typeStack.empty() && typeStack.back() == StackValueType::PTR && !structTypeStack.empty()) {
+			receiverStructType = structTypeStack.back();
+		}
+		if (!receiverStructType.empty() && receiverStructType != typeName) {
+			std::string errorMsg = "Type error: Explicit method call '" + qualifiedName +
+								   "' expects receiver of type '" + typeName + "' but stack top is '" +
+								   receiverStructType + "'";
+			reportError(scoped, errorMsg.c_str());
+		}
+
+		checkFallibleCall(scoped, sig, true, methodName, node, i);
+
+		const size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+		if (typeStack.size() < 1 + additionalParams) {
+			std::string errorMsg = "Type error in method call '" + methodName +
+								   "': Stack underflow (requires receiver + " + std::to_string(additionalParams) +
+								   " values)";
+			reportError(scoped, errorMsg.c_str());
+			return true;
+		}
+
+		// The stack holds [arg1 .. argN receiver] and the signature [receiver arg1 .. argN]
+		std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+		for (size_t j = 1; j < sig.consumes.size(); j++) {
+			const size_t stackIdx = typeStack.size() - sig.consumes.size() + (j - 1);
+			paramCasts[j - 1] =
+					argumentCast(scoped, "method call", methodName, j, sig.consumes[j], typeStack[stackIdx]);
+		}
+		scoped->setParameterCasts(paramCasts);
+
+		applyCallEffect(scoped, sig, receiverTypeBindings(receiverStructType), {}, typeStack, structTypeStack);
+
+		scoped->setIsMethodCall(true);
+		scoped->setMethodInputParamCount(additionalParams);
+		scoped->setMethodReceiverPositionFromTop(0);
+		return true;
+	}
+
+	// `module::method` on a struct of that module, the receiver under its arguments, as
+	// `sb::append` on a StringBuilder: false, with nothing done, when no struct of the
+	// module sits on the stack where a method of that name would want its receiver
+	bool SemanticValidator::typeCheckModuleMethodCall(AstNodeScopedIdentifier* scoped, IAstNode* node, size_t i,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		const std::string& moduleName = scoped->scope();
+		const std::string& methodName = scoped->name();
+		for (size_t searchDepth = 0; searchDepth < typeStack.size(); searchDepth++) {
+			const size_t stackIdx = typeStack.size() - 1 - searchDepth;
+			if (typeStack[stackIdx] != StackValueType::PTR || stackIdx >= structTypeStack.size() ||
+					structTypeStack[stackIdx].empty()) {
+				continue;
+			}
+			const std::string& receiverStructType = structTypeStack[stackIdx];
+
+			const bool isModuleStruct = receiverStructType.rfind(moduleName + "::", 0) == 0 ||
+										mStructMethods.count(moduleName + "::" + receiverStructType) ||
+										mStructMethods.count(receiverStructType);
+			if (!isModuleStruct) {
+				continue;
+			}
+
+			std::string registeredStructType = findMethodStructType(receiverStructType, methodName);
+			if (registeredStructType.empty() && receiverStructType.find("::") == std::string::npos) {
+				registeredStructType = findMethodStructType(moduleName + "::" + receiverStructType, methodName);
+			}
+			if (registeredStructType.empty()) {
+				continue;
+			}
+			auto sigIt = mFunctionSignatures.find(registeredStructType + "::" + methodName);
+			if (sigIt == mFunctionSignatures.end()) {
+				continue;
+			}
+			const FunctionSignature& sig = sigIt->second;
+
+			// The receiver goes first, its arguments above it
+			const size_t additionalParams = sig.consumes.size() > 0 ? sig.consumes.size() - 1 : 0;
+			if (searchDepth != additionalParams) {
+				continue;
+			}
+
+			checkFallibleCall(scoped, sig, true, methodName, node, i);
+
+			std::vector<CastDirection> paramCasts(sig.consumes.size(), CastDirection::NONE);
+			for (size_t j = 1; j < sig.consumes.size(); j++) {
+				paramCasts[j] =
+						argumentCast(scoped, "method call", methodName, j, sig.consumes[j], typeStack[stackIdx + j]);
+			}
+			scoped->setParameterCasts(paramCasts);
+
+			// Copied, since applying the call pops the slot it names
+			const std::string receiver = receiverStructType;
+			applyCallEffect(scoped, sig, receiverTypeBindings(receiver),
+					topStructTypes(structTypeStack, sig.consumes.size()), typeStack, structTypeStack);
+
+			scoped->setIsMethodCall(true);
+			scoped->setReceiverType(registeredStructType);
+			scoped->setMethodInputParamCount(additionalParams);
+			scoped->setMethodReceiverPositionFromTop(additionalParams);
+			return true;
+		}
+		return false;
 	}
 
 	// typeCheckInstruction and typeCheckInstructionInternal are in semantic_validator_instructions.cc

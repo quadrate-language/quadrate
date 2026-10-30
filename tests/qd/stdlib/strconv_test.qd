@@ -72,9 +72,19 @@ test "strconv::format_float integers" {
 	-100.0 strconv::format_float "-100" testing::assert_eq
 }
 
-test "strconv::format_float scientific" {
-	10000000000.0 strconv::format_float "1e+10" testing::assert_eq
+// The shortest text that reads back as the same value: %g kept six digits
+test "strconv::format_float round-trips" {
+	10000000000.0 strconv::format_float "10000000000" testing::assert_eq
 	0.0000000001 strconv::format_float "1e-10" testing::assert_eq
+	1234567.0 strconv::format_float "1234567" testing::assert_eq
+	1e21 strconv::format_float "1e+21" testing::assert_eq
+}
+
+test "strconv parse words take the whole string" {
+	"12abc" strconv::atoi if { drop "12abc read" testing::fail }
+	" 42" strconv::atoi if { drop "' 42' read" testing::fail }
+	"1.5x" strconv::parse_float if { drop "1.5x read" testing::fail }
+	"-9223372036854775808" strconv::atoi! -9223372036854775807 1 - testing::assert_eq
 }
 
 test "strconv::parse_float! basic" {
@@ -134,8 +144,9 @@ test "strconv::parse_int! with plus sign" {
 	"+ff" 16 strconv::parse_int! 255 testing::assert_eq
 }
 
-test "strconv::parse_int! with whitespace" {
-	"  42" 10 strconv::parse_int! 42 testing::assert_eq
+// The whole string must be the number, as for parse_d128
+test "strconv::parse_int rejects whitespace" {
+	"  42" 10 strconv::parse_int if { drop "'  42' read" testing::fail }
 }
 
 // Bug #13: INT64_MIN negation UB in format_int

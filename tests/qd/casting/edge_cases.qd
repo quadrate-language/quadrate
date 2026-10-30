@@ -1,6 +1,6 @@
 // Test: casting edge cases
-use strconv
 use limits
+use strconv
 
 fn main() {
 	// Very small positive floats
@@ -29,7 +29,7 @@ fn main() {
 	"=== String parsing ===" print nl
 	"0" strconv::atoi! print nl                  // 0
 	"-0" strconv::atoi! print nl                 // 0
-	"   42" strconv::atoi! print nl              // 42 (leading whitespace)
+	"   42" strconv::atoi if { print } else { "not a number" print } nl  // the whole string must be the number
 	"-123" strconv::atoi! print nl               // -123
 	"+456" strconv::atoi! print nl               // 456
 	"0.0" strconv::parse_float! print nl         // 0.0

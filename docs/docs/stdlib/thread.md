@@ -246,6 +246,8 @@ Create a new buffered channel.
 
 Create a new unbuffered (synchronous) channel. 
 
+A send on it waits until another thread has received the value. 
+
 **Signature:** `( -- ch:Channel)!`
 
 | Output | Type | Description |
@@ -366,6 +368,8 @@ ch recv!  // val
 
 Send a value on the channel. 
 
+Waits while a buffered channel is full. On an unbuffered channel, waits until another thread has received the value. 
+
 **Signature:** `(ch:Channel) send(val:i64 -- )!`
 
 | Parameter | Type | Description |
@@ -374,7 +378,7 @@ Send a value on the channel.
 
 | Error | Description |
 |-------|-------------|
-| `thread::ErrClosed` | Cannot send on closed channel |
+| `thread::ErrClosed` | The channel was closed before the value could be sent or received |
 
 **Example:**
 
@@ -413,7 +417,7 @@ Try to send without blocking.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `success` | `i64` | 1 if sent, 0 if would block |
+| `success` | `i64` | 1 if sent, 0 if would block (on an unbuffered channel, unless a receiver is waiting) |
 
 **Example:**
 

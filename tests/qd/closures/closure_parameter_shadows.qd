@@ -1,0 +1,7 @@
+// A closure's parameter is its own, even when a variable outside has the same name. It
+// was taken for a capture of that variable, and the body read the outer value.
+fn main() {
+	5 -> n
+	fn (n:i64 -- r:i64) { n } -> f
+	9 f call print nl
+}

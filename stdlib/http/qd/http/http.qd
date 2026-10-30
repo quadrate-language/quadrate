@@ -152,13 +152,14 @@ import "libhttp.a" as "http" {
 	/// @example "https://example.com" http::new -> req
 	pub fn new(url:str -- req:ptr)
 
-	/// Set request HTTP method.
+	/// Set request HTTP method. A method with a line break in it is a runtime error.
 	/// @param req ptr Request object
 	/// @param method str HTTP method (GET, POST, PUT, DELETE, etc.)
 	/// @example req "POST" http::method
 	pub fn method(req:ptr method:str -- )
 
-	/// Add request header.
+	/// Add request header. A line break in the name or value, or a colon in the name,
+	/// is a runtime error: either would let the value write further headers.
 	/// @param req ptr Request object
 	/// @param name str Header name
 	/// @param value str Header value
@@ -178,9 +179,17 @@ import "libhttp.a" as "http" {
 	/// @example req "/path/client.crt" "/path/client.key" http::cert
 	pub fn cert(req:ptr cert_path:str key_path:str -- )
 
-	/// Execute HTTP request.
+	/// Execute HTTP request. A chunked response body is decoded. The `Host` header
+	/// carries the port when it is not the scheme's default, and `Content-Length` is sent
+	/// whenever a body was set, even an empty one.
 	/// @param req ptr Request object
 	/// @return resp Response Response struct with status, headers, body
+	/// @error ErrInvalidUrl The URL is not http:// or https://, or is malformed
+	/// @error ErrConnect Host not found, unreachable or refusing connections
+	/// @error ErrTls The TLS handshake failed, or the certificate is not trusted
+	/// @error ErrSend The request could not be sent
+	/// @error ErrReceive The connection failed before the response was complete
+	/// @error ErrParse The reply is not an HTTP response
 	/// @example req http::send! -> resp  resp <<status print
 	pub fn send(req:ptr -- resp:Response)!
 
@@ -194,7 +203,7 @@ import "libhttp.a" as "http" {
 	/// @example resp http::close
 	pub fn close(resp:Response -- )
 
-	/// Simple GET request.
+	/// Simple GET request. Fails as `send` does.
 	/// @param url str The request URL
 	/// @return resp Response Response struct
 	/// @example "https://example.com" http::get! -> resp
@@ -300,7 +309,9 @@ import "libhttp.a" as "http" {
 	pub fn get_header(c:Ctx name:str -- value:str)
 
 	/// Get the raw request body as a string.
-	/// Useful for reading JSON payloads in POST/PUT handlers.
+	/// Useful for reading JSON payloads in POST/PUT handlers. The server reads as many
+	/// bytes as the request's Content-Length gives, up to 1 MiB; a larger request gets 413
+	/// before any handler runs.
 	/// @param c Ctx Context
 	/// @return body str Request body (empty if no body)
 	/// @example c http::request_body -> json_payload
@@ -328,7 +339,8 @@ import "libhttp.a" as "http" {
 	pub fn html(c:Ctx status:i64 body:str -- )
 
 	/// Set response header.
-	/// Must be called before sending response body.
+	/// Must be called before sending response body. A line break in the name or value, or
+	/// a colon in the name, is a runtime error: either would let the value write further headers.
 	/// @param c Ctx Context
 	/// @param name str Header name
 	/// @param value str Header value

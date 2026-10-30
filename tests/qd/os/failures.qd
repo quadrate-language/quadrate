@@ -1,0 +1,50 @@
+// Test: a failing os word reads as a failure, and leaves only its status.
+//
+// delete, rename, copy, mkdir, list, rmdir and walk reported a failure by its return value
+// alone, which nothing reads: the call took the success branch, and `!` carried on. list
+// also left its two outputs under the status. glob with no matches gave a null array.
+use os
+
+fn main() {
+	"/nonexistent_qd_dir/file" -> missing
+
+	missing os::delete if { "delete succeeded (FAIL)" } else { "delete failed" } print nl
+	missing "/nonexistent_qd_dir/other" os::rename if { "rename succeeded (FAIL)" } else { "rename failed" } print nl
+	missing "/tmp/qd_failures_copy" os::copy if { "copy succeeded (FAIL)" } else { "copy failed" } print nl
+	"/proc/qd_cannot_create" os::mkdir if { "mkdir succeeded (FAIL)" } else { "mkdir failed" } print nl
+	missing os::rmdir if { "rmdir succeeded (FAIL)" } else { "rmdir failed" } print nl
+	missing fn (p:str d:i64 level:i64 -- ) { p print d print level print } os::walk if { "walk succeeded (FAIL)" } else { "walk failed" } print nl
+
+	missing os::list
+	if {
+		drop drop "list succeeded (FAIL)" print nl
+	} else {
+		"list failed" print nl
+	}
+
+	missing os::delete switch {
+		Ok {
+			"delete: Ok (FAIL)" print nl
+		}
+		_ {
+			err -> code -> msg
+			"delete: " print msg print nl
+			code os::ErrNotFound == if { "delete: ErrNotFound" } else { "delete: wrong code (FAIL)" } print nl
+		}
+	}
+
+	"/etc/passwd" os::list switch {
+		Ok {
+			drop drop "list: Ok (FAIL)" print nl
+		}
+		_ {
+			err -> code -> msg
+			code os::ErrNotDirectory == if { "list: ErrNotDirectory" } else { "list: wrong code (FAIL)" } print nl
+		}
+	}
+
+	"/nonexistent_qd_dir/*.zzz" os::glob! -> count -> entries
+	"glob: " print count print " " print entries len print nl
+
+	"depth " print depth print nl
+}

@@ -11,6 +11,8 @@
 #include <quadrate/rt/stack.h>
 
 #include "ptr_registry.h"
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,7 +73,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	switch (elemType) {
 	case QD_ARRAY_TYPE_INT:
 		elemSize = sizeof(int64_t);
-		arr->data.i = (int64_t*)malloc(capacity * elemSize);
+		arr->data.i = (int64_t*)calloc(capacity, elemSize);
 		if (!arr->data.i) {
 			free(arr);
 			return NULL;
@@ -79,7 +81,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		break;
 	case QD_ARRAY_TYPE_FLOAT:
 		elemSize = sizeof(double);
-		arr->data.f = (double*)malloc(capacity * elemSize);
+		arr->data.f = (double*)calloc(capacity, elemSize);
 		if (!arr->data.f) {
 			free(arr);
 			return NULL;
@@ -396,137 +398,153 @@ int qd_array_push_ptr(qd_array_t* arr, void* value) {
 }
 
 // Stack-based array operations
+//
+// Each raises on a bad argument, as every other builtin does. They used to print a line to
+// stderr and return -1, which compiled code does not read: `args 1 nth` on a one-element
+// array printed "out of bounds", pushed nothing, and the program went on to fail at
+// whatever came next.
+
+static const char* array_type_name(qd_array_type type) {
+	switch (type) {
+	case QD_ARRAY_TYPE_INT:
+		return "i64";
+	case QD_ARRAY_TYPE_FLOAT:
+		return "f64";
+	case QD_ARRAY_TYPE_STR:
+		return "str";
+	case QD_ARRAY_TYPE_PTR:
+		return "ptr";
+	case QD_ARRAY_TYPE_D128:
+		return "d128";
+	case QD_ARRAY_TYPE_ANY:
+		break;
+	}
+	return "any";
+}
+
+// Release what the word popped -- the array's reference and the value, either may be
+// absent -- and raise
+_Noreturn __attribute__((format(printf, 5, 6))) static void array_raise(
+		qd_context* ctx, const char* op, qd_array_t* arr, qd_stack_element_t* value, const char* fmt, ...) {
+	char detail[256];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(detail, sizeof(detail), fmt, args);
+	va_end(args);
+	if (value) {
+		qdrt_release_element(value);
+	}
+	if (arr) {
+		qd_array_release(arr);
+	}
+	QDRT_FATAL(ctx, op, "%s", detail);
+}
+
+static qd_array_t* array_arg(qd_context* ctx, const char* op, void* p, qd_stack_element_t* value) {
+	if (!p) {
+		array_raise(ctx, op, NULL, value, "Null array");
+	}
+	return (qd_array_t*)p;
+}
+
+static void check_index(qd_context* ctx, const char* op, qd_array_t* arr, int64_t index, qd_stack_element_t* value) {
+	if (index < 0 || (size_t)index >= arr->length) {
+		array_raise(ctx, op, arr, value, "Index %" PRId64 " out of bounds (length %zu)", index, arr->length);
+	}
+}
+
+// An array whose element type is still open takes the type of the first value written to it.
+// Every slot is zeroed, which is the zero value of whichever type it becomes.
+static void adopt_type(qd_context* ctx, const char* op, qd_array_t* arr, qd_stack_element_t* value) {
+	if (arr->elemType != QD_ARRAY_TYPE_ANY) {
+		return;
+	}
+	switch (value->type) {
+	case QD_STACK_TYPE_INT:
+		arr->elemType = QD_ARRAY_TYPE_INT;
+		break;
+	case QD_STACK_TYPE_FLOAT:
+		arr->elemType = QD_ARRAY_TYPE_FLOAT;
+		break;
+	case QD_STACK_TYPE_STR:
+		arr->elemType = QD_ARRAY_TYPE_STR;
+		break;
+	case QD_STACK_TYPE_D128:
+		if (adopt_d128(arr) != 0) {
+			array_raise(ctx, op, arr, value, "Out of memory");
+		}
+		break;
+	case QD_STACK_TYPE_PTR:
+		arr->elemType = QD_ARRAY_TYPE_PTR;
+		break;
+	}
+}
+
+// Whether `value` can go into `arr`; an i64 widens into an f64 array
+static bool fits(const qd_array_t* arr, const qd_stack_element_t* value) {
+	switch (arr->elemType) {
+	case QD_ARRAY_TYPE_INT:
+		return value->type == QD_STACK_TYPE_INT;
+	case QD_ARRAY_TYPE_FLOAT:
+		return value->type == QD_STACK_TYPE_FLOAT || value->type == QD_STACK_TYPE_INT;
+	case QD_ARRAY_TYPE_STR:
+		return value->type == QD_STACK_TYPE_STR;
+	case QD_ARRAY_TYPE_PTR:
+		return value->type == QD_STACK_TYPE_PTR;
+	case QD_ARRAY_TYPE_D128:
+		return value->type == QD_STACK_TYPE_D128;
+	case QD_ARRAY_TYPE_ANY:
+		break;
+	}
+	return false;
+}
+
+static void check_fits(qd_context* ctx, const char* op, qd_array_t* arr, qd_stack_element_t* value) {
+	if (!fits(arr, value)) {
+		const char* elem = array_type_name(arr->elemType);
+		const char* got = qd_type_name(value->type);
+		array_raise(ctx, op, arr, value, "Cannot put a %s into an array of %s", got, elem);
+	}
+}
 
 int qd_len(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	qd_stack_element_t elem;
-	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK) {
-		fprintf(stderr, "len: stack underflow\n");
-		result = -1;
-		return result;
-	}
-
-	if (elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "len: expected array (ptr), got %d\n", elem.type);
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = (qd_array_t*)elem.value.p;
-	if (!arr) {
-		fprintf(stderr, "len: null array\n");
-		result = -1;
-		return result;
-	}
-
-	size_t len = arr->length;
+	void* p;
+	qd_args(ctx, "len", "p", &p);
+	qd_array_t* arr = array_arg(ctx, "len", p, NULL);
+	const size_t len = arr->length;
 	qd_array_release(arr); // Release the consumed array
-	qd_stack_push_int(ctx->st, (int64_t)len);
-	return result;
+	return qd_push_i(ctx, (int64_t)len);
 }
 
 int qd_nth(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	// Pop index
-	qd_stack_element_t indexElem;
-	if (qd_stack_pop(ctx->st, &indexElem) != QD_STACK_OK) {
-		fprintf(stderr, "nth: stack underflow (index)\n");
-		result = -1;
-		return result;
-	}
-
-	if (indexElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "nth: expected integer index, got %d\n", indexElem.type);
-		result = -1;
-		return result;
-	}
-
-	int64_t index = indexElem.value.i;
-
-	// Pop array
-	qd_stack_element_t arrElem;
-	if (qd_stack_pop(ctx->st, &arrElem) != QD_STACK_OK) {
-		fprintf(stderr, "nth: stack underflow (array)\n");
-		result = -1;
-		return result;
-	}
-
-	if (arrElem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "nth: expected array (ptr), got %d\n", arrElem.type);
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = (qd_array_t*)arrElem.value.p;
-	if (!arr) {
-		fprintf(stderr, "nth: null array\n");
-		result = -1;
-		return result;
-	}
-
-	if (index < 0 || (size_t)index >= arr->length) {
-		fprintf(stderr, "nth: index %" PRId64 " out of bounds (length %zu)\n", index, arr->length);
-		qd_array_release(arr); // Release before error return
-		result = -1;
-		return result;
-	}
-
-	// Push element based on array type
-	// Nothing has been written, so the element type is still open and every slot is zero.
-	if (arr->elemType == QD_ARRAY_TYPE_ANY) {
-		qd_array_release(arr);
-		return qd_push_i(ctx, 0);
-	}
+	void* p;
+	int64_t index;
+	qd_args(ctx, "nth", "pi", &p, &index);
+	qd_array_t* arr = array_arg(ctx, "nth", p, NULL);
+	check_index(ctx, "nth", arr, index, NULL);
 
 	switch (arr->elemType) {
+	case QD_ARRAY_TYPE_ANY:
+		// Nothing has been written, so the element type is still open and every slot is zero
+		qd_push_i(ctx, 0);
+		break;
 	case QD_ARRAY_TYPE_INT:
-		qd_stack_push_int(ctx->st, arr->data.i[index]);
+		qd_push_i(ctx, arr->data.i[index]);
 		break;
 	case QD_ARRAY_TYPE_FLOAT:
-		qd_stack_push_float(ctx->st, arr->data.f[index]);
+		qd_push_f(ctx, arr->data.f[index]);
 		break;
 	case QD_ARRAY_TYPE_STR: {
-		// For strings, we need to retain and push
 		qd_string_t* str = (qd_string_t*)arr->data.p[index];
 		if (str) {
-			qd_string_retain(str);
-			// Push string directly - the stack will take ownership
-			qd_stack_element_t strElem;
-			strElem.type = QD_STACK_TYPE_STR;
-			strElem.value.s = str;
-			strElem.is_error_tainted = false;
-			// Push directly to stack
-			if (ctx->st->size >= ctx->st->capacity) {
-				fprintf(stderr, "nth: stack overflow\n");
-				qd_string_release(str);
-				qd_array_release(arr); // Release before error return
-				result = -1;
-				return result;
-			}
-			ctx->st->data[ctx->st->size++] = strElem;
+			qd_push_s_ref(ctx, str);
 		} else {
-			// Push empty string
-			qd_stack_push_str(ctx->st, "");
+			qd_push_s(ctx, "");
 		}
 		break;
 	}
 	case QD_ARRAY_TYPE_D128:
-		if (qd_stack_push_d128(ctx->st, arr->data.d[index]) != QD_STACK_OK) {
-			fprintf(stderr, "nth: stack overflow\n");
-			qd_array_release(arr);
-			result = -1;
-			return result;
-		}
+		qd_push_d(ctx, arr->data.d[index]);
 		break;
 	case QD_ARRAY_TYPE_PTR: {
 		void* ptr = arr->data.p[index];
@@ -538,595 +556,137 @@ int qd_nth(qd_context* ctx) {
 				qd_struct_retain(ptr);
 			}
 		}
-		qd_stack_push_ptr(ctx->st, ptr);
+		qd_push_p(ctx, ptr);
 		break;
 	}
-	default:
-		fprintf(stderr, "nth: unknown array type %d\n", arr->elemType);
-		qd_array_release(arr); // Release before error return
-		result = -1;
-		return result;
 	}
 
 	qd_array_release(arr); // Release the consumed array
-	return result;
-}
-
-int qd_makei(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	qd_stack_element_t sizeElem;
-	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "makei: stack underflow\n");
-		result = -1;
-		return result;
-	}
-
-	if (sizeElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "makei: expected integer size, got %d\n", sizeElem.type);
-		result = -1;
-		return result;
-	}
-
-	int64_t size = sizeElem.value.i;
-	if (size < 0) {
-		fprintf(stderr, "makei: negative size %" PRId64 "\n", size);
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_INT);
-	if (!arr) {
-		fprintf(stderr, "makei: allocation failed\n");
-		result = -1;
-		return result;
-	}
-
-	// Initialize elements to 0
-	for (size_t i = 0; i < (size_t)size; i++) {
-		arr->data.i[i] = 0;
-	}
-	arr->length = (size_t)size;
-
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		// Push failed (e.g. stack full): release the array so it is not leaked.
-		qd_array_release(arr);
-		result = -2;
-		return result;
-	}
-	return result;
-}
-
-int qd_makef(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	qd_stack_element_t sizeElem;
-	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "makef: stack underflow\n");
-		result = -1;
-		return result;
-	}
-
-	if (sizeElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "makef: expected integer size, got %d\n", sizeElem.type);
-		result = -1;
-		return result;
-	}
-
-	int64_t size = sizeElem.value.i;
-	if (size < 0) {
-		fprintf(stderr, "makef: negative size %" PRId64 "\n", size);
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_FLOAT);
-	if (!arr) {
-		fprintf(stderr, "makef: allocation failed\n");
-		result = -1;
-		return result;
-	}
-
-	// Initialize elements to 0.0
-	for (size_t i = 0; i < (size_t)size; i++) {
-		arr->data.f[i] = 0.0;
-	}
-	arr->length = (size_t)size;
-
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		// Push failed (e.g. stack full): release the array so it is not leaked.
-		qd_array_release(arr);
-		result = -2;
-		return result;
-	}
-	return result;
-}
-
-int qd_makes(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	qd_stack_element_t sizeElem;
-	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "makes: stack underflow\n");
-		result = -1;
-		return result;
-	}
-
-	if (sizeElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "makes: expected integer size, got %d\n", sizeElem.type);
-		result = -1;
-		return result;
-	}
-
-	int64_t size = sizeElem.value.i;
-	if (size < 0) {
-		fprintf(stderr, "makes: negative size %" PRId64 "\n", size);
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_STR);
-	if (!arr) {
-		fprintf(stderr, "makes: allocation failed\n");
-		result = -1;
-		return result;
-	}
-
-	// Initialize elements to empty strings
-	for (size_t i = 0; i < (size_t)size; i++) {
-		arr->data.p[i] = qd_string_create("");
-	}
-	arr->length = (size_t)size;
-
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		// Push failed (e.g. stack full): release the array so it is not leaked.
-		qd_array_release(arr);
-		result = -2;
-		return result;
-	}
-	return result;
-}
-
-int qd_makep(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	qd_stack_element_t sizeElem;
-	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "makep: stack underflow\n");
-		result = -1;
-		return result;
-	}
-
-	if (sizeElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "makep: expected integer size, got %d\n", sizeElem.type);
-		result = -1;
-		return result;
-	}
-
-	int64_t size = sizeElem.value.i;
-	if (size < 0) {
-		fprintf(stderr, "makep: negative size %" PRId64 "\n", size);
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_PTR);
-	if (!arr) {
-		fprintf(stderr, "makep: allocation failed\n");
-		result = -1;
-		return result;
-	}
-
-	// Initialize elements to null (already done by qd_array_create for PTR type)
-	arr->length = (size_t)size;
-
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		// Push failed (e.g. stack full): release the array so it is not leaked.
-		qd_array_release(arr);
-		result = -2;
-		return result;
-	}
-	return result;
-}
-
-/* Creates an array whose element type is decided by the first value appended to it. Used for
- * `make<T>` inside a generic function, where T is erased at run time. */
-// maked - a d128 array of n zeros
-int qd_maked(qd_context* ctx) {
-	qd_stack_element_t sizeElem;
-	if (!ctx || !ctx->st || qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "maked: stack underflow\n");
-		return -1;
-	}
-	if (sizeElem.type != QD_STACK_TYPE_INT || sizeElem.value.i < 0) {
-		fprintf(stderr, "maked: expected a non-negative integer size\n");
-		qdrt_release_element(&sizeElem);
-		return -1;
-	}
-
-	qd_array_t* arr = qd_array_create((size_t)sizeElem.value.i, QD_ARRAY_TYPE_D128);
-	if (!arr) {
-		fprintf(stderr, "maked: allocation failed\n");
-		return -1;
-	}
-	arr->length = (size_t)sizeElem.value.i;
-
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		qd_array_release(arr);
-		return -2;
-	}
 	return 0;
 }
 
-int qd_makea(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
-
-	qd_stack_element_t sizeElem;
-	if (qd_stack_pop(ctx->st, &sizeElem) != QD_STACK_OK) {
-		fprintf(stderr, "makea: stack underflow\n");
-		result = -1;
-		return result;
-	}
-
-	if (sizeElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "makea: expected integer size, got %d\n", sizeElem.type);
-		result = -1;
-		return result;
-	}
-
-	int64_t size = sizeElem.value.i;
+// The `make` words: an array of `n` zero values of one type
+static int make_array(qd_context* ctx, const char* op, qd_array_type type) {
+	int64_t size;
+	qd_args(ctx, op, "i", &size);
 	if (size < 0) {
-		fprintf(stderr, "makea: negative size %" PRId64 "\n", size);
-		result = -1;
-		return result;
+		QDRT_FATAL(ctx, op, "Negative size %" PRId64, size);
 	}
-
-	qd_array_t* arr = qd_array_create((size_t)size, QD_ARRAY_TYPE_ANY);
+	qd_array_t* arr = qd_array_create((size_t)size, type);
 	if (!arr) {
-		fprintf(stderr, "makea: allocation failed\n");
-		result = -1;
-		return result;
+		QDRT_FATAL(ctx, op, "Out of memory");
 	}
-
-	// Initialize elements to null (already done by qd_array_create for PTR type)
+	// qd_array_create zeroes the slots: 0, 0.0, a d128 zero and null. A string array
+	// starts with empty strings instead of nulls.
+	if (type == QD_ARRAY_TYPE_STR) {
+		for (size_t i = 0; i < (size_t)size; i++) {
+			arr->data.p[i] = qd_string_create("");
+		}
+	}
 	arr->length = (size_t)size;
+	return qd_push_p(ctx, arr);
+}
 
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		// Push failed (e.g. stack full): release the array so it is not leaked.
-		qd_array_release(arr);
-		result = -2;
-		return result;
-	}
-	return result;
+int qd_makei(qd_context* ctx) {
+	return make_array(ctx, "makei", QD_ARRAY_TYPE_INT);
+}
+
+int qd_makef(qd_context* ctx) {
+	return make_array(ctx, "makef", QD_ARRAY_TYPE_FLOAT);
+}
+
+int qd_makes(qd_context* ctx) {
+	return make_array(ctx, "makes", QD_ARRAY_TYPE_STR);
+}
+
+int qd_makep(qd_context* ctx) {
+	return make_array(ctx, "makep", QD_ARRAY_TYPE_PTR);
+}
+
+int qd_maked(qd_context* ctx) {
+	return make_array(ctx, "maked", QD_ARRAY_TYPE_D128);
+}
+
+// Creates an array whose element type is decided by the first value written to it. Used for
+// `make<T>` inside a generic function, where T is erased at run time.
+int qd_makea(qd_context* ctx) {
+	return make_array(ctx, "makea", QD_ARRAY_TYPE_ANY);
 }
 
 int qd_append(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
+	void* p;
+	qd_stack_element_t value;
+	qd_args(ctx, "append", "pv", &p, &value);
+	qd_array_t* arr = array_arg(ctx, "append", p, &value);
+	adopt_type(ctx, "append", arr, &value);
+	check_fits(ctx, "append", arr, &value);
 
-	// Pop value first (top of stack)
-	qd_stack_element_t valueElem;
-	if (qd_stack_pop(ctx->st, &valueElem) != QD_STACK_OK) {
-		fprintf(stderr, "append: stack underflow (value)\n");
-		result = -1;
-		return result;
-	}
-
-	// Pop array
-	qd_stack_element_t arrElem;
-	if (qd_stack_pop(ctx->st, &arrElem) != QD_STACK_OK) {
-		fprintf(stderr, "append: stack underflow (array)\n");
-		// Clean up value if it's a string
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	if (arrElem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "append: expected array (ptr), got %d\n", arrElem.type);
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = (qd_array_t*)arrElem.value.p;
-	if (!arr) {
-		fprintf(stderr, "append: null array\n");
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	// An empty array with no element type yet adopts the type of this first value.
-	if (arr->elemType == QD_ARRAY_TYPE_ANY && arr->length == 0) {
-		switch (valueElem.type) {
-		case QD_STACK_TYPE_INT:
-			arr->elemType = QD_ARRAY_TYPE_INT;
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			arr->elemType = QD_ARRAY_TYPE_FLOAT;
-			break;
-		case QD_STACK_TYPE_STR:
-			arr->elemType = QD_ARRAY_TYPE_STR;
-			break;
-		case QD_STACK_TYPE_D128:
-			if (adopt_d128(arr) != 0) {
-				fprintf(stderr, "append: allocation failed\n");
-				qd_array_release(arr);
-				result = -1;
-				return result;
-			}
-			break;
-		default:
-			arr->elemType = QD_ARRAY_TYPE_PTR;
-			break;
-		}
-	}
-
-	// Append based on array type
-	int appendResult = -1;
+	int appended = 0;
 	switch (arr->elemType) {
 	case QD_ARRAY_TYPE_INT:
-		if (valueElem.type == QD_STACK_TYPE_INT) {
-			appendResult = qd_array_push_int(arr, valueElem.value.i);
-		} else {
-			fprintf(stderr, "append: type mismatch - int array, got type %d\n", valueElem.type);
-		}
+		appended = qd_array_push_int(arr, value.value.i);
 		break;
 	case QD_ARRAY_TYPE_FLOAT:
-		if (valueElem.type == QD_STACK_TYPE_FLOAT) {
-			appendResult = qd_array_push_float(arr, valueElem.value.f);
-		} else if (valueElem.type == QD_STACK_TYPE_INT) {
-			// Allow int to float conversion
-			appendResult = qd_array_push_float(arr, (double)valueElem.value.i);
-		} else {
-			fprintf(stderr, "append: type mismatch - float array, got type %d\n", valueElem.type);
-		}
+		appended = qd_array_push_float(arr, value.type == QD_STACK_TYPE_INT ? (double)value.value.i : value.value.f);
 		break;
 	case QD_ARRAY_TYPE_STR:
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			// Push the string directly (push_ptr will retain it)
-			appendResult = qd_array_push_ptr(arr, valueElem.value.s);
-			// Release our reference - array retained its own
-			qd_string_release(valueElem.value.s);
-		} else {
-			fprintf(stderr, "append: type mismatch - string array, got type %d\n", valueElem.type);
-			if (valueElem.type == QD_STACK_TYPE_STR) {
-				qd_string_release(valueElem.value.s);
-			}
-		}
+		// The array takes a reference of its own; ours is released below
+		appended = qd_array_push_ptr(arr, value.value.s);
 		break;
 	case QD_ARRAY_TYPE_PTR:
-		if (valueElem.type == QD_STACK_TYPE_PTR) {
-			appendResult = qd_array_push_ptr(arr, valueElem.value.p);
-		} else {
-			fprintf(stderr, "append: type mismatch - pointer array, got type %d\n", valueElem.type);
-		}
+		appended = qd_array_push_ptr(arr, value.value.p);
 		break;
 	case QD_ARRAY_TYPE_D128:
-		if (valueElem.type == QD_STACK_TYPE_D128) {
-			appendResult = qd_array_push_d128(arr, valueElem.value.d);
-		} else {
-			fprintf(stderr, "append: type mismatch - d128 array, got type %d\n", valueElem.type);
-			qdrt_release_element(&valueElem);
-		}
+		appended = qd_array_push_d128(arr, value.value.d);
 		break;
-	default:
-		fprintf(stderr, "append: unknown array type %d\n", arr->elemType);
+	case QD_ARRAY_TYPE_ANY:
 		break;
 	}
-
-	if (appendResult != 0) {
-		qd_array_release(arr);
-		result = -1;
-		return result;
+	if (appended != 0) {
+		array_raise(ctx, "append", arr, &value, "Out of memory");
+	}
+	if (value.type == QD_STACK_TYPE_STR) {
+		qd_string_release(value.value.s);
 	}
 
-	// Push array back onto stack (don't release, caller still owns it)
-	if (qd_stack_push_ptr(ctx->st, arr) != QD_STACK_OK) {
-		// Push failed (e.g. stack full): release the array so it is not leaked.
-		qd_array_release(arr);
-		result = -2;
-		return result;
-	}
-	return result;
+	// The array goes back with the reference it came with
+	return qd_push_p(ctx, arr);
 }
 
 int qd_set(qd_context* ctx) {
-	int result = {0};
-	if (!ctx || !ctx->st) {
-		result = -1;
-		return result;
-	}
+	void* p;
+	int64_t index;
+	qd_stack_element_t value;
+	qd_args(ctx, "set", "piv", &p, &index, &value);
+	qd_array_t* arr = array_arg(ctx, "set", p, &value);
+	check_index(ctx, "set", arr, index, &value);
+	adopt_type(ctx, "set", arr, &value);
+	check_fits(ctx, "set", arr, &value);
 
-	// Pop value first (top of stack)
-	qd_stack_element_t valueElem;
-	if (qd_stack_pop(ctx->st, &valueElem) != QD_STACK_OK) {
-		fprintf(stderr, "set: stack underflow (value)\n");
-		result = -1;
-		return result;
-	}
-
-	// Pop index
-	qd_stack_element_t indexElem;
-	if (qd_stack_pop(ctx->st, &indexElem) != QD_STACK_OK) {
-		fprintf(stderr, "set: stack underflow (index)\n");
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	if (indexElem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "set: expected integer index, got %d\n", indexElem.type);
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	// Pop array
-	qd_stack_element_t arrElem;
-	if (qd_stack_pop(ctx->st, &arrElem) != QD_STACK_OK) {
-		fprintf(stderr, "set: stack underflow (array)\n");
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	if (arrElem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "set: expected array (ptr), got %d\n", arrElem.type);
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	qd_array_t* arr = (qd_array_t*)arrElem.value.p;
-	if (!arr) {
-		fprintf(stderr, "set: null array\n");
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		result = -1;
-		return result;
-	}
-
-	int64_t index = indexElem.value.i;
-	if (index < 0 || (size_t)index >= arr->length) {
-		fprintf(stderr, "set: index %" PRId64 " out of bounds (length %zu)\n", index, arr->length);
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			qd_string_release(valueElem.value.s);
-		}
-		qd_array_release(arr);
-		result = -1;
-		return result;
-	}
-
-	// An array whose element type is still open adopts it here too: `make<T>` in a generic
-	// pre-sizes the array, so the first write is a `set` rather than an `append`. Every slot is
-	// zeroed, which is the zero value of whichever type it becomes.
-	if (arr->elemType == QD_ARRAY_TYPE_ANY) {
-		switch (valueElem.type) {
-		case QD_STACK_TYPE_INT:
-			arr->elemType = QD_ARRAY_TYPE_INT;
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			arr->elemType = QD_ARRAY_TYPE_FLOAT;
-			break;
-		case QD_STACK_TYPE_STR:
-			arr->elemType = QD_ARRAY_TYPE_STR;
-			break;
-		case QD_STACK_TYPE_D128:
-			if (adopt_d128(arr) != 0) {
-				fprintf(stderr, "set: allocation failed\n");
-				qd_array_release(arr);
-				result = -1;
-				return result;
-			}
-			break;
-		default:
-			arr->elemType = QD_ARRAY_TYPE_PTR;
-			break;
-		}
-	}
-
-	// Set based on array type
-	int setResult = -1;
 	switch (arr->elemType) {
 	case QD_ARRAY_TYPE_INT:
-		if (valueElem.type == QD_STACK_TYPE_INT) {
-			setResult = qd_array_set_int(arr, (size_t)index, valueElem.value.i);
-		} else {
-			fprintf(stderr, "set: type mismatch - int array, got type %d\n", valueElem.type);
-		}
+		qd_array_set_int(arr, (size_t)index, value.value.i);
 		break;
 	case QD_ARRAY_TYPE_FLOAT:
-		if (valueElem.type == QD_STACK_TYPE_FLOAT) {
-			setResult = qd_array_set_float(arr, (size_t)index, valueElem.value.f);
-		} else if (valueElem.type == QD_STACK_TYPE_INT) {
-			// Allow int to float conversion
-			setResult = qd_array_set_float(arr, (size_t)index, (double)valueElem.value.i);
-		} else {
-			fprintf(stderr, "set: type mismatch - float array, got type %d\n", valueElem.type);
-		}
+		qd_array_set_float(arr, (size_t)index, value.type == QD_STACK_TYPE_INT ? (double)value.value.i : value.value.f);
 		break;
 	case QD_ARRAY_TYPE_STR:
-		if (valueElem.type == QD_STACK_TYPE_STR) {
-			// Release old string and set new one
-			if (arr->data.p[index]) {
-				qd_string_release((qd_string_t*)arr->data.p[index]);
-			}
-			arr->data.p[index] = valueElem.value.s;
-			// Don't release - array now owns it
-			setResult = 0;
-		} else {
-			fprintf(stderr, "set: type mismatch - string array, got type %d\n", valueElem.type);
-			if (valueElem.type == QD_STACK_TYPE_STR) {
-				qd_string_release(valueElem.value.s);
-			}
+		// The array takes over the stack's reference
+		if (arr->data.p[index]) {
+			qd_string_release((qd_string_t*)arr->data.p[index]);
 		}
+		arr->data.p[index] = value.value.s;
 		break;
 	case QD_ARRAY_TYPE_PTR:
-		if (valueElem.type == QD_STACK_TYPE_PTR) {
-			setResult = qd_array_set_ptr(arr, (size_t)index, valueElem.value.p);
-		} else {
-			fprintf(stderr, "set: type mismatch - pointer array, got type %d\n", valueElem.type);
-		}
+		qd_array_set_ptr(arr, (size_t)index, value.value.p);
 		break;
 	case QD_ARRAY_TYPE_D128:
-		if (valueElem.type == QD_STACK_TYPE_D128) {
-			setResult = qd_array_set_d128(arr, (size_t)index, valueElem.value.d);
-		} else {
-			fprintf(stderr, "set: type mismatch - d128 array, got type %d\n", valueElem.type);
-			qdrt_release_element(&valueElem);
-		}
+		qd_array_set_d128(arr, (size_t)index, value.value.d);
 		break;
-	default:
-		fprintf(stderr, "set: unknown array type %d\n", arr->elemType);
+	case QD_ARRAY_TYPE_ANY:
 		break;
 	}
 
-	qd_array_release(arr);
-
-	if (setResult != 0) {
-		result = -1;
-		return result;
-	}
-
-	return result;
+	qd_array_release(arr); // Release the consumed array
+	return 0;
 }

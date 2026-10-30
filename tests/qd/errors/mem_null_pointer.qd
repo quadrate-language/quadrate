@@ -1,0 +1,9 @@
+// Test: reading through a null pointer raises. mem set the error code to -1 and pushed
+// nothing, leaving the stack a value short; and compiled `null` was an i64, which a word
+// expecting a ptr refused as the wrong type.
+use mem
+
+fn main() {
+	"before" print nl
+	null 0 mem::get_i64 print nl
+}

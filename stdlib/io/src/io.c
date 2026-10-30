@@ -5,10 +5,11 @@
  */
 
 #include <errno.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <quadrate/io/io.h>
 #include <quadrate/rt/runtime.h>
-#include <quadrate/rt/stack.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,374 +100,141 @@ static FILE* file_handle_release(void* token) {
 	return fp;
 }
 
-// Validate a resolved FILE handle before use. fp is the result of
-// file_handle_resolve - NULL when the token was stale, invalid, or closed.
-static int is_valid_file_handle(FILE* fp, qd_context* ctx, const char* op_name) {
-	if (!fp) {
-		ctx->error_code = IO_ERR_INVALID_HANDLE;
-		char err_buf[128];
-		snprintf(err_buf, sizeof(err_buf), "%s: invalid or already closed file handle", op_name);
-		qd_set_error_msg(ctx, err_buf);
-		return 0;
+// An errno as the io error it is: a missing file or directory, or a refusal, are told
+// apart from other failures, which take `fallback`
+static int io_code(int err, int fallback) {
+	switch (err) {
+	case ENOENT:
+	case ENOTDIR:
+		return IO_ERR_NOT_FOUND;
+	case EACCES:
+	case EPERM:
+	case EROFS:
+		return IO_ERR_PERMISSION;
+	default:
+		return fallback;
 	}
-	return 1;
 }
 
+static int fail_errno(qd_context* ctx, const char* op, int err, int fallback) {
+	return qd_fail(ctx, io_code(err, fallback), "%s: %s", op, strerror(err));
+}
+
+static int fail_handle(qd_context* ctx, const char* op) {
+	return qd_fail(ctx, IO_ERR_INVALID_HANDLE, "%s: invalid or already closed file handle", op);
+}
+
+// Stack signature: ( path:str mode:str -- handle:ptr )!
 int usr_io_open(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in io::open: Stack underflow (need 2, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t mode_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &mode_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::open: Failed to pop mode\n");
-		abort();
-	}
-	if (mode_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::open: Expected string for mode, got %d\n", mode_elem.type);
-		abort();
-	}
-	qd_stack_element_t path_elem;
-	err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		qd_string_release(mode_elem.value.s);
-		fprintf(stderr, "Fatal error in io::open: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		qd_string_release(mode_elem.value.s);
-		fprintf(stderr, "Fatal error in io::open: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	const char* mode = qd_string_data(mode_elem.value.s);
-	if (!path || !mode) {
-		qd_string_release(path_elem.value.s);
-		qd_string_release(mode_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::open: null path or mode string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	FILE* fp = fopen(path, mode);
-	qd_string_release(path_elem.value.s);
-	qd_string_release(mode_elem.value.s);
-
+	qd_string_t* path;
+	qd_string_t* mode;
+	qd_args(ctx, "io::open", "ss", &path, &mode);
+	FILE* fp = fopen(qd_string_data(path), qd_string_data(mode));
+	const int err = errno;
+	qd_string_release(path);
+	qd_string_release(mode);
 	if (!fp) {
-		ctx->error_code = IO_ERR_NOT_FOUND;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_NOT_FOUND);
-		return (int){IO_ERR_NOT_FOUND};
+		return fail_errno(ctx, "io::open", err, err == EINVAL ? IO_ERR_INVALID_ARG : IO_ERR_NOT_FOUND);
 	}
 
 	// Register the file handle and hand back an opaque token, not the raw FILE*.
 	void* token = file_handle_register(fp);
 	if (!token) {
 		fclose(fp);
-		ctx->error_code = IO_ERR_INVALID_HANDLE;
-		qd_set_error_msg(ctx, "io::open: too many open files");
-		qd_push_i(ctx, IO_ERR_INVALID_HANDLE);
-		return (int){IO_ERR_INVALID_HANDLE};
+		return qd_fail(ctx, IO_ERR_INVALID_HANDLE, "io::open: too many open files");
 	}
-
-	int push_result = qd_push_p(ctx, token);
-	if (push_result != 0) {
-		file_handle_release(token);
-		fclose(fp);
-		fprintf(stderr, "Fatal error in io::open: Failed to push handle to stack\n");
-		abort();
-	}
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
+	qd_push_p(ctx, token);
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
+// Stack signature: ( handle:ptr -- )
+// Closing an invalid or already closed handle does nothing.
 int usr_io_close(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::close: Stack underflow\n");
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::close: Failed to pop handle\n");
-		abort();
-	}
-	if (elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::close: Expected pointer for handle, got %d\n", elem.type);
-		abort();
-	}
-
+	void* handle;
+	qd_args(ctx, "io::close", "p", &handle);
 	// Invalidate the slot first (bumps its generation) so any stale copies of
 	// this token stop resolving, then close the underlying file.
-	FILE* fp = file_handle_release(elem.value.p);
-	if (!fp) {
-		// Closing an invalid/already-closed handle is a no-op; record the error
-		// for debugging but still report success.
-		ctx->error_code = IO_ERR_INVALID_HANDLE;
-		qd_set_error_msg(ctx, "io::close: invalid or already closed file handle");
-		return (int){0};
+	FILE* fp = file_handle_release(handle);
+	if (fp) {
+		fclose(fp);
 	}
-
-	fclose(fp);
-
-	return (int){0};
+	return 0;
 }
 
+// Stack signature: ( handle:ptr offset:i64 whence:i64 -- position:i64 )!
 int usr_io_seek(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 3) {
-		fprintf(stderr, "Fatal error in io::seek: Stack underflow (need 3, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
+	void* handle;
+	int64_t offset;
+	int64_t whence;
+	qd_args(ctx, "io::seek", "pii", &handle, &offset, &whence);
+	FILE* fp = file_handle_resolve(handle);
+	if (!fp) {
+		return fail_handle(ctx, "io::seek");
 	}
-	qd_stack_element_t whence_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &whence_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::seek: Failed to pop whence\n");
-		abort();
+	static const int whences[] = {SEEK_SET, SEEK_CUR, SEEK_END};
+	if (whence < 0 || whence > 2) {
+		return qd_fail(
+				ctx, IO_ERR_INVALID_ARG, "io::seek: whence %" PRId64 " is not SeekSet, SeekCur or SeekEnd", whence);
 	}
-	if (whence_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::seek: Expected integer for whence, got %d\n", whence_elem.type);
-		abort();
+	if (fseeko(fp, (off_t)offset, whences[whence]) != 0) {
+		return fail_errno(ctx, "io::seek", errno, IO_ERR_SEEK);
 	}
-	qd_stack_element_t offset_elem;
-	err = qd_stack_pop(ctx->st, &offset_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::seek: Failed to pop offset\n");
-		abort();
-	}
-	if (offset_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::seek: Expected integer for offset, got %d\n", offset_elem.type);
-		abort();
-	}
-	qd_stack_element_t handle_elem;
-	err = qd_stack_pop(ctx->st, &handle_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::seek: Failed to pop handle\n");
-		abort();
-	}
-	if (handle_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::seek: Expected pointer for handle, got %d\n", handle_elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(handle_elem.value.p);
-	int64_t offset = offset_elem.value.i;
-	int whence = (int)whence_elem.value.i;
-
-	if (!is_valid_file_handle(fp, ctx, "io::seek")) {
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_HANDLE};
-	}
-
-	// Map whence values: 0=SEEK_SET, 1=SEEK_CUR, 2=SEEK_END
-	int seek_whence;
-	switch (whence) {
-	case 0:
-		seek_whence = SEEK_SET;
-		break;
-	case 1:
-		seek_whence = SEEK_CUR;
-		break;
-	case 2:
-		seek_whence = SEEK_END;
-		break;
-	default:
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::seek: invalid whence value");
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	if (fseek(fp, offset, seek_whence) != 0) {
-		ctx->error_code = IO_ERR_SEEK;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_SEEK};
-	}
-
-	int64_t position = ftell(fp);
+	const off_t position = ftello(fp);
 	if (position < 0) {
-		ctx->error_code = IO_ERR_SEEK;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_SEEK};
+		return fail_errno(ctx, "io::seek", errno, IO_ERR_SEEK);
 	}
-
-	qd_push_i(ctx, position);
-	qd_push_i(ctx, IO_ERR_OK);
-
-	return (int){0};
+	qd_push_i(ctx, (int64_t)position);
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
+// Stack signature: ( handle:ptr -- handle:ptr is_eof:i64 )
+// An invalid handle is never at the end.
 int usr_io_eof(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::eof: Stack underflow\n");
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_peek(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::eof: Failed to peek handle\n");
-		abort();
-	}
-	if (elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::eof: Expected pointer for handle, got %d\n", elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(elem.value.p);
-	int64_t is_eof = 0;
-
-	if (is_valid_file_handle(fp, ctx, "io::eof")) {
-		is_eof = feof(fp) ? 1 : 0;
-	}
-
-	qd_push_i(ctx, is_eof);
-
-	return (int){0};
+	void* handle;
+	qd_args(ctx, "io::eof", "p", &handle);
+	FILE* fp = file_handle_resolve(handle);
+	qd_push_p(ctx, handle);
+	return qd_push_i(ctx, fp && feof(fp) ? 1 : 0);
 }
 
-// New unified API names
+// Stack signature: ( handle:ptr -- position:i64 )!
 int usr_io_tell(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::tell: Stack underflow\n");
-		qd_print_stack_trace(ctx);
-		abort();
+	void* handle;
+	qd_args(ctx, "io::tell", "p", &handle);
+	FILE* fp = file_handle_resolve(handle);
+	if (!fp) {
+		return fail_handle(ctx, "io::tell");
 	}
-
-	qd_stack_element_t elem;
-	// Peek at the handle (don't pop it)
-	qd_stack_error err = qd_stack_element(ctx->st, qd_stack_size(ctx->st) - 1, &elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::tell: Failed to peek handle\n");
-		abort();
-	}
-	if (elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::tell: Expected pointer for handle, got %d\n", elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(elem.value.p);
-	if (!is_valid_file_handle(fp, ctx, "io::tell")) {
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_HANDLE};
-	}
-
-	int64_t position = ftell(fp);
+	const off_t position = ftello(fp);
 	if (position < 0) {
-		ctx->error_code = IO_ERR_SEEK;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_SEEK};
+		return fail_errno(ctx, "io::tell", errno, IO_ERR_SEEK);
 	}
-
-	qd_push_i(ctx, position);
-	qd_push_i(ctx, IO_ERR_OK);
-
-	return (int){0};
+	qd_push_i(ctx, (int64_t)position);
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
-// Unified buffer-based read (new primary API)
+// Stack signature: ( handle:ptr buffer:ptr count:i64 -- bytes_read:i64 )!
 int usr_io_read(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 3) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Stack underflow (need 3, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
+	void* handle;
+	void* buffer;
+	int64_t count;
+	qd_args(ctx, "io::read", "ppi", &handle, &buffer, &count);
+	FILE* fp = file_handle_resolve(handle);
+	if (!fp) {
+		return fail_handle(ctx, "io::read");
 	}
-	qd_stack_element_t count_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Failed to pop count\n");
-		abort();
-	}
-	if (count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Expected integer for count, got %d\n", count_elem.type);
-		abort();
-	}
-	qd_stack_element_t buffer_elem;
-	err = qd_stack_pop(ctx->st, &buffer_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Failed to pop buffer\n");
-		abort();
-	}
-	if (buffer_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Expected pointer for buffer, got %d\n", buffer_elem.type);
-		abort();
-	}
-	qd_stack_element_t handle_elem;
-	err = qd_stack_pop(ctx->st, &handle_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Failed to pop handle\n");
-		abort();
-	}
-	if (handle_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::read_bytes: Expected pointer for handle, got %d\n", handle_elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(handle_elem.value.p);
-	void* buffer = buffer_elem.value.p;
-	int64_t count = count_elem.value.i;
-
-	if (!is_valid_file_handle(fp, ctx, "io::read")) {
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_HANDLE};
-	}
-
 	if (!buffer || count < 0) {
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::read: invalid buffer or count");
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_ARG};
+		return qd_fail(ctx, IO_ERR_INVALID_ARG, "io::read: null buffer or negative count");
 	}
-
-	if (count == 0) {
-		qd_push_i(ctx, 0);
-		qd_push_i(ctx, IO_ERR_OK);
-		return (int){0};
-	}
-
-	size_t bytes_read = fread(buffer, 1, (size_t)count, fp);
-
+	const size_t bytes_read = count > 0 ? fread(buffer, 1, (size_t)count, fp) : 0;
 	if (bytes_read < (size_t)count && ferror(fp)) {
-		ctx->error_code = IO_ERR_READ;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_READ};
+		clearerr(fp);
+		return fail_errno(ctx, "io::read", errno, IO_ERR_READ);
 	}
-
 	qd_push_i(ctx, (int64_t)bytes_read);
-	qd_push_i(ctx, IO_ERR_OK);
-
-	return (int){0};
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
-// Read a line from stdin
 /* ( -- line:str ok:i64 )!
  *
  * Three outcomes, kept distinct:
@@ -491,587 +259,188 @@ int usr_io_readline(qd_context* ctx) {
 	ssize_t nread = getline(&line, &len, stdin);
 
 	if (nread == -1) {
+		const int err = errno;
 		free(line);
 		if (ferror(stdin)) {
 			clearerr(stdin);
-			ctx->error_code = IO_ERR_READ;
-			qd_set_error_msg(ctx, "io::readline: read failed");
-			qd_push_i(ctx, IO_ERR_READ);
-			return (int){IO_ERR_READ};
+			return qd_fail(ctx, IO_ERR_READ, "io::readline: %s", strerror(err));
 		}
 		// Ordinary end of input.
 		qd_push_s(ctx, "");
 		qd_push_i(ctx, 0);
-		qd_push_i(ctx, IO_ERR_OK);
-		return (int){0};
+		return qd_push_i(ctx, IO_ERR_OK);
 	}
 
 	if (nread > 0 && line[nread - 1] == '\n') {
-		line[nread - 1] = '\0';
 		nread--;
 	}
-
-	qd_push_s(ctx, line);
-	qd_push_i(ctx, 1);
-	qd_push_i(ctx, IO_ERR_OK);
+	qd_string_t* s = qd_string_create_with_length(line, (size_t)nread);
 	free(line);
-
-	return (int){0};
+	qd_push_s_ref(ctx, s);
+	qd_string_release(s);
+	qd_push_i(ctx, 1);
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
-// Unified buffer-based write (new primary API)
+// Stack signature: ( handle:ptr buffer:ptr count:i64 -- bytes_written:i64 )!
 int usr_io_write(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 3) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Stack underflow (need 3, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
+	void* handle;
+	void* buffer;
+	int64_t count;
+	qd_args(ctx, "io::write", "ppi", &handle, &buffer, &count);
+	FILE* fp = file_handle_resolve(handle);
+	if (!fp) {
+		return fail_handle(ctx, "io::write");
 	}
-	qd_stack_element_t count_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &count_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Failed to pop count\n");
-		abort();
-	}
-	if (count_elem.type != QD_STACK_TYPE_INT) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Expected integer for count, got %d\n", count_elem.type);
-		abort();
-	}
-	qd_stack_element_t buffer_elem;
-	err = qd_stack_pop(ctx->st, &buffer_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Failed to pop buffer\n");
-		abort();
-	}
-	if (buffer_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Expected pointer for buffer, got %d\n", buffer_elem.type);
-		abort();
-	}
-	qd_stack_element_t handle_elem;
-	err = qd_stack_pop(ctx->st, &handle_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Failed to pop handle\n");
-		abort();
-	}
-	if (handle_elem.type != QD_STACK_TYPE_PTR) {
-		fprintf(stderr, "Fatal error in io::write_bytes: Expected pointer for handle, got %d\n", handle_elem.type);
-		abort();
-	}
-
-	FILE* fp = file_handle_resolve(handle_elem.value.p);
-	void* buffer = buffer_elem.value.p;
-	int64_t count = count_elem.value.i;
-
-	if (!is_valid_file_handle(fp, ctx, "io::write")) {
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_HANDLE};
-	}
-
 	if (!buffer || count < 0) {
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::write: invalid buffer or count");
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_INVALID_ARG};
+		return qd_fail(ctx, IO_ERR_INVALID_ARG, "io::write: null buffer or negative count");
 	}
-
-	if (count == 0) {
-		qd_push_i(ctx, 0);
-		qd_push_i(ctx, IO_ERR_OK);
-		return (int){0};
+	const size_t bytes_written = count > 0 ? fwrite(buffer, 1, (size_t)count, fp) : 0;
+	if (bytes_written < (size_t)count) {
+		clearerr(fp);
+		return fail_errno(ctx, "io::write", errno, IO_ERR_WRITE);
 	}
-
-	size_t bytes_written = fwrite(buffer, 1, (size_t)count, fp);
-
-	if (bytes_written < (size_t)count && ferror(fp)) {
-		ctx->error_code = IO_ERR_WRITE;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int){IO_ERR_WRITE};
-	}
-
 	qd_push_i(ctx, (int64_t)bytes_written);
-	qd_push_i(ctx, IO_ERR_OK);
-
-	return (int){0};
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
+// Stack signature: ( path:str -- contents:str )!
+// Read to the end rather than trusting the size stat or ftell gives: a pipe has none,
+// and a file under /proc says 0 and then has contents.
 int usr_io_read_file(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::read_file: Stack underflow (need 1, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-	qd_stack_element_t path_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::read_file: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::read_file: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	if (!path) {
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::read_file: null path string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	FILE* fp = fopen(path, "rb");
+	qd_string_t* path;
+	qd_args(ctx, "io::read_file", "s", &path);
+	FILE* fp = fopen(qd_string_data(path), "rb");
+	const int open_err = errno;
+	qd_string_release(path);
 	if (!fp) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_NOT_FOUND;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_NOT_FOUND);
-		return (int){IO_ERR_NOT_FOUND};
+		return fail_errno(ctx, "io::read_file", open_err, IO_ERR_READ);
 	}
 
-	if (fseek(fp, 0, SEEK_END) != 0) {
-		int saved_errno = errno;
-		fclose(fp);
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_SEEK;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_SEEK);
-		return (int){IO_ERR_SEEK};
+	char* data = NULL;
+	size_t len = 0;
+	size_t cap = 0;
+	bool out_of_memory = false;
+	for (;;) {
+		if (len == cap) {
+			const size_t new_cap = cap ? cap * 2 : 8192;
+			char* grown = new_cap > cap ? realloc(data, new_cap) : NULL;
+			if (!grown) {
+				out_of_memory = true;
+				break;
+			}
+			data = grown;
+			cap = new_cap;
+		}
+		const size_t got = fread(data + len, 1, cap - len, fp);
+		len += got;
+		if (got == 0) {
+			break;
+		}
 	}
-
-	long file_size = ftell(fp);
-	if (file_size < 0) {
-		int saved_errno = errno;
-		fclose(fp);
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_SEEK;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_SEEK);
-		return (int){IO_ERR_SEEK};
-	}
-
-	if (fseek(fp, 0, SEEK_SET) != 0) {
-		int saved_errno = errno;
-		fclose(fp);
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_SEEK;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_SEEK);
-		return (int){IO_ERR_SEEK};
-	}
-
-	char* buffer = malloc((size_t)file_size + 1);
-	if (!buffer) {
-		fclose(fp);
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_READ;
-		qd_set_error_msg(ctx, "io::read_file: allocation failed");
-		qd_push_i(ctx, IO_ERR_READ);
-		return (int){IO_ERR_READ};
-	}
-
-	size_t bytes_read = fread(buffer, 1, (size_t)file_size, fp);
-	buffer[bytes_read] = '\0';
-
-	// Check for read error before closing file (ferror requires open file)
-	int had_read_error = (bytes_read < (size_t)file_size && ferror(fp));
-	int saved_errno = errno;
+	const bool failed = !out_of_memory && ferror(fp);
+	const int read_err = errno;
 	fclose(fp);
-	qd_string_release(path_elem.value.s);
 
-	if (had_read_error) {
-		free(buffer);
-		ctx->error_code = IO_ERR_READ;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_READ);
-		return (int){IO_ERR_READ};
+	if (out_of_memory || failed) {
+		free(data);
+		return out_of_memory ? qd_fail(ctx, IO_ERR_READ, "io::read_file: out of memory")
+							 : fail_errno(ctx, "io::read_file", read_err, IO_ERR_READ);
 	}
-
-	qd_push_s(ctx, buffer);
-	qd_push_i(ctx, IO_ERR_OK);
-
-	free(buffer);
-
-	return (int){0};
+	qd_string_t* contents = qd_string_create_with_length(data ? data : "", len);
+	free(data);
+	qd_push_s_ref(ctx, contents);
+	qd_string_release(contents);
+	return qd_push_i(ctx, IO_ERR_OK);
 }
 
-int usr_io_write_file(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in io::write_file: Stack underflow (need 2, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-	qd_stack_element_t contents_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &contents_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::write_file: Failed to pop contents\n");
-		abort();
-	}
-	if (contents_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::write_file: Expected string for contents, got %d\n", contents_elem.type);
-		abort();
-	}
-	qd_stack_element_t path_elem;
-	err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		qd_string_release(contents_elem.value.s);
-		fprintf(stderr, "Fatal error in io::write_file: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		qd_string_release(contents_elem.value.s);
-		fprintf(stderr, "Fatal error in io::write_file: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	const char* contents = qd_string_data(contents_elem.value.s);
-	if (!path || !contents) {
-		qd_string_release(path_elem.value.s);
-		qd_string_release(contents_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::write_file: null path or contents string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-	size_t len = strlen(contents);
-
-	// Open file for writing (truncate if exists)
-	FILE* fp = fopen(path, "wb");
+// write_file and append_file. A full disk often shows only when the buffered data is
+// flushed, so a failed fclose fails the write too.
+static int write_whole_file(qd_context* ctx, const char* op, const char* mode) {
+	qd_string_t* path;
+	qd_string_t* contents;
+	qd_args(ctx, op, "ss", &path, &contents);
+	FILE* fp = fopen(qd_string_data(path), mode);
+	int err = errno;
+	qd_string_release(path);
 	if (!fp) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		qd_string_release(contents_elem.value.s);
-		ctx->error_code = IO_ERR_PERMISSION;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_PERMISSION);
-		return (int){IO_ERR_PERMISSION};
+		qd_string_release(contents);
+		return fail_errno(ctx, op, err, IO_ERR_WRITE);
 	}
-
-	size_t written = fwrite(contents, 1, len, fp);
-	int saved_errno = errno;
-	fclose(fp);
-
-	qd_string_release(path_elem.value.s);
-	qd_string_release(contents_elem.value.s);
-
-	if (written < len) {
-		ctx->error_code = IO_ERR_WRITE;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_WRITE);
-		return (int){IO_ERR_WRITE};
+	const size_t len = qd_string_length(contents);
+	const bool wrote = fwrite(qd_string_data(contents), 1, len, fp) == len;
+	err = errno;
+	qd_string_release(contents);
+	const bool closed = fclose(fp) == 0;
+	if (wrote && !closed) {
+		err = errno;
 	}
+	if (!wrote || !closed) {
+		return fail_errno(ctx, op, err, IO_ERR_WRITE);
+	}
+	return qd_push_i(ctx, IO_ERR_OK);
+}
 
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
+// Stack signature: ( path:str contents:str -- )!
+int usr_io_write_file(qd_context* ctx) {
+	return write_whole_file(ctx, "io::write_file", "wb");
+}
+
+// Stack signature: ( path:str contents:str -- )!
+int usr_io_append_file(qd_context* ctx) {
+	return write_whole_file(ctx, "io::append_file", "ab");
 }
 
 int usr_io_flush(qd_context* ctx) {
 	(void)ctx;
 	fflush(stdout);
-	return (int){0};
+	return 0;
+}
+
+// The stat words: ( path:str -- value:i64 )!
+static int stat_word(qd_context* ctx, const char* op, int64_t (*field)(const struct stat*)) {
+	qd_string_t* path;
+	qd_args(ctx, op, "s", &path);
+	struct stat st;
+	const int result = stat(qd_string_data(path), &st);
+	const int err = errno;
+	qd_string_release(path);
+	if (result != 0) {
+		return fail_errno(ctx, op, err, IO_ERR_STAT);
+	}
+	qd_push_i(ctx, field(&st));
+	return qd_push_i(ctx, IO_ERR_OK);
+}
+
+static int64_t stat_size(const struct stat* st) {
+	return (int64_t)st->st_size;
+}
+
+static int64_t stat_mtime(const struct stat* st) {
+	return (int64_t)st->st_mtime;
+}
+
+static int64_t stat_atime(const struct stat* st) {
+	return (int64_t)st->st_atime;
+}
+
+// Just the permission bits, the lower 12 of the mode
+static int64_t stat_mode(const struct stat* st) {
+	return (int64_t)(st->st_mode & 07777);
 }
 
 int usr_io_stat_size(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::stat_size: Stack underflow (need 1, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t path_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::stat_size: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::stat_size: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	if (!path) {
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::stat_size: null path string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	struct stat st;
-	if (stat(path, &st) != 0) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		if (saved_errno == ENOENT) {
-			ctx->error_code = IO_ERR_NOT_FOUND;
-		} else if (saved_errno == EACCES) {
-			ctx->error_code = IO_ERR_PERMISSION;
-		} else {
-			ctx->error_code = IO_ERR_STAT;
-		}
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int)ctx->error_code;
-	}
-
-	qd_string_release(path_elem.value.s);
-	qd_push_i(ctx, (int64_t)st.st_size);
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
+	return stat_word(ctx, "io::stat_size", stat_size);
 }
 
 int usr_io_stat_mtime(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::stat_mtime: Stack underflow (need 1, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t path_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::stat_mtime: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::stat_mtime: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	if (!path) {
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::stat_mtime: null path string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	struct stat st;
-	if (stat(path, &st) != 0) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		if (saved_errno == ENOENT) {
-			ctx->error_code = IO_ERR_NOT_FOUND;
-		} else if (saved_errno == EACCES) {
-			ctx->error_code = IO_ERR_PERMISSION;
-		} else {
-			ctx->error_code = IO_ERR_STAT;
-		}
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int)ctx->error_code;
-	}
-
-	qd_string_release(path_elem.value.s);
-	qd_push_i(ctx, (int64_t)st.st_mtime);
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
+	return stat_word(ctx, "io::stat_mtime", stat_mtime);
 }
 
 int usr_io_stat_atime(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::stat_atime: Stack underflow (need 1, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t path_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::stat_atime: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::stat_atime: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	if (!path) {
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::stat_atime: null path string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	struct stat st;
-	if (stat(path, &st) != 0) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		if (saved_errno == ENOENT) {
-			ctx->error_code = IO_ERR_NOT_FOUND;
-		} else if (saved_errno == EACCES) {
-			ctx->error_code = IO_ERR_PERMISSION;
-		} else {
-			ctx->error_code = IO_ERR_STAT;
-		}
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int)ctx->error_code;
-	}
-
-	qd_string_release(path_elem.value.s);
-	qd_push_i(ctx, (int64_t)st.st_atime);
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
+	return stat_word(ctx, "io::stat_atime", stat_atime);
 }
 
 int usr_io_stat_mode(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 1) {
-		fprintf(stderr, "Fatal error in io::stat_mode: Stack underflow (need 1, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-
-	qd_stack_element_t path_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::stat_mode: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::stat_mode: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	if (!path) {
-		qd_string_release(path_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::stat_mode: null path string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-
-	struct stat st;
-	if (stat(path, &st) != 0) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		if (saved_errno == ENOENT) {
-			ctx->error_code = IO_ERR_NOT_FOUND;
-		} else if (saved_errno == EACCES) {
-			ctx->error_code = IO_ERR_PERMISSION;
-		} else {
-			ctx->error_code = IO_ERR_STAT;
-		}
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, ctx->error_code);
-		return (int)ctx->error_code;
-	}
-
-	qd_string_release(path_elem.value.s);
-	// Return just the permission bits (lower 12 bits of mode)
-	qd_push_i(ctx, (int64_t)(st.st_mode & 07777));
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
-}
-
-int usr_io_append_file(qd_context* ctx) {
-	size_t stack_size = qd_stack_size(ctx->st);
-	if (stack_size < 2) {
-		fprintf(stderr, "Fatal error in io::append_file: Stack underflow (need 2, have %zu)\n", stack_size);
-		qd_print_stack_trace(ctx);
-		abort();
-	}
-	qd_stack_element_t contents_elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &contents_elem);
-	if (err != QD_STACK_OK) {
-		fprintf(stderr, "Fatal error in io::append_file: Failed to pop contents\n");
-		abort();
-	}
-	if (contents_elem.type != QD_STACK_TYPE_STR) {
-		fprintf(stderr, "Fatal error in io::append_file: Expected string for contents, got %d\n", contents_elem.type);
-		abort();
-	}
-	qd_stack_element_t path_elem;
-	err = qd_stack_pop(ctx->st, &path_elem);
-	if (err != QD_STACK_OK) {
-		qd_string_release(contents_elem.value.s);
-		fprintf(stderr, "Fatal error in io::append_file: Failed to pop path\n");
-		abort();
-	}
-	if (path_elem.type != QD_STACK_TYPE_STR) {
-		qd_string_release(contents_elem.value.s);
-		fprintf(stderr, "Fatal error in io::append_file: Expected string for path, got %d\n", path_elem.type);
-		abort();
-	}
-
-	const char* path = qd_string_data(path_elem.value.s);
-	const char* contents = qd_string_data(contents_elem.value.s);
-	if (!path || !contents) {
-		qd_string_release(path_elem.value.s);
-		qd_string_release(contents_elem.value.s);
-		ctx->error_code = IO_ERR_INVALID_ARG;
-		qd_set_error_msg(ctx, "io::append_file: null path or contents string");
-		qd_push_i(ctx, IO_ERR_INVALID_ARG);
-		return (int){IO_ERR_INVALID_ARG};
-	}
-	size_t len = strlen(contents);
-
-	FILE* fp = fopen(path, "ab");
-	if (!fp) {
-		int saved_errno = errno;
-		qd_string_release(path_elem.value.s);
-		qd_string_release(contents_elem.value.s);
-		ctx->error_code = IO_ERR_PERMISSION;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_PERMISSION);
-		return (int){IO_ERR_PERMISSION};
-	}
-
-	size_t written = fwrite(contents, 1, len, fp);
-	int saved_errno = errno;
-	fclose(fp);
-
-	qd_string_release(path_elem.value.s);
-	qd_string_release(contents_elem.value.s);
-
-	if (written < len) {
-		ctx->error_code = IO_ERR_WRITE;
-		char err_buf[256];
-		snprintf(err_buf, sizeof(err_buf), "%s", strerror(saved_errno));
-		qd_set_error_msg(ctx, err_buf);
-		qd_push_i(ctx, IO_ERR_WRITE);
-		return (int){IO_ERR_WRITE};
-	}
-
-	qd_push_i(ctx, IO_ERR_OK);
-	return (int){0};
+	return stat_word(ctx, "io::stat_mode", stat_mode);
 }

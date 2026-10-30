@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "../time_platform.h"
+#include <errno.h>
 #include <time.h>
 
 // Get current Unix timestamp in seconds
@@ -21,5 +22,7 @@ void time_platform_sleep_ns(int64_t nanoseconds) {
 	struct timespec ts;
 	ts.tv_sec = nanoseconds / 1000000000;
 	ts.tv_nsec = nanoseconds % 1000000000;
-	nanosleep(&ts, NULL);
+	// A signal ends nanosleep early; sleep out the rest
+	while (nanosleep(&ts, &ts) == -1 && errno == EINTR) {
+	}
 }

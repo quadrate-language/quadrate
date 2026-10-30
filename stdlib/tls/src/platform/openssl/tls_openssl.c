@@ -3,13 +3,21 @@
  * @brief OpenSSL implementation of TLS platform abstraction
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include "../tls_platform.h"
-#include <openssl/ssl.h>
+#include <errno.h>
+#include <limits.h>
 #include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <openssl/x509v3.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <time.h>
 
 /** TLS connection structure */
 typedef struct {
@@ -42,326 +50,246 @@ void tls_platform_cleanup(void) {
 	g_initialized = false;
 }
 
-tls_error_t tls_platform_connect(int socket_fd, const char* hostname, tls_conn_t* out_conn) {
-	if (out_conn == NULL || hostname == NULL) {
-		return TLS_ERR_INVALID_ARG;
-	}
+// Why the last operation on this thread failed, in OpenSSL's words
+static _Thread_local char g_detail[256];
 
-	*out_conn = TLS_CONN_INVALID;
+static tls_error_t fail(tls_error_t err, const char* detail) {
+	snprintf(g_detail, sizeof(g_detail), "%s", detail ? detail : "");
+	ERR_clear_error();
+	return err;
+}
 
-	// Ensure initialized
-	tls_error_t init_err = tls_platform_init();
-	if (init_err != TLS_OK) {
-		return init_err;
-	}
+// The reason OpenSSL queued for the failure, or `otherwise`
+static tls_error_t fail_openssl(tls_error_t err, const char* otherwise) {
+	const unsigned long code = ERR_peek_last_error();
+	const char* reason = code ? ERR_reason_error_string(code) : NULL;
+	return fail(err, reason ? reason : otherwise);
+}
 
-	// Create SSL context for client
-	const SSL_METHOD* method = TLS_client_method();
-	SSL_CTX* ctx = SSL_CTX_new(method);
-	if (ctx == NULL) {
-		return TLS_ERR_INIT;
-	}
+const char* tls_platform_error_detail(void) {
+	return g_detail;
+}
 
-	// Set minimum TLS version to 1.2 for security
-	SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+// SIGPIPE. OpenSSL writes to the socket with plain write(), and on Linux there is no socket
+// option against SIGPIPE, so a write to a peer that has gone ends the whole process. Block
+// the signal in this thread around each call that may write, and take back one the call
+// raised, so the write fails with EPIPE instead.
+typedef struct {
+	sigset_t old_mask;
+	bool was_pending;
+} sigpipe_guard_t;
 
-	// Enable certificate verification
-	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
+static void sigpipe_block(sigpipe_guard_t* g) {
+	sigset_t pending;
+	sigemptyset(&pending);
+	sigpending(&pending);
+	g->was_pending = sigismember(&pending, SIGPIPE) == 1;
+	sigset_t block;
+	sigemptyset(&block);
+	sigaddset(&block, SIGPIPE);
+	pthread_sigmask(SIG_BLOCK, &block, &g->old_mask);
+}
 
-	// Load default CA certificates
-	if (SSL_CTX_set_default_verify_paths(ctx) != 1) {
-		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
-	}
-
-	// Create SSL connection
-	SSL* ssl = SSL_new(ctx);
-	if (ssl == NULL) {
-		SSL_CTX_free(ctx);
-		return TLS_ERR_INIT;
-	}
-
-	// Set Server Name Indication (SNI)
-	SSL_set_tlsext_host_name(ssl, hostname);
-
-	// Enable hostname verification
-	SSL_set1_host(ssl, hostname);
-
-	// Attach to socket
-	if (SSL_set_fd(ssl, socket_fd) != 1) {
-		SSL_free(ssl);
-		SSL_CTX_free(ctx);
-		return TLS_ERR_INIT;
-	}
-
-	// Perform TLS handshake
-	int ret = SSL_connect(ssl);
-	if (ret != 1) {
-		int ssl_err = SSL_get_error(ssl, ret);
-		SSL_free(ssl);
-		SSL_CTX_free(ctx);
-
-		if (ssl_err == SSL_ERROR_SSL) {
-			// Check if it's a certificate error
-			unsigned long err = ERR_peek_error();
-			int reason = ERR_GET_REASON(err);
-			if (reason == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY ||
-				reason == X509_V_ERR_CERT_UNTRUSTED ||
-				reason == X509_V_ERR_CERT_HAS_EXPIRED ||
-				reason == X509_V_ERR_HOSTNAME_MISMATCH) {
-				return TLS_ERR_CERTIFICATE;
-			}
+static void sigpipe_restore(sigpipe_guard_t* g) {
+	sigset_t pending;
+	sigemptyset(&pending);
+	sigpending(&pending);
+	if (!g->was_pending && sigismember(&pending, SIGPIPE) == 1) {
+		sigset_t pipe_only;
+		sigemptyset(&pipe_only);
+		sigaddset(&pipe_only, SIGPIPE);
+		const struct timespec now = {0, 0};
+		while (sigtimedwait(&pipe_only, NULL, &now) < 0 && errno == EINTR) {
 		}
-		return TLS_ERR_CONNECT;
 	}
+	pthread_sigmask(SIG_SETMASK, &g->old_mask, NULL);
+}
 
-	// Allocate connection structure
+static tls_error_t wrap(SSL* ssl, SSL_CTX* ctx, int socket_fd, bool is_server, tls_conn_t* out_conn) {
 	tls_connection_t* conn = malloc(sizeof(tls_connection_t));
 	if (conn == NULL) {
-		SSL_shutdown(ssl);
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
-		return TLS_ERR_MEMORY;
+		return fail(TLS_ERR_MEMORY, "out of memory");
 	}
-
 	conn->ssl = ssl;
 	conn->ctx = ctx;
 	conn->socket_fd = socket_fd;
-	conn->is_server = false;
-
+	conn->is_server = is_server;
 	*out_conn = conn;
 	return TLS_OK;
 }
 
-tls_error_t tls_platform_connect_mtls(int socket_fd, const char* hostname,
-                                      const char* cert_path, const char* key_path,
-                                      tls_conn_t* out_conn) {
-	if (out_conn == NULL || hostname == NULL || cert_path == NULL || key_path == NULL) {
-		return TLS_ERR_INVALID_ARG;
+// Load a certificate and its key into `ctx`
+static tls_error_t load_identity(SSL_CTX* ctx, const char* cert_path, const char* key_path) {
+	if (SSL_CTX_use_certificate_file(ctx, cert_path, SSL_FILETYPE_PEM) != 1) {
+		return fail_openssl(TLS_ERR_CERTIFICATE, "could not load the certificate");
 	}
+	if (SSL_CTX_use_PrivateKey_file(ctx, key_path, SSL_FILETYPE_PEM) != 1) {
+		return fail_openssl(TLS_ERR_CERTIFICATE, "could not load the private key");
+	}
+	if (SSL_CTX_check_private_key(ctx) != 1) {
+		return fail(TLS_ERR_CERTIFICATE, "the private key does not match the certificate");
+	}
+	return TLS_OK;
+}
 
+// The client side, with a client certificate when `cert_path` is not NULL
+static tls_error_t client_connect(
+		int socket_fd, const char* hostname, const char* cert_path, const char* key_path, tls_conn_t* out_conn) {
+	if (out_conn == NULL || hostname == NULL) {
+		return fail(TLS_ERR_INVALID_ARG, "invalid argument");
+	}
 	*out_conn = TLS_CONN_INVALID;
-
-	// Ensure initialized
-	tls_error_t init_err = tls_platform_init();
-	if (init_err != TLS_OK) {
-		return init_err;
+	tls_error_t err = tls_platform_init();
+	if (err != TLS_OK) {
+		return fail(err, "could not initialise OpenSSL");
 	}
 
-	// Create SSL context for client
-	const SSL_METHOD* method = TLS_client_method();
-	SSL_CTX* ctx = SSL_CTX_new(method);
+	SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
 	if (ctx == NULL) {
-		return TLS_ERR_INIT;
+		return fail_openssl(TLS_ERR_INIT, "could not create the TLS context");
 	}
-
 	// Set minimum TLS version to 1.2 for security
 	SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
-
-	// Enable certificate verification
 	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL);
-
-	// Load default CA certificates
+	// The system's CA certificates, or those SSL_CERT_FILE and SSL_CERT_DIR name
 	if (SSL_CTX_set_default_verify_paths(ctx) != 1) {
 		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
+		return fail_openssl(TLS_ERR_CERTIFICATE, "could not load the CA certificates");
 	}
-
-	// Load client certificate
-	if (SSL_CTX_use_certificate_file(ctx, cert_path, SSL_FILETYPE_PEM) != 1) {
+	if (cert_path != NULL && (err = load_identity(ctx, cert_path, key_path)) != TLS_OK) {
 		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
+		return err;
 	}
 
-	// Load client private key
-	if (SSL_CTX_use_PrivateKey_file(ctx, key_path, SSL_FILETYPE_PEM) != 1) {
-		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
-	}
-
-	// Verify private key matches certificate
-	if (SSL_CTX_check_private_key(ctx) != 1) {
-		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
-	}
-
-	// Create SSL connection
 	SSL* ssl = SSL_new(ctx);
 	if (ssl == NULL) {
 		SSL_CTX_free(ctx);
-		return TLS_ERR_INIT;
+		return fail_openssl(TLS_ERR_INIT, "could not create the TLS session");
 	}
-
-	// Set Server Name Indication (SNI)
+	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-
-	// Enable hostname verification
 	SSL_set1_host(ssl, hostname);
-
-	// Attach to socket
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
-		return TLS_ERR_INIT;
+		return fail(TLS_ERR_INIT, "not a socket");
 	}
 
-	// Perform TLS handshake
-	int ret = SSL_connect(ssl);
+	sigpipe_guard_t guard;
+	sigpipe_block(&guard);
+	const int ret = SSL_connect(ssl);
+	sigpipe_restore(&guard);
 	if (ret != 1) {
-		int ssl_err = SSL_get_error(ssl, ret);
-		SSL_free(ssl);
-		SSL_CTX_free(ctx);
-
-		if (ssl_err == SSL_ERROR_SSL) {
-			// Check if it's a certificate error
-			unsigned long err = ERR_peek_error();
-			int reason = ERR_GET_REASON(err);
-			if (reason == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY ||
-				reason == X509_V_ERR_CERT_UNTRUSTED ||
-				reason == X509_V_ERR_CERT_HAS_EXPIRED ||
-				reason == X509_V_ERR_HOSTNAME_MISMATCH) {
-				return TLS_ERR_CERTIFICATE;
-			}
+		// A certificate that does not verify fails the handshake like anything else;
+		// the verify result is what tells them apart
+		const long verify = SSL_get_verify_result(ssl);
+		if (verify != X509_V_OK) {
+			err = fail(TLS_ERR_CERTIFICATE, X509_verify_cert_error_string(verify));
+		} else {
+			err = fail_openssl(TLS_ERR_CONNECT, "the handshake failed");
 		}
-		return TLS_ERR_CONNECT;
-	}
-
-	// Allocate connection structure
-	tls_connection_t* conn = malloc(sizeof(tls_connection_t));
-	if (conn == NULL) {
-		SSL_shutdown(ssl);
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
-		return TLS_ERR_MEMORY;
+		return err;
 	}
+	return wrap(ssl, ctx, socket_fd, false, out_conn);
+}
 
-	conn->ssl = ssl;
-	conn->ctx = ctx;
-	conn->socket_fd = socket_fd;
-	conn->is_server = false;
+tls_error_t tls_platform_connect(int socket_fd, const char* hostname, tls_conn_t* out_conn) {
+	return client_connect(socket_fd, hostname, NULL, NULL, out_conn);
+}
 
-	*out_conn = conn;
-	return TLS_OK;
+tls_error_t tls_platform_connect_mtls(
+		int socket_fd, const char* hostname, const char* cert_path, const char* key_path, tls_conn_t* out_conn) {
+	if (cert_path == NULL || key_path == NULL) {
+		return fail(TLS_ERR_INVALID_ARG, "invalid argument");
+	}
+	return client_connect(socket_fd, hostname, cert_path, key_path, out_conn);
 }
 
 tls_error_t tls_platform_accept(int socket_fd, const char* cert_path, const char* key_path, tls_conn_t* out_conn) {
 	if (out_conn == NULL || cert_path == NULL || key_path == NULL) {
-		return TLS_ERR_INVALID_ARG;
+		return fail(TLS_ERR_INVALID_ARG, "invalid argument");
 	}
-
 	*out_conn = TLS_CONN_INVALID;
-
-	// Ensure initialized
-	tls_error_t init_err = tls_platform_init();
-	if (init_err != TLS_OK) {
-		return init_err;
+	tls_error_t err = tls_platform_init();
+	if (err != TLS_OK) {
+		return fail(err, "could not initialise OpenSSL");
 	}
 
-	// Create SSL context for server
-	const SSL_METHOD* method = TLS_server_method();
-	SSL_CTX* ctx = SSL_CTX_new(method);
+	SSL_CTX* ctx = SSL_CTX_new(TLS_server_method());
 	if (ctx == NULL) {
-		return TLS_ERR_INIT;
+		return fail_openssl(TLS_ERR_INIT, "could not create the TLS context");
 	}
-
-	// Set minimum TLS version to 1.2 for security
 	SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
-
-	// Load certificate
-	if (SSL_CTX_use_certificate_file(ctx, cert_path, SSL_FILETYPE_PEM) != 1) {
+	if ((err = load_identity(ctx, cert_path, key_path)) != TLS_OK) {
 		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
+		return err;
 	}
 
-	// Load private key
-	if (SSL_CTX_use_PrivateKey_file(ctx, key_path, SSL_FILETYPE_PEM) != 1) {
-		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
-	}
-
-	// Verify private key matches certificate
-	if (SSL_CTX_check_private_key(ctx) != 1) {
-		SSL_CTX_free(ctx);
-		return TLS_ERR_CERTIFICATE;
-	}
-
-	// Create SSL connection
 	SSL* ssl = SSL_new(ctx);
 	if (ssl == NULL) {
 		SSL_CTX_free(ctx);
-		return TLS_ERR_INIT;
+		return fail_openssl(TLS_ERR_INIT, "could not create the TLS session");
 	}
-
-	// Attach to socket
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
-		return TLS_ERR_INIT;
+		return fail(TLS_ERR_INIT, "not a socket");
 	}
 
-	// Perform TLS handshake (server side)
-	int ret = SSL_accept(ssl);
+	sigpipe_guard_t guard;
+	sigpipe_block(&guard);
+	const int ret = SSL_accept(ssl);
+	sigpipe_restore(&guard);
 	if (ret != 1) {
+		err = fail_openssl(TLS_ERR_ACCEPT, "the handshake failed");
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
-		return TLS_ERR_ACCEPT;
+		return err;
 	}
-
-	// Allocate connection structure
-	tls_connection_t* conn = malloc(sizeof(tls_connection_t));
-	if (conn == NULL) {
-		SSL_shutdown(ssl);
-		SSL_free(ssl);
-		SSL_CTX_free(ctx);
-		return TLS_ERR_MEMORY;
-	}
-
-	conn->ssl = ssl;
-	conn->ctx = ctx;
-	conn->socket_fd = socket_fd;
-	conn->is_server = true;
-
-	*out_conn = conn;
-	return TLS_OK;
+	return wrap(ssl, ctx, socket_fd, true, out_conn);
 }
 
 tls_error_t tls_platform_send(tls_conn_t conn, const char* data, size_t len, int* out_sent) {
 	if (conn == TLS_CONN_INVALID || data == NULL || out_sent == NULL) {
-		return TLS_ERR_INVALID_ARG;
+		return fail(TLS_ERR_INVALID_ARG, "invalid argument");
 	}
-
 	tls_connection_t* c = (tls_connection_t*)conn;
-
-	int sent = SSL_write(c->ssl, data, (int)len);
+	// SSL_write takes an int; a blocking one writes all of what it is given
+	const int chunk = len > INT_MAX ? INT_MAX : (int)len;
+	sigpipe_guard_t guard;
+	sigpipe_block(&guard);
+	const int sent = SSL_write(c->ssl, data, chunk);
+	sigpipe_restore(&guard);
 	if (sent <= 0) {
-		int ssl_err = SSL_get_error(c->ssl, sent);
+		const int ssl_err = SSL_get_error(c->ssl, sent);
 		if (ssl_err == SSL_ERROR_ZERO_RETURN) {
-			return TLS_ERR_CLOSED;
+			return fail(TLS_ERR_CLOSED, "the peer closed the connection");
 		}
-		return TLS_ERR_WRITE;
+		return fail_openssl(TLS_ERR_WRITE, ssl_err == SSL_ERROR_SYSCALL ? strerror(errno) : "write failed");
 	}
-
 	*out_sent = sent;
 	return TLS_OK;
 }
 
 tls_error_t tls_platform_receive(tls_conn_t conn, char* buffer, size_t max_len, int* out_received) {
 	if (conn == TLS_CONN_INVALID || buffer == NULL || out_received == NULL) {
-		return TLS_ERR_INVALID_ARG;
+		return fail(TLS_ERR_INVALID_ARG, "invalid argument");
 	}
-
 	tls_connection_t* c = (tls_connection_t*)conn;
-
-	int received = SSL_read(c->ssl, buffer, (int)max_len);
+	const int received = SSL_read(c->ssl, buffer, max_len > INT_MAX ? INT_MAX : (int)max_len);
 	if (received <= 0) {
-		int ssl_err = SSL_get_error(c->ssl, received);
+		const int ssl_err = SSL_get_error(c->ssl, received);
+		*out_received = 0;
 		if (ssl_err == SSL_ERROR_ZERO_RETURN) {
-			*out_received = 0;
-			return TLS_ERR_CLOSED;
+			return fail(TLS_ERR_CLOSED, "the peer closed the connection");
 		}
-		return TLS_ERR_READ;
+		return fail_openssl(TLS_ERR_READ, ssl_err == SSL_ERROR_SYSCALL ? "the connection ended without a TLS close"
+																		: "read failed");
 	}
-
 	*out_received = received;
 	return TLS_OK;
 }
@@ -370,17 +298,14 @@ void tls_platform_close(tls_conn_t conn) {
 	if (conn == TLS_CONN_INVALID) {
 		return;
 	}
-
 	tls_connection_t* c = (tls_connection_t*)conn;
-
-	// Send TLS shutdown alert
+	// The close alert is a write too
+	sigpipe_guard_t guard;
+	sigpipe_block(&guard);
 	SSL_shutdown(c->ssl);
-
-	// Free SSL resources
+	sigpipe_restore(&guard);
 	SSL_free(c->ssl);
 	SSL_CTX_free(c->ctx);
-
-	// Free connection structure
 	free(c);
 }
 

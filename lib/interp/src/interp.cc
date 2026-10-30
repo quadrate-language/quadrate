@@ -23,6 +23,7 @@
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/string_literal.h>
+#include <quadrate/qc/type_names.h>
 #include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
 #include <quadrate/rt/stack.h>
@@ -36,6 +37,7 @@
 #include <memory>
 #include <new>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -582,16 +584,16 @@ namespace {
 	bool evalSizedArrayLiteral(qd_interp* interp, const Qd::AstNodeArrayLiteral* literal) {
 		const std::string& elemName = literal->elementType();
 		qd_array_type elementType = QD_ARRAY_TYPE_INT;
-		if (elemName == "f64" || elemName == "f32") {
+		if (elemName == "f64") {
 			elementType = QD_ARRAY_TYPE_FLOAT;
-		} else if (elemName == "str" || elemName == "string") {
+		} else if (elemName == "str") {
 			elementType = QD_ARRAY_TYPE_STR;
 		} else if (elemName == "ptr") {
 			elementType = QD_ARRAY_TYPE_PTR;
 		} else if (elemName == "d128") {
 			elementType = QD_ARRAY_TYPE_D128;
-		} else if (elemName != "i64" && elemName != "i32" && elemName != "i16" && elemName != "i8" &&
-				   elemName != "u64" && elemName != "u32" && elemName != "u16" && elemName != "u8") {
+		} else if (elemName != "i64" && !Qd::isSizedIntTypeName(elemName) &&
+				   Qd::builtinTypeAliasTarget(elemName) != "i64") {
 			// Structs are not a thing in this tier, so `[n]Point` has nothing to build.
 			interp->error = "this tier has no structs, so an array of them cannot be built";
 			return false;
@@ -651,11 +653,7 @@ namespace {
 			}
 		}
 
-		if (qd_push_p(interp->ctx, array) != 0) {
-			qd_array_release(array);
-			interp->error = "stack overflow";
-			return false;
-		}
+		qd_push_p(interp->ctx, array);
 		return true;
 	}
 
@@ -775,34 +773,28 @@ namespace {
 			}
 		}
 
-		if (qd_push_p(interp->ctx, array) != 0) {
-			qd_array_release(array);
-			interp->error = "stack overflow";
-			return false;
-		}
+		qd_push_p(interp->ctx, array);
 		return true;
 	}
 
-	// 'cast<T>' is one instruction name covering four runtime ops, picked by its
-	// type parameter -- the mapping generator_nodes_instructions.cc uses.
+	// 'cast<T>' is one instruction name covering five runtime ops, picked by its type
+	// parameter, which the validator keeps to these five -- the mapping
+	// generator_nodes_instructions.cc uses.
 	OpFn castOp(const std::string& typeParam) {
-		if (typeParam == "f64" || typeParam == "f32" || typeParam == "f" || typeParam == "float" ||
-				typeParam == "float64") {
-			return qd_castf;
+		if (typeParam == "i64") {
+			return qd_casti;
 		}
-		if (typeParam == "str" || typeParam == "string" || typeParam == "s") {
-			return qd_casts;
+		if (typeParam == "f64") {
+			return qd_castf;
 		}
 		if (typeParam == "d128") {
 			return qd_castd;
 		}
-		if (typeParam == "ptr" || typeParam == "p" || typeParam == "pointer") {
-			return qd_castp;
+		if (typeParam == "str") {
+			return qd_casts;
 		}
-		if (typeParam == "i64" || typeParam == "i32" || typeParam == "i16" || typeParam == "i8" || typeParam == "u64" ||
-				typeParam == "u32" || typeParam == "u16" || typeParam == "u8" || typeParam == "i" ||
-				typeParam == "int" || typeParam == "int64") {
-			return qd_casti;
+		if (typeParam == "ptr") {
+			return qd_castp;
 		}
 		return nullptr;
 	}
@@ -1118,8 +1110,10 @@ namespace {
 			if (subject.type != QD_STACK_TYPE_STR || subject.value.s == nullptr) {
 				return false;
 			}
-			const char* held = qd_string_data(subject.value.s);
-			return held != nullptr && Qd::decodeStringLiteral(text) == held;
+			// The whole string, so one holding a NUL is not equal to its part before the NUL
+			const std::string label = Qd::decodeStringLiteral(text);
+			const std::string_view held(qd_string_data(subject.value.s), qd_string_length(subject.value.s));
+			return held == std::string_view(label.c_str());
 		}
 		if (Qd::isD128LiteralText(text)) {
 			return d128Matches(text, subject);

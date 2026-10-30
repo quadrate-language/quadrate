@@ -1,0 +1,38 @@
+// Test: an `any` argument reaches a typed parameter checked when the call runs, and an i64 in it
+// widens to the f64 or d128 the parameter takes, as a plain i64 argument does.
+use math
+
+struct Box {
+	w: f64
+}
+
+fn (b:Box) scaled(by:f64 -- r:f64) {
+	b <<w by *
+}
+
+fn half(x:f64 -- r:f64) {
+	x 2.0 /
+}
+
+fn tenth(x:d128 -- r:d128) {
+	x 10d /
+}
+
+fn width(b:Box -- r:f64) {
+	b <<w
+}
+
+fn pass(a:any -- r:any) {
+	a
+}
+
+fn main() {
+	3 pass half print nl
+	7 pass tenth print nl
+	Box {
+		w = 2.0
+	} -> box
+	box pass width print nl
+	box 4 pass scaled print nl
+	16.0 pass math::sqrt print nl
+}

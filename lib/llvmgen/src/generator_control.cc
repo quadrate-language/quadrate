@@ -2,6 +2,56 @@
 
 namespace Qd {
 
+	// The arms share the stack from before the branch as a prefix, so they line up from the
+	// bottom. The semantic validator rejects arms that leave different depths, so reaching
+	// here with them means the two models disagree, which is worth failing on: truncating
+	// to the shallower arm used to phi the bottom of one arm's group against the top of the
+	// other's.
+	void LlvmGenerator::Impl::mergeArmStacks(const std::vector<ArmExit>& arms,
+			const std::vector<llvm::Value*>& unreachable, const char* construct, size_t line) {
+		if (arms.empty()) {
+			compileTimeStack = unreachable;
+			return;
+		}
+
+		size_t mergeSize = arms[0].second.size();
+		bool sameDepth = true;
+		for (const auto& arm : arms) {
+			sameDepth = sameDepth && arm.second.size() == mergeSize;
+			mergeSize = std::min(mergeSize, arm.second.size());
+		}
+		if (!sameDepth) {
+			std::cerr << "quadc: error: internal: " << construct << " arms leave the stack at different depths (";
+			for (size_t i = 0; i < arms.size(); i++) {
+				std::cerr << (i ? ", " : "") << arms[i].second.size();
+			}
+			std::cerr << ")";
+			if (line > 0) {
+				std::cerr << " at line " << line;
+			}
+			std::cerr << std::endl;
+			compilationFailed = true;
+		}
+
+		compileTimeStack.clear();
+		for (size_t slot = 0; slot < mergeSize; slot++) {
+			llvm::Value* first = arms[0].second[slot];
+			bool allSame = true;
+			for (const auto& arm : arms) {
+				allSame = allSame && arm.second[slot] == first;
+			}
+			if (allSame) {
+				compileTimeStack.push_back(first);
+				continue;
+			}
+			auto* phi = builder->CreatePHI(first->getType(), static_cast<unsigned>(arms.size()), "merge");
+			for (const auto& arm : arms) {
+				phi->addIncoming(arm.second[slot], arm.first);
+			}
+			compileTimeStack.push_back(phi);
+		}
+	}
+
 	void LlvmGenerator::Impl::generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx) {
 		// Compile-time stack path
 		if (useCompileTimeStack) {
@@ -59,57 +109,15 @@ namespace Qd {
 				}
 			}
 
-			// Merge block - create PHI nodes for differing stack values
 			builder->SetInsertPoint(mergeBB);
-
-			if (thenTerminated && elseTerminated) {
-				// Both branches terminated - merge block is unreachable
-				compileTimeStack = thenStack;
-			} else if (thenTerminated) {
-				// Only then terminated - use else values
-				compileTimeStack = elseStack;
-			} else if (elseTerminated) {
-				// Only else terminated - use then values
-				compileTimeStack = thenStack;
-			} else {
-				// Both branches reach merge - need PHI nodes
-				llvm::BasicBlock* thenPred = thenExitBlock;
-				llvm::BasicBlock* elsePred = elseExitBlock;
-
-				// Merge stack values with PHI nodes.
-				//
-				// The arms must leave the stack at the same depth. The semantic validator now
-				// rejects a mismatch outright, so reaching here with unequal arms means the two
-				// models disagree — which is worth failing on rather than papering over. What
-				// this code used to do was truncate to the shallower arm and drop the excess
-				// from the bottom up, so `if { 1 } else { 2 3 }` phi'd 1 against 2 and discarded
-				// the 3: the false branch yielded the *bottom* of its group rather than the
-				// top-of-stack value stack semantics promise. Bottom alignment itself is right —
-				// the arms share the pre-`if` stack as a prefix — it is the silent truncation
-				// that was wrong.
-				if (thenStack.size() != elseStack.size()) {
-					std::cerr << "quadc: error: internal: if/else arms leave the stack at different depths (then: "
-							  << thenStack.size() << ", else: " << elseStack.size() << ")";
-					if (ifStmt->line() > 0) {
-						std::cerr << " at line " << ifStmt->line();
-					}
-					std::cerr << std::endl;
-					compilationFailed = true;
-				}
-				size_t mergeSize = std::min(thenStack.size(), elseStack.size());
-				compileTimeStack.clear();
-				for (size_t i = 0; i < mergeSize; i++) {
-					if (thenStack[i] == elseStack[i]) {
-						compileTimeStack.push_back(thenStack[i]);
-					} else {
-						llvm::Type* stkType = thenStack[i]->getType();
-						auto* phi = builder->CreatePHI(stkType, 2, "merge");
-						phi->addIncoming(thenStack[i], thenPred);
-						phi->addIncoming(elseStack[i], elsePred);
-						compileTimeStack.push_back(phi);
-					}
-				}
+			std::vector<ArmExit> arms;
+			if (!thenTerminated) {
+				arms.emplace_back(thenExitBlock, thenStack);
 			}
+			if (!elseTerminated) {
+				arms.emplace_back(elseExitBlock, elseStack);
+			}
+			mergeArmStacks(arms, thenStack, "if/else", ifStmt->line());
 
 			return;
 		}
@@ -1148,6 +1156,11 @@ namespace Qd {
 					for (const auto& valueNodePtr : initIt->second->valueNodes) {
 						IAstNode* valueNode = valueNodePtr.get();
 						generateNode(valueNode, ctx);
+					}
+					// Into the field's own representation: an i64 stored as an f64 field's
+					// bits read back as a denormal
+					if (initIt->second->cast != CastDirection::NONE) {
+						generateCastInstructions({initIt->second->cast}, structName + "." + field.name, false, ctx);
 					}
 				} else if (!field.defaultValue.empty()) {
 					// Use default value for this field

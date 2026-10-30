@@ -1,7 +1,7 @@
 // Unit tests for the time module
 use strings
-use time
 use testing
+use time
 
 test "time constants" {
 	time::Nanosecond 1 testing::assert_eq
@@ -203,4 +203,19 @@ test "time::millis less than micros" {
 	time::millis -> ms
 	time::micros -> us
 	us ms > testing::assert_true
+}
+
+// strftime wrote into 256 bytes, and a longer result failed
+test "time::format a long result" {
+	0 "%Y-%m-%d " 30 strings::repeat time::format! strings::len 330 testing::assert_eq
+}
+
+// strptime stopped where the format did, and the rest was ignored
+test "time::parse takes the whole input" {
+	"2024-01-15xyz" "%Y-%m-%d" time::parse if { drop "trailing text read" testing::fail }
+}
+
+// timegm returns -1 for this second as well as for failure
+test "time::parse the second before the epoch" {
+	"1969-12-31 23:59:59" "%Y-%m-%d %H:%M:%S" time::parse! -1 testing::assert_eq
 }

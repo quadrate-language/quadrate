@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_STRUCT_CONSTRUCTION_H
 
 #include "ast_node.h"
+#include "ast_types.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -16,6 +17,7 @@ namespace Qd {
 	struct StructFieldInit {
 		std::string fieldName;
 		std::vector<std::unique_ptr<IAstNode>> valueNodes; // Expression nodes that produce the field value
+		CastDirection cast = CastDirection::NONE; // What the value needs to fit the field, set by the validator
 	};
 
 	/**
@@ -96,6 +98,10 @@ namespace Qd {
 
 		const std::vector<StructFieldInit>& fieldInits() const {
 			return mFieldInits;
+		}
+
+		void setFieldCast(size_t index, CastDirection cast) {
+			mFieldInits[index].cast = cast;
 		}
 
 		const std::vector<std::string>& typeArgs() const {

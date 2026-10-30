@@ -17,6 +17,6 @@ fn main() {
 		"42 is not null" print nl
 	}
 
-	// null prints as 0
+	// null is a ptr, and prints as one
 	null print nl
 }

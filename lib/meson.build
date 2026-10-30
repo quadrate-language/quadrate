@@ -3,7 +3,6 @@ qdrt_src_inc = include_directories('rt')
 
 subdir('version')
 subdir('platform')
-subdir('cli')
 subdir('rt')
 subdir('qc')
 subdir('interp')

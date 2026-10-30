@@ -1,0 +1,8 @@
+// Test: a level outside the constants raises. It indexed a table of level names, and level 9
+// printed whatever lay past the end of it.
+use log
+
+fn main() {
+	log::new! -> logger
+	logger 9 "level nine" log::log
+}

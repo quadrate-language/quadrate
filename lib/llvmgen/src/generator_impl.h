@@ -84,6 +84,7 @@
 #include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/string_literal.h>
+#include <quadrate/qc/type_names.h>
 
 #include <algorithm>
 #include <cstring>
@@ -107,6 +108,7 @@ namespace Qd {
 	// Forward declarations for helper functions
 	bool looksLikeStructType(const std::string& typeStr);
 	bool isArrayType(const std::string& typeStr);
+	bool isFnType(const std::string& typeStr);
 
 	/**
 	 * @brief True when `bb` ends in a terminator instruction.
@@ -453,12 +455,51 @@ namespace Qd {
 				AstNodeFunctionDeclaration* funcNode, bool isMain, const std::string& namePrefix = "main");
 		// Declare a function (create LLVM function and register in userFunctions, but don't generate body)
 		bool declareFunction(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix);
+		std::string returnStructType(AstNodeFunctionDeclaration* funcNode);
+		bool generateMainEntry(
+				AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix, llvm::DIFile* funcDebugFile);
+		bool isIntegerOnlyFunction(AstNodeFunctionDeclaration* funcNode);
+		llvm::Function* settledNativeVersion(AstNodeFunctionDeclaration* funcNode, const std::string& registerName);
+		void generateNativeBody(AstNodeFunctionDeclaration* funcNode, llvm::Function* nativeFn,
+				const std::string& registerName, llvm::Value* ctx, llvm::BasicBlock* entryBB,
+				llvm::BasicBlock* returnBB);
+		bool generateStackBody(AstNodeFunctionDeclaration* funcNode, const std::string& namePrefix, llvm::Value* ctx,
+				llvm::BasicBlock* returnBB);
+		llvm::Function* declareNativeVersion(AstNodeFunctionDeclaration* funcNode, const std::string& fnName,
+				llvm::GlobalValue::LinkageTypes linkage, NativeFuncInfo& info);
+		void declareImport(AstNodeImport* importNode, const std::string& moduleName);
+
+		// generateProgram's phases, in the order it runs them
+		void applyTargetLayout();
+		void collectTypeAliases(IAstNode* root);
+		void declareImports(IAstNode* root);
+		void collectConstants(IAstNode* root);
+		void collectGlobalVars(IAstNode* root);
+		void processStructs(IAstNode* root);
+		bool generatesCMain(IAstNode* root);
+		void declareProgramFunctions(IAstNode* root, bool generateCMain);
+		bool declareModuleFunctions(IAstNode* root);
+		bool generateFunctionBodies(IAstNode* root, bool generateCMain);
+		bool generateTests(IAstNode* root);
+		bool generateEntryPoints(IAstNode* root, bool generateCMain);
+		bool isReachable(AstNodeFunctionDeclaration* funcNode, const std::string& moduleName,
+				const std::string& qualifiedName) const;
 		bool generateTest(AstNodeTest* testNode, const std::string& namePrefix = "main");
 		bool generateTestRunner(const std::vector<std::pair<std::string, std::string>>& testNamesWithDisplay);
 
 		// Node generation
 		void generateNode(IAstNode* node, llvm::Value* ctx);
 		void generateInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
+		bool generateCompileTimeInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
+		bool generateInstructionMethodCall(AstNodeInstruction* inst, llvm::Value* ctx);
+		void generateCast(AstNodeInstruction* inst, llvm::Value* ctx);
+		void generateClone(AstNodeInstruction* inst, llvm::Value* ctx);
+		void generateRuntimeInstruction(AstNodeInstruction* inst, llvm::Value* ctx);
+		bool generateMachineInstruction(const std::string& name, const std::function<llvm::Value*()>& pop,
+				const std::function<void(llvm::Value*)>& push);
+		llvm::Function* declareRuntimeFunction(const char* name);
+		std::pair<llvm::Value*, llvm::Value*> popPromotedOperands();
+		bool generateLocalPush(const std::string& name, llvm::Value* ctx);
 		void generateD128Literal(const std::string& text, llvm::Value* ctx);
 
 		// A d128 is sixteen bytes held in the slot itself (QD_STACK_TYPE_D128): a slot's value
@@ -479,14 +520,63 @@ namespace Qd {
 		bool d128LiteralWords(const std::string& text, uint64_t& low, uint64_t& high);
 		void generateLiteral(AstNodeLiteral* lit, llvm::Value* ctx);
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
+		// What an identifier can name, tried in this order by generateIdentifier; each returns
+		// false when the name is not one of its kind
+		void pushStackElement(llvm::Value* elementPtr, llvm::Value* ctx, const std::string& name, bool isArray);
+		bool generateCapturedPush(const std::string& name, llvm::Value* ctx);
+		bool generateIteratorPush(const std::string& name, llvm::Value* ctx);
+		bool generateGlobalVarPush(const std::string& name, llvm::Value* ctx);
+		bool generateConstantPush(const std::string& name, llvm::Value* ctx);
+		bool generateFunctionAliasPush(const std::string& name, llvm::Value* ctx);
+		// The user function an identifier calls, or "" when it calls none
+		std::string resolveCallee(AstNodeIdentifier* ident, bool& resolvedAsMethod);
+		void generateUserCall(
+				AstNodeIdentifier* ident, const std::string& callee, bool resolvedAsMethod, llvm::Value* ctx);
+		bool generateCompileTimeNativeCall(const std::string& callee, llvm::Value* ctx);
+		bool generateInlineBitsCall(const std::string& callee, llvm::Value* ctx);
+		void generateReceiverRoll(size_t positionFromTop, llvm::Value* ctx);
+		llvm::Value* generateDirectCall(const std::string& callee, llvm::Function* wrapper, llvm::Value* ctx);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
 		void generateAnonymousFunction(AstNodeAnonymousFunction* anonFunc, llvm::Value* ctx);
+
+		// What the code around a lambda was being generated with, set aside for its body
+		struct EnclosingScope {
+			std::map<std::string, llvm::AllocaInst*> localVariables;
+			std::map<std::string, std::string> localVariableStructTypes;
+			std::set<std::string> localArrayVariables;
+			std::map<std::string, llvm::AllocaInst*> capturedVariableRefs;
+			std::set<std::string> heapAllocatedCaptures;
+			std::set<std::string> indirectLocalVariables;
+			std::set<std::string> closureVariables;
+			std::string lastStructConstructed;
+			std::string lastFieldAccessResultType;
+			llvm::BasicBlock* returnBlock = nullptr;
+			bool isFallible = false;
+			llvm::BasicBlock* insertBlock = nullptr;
+			llvm::BasicBlock::iterator insertPoint;
+		};
+
+		EnclosingScope enterLambdaScope();
+		void leaveLambdaScope(EnclosingScope&& scope);
+		llvm::Function* generateLambdaFunction(
+				AstNodeAnonymousFunction* anonFunc, const std::string& funcName, const EnclosingScope& enclosing);
+		void bindLambdaParameters(AstNodeAnonymousFunction* anonFunc, llvm::Value* anonCtx);
+		llvm::Value* generateClosureEnvironment(const std::vector<std::string>& captures);
+		llvm::Value* captureReference(const std::string& name);
+		void retainCaptureBlock(llvm::Value* slot, const std::string& name);
+		void pushClosure(llvm::Function* fn, llvm::Value* env, size_t captureCount, llvm::Value* ctx);
 		void generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
+		bool generateScopedMethodCall(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx);
+		void generateModuleFunctionCall(
+				AstNodeScopedIdentifier* scopedIdent, const std::string& fullName, llvm::Value* ctx);
 		void generateLocal(AstNodeLocal* local, llvm::Value* ctx);
 		void generateLocalOne(const std::string& name, size_t lineNum, llvm::Value* ctx);
+		llvm::AllocaInst* createCapturedSlot(const std::string& name);
+		void bindParameter(const std::string& name, llvm::Value* ctx);
 		void generateLocalCleanup();
 		void emitCaptureBlockRelease(llvm::Value* elemPtr, const std::string& name);
-		void generateCastInstructions(const std::vector<CastDirection>& casts, llvm::Value* ctx);
+		void generateCastInstructions(const std::vector<CastDirection>& casts, const std::string& callee,
+				bool receiverFirst, llvm::Value* ctx);
 
 		// Error state
 		/** @brief The error state left by a fallible call that has just returned. */
@@ -506,8 +596,9 @@ namespace Qd {
 		ErrorState generateReadErrorState(llvm::Value* ctx, const char* name = "has_error");
 		// The abort / propagate / push-status tail shared by fallible call sites. See its
 		// definition; `callNode` is the call, which is how the status is shaped for its consumer.
-		void generateFallibleCallEpilogue(
-				llvm::Value* ctx, const char* name, IAstNode* callNode, bool abortOnError, bool propagateOnError);
+		// : an imported C function, which pushes its own status.
+		void generateFallibleCallEpilogue(llvm::Value* ctx, const char* name, IAstNode* callNode, bool abortOnError,
+				bool propagateOnError, bool calleePushesStatus = false);
 
 		// Control flow
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
@@ -517,6 +608,29 @@ namespace Qd {
 		void generateWhileConditionPrefix(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
 		void generateWhileConditionTest(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);
+
+		// What a switch matches on: an SSA value on the native path, otherwise the top stack
+		// slot, which stays on the stack until an arm is entered
+		struct SwitchScrutinee {
+			llvm::Value* native = nullptr;
+			llvm::Value* slot = nullptr;
+		};
+
+		bool takeSwitchScrutinee(SwitchScrutinee& scrutinee, llvm::Value* ctx);
+		bool switchReadsFallibleStatus(AstNodeSwitchStatement* switchStmt);
+		llvm::Value* generateCaseMatch(
+				IAstNode* label, const SwitchScrutinee& scrutinee, bool fallibleStatus, llvm::Value* ctx);
+		llvm::Value* generateNamedConstantMatch(const std::string& name, const SwitchScrutinee& scrutinee);
+		llvm::Value* generateIntCaseMatch(int64_t label, const SwitchScrutinee& scrutinee);
+		llvm::Value* generateFloatCaseMatch(double label, const SwitchScrutinee& scrutinee);
+		llvm::Value* generateD128CaseMatch(const std::string& text, const SwitchScrutinee& scrutinee);
+		llvm::Value* generateStringCaseMatch(const std::string& literal, const SwitchScrutinee& scrutinee);
+		// An arm's last block and the compile-time stack it leaves
+		using ArmExit = std::pair<llvm::BasicBlock*, std::vector<llvm::Value*>>;
+		// Reconciles the arms reaching a merge block: values every arm agrees on pass through,
+		// the rest become PHI nodes. With no arm reaching it the stack becomes `unreachable`.
+		void mergeArmStacks(const std::vector<ArmExit>& arms, const std::vector<llvm::Value*>& unreachable,
+				const char* construct, size_t line);
 
 		// Struct handling
 		void processStructDeclaration(AstNodeStructDeclaration* structDecl, const std::string& moduleName);
@@ -536,6 +650,23 @@ namespace Qd {
 		void generateArrayFilledArray(const std::string& elemType, llvm::Value* ctx);
 		bool isKnownStruct(const std::string& typeName);
 		size_t getTypeSize(const std::string& typeName);
+
+		/// What a value of a written type is on the stack
+		enum class ValueKind {
+			Int,
+			Float,
+			D128,
+			Str,
+			Ptr, ///< ptr, an array, a struct or a function
+			Any	 ///< any, a type parameter, or no type written
+		};
+		/// `typeStr` with the program's aliases and the built-in ones (`bool`) resolved
+		std::string resolveTypeName(const std::string& typeStr);
+		ValueKind valueKind(const std::string& typeStr);
+		/// The native calling convention's types for a signature, when every input is i64 or
+		/// f64 (or untyped) and the output, if any, is too
+		bool nativeSignatureTypes(const std::vector<std::string>& inputs, const std::vector<std::string>& outputs,
+				std::vector<NativeParamType>& inputTypes, NativeParamType& outputType);
 
 		// Helpers
 		void collectAllCapturesFromAST(IAstNode* node, std::set<std::string>& captures);

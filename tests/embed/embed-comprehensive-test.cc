@@ -325,6 +325,66 @@ void test_many_functions() {
 	qd_free_context(ctx);
 }
 
+void test_multi_file_stdlib_module() {
+	printf("--- Script using a stdlib module of several files ---\n");
+
+	// ct is one file per container, each brought in by ct.qd's `use pair.qd` and the like.
+	// qd_build used to load whichever single file of a module came first, and look for the
+	// `use`d siblings among the stdlib modules, so `ct::Pair` was never defined.
+	qd_context* ctx = qd_create_context(1024);
+
+	qd_module* t8 = qd_get_module(ctx, "t8");
+	qd_add_script(t8,
+		"use ct\n"
+		"fn run( -- ) {\n"
+		"    ct::Pair<i64, i64> { first = 7 second = 13 } -> p\n"
+		"    p first p second + print nl\n"
+		"}\n"
+	);
+	qd_build(t8);
+	check("t8 compiled (multi-file stdlib module)", qd_is_compiled(t8));
+
+	qd_execute(ctx, "t8::run");
+
+	qd_free_context(ctx);
+}
+
+// A script with a syntax error is not compiled. The parse errors went unchecked, so a
+// broken function was dropped and the rest built as if nothing were wrong.
+void test_syntax_error_fails_build() {
+	printf("--- A syntax error fails the build ---\n");
+
+	qd_context* ctx = qd_create_context(1024);
+	qd_module* broken = qd_get_module(ctx, "broken");
+	qd_add_script(broken, "fn fine( -- v:i64) { 1 }\nfn bad( { 2 }\n");
+	qd_build(broken);
+	check("module with a syntax error is not compiled", !qd_is_compiled(broken));
+	qd_free_context(ctx);
+}
+
+// Building a module again builds what it holds now
+void test_rebuild() {
+	printf("--- Rebuilding a module ---\n");
+
+	qd_context* ctx = qd_create_context(1024);
+	qd_module* app = qd_get_module(ctx, "again");
+	qd_add_script(app, "fn one( -- v:i64) { 1 }");
+	qd_build(app);
+	check("first build compiled", qd_is_compiled(app));
+
+	qd_add_script(app, "fn two( -- v:i64) { 2 }");
+	qd_build(app);
+	check("second build compiled", qd_is_compiled(app));
+
+	qd_execute(ctx, "again::one again::two");
+	int64_t two = 0;
+	int64_t one = 0;
+	qd_pop_i(ctx, &two);
+	qd_pop_i(ctx, &one);
+	check("both builds' functions run", one == 1 && two == 2);
+	qd_free_context(ctx);
+}
+
 int main(void) {
 	printf("=== Comprehensive Embedding API Test ===\n\n");
 
@@ -340,6 +400,9 @@ int main(void) {
 	test_cross_module_typed_stdlib();
 	test_context_userdata();
 	test_many_functions();
+	test_multi_file_stdlib_module();
+	test_syntax_error_fails_build();
+	test_rebuild();
 
 	printf("\n=== Results: %d passed, %d failed ===\n", g_tests_passed, g_tests_failed);
 	if (g_tests_failed == 0) {

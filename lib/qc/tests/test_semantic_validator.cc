@@ -393,11 +393,12 @@ TEST(ComprehensiveMixed) {
 	ASSERT(errors == 0, "comprehensive mixed scenario should work");
 }
 
-// Test that missing modules are reported as errors
+// Test that missing modules are reported as errors. Names no installation provides: `math`
+// is found wherever Quadrate is installed, as every tool's search finds it.
 TEST(UseStatementCollection) {
 	const char* src = R"(
-		use std
-		use math
+		use no_such_module_one
+		use no_such_module_two
 		fn main() {
 			42 print
 		}

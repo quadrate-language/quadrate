@@ -83,26 +83,6 @@ inline std::string numericLiteralProblem(const std::string& text) {
 	return isFloatLiteralText(text) ? floatLiteralProblem(text) : integerLiteralProblem(text);
 }
 
-// Helper function to expand tilde (~) in file paths
-inline std::string expandTilde(const std::string& path) {
-	if (path.empty() || path[0] != '~') {
-		return path;
-	}
-
-	const char* home = std::getenv("HOME");
-	if (!home) {
-		return path;
-	}
-
-	if (path.length() == 1) {
-		return std::string(home);
-	} else if (path[1] == '/') {
-		return std::string(home) + path.substr(1);
-	}
-
-	return path;
-}
-
 // Extract package name from module identifier
 inline std::string getPackageFromModuleName(const std::string& moduleName) {
 	bool isFilePath = moduleName.size() >= 3 && moduleName.substr(moduleName.size() - 3) == ".qd";
@@ -157,8 +137,7 @@ inline std::string parameterSuffix(const Param* param) {
 // stack slot and the annotation has nothing to act on. They used to be accepted there and
 // silently do nothing, which is the divergence the specification called out.
 inline bool isSizedIntType(const std::string& name) {
-	return name == "i8" || name == "i16" || name == "i32" || name == "u8" || name == "u16" || name == "u32" ||
-		   name == "u64";
+	return isSizedIntTypeName(name);
 }
 
 // `where` names the position: "a parameter", "a return value", "a module global", "a cast target".
@@ -182,10 +161,12 @@ inline std::string sizedTypeMisuseMessage(const std::string& name, const std::st
 }
 
 inline bool isReservedKeyword(const std::string& name) {
-	static const std::unordered_set<std::string> KEYWORDS = {"if", "else", "for", "loop", "switch", "case", "break",
+	// Narrower than Qd::KEYWORDS: a modifier such as `stack`, `inline` or `packed` is a keyword only
+	// where it modifies, and stays usable as a name
+	static const std::unordered_set<std::string> RESERVED = {"if", "else", "for", "loop", "switch", "case", "break",
 			"continue", "return", "fn", "struct", "enum", "type", "const", "pub", "test", "use", "import", "defer",
 			"as", "true", "false", "Ok", "Err", "null", "i64", "f64", "d128", "str", "ptr", "void"};
-	return KEYWORDS.find(name) != KEYWORDS.end();
+	return RESERVED.find(name) != RESERVED.end();
 }
 
 // Serialize a case value for comparison
@@ -655,38 +636,6 @@ inline std::string substituteTypeParams(const std::string& t, const std::map<std
 		}
 	}
 	return out;
-}
-
-// Get all .qd files in a directory, sorted alphabetically
-// Returns empty vector if directory doesn't exist or is empty
-inline std::vector<std::string> globQdFiles(const std::string& directory) {
-	std::vector<std::string> files;
-
-	try {
-		if (!std::filesystem::exists(directory) || !std::filesystem::is_directory(directory)) {
-			return files;
-		}
-
-		for (const auto& entry : std::filesystem::directory_iterator(directory)) {
-			if (entry.is_regular_file()) {
-				std::string filename = entry.path().filename().string();
-				if (filename.size() > 3 && filename.substr(filename.size() - 3) == ".qd") {
-					// Exclude test files (*_test.qd) from module loading
-					if (filename.size() > 8 && filename.substr(filename.size() - 8) == "_test.qd") {
-						continue;
-					}
-					files.push_back(entry.path().string());
-				}
-			}
-		}
-
-		// Sort alphabetically for deterministic order
-		std::sort(files.begin(), files.end());
-	} catch (const std::filesystem::filesystem_error&) {
-		// Ignore filesystem errors
-	}
-
-	return files;
 }
 
 #endif // QD_QC_SEMANTIC_VALIDATOR_INTERNAL_H

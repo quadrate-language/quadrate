@@ -108,6 +108,8 @@ _Noreturn void qdrt_fatal_raise(qd_context* ctx, const char* op, const char* fmt
 		longjmp(ctx->recovery_buf, 1);
 	}
 
+	// What the program printed came before the failure, so it goes out first
+	fflush(stdout);
 	fprintf(stderr, "Fatal error in %s: %s\n", op, detail);
 	qdrt_dump_stack(ctx);
 	qd_print_stack_trace(ctx);
@@ -142,6 +144,170 @@ _Noreturn void qd_fatal_raise(qd_context* ctx, const char* op, const char* fmt, 
 	qdrt_fatal_raise(ctx, op, "%s", detail);
 }
 
+const char* qd_type_name(qd_stack_type type) {
+	switch (type) {
+	case QD_STACK_TYPE_INT:
+		return "i64";
+	case QD_STACK_TYPE_FLOAT:
+		return "f64";
+	case QD_STACK_TYPE_D128:
+		return "d128";
+	case QD_STACK_TYPE_STR:
+		return "str";
+	case QD_STACK_TYPE_PTR:
+		return "ptr";
+	}
+	return "unknown";
+}
+
+static qd_stack_element_t arg_pop(qd_context* ctx, const char* op) {
+	qd_stack_element_t elem;
+	if (qd_stack_pop(ctx->st, &elem) != QD_STACK_OK) {
+		qd_fatal_raise(ctx, op, "Stack underflow");
+	}
+	return elem;
+}
+
+_Noreturn static void arg_type_error(qd_context* ctx, const char* op, const char* expected, qd_stack_element_t elem) {
+	const char* actual = qd_type_name(elem.type);
+	qdrt_release_element(&elem);
+	qd_fatal_raise(ctx, op, "Expected %s, got %s", expected, actual);
+}
+
+int64_t qd_arg_i(qd_context* ctx, const char* op) {
+	const qd_stack_element_t elem = arg_pop(ctx, op);
+	if (elem.type != QD_STACK_TYPE_INT) {
+		arg_type_error(ctx, op, "i64", elem);
+	}
+	return elem.value.i;
+}
+
+double qd_arg_f(qd_context* ctx, const char* op) {
+	const qd_stack_element_t elem = arg_pop(ctx, op);
+	if (elem.type == QD_STACK_TYPE_INT) {
+		return (double)elem.value.i;
+	}
+	if (elem.type != QD_STACK_TYPE_FLOAT) {
+		arg_type_error(ctx, op, "f64", elem);
+	}
+	return elem.value.f;
+}
+
+qd_d128_t qd_arg_d(qd_context* ctx, const char* op) {
+	const qd_stack_element_t elem = arg_pop(ctx, op);
+	if (elem.type == QD_STACK_TYPE_INT) {
+		return qd_d128_from_i64(elem.value.i);
+	}
+	if (elem.type != QD_STACK_TYPE_D128) {
+		arg_type_error(ctx, op, "d128", elem);
+	}
+	return elem.value.d;
+}
+
+void* qd_arg_p(qd_context* ctx, const char* op) {
+	const qd_stack_element_t elem = arg_pop(ctx, op);
+	if (elem.type != QD_STACK_TYPE_PTR) {
+		arg_type_error(ctx, op, "ptr", elem);
+	}
+	return elem.value.p;
+}
+
+qd_string_t* qd_arg_s(qd_context* ctx, const char* op) {
+	const qd_stack_element_t elem = arg_pop(ctx, op);
+	if (elem.type != QD_STACK_TYPE_STR) {
+		arg_type_error(ctx, op, "str", elem);
+	}
+	return elem.value.s;
+}
+
+// The type a qd_args letter names, and whether a value of type `actual` passes as one
+static const char* args_letter_type(char letter, qd_stack_type actual, bool* accepted) {
+	switch (letter) {
+	case 'i':
+		*accepted = actual == QD_STACK_TYPE_INT;
+		return "i64";
+	case 'f':
+		*accepted = actual == QD_STACK_TYPE_FLOAT || actual == QD_STACK_TYPE_INT;
+		return "f64";
+	case 'd':
+		*accepted = actual == QD_STACK_TYPE_D128 || actual == QD_STACK_TYPE_INT;
+		return "d128";
+	case 's':
+		*accepted = actual == QD_STACK_TYPE_STR;
+		return "str";
+	case 'p':
+		*accepted = actual == QD_STACK_TYPE_PTR;
+		return "ptr";
+	case 'v':
+		*accepted = true;
+		return "any";
+	}
+	*accepted = false;
+	return "?";
+}
+
+void qd_args(qd_context* ctx, const char* op, const char* sig, ...) {
+	qd_stack* st = ctx->st;
+	const size_t count = strlen(sig);
+	if (st->size < count) {
+		qd_fatal_raise(ctx, op, "Stack underflow");
+	}
+	const size_t base = st->size - count;
+	for (size_t i = 0; i < count; i++) {
+		bool accepted = false;
+		const char* expected = args_letter_type(sig[i], st->data[base + i].type, &accepted);
+		if (!accepted) {
+			const char* actual = qd_type_name(st->data[base + i].type);
+			if (count == 1) {
+				qd_fatal_raise(ctx, op, "Expected %s, got %s", expected, actual);
+			}
+			qd_fatal_raise(ctx, op, "Expected %s for argument %zu, got %s", expected, i + 1, actual);
+		}
+	}
+
+	va_list outs;
+	va_start(outs, sig);
+	for (size_t i = 0; i < count; i++) {
+		const qd_stack_element_t* elem = &st->data[base + i];
+		switch (sig[i]) {
+		case 'i':
+			*va_arg(outs, int64_t*) = elem->value.i;
+			break;
+		case 'f':
+			*va_arg(outs, double*) = elem->type == QD_STACK_TYPE_INT ? (double)elem->value.i : elem->value.f;
+			break;
+		case 'd':
+			*va_arg(outs, qd_d128_t*) =
+					elem->type == QD_STACK_TYPE_INT ? qd_d128_from_i64(elem->value.i) : elem->value.d;
+			break;
+		case 's':
+			*va_arg(outs, qd_string_t**) = elem->value.s;
+			break;
+		case 'p':
+			*va_arg(outs, void**) = elem->value.p;
+			break;
+		case 'v':
+			*va_arg(outs, qd_stack_element_t*) = *elem;
+			break;
+		}
+	}
+	va_end(outs);
+	// The references move to the caller with the values, so the slots are dropped, not released
+	st->size = base;
+}
+
+int qd_fail(qd_context* ctx, int code, const char* fmt, ...) {
+	char msg[512];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(msg, sizeof(msg), fmt, args);
+	va_end(args);
+	ctx->error_code = code;
+	qd_set_error_msg(ctx, msg);
+	qd_push_i(ctx, code);
+	return code;
+}
+
 void qd_closure_register(void* ptr) {
 	if (ptr) {
 		ptr_registry_add(&closure_registry, ptr);
@@ -161,66 +327,56 @@ void qd_closure_unregister(void* ptr) {
 	}
 }
 
-int qd_push_i(qd_context* ctx, int64_t value) {
-	qd_stack_error err = qd_stack_push_int(ctx->st, value);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
+// A push that does not fit is a stack overflow, the same error compiled code raises for its
+// inline pushes, so no caller has to check, and none can drop a value by not checking.
+static int push_result(qd_context* ctx, qd_stack_error err) {
+	if (err == QD_STACK_ERR_OVERFLOW) {
+		QDRT_FATAL(ctx, "push", "Stack overflow (use -s to increase stack size)");
 	}
-	return (int){0};
+	if (err == QD_STACK_ERR_ALLOC) {
+		QDRT_FATAL(ctx, "push", "Out of memory");
+	}
+	if (err != QD_STACK_OK) {
+		QDRT_FATAL(ctx, "push", "Null string");
+	}
+	return 0;
+}
+
+int qd_push_i(qd_context* ctx, int64_t value) {
+	return push_result(ctx, qd_stack_push_int(ctx->st, value));
 }
 
 int qd_push_f(qd_context* ctx, double value) {
-	qd_stack_error err = qd_stack_push_float(ctx->st, value);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-	return (int){0};
+	return push_result(ctx, qd_stack_push_float(ctx->st, value));
 }
 
 int qd_push_s(qd_context* ctx, const char* value) {
-	qd_stack_error err = qd_stack_push_str(ctx->st, value);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-	return (int){0};
+	return push_result(ctx, qd_stack_push_str(ctx->st, value));
 }
 
 int qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 	if (value == NULL) {
-		return (int){-2};
+		return push_result(ctx, QD_STACK_ERR_NULL_POINTER);
 	}
-
-	// Retain the string (increment reference count)
-	qd_string_retain(value);
-
-	// Check stack capacity
 	if (qd_stack_size(ctx->st) >= ctx->st->capacity) {
-		qd_string_release(value); // Cleanup on overflow
-		return (int){-2};
+		return push_result(ctx, QD_STACK_ERR_OVERFLOW);
 	}
 
-	// Push directly to stack
+	qd_string_retain(value);
 	ctx->st->data[ctx->st->size].value.s = value;
 	ctx->st->data[ctx->st->size].type = QD_STACK_TYPE_STR;
 	ctx->st->data[ctx->st->size].is_error_tainted = false;
 	ctx->st->size++;
 
-	return (int){0};
+	return 0;
 }
 
 int qd_push_p(qd_context* ctx, void* value) {
-	qd_stack_error err = qd_stack_push_ptr(ctx->st, value);
-	if (err != QD_STACK_OK) {
-		return (int){-2};
-	}
-	return (int){0};
+	return push_result(ctx, qd_stack_push_ptr(ctx->st, value));
 }
 
 int qd_push_d(qd_context* ctx, qd_d128_t value) {
-	if (qd_stack_push_d128(ctx->st, value) != QD_STACK_OK) {
-		return (int){-2};
-	}
-	return (int){0};
+	return push_result(ctx, qd_stack_push_d128(ctx->st, value));
 }
 
 int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high) {
@@ -762,11 +918,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 	// Fast path: direct struct access for common cases
 	size_t stack_size = st->size;
 	if (stack_size < count) {
-		fprintf(stderr, "Fatal error in %s: Stack underflow (required %zu elements, have %zu)\n", func_name, count,
-				stack_size);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		qdrt_fatal_exit();
+		QDRT_FATAL(ctx, func_name, "Stack underflow (required %zu elements, have %zu)", count, stack_size);
 	}
 
 	// Fast path: single integer parameter (very common case like fib(n:i64))
@@ -776,11 +928,7 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 		}
 		// Fall through to error reporting
 		const char* actual_type_name = qdrt_type_name(st->data[stack_size - 1].type);
-		fprintf(stderr, "Fatal error in %s: Type mismatch for parameter 1 (expected int, got %s)\n", func_name,
-				actual_type_name);
-		dump_stack(ctx);
-		qd_print_stack_trace(ctx);
-		qdrt_fatal_exit();
+		QDRT_FATAL(ctx, func_name, "Type mismatch for parameter 1 (expected int, got %s)", actual_type_name);
 	}
 
 	// Check types match (from bottom to top of required elements)
@@ -798,11 +946,8 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			const char* expected_type_name = qdrt_type_name(types[i]);
 			const char* actual_type_name = qdrt_type_name(elem->type);
 
-			fprintf(stderr, "Fatal error in %s: Type mismatch for parameter %zu (expected %s, got %s)\n", func_name,
-					i + 1, expected_type_name, actual_type_name);
-			dump_stack(ctx);
-			qd_print_stack_trace(ctx);
-			qdrt_fatal_exit();
+			QDRT_FATAL(ctx, func_name, "Type mismatch for parameter %zu (expected %s, got %s)", i + 1,
+					expected_type_name, actual_type_name);
 		}
 	}
 }
@@ -1330,6 +1475,9 @@ void qd_print_stack_trace(qd_context* ctx) {
 }
 
 void qd_print_error_msg(qd_context* ctx, const char* func_name) {
+	// What the program printed came before the failure, so it goes out first
+	fflush(stdout);
+
 	// Check NO_COLOR environment variable
 	const bool use_color = getenv("NO_COLOR") == NULL && isatty(STDERR_FILENO);
 	const char* color_red = use_color ? "\x1b[1;31m" : "";

@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <quadrate/qc/module_resolver.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -36,22 +37,14 @@ std::string getHomeDir() {
 	return std::string(home);
 }
 
-// Get modules directory path
+// Where modules are installed: the directory every tool resolves `use` against
 std::string getModulesDir() {
-	// Check QUADRATE_PATH environment variable first
-	const char* quadratePath = getenv("QUADRATE_PATH");
-	if (quadratePath) {
-		return std::string(quadratePath);
+	const std::string dir = Qd::packagesDirectory();
+	if (dir.empty()) {
+		pmError("HOME environment variable not set");
+		exit(1);
 	}
-
-	// Check if XDG_DATA_HOME is set
-	const char* xdgDataHome = getenv("XDG_DATA_HOME");
-	if (xdgDataHome) {
-		return std::string(xdgDataHome) + "/quadrate/modules";
-	}
-
-	// Default to ~/quadrate/modules
-	return getHomeDir() + "/quadrate/modules";
+	return dir;
 }
 
 // Check if a directory contains any .qd files

@@ -13,6 +13,7 @@ qc_sources = files(
 		'src/semantic_validator_collect.cc',
 		'src/semantic_validator_typecheck.cc',
 		'src/semantic_validator_instructions.cc',
+		'src/module_resolver.cc',
 )
 
 qc_inc = include_directories('include')

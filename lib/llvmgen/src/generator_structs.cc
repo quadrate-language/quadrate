@@ -6,6 +6,78 @@ namespace Qd {
 		return findStructDefinition(typeName) != nullptr;
 	}
 
+	std::string LlvmGenerator::Impl::resolveTypeName(const std::string& typeStr) {
+		std::string resolved = typeStr;
+		// The validator rejects a cycle; the bound only keeps a bad AST from hanging codegen
+		for (size_t depth = 0; depth < typeAliases.size(); depth++) {
+			auto aliasIt = typeAliases.find(resolved);
+			if (aliasIt == typeAliases.end()) {
+				break;
+			}
+			resolved = aliasIt->second;
+		}
+		if (const std::string_view builtin = builtinTypeAliasTarget(resolved); !builtin.empty()) {
+			resolved = builtin;
+		}
+		return resolved;
+	}
+
+	LlvmGenerator::Impl::ValueKind LlvmGenerator::Impl::valueKind(const std::string& typeStr) {
+		const std::string type = resolveTypeName(typeStr);
+		if (type == "i64" || isSizedIntTypeName(type)) {
+			return ValueKind::Int;
+		}
+		if (type == "f64") {
+			return ValueKind::Float;
+		}
+		if (type == "d128") {
+			return ValueKind::D128;
+		}
+		if (type == "str") {
+			return ValueKind::Str;
+		}
+		if (type == "ptr" || isArrayType(type) || isFnType(type) || isKnownStruct(type)) {
+			return ValueKind::Ptr;
+		}
+		return ValueKind::Any;
+	}
+
+	bool LlvmGenerator::Impl::nativeSignatureTypes(const std::vector<std::string>& inputs,
+			const std::vector<std::string>& outputs, std::vector<NativeParamType>& inputTypes,
+			NativeParamType& outputType) {
+		auto nativeType = [this](const std::string& typeStr, NativeParamType& out) {
+			if (typeStr.empty()) {
+				out = NativeParamType::I64;
+				return true;
+			}
+			switch (valueKind(typeStr)) {
+			case ValueKind::Int:
+				out = NativeParamType::I64;
+				return true;
+			case ValueKind::Float:
+				out = NativeParamType::F64;
+				return true;
+			default:
+				return false;
+			}
+		};
+		inputTypes.clear();
+		for (const std::string& typeStr : inputs) {
+			NativeParamType type;
+			if (!nativeType(typeStr, type)) {
+				return false;
+			}
+			inputTypes.push_back(type);
+		}
+		outputType = NativeParamType::I64;
+		for (const std::string& typeStr : outputs) {
+			if (!nativeType(typeStr, outputType)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	bool isFnType(const std::string& typeStr) {
 		return typeStr.size() > 3 && typeStr[0] == 'f' && typeStr[1] == 'n' && typeStr[2] == '(';
 	}
@@ -71,12 +143,8 @@ namespace Qd {
 		for (const auto& field : structDecl->fields()) {
 			FieldInfo fieldInfo;
 			fieldInfo.name = field->name();
-			// Resolve type aliases
-			std::string resolvedType = field->typeName();
-			auto aliasIt = typeAliases.find(resolvedType);
-			if (aliasIt != typeAliases.end()) {
-				resolvedType = aliasIt->second;
-			}
+			// Resolve type aliases, the program's and the built-in ones (`bool`)
+			const std::string resolvedType = resolveTypeName(field->typeName());
 			fieldInfo.typeName = resolvedType;
 			fieldInfo.offset = layout.totalSize;
 			fieldInfo.size = getTypeSize(resolvedType);
@@ -739,6 +807,11 @@ namespace Qd {
 			structTypeName = lastStructConstructed;
 		}
 
+		// Into the field's own representation before it is stored
+		if (fieldSet->cast() != CastDirection::NONE) {
+			generateCastInstructions({fieldSet->cast()}, ">>" + fieldName, false, ctx);
+		}
+
 		// Pop value from stack into temp
 		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 		llvm::Value* stackPtrVal = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
@@ -877,21 +950,19 @@ namespace Qd {
 	// enclosing generic reaches qd_makea, whose array adopts a type on first append, because
 	// generics are erased and the concrete type is not known at run time.
 	std::string LlvmGenerator::Impl::arrayMakeFunction(const std::string& elemType) {
-		if (elemType == "i64" || elemType == "i32" || elemType == "i16" || elemType == "i8" || elemType == "u64" ||
-				elemType == "u32" || elemType == "u16" || elemType == "u8") {
+		switch (valueKind(elemType)) {
+		case ValueKind::Int:
 			return "qd_makei";
-		}
-		if (elemType == "f64" || elemType == "f32") {
+		case ValueKind::Float:
 			return "qd_makef";
-		}
-		if (elemType == "str" || elemType == "string") {
-			return "qd_makes";
-		}
-		if (elemType == "d128") {
+		case ValueKind::D128:
 			return "qd_maked";
-		}
-		if (elemType == "ptr" || isArrayType(elemType) || isKnownStruct(elemType)) {
+		case ValueKind::Str:
+			return "qd_makes";
+		case ValueKind::Ptr:
 			return "qd_makep";
+		case ValueKind::Any:
+			break;
 		}
 		return "qd_makea";
 	}

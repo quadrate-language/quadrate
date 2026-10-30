@@ -270,7 +270,7 @@ logger "server started" log::info
 
 #### `fn` log
 
-Log a message at specified level. 
+Log a message at specified level. A level other than LevelDebug, LevelInfo, LevelWarn or LevelError is a runtime error. 
 
 **Signature:** `(logger:Logger) log(level:i64 msg:str -- )`
 

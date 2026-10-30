@@ -54,7 +54,7 @@ int os_fs_mkdir(const char* path) {
 		}
 		return ec.value() ? ec.value() : 1; // Return error code or generic error
 	} catch (...) {
-		return 1; // Generic error
+		return EIO; // An errno value like the rest: 1 would read as EPERM
 	}
 }
 
@@ -69,7 +69,7 @@ int os_fs_mkdir_p(const char* path) {
 		}
 		return 0; // Success
 	} catch (...) {
-		return 1; // Generic error
+		return EIO; // An errno value like the rest: 1 would read as EPERM
 	}
 }
 
@@ -78,13 +78,18 @@ int os_fs_mkdir_p(const char* path) {
 int os_fs_rmdir_r(const char* path) {
 	try {
 		std::error_code ec;
+		// remove_all takes a missing path as nothing to do, but os::rmdir documents ErrNotFound.
+		// symlink_status, so a dangling link still counts as there (and is removed).
+		if (!fs::exists(fs::symlink_status(path, ec))) {
+			return ec && ec != std::errc::no_such_file_or_directory ? ec.value() : ENOENT;
+		}
 		fs::remove_all(path, ec);
 		if (ec) {
 			return ec.value();
 		}
 		return 0; // Success
 	} catch (...) {
-		return 1; // Generic error
+		return EIO; // An errno value like the rest: 1 would read as EPERM
 	}
 }
 
@@ -205,7 +210,7 @@ int os_fs_walk(const char* path, os_fs_walk_callback callback, void* user_data) 
 
 		return walk_recursive(path, callback, user_data, 0);
 	} catch (...) {
-		return 1;
+		return EIO;
 	}
 }
 

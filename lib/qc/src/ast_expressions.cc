@@ -37,9 +37,10 @@ namespace Qd {
 				if (!parseInstructionTypeParam(scanner, src, errorReporter, n, typeParam)) {
 					return nullptr;
 				}
-				IAstNode* node = typeParam.empty() ? new AstNodeInstruction(instrName)
-												   : new AstNodeInstruction(instrName, typeParam);
+				auto* node = typeParam.empty() ? new AstNodeInstruction(instrName)
+											   : new AstNodeInstruction(instrName, typeParam);
 				setNodePosition(node, scanner, src);
+				parseErrorSuffix(node, scanner, src);
 				return node;
 			}
 
@@ -357,16 +358,8 @@ namespace Qd {
 			// identifier, so locals and functions named 'ctx' behave like any other.
 			if (strcmp(text, "ctx") == 0 && peekNextNonWhitespace(scanner, src) == '{') {
 				errorReporter->reportError(scanner, REMOVED_CTX_MESSAGE);
-				// Consume the whole 'ctx { ... }' by parsing it into a scratch block that
-				// is then discarded. Reusing parseBlockBody keeps comments and nested
-				// braces accounted for; counting raw '{'/'}' tokens desynchronises on a
-				// brace inside a comment (the scanner does not skip comments), which
-				// turns this one error into a cascade of top-level ones - and calling
-				// synchronize() would stop at the block's own '}' and let it close the
-				// enclosing function, with the same result.
-				u8t_scanner_scan(scanner); // Consume '{'
-				std::unique_ptr<AstNodeBlock> discarded(new AstNodeBlock());
-				parseBlockBody(discarded.get(), scanner, errorReporter, src);
+				// Drops the whole 'ctx { ... }'
+				synchronize(scanner, errorReporter, src);
 				return nullptr;
 			}
 
@@ -430,9 +423,10 @@ namespace Qd {
 				if (!parseInstructionTypeParam(scanner, src, errorReporter, n, typeParam)) {
 					return nullptr;
 				}
-				IAstNode* node = typeParam.empty() ? new AstNodeInstruction(instrName)
-												   : new AstNodeInstruction(instrName, typeParam);
+				auto* node = typeParam.empty() ? new AstNodeInstruction(instrName)
+											   : new AstNodeInstruction(instrName, typeParam);
 				setNodePosition(node, scanner, src);
+				parseErrorSuffix(node, scanner, src);
 				return node;
 			}
 
