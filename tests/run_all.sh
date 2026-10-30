@@ -1309,6 +1309,26 @@ run_reference_tests() {
     else
         log_fail "$suite" "global_var_linkage" "$output"
     fi
+
+    # The files `make format` rewrites, as they would be after it. CI turns the clang-format
+    # half off on all but one image (see .github/scripts/ci-checks.sh), since each ships a
+    # clang-format that formats a few constructs its own way.
+    if [[ "${QUADRATE_CLANG_FORMAT_CHECK:-1}" == 0 ]]; then
+        log_skip "$suite" "clang_format" "QUADRATE_CLANG_FORMAT_CHECK=0"
+    elif ! command -v clang-format > /dev/null 2>&1; then
+        log_skip "$suite" "clang_format" "clang-format not installed"
+    elif output=$(cd "$PROJECT_ROOT" && find cmd lib stdlib examples -type f \( -name '*.cc' -o -name '*.h' \) \
+            -exec clang-format --dry-run --Werror {} + 2>&1); then
+        log_pass "$suite" "clang_format" "(C++ sources are as make format leaves them)"
+    else
+        log_fail "$suite" "clang_format" "run make format" "$(echo "$output" | grep 'error:' | head -20)"
+    fi
+
+    if output=$(cd "$PROJECT_ROOT" && "$BUILD_DIR/cmd/quadfmt/quadfmt" -c lib stdlib examples 2>&1); then
+        log_pass "$suite" "quadfmt" "(Quadrate sources are as make format leaves them)"
+    else
+        log_fail "$suite" "quadfmt" "run make format" "$(echo "$output" | head -20)"
+    fi
 }
 
 # Run cross-compilation tests (--target flag)

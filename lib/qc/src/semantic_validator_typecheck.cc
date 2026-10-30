@@ -2718,8 +2718,9 @@ namespace Qd {
 			}
 			return;
 		}
-		construct->setFieldCast(index, checkFieldValue(construct, name, lookupKey, fieldName, expectedType,
-											   valueTypes.back(), valueStructTypes.empty() ? "" : valueStructTypes.back()));
+		construct->setFieldCast(
+				index, checkFieldValue(construct, name, lookupKey, fieldName, expectedType, valueTypes.back(),
+							   valueStructTypes.empty() ? "" : valueStructTypes.back()));
 	}
 
 	// The declared type of a field the struct under `structKey` has. Reports a field it
@@ -2748,8 +2749,8 @@ namespace Qd {
 	// A field's expression, checked as code on an empty stack: what it binds or leaves
 	// pending belongs to it. False when what it leaves cannot be counted.
 	bool SemanticValidator::typeCheckFieldValue(AstNodeStructConstruction* construct, const StructFieldInit& fieldInit,
-			const std::unordered_map<std::string, StackValueType>& localVariables, std::vector<StackValueType>& valueTypes,
-			std::vector<std::string>& valueStructTypes) {
+			const std::unordered_map<std::string, StackValueType>& localVariables,
+			std::vector<StackValueType>& valueTypes, std::vector<std::string>& valueStructTypes) {
 		FieldValueBlock value(construct, fieldInit);
 		std::unordered_map<std::string, StackValueType> scope = localVariables;
 		const auto savedPendingSig = mPendingFnSignature;
@@ -2854,8 +2855,8 @@ namespace Qd {
 			const size_t fieldCount = fieldOrder->size();
 			if (typeStack.size() < fieldCount) {
 				std::string errorMsg = "Type error in struct construction '" + writtenName +
-									   "': Stack underflow (requires " + std::to_string(fieldCount) +
-									   " values, have " + std::to_string(typeStack.size()) + ")";
+									   "': Stack underflow (requires " + std::to_string(fieldCount) + " values, have " +
+									   std::to_string(typeStack.size()) + ")";
 				reportError(site, errorMsg.c_str());
 			} else if (const auto* fieldTypes = lookupStructFieldTypes(structKey)) {
 				// Fields are in declaration order, consumed bottom to top

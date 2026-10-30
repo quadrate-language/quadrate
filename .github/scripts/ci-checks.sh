@@ -53,6 +53,10 @@ make docscheck
 echo "::endgroup::"
 
 echo "::group::test"
+# make tests checks clang-format too; leave that to the one job that owns it
+if [ "$run_clang_format" = 0 ]; then
+	export QUADRATE_CLANG_FORMAT_CHECK=0
+fi
 make tests
 echo "::endgroup::"
 
