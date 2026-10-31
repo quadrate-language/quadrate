@@ -361,22 +361,6 @@ int qd_pick(qd_context* ctx);
  */
 int qd_roll(qd_context* ctx);
 
-/**
- * @brief Push stack depth ( -- n )
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_depth(qd_context* ctx);
-
-/**
- * @brief Clear the entire stack
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_clear(qd_context* ctx);
-
 /** @} */ // end of StackManip group
 
 /**

@@ -46,5 +46,5 @@ fn main() {
 	"/nonexistent_qd_dir/*.zzz" os::glob! -> count -> entries
 	"glob: " print count print " " print entries len print nl
 
-	"depth " print depth print nl
+	"stack: [" print prints "]" print nl
 }

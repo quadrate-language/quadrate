@@ -37,5 +37,5 @@ fn main() {
 	get call print nl
 	g <<x print nl
 	1 2 Point <<y print nl
-	"depth: " print depth print nl
+	"stack: [" print prints "]" print nl
 }

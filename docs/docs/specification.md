@@ -630,7 +630,6 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 |-----------|--------------|-------------|
 | `drop` | `( a -- )` | Remove top |
 | `nip` | `( a b -- b )` | Remove second |
-| `clear` | `( ... -- )` | Clear entire stack |
 
 **Rearrangement:**
 
@@ -639,7 +638,6 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 | `over` | `( a b -- a b a )` | Copy second to top |
 | `rot` | `( a b c -- b c a )` | Rotate three |
 | `pick` | `( x y z -- x y z x )` | Copy the third value to the top |
-| `depth` | `( -- n )` | Push stack depth |
 
 Every stack word has a fixed effect. A word whose depth comes from a value on the stack cannot be
 given one, so an implementation cannot say what the code around it leaves — `pick` therefore

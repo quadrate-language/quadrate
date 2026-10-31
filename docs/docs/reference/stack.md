@@ -14,8 +14,6 @@ Operations for manipulating values on the stack.
 | `rot` | `(a b c -- b c a)` | Rotate three |
 | `nip` | `(a b -- b)` | Remove second |
 | `pick` | `(x y z -- x y z x)` | Copy the third value to the top |
-| `clear` | `(... --)` | Remove all |
-| `depth` | `(... -- ... n)` | Count values |
 
 **Naming convention:** the base name operates on the top element (`dup`, `swap`,
 `drop`, `over`, `nip`); a `2` suffix operates on the top pair (`dup2`).
@@ -131,18 +129,3 @@ compiler evaluates on a compile-time stack. A fixed depth is checkable everywher
 `roll`, which moved the nth value to the top, is gone for the same reason and has no replacement
 word: name the values with `->` and push them back in the order you want.
 
-### clear
-
-Removes all values from the stack.
-
-**Signature:** `(... --)`
-
-### depth
-
-Pushes the number of values on the stack.
-
-**Signature:** `(... -- ... n)`
-
-```qd
-1 2 3 depth // Stack: [1, 2, 3, 3]
-```

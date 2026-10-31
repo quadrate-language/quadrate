@@ -26,6 +26,7 @@ quadrepl [options]
 | `stack` | Show the stack |
 | `type` | Show the type of each stack value |
 | `clear` | Clear the stack |
+| `depth` | Show how many values are on the stack |
 | `reset` | Clear the stack, locals, definitions and imports |
 | `:doc <name>` | Show a signature; with no exact match, search names |
 | `:save <file>` / `:load <file>` | Write or replay session history |

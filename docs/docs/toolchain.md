@@ -278,6 +278,7 @@ Function defined
 | `stack`, `:stack` | Show the stack's values |
 | `type`, `:type` | Show the stack's types |
 | `clear`, `:clear` | Clear the stack |
+| `depth`, `:depth` | Show how many values are on the stack |
 | `reset`, `:reset` | Reset the stack, definitions and imports |
 | `:doc <name>` | Show a signature; with no exact match, search names |
 | `:save <file>` | Save the session history to a file |

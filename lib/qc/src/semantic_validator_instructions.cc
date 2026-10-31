@@ -301,22 +301,6 @@ namespace Qd {
 		else if (checkBuiltinShuffle(node, name, typeStack, structTypeStack, reportErrors)) {
 			return;
 		}
-		// Stack operations: clear (empties the entire stack)
-		else if (strcmp(name, "clear") == 0) {
-			// Clear all elements from the type stack
-			typeStack.clear();
-			// Clear struct type stack as well
-			structTypeStack.clear();
-			return;
-		}
-		// Stack operations: depth (pushes the current stack depth as an integer)
-		else if (strcmp(name, "depth") == 0) {
-			// Push an int type onto the stack (depth is always an integer)
-			typeStack.push_back(StackValueType::INT);
-			// Push empty struct type (int is not a struct)
-			structTypeStack.push_back("");
-			return;
-		}
 		// call - invoke function pointer from stack
 		else if (strcmp(name, "call") == 0) {
 			checkBuiltinCall(node, typeStack, structTypeStack, reportErrors);

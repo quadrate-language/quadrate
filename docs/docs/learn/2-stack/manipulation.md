@@ -146,28 +146,6 @@ fn main() {
 }
 ```
 
-## Utility operations
-
-### depth - stack size
-
-```qd
-fn main() {
-	1 2 3
-	depth print nl  // 3
-	drop drop drop
-}
-```
-
-### clear - empty stack
-
-```qd
-fn main() {
-	1 2 3 4 5
-	clear
-	depth print nl  // 0
-}
-```
-
 ## Quick reference
 
 | Op | Before | After | Description |

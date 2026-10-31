@@ -387,29 +387,3 @@ int qd_roll(qd_context* ctx) {
 	return (int){0};
 }
 
-int qd_clear(qd_context* ctx) {
-	// Pop all elements from the stack until empty
-	qd_stack_element_t elem;
-	while (!qd_stack_is_empty(ctx->st)) {
-		qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "clear", "Failed to pop element");
-		}
-		qdrt_release_element(&elem);
-	}
-
-	return (int){0};
-}
-
-int qd_depth(qd_context* ctx) {
-	// Get current stack size and push it as an integer
-	size_t stack_size = qd_stack_size(ctx->st);
-
-	qd_stack_error err = qd_stack_push_int(ctx->st, (int64_t)stack_size);
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "depth", "Stack overflow pushing result");
-	}
-
-	return (int){0};
-}
-

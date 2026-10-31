@@ -26,8 +26,7 @@ namespace Qd {
 			// Named comparison instructions
 			"eq", "gt", "gte", "lt", "lte", "neq", "within",
 			// Stack operations
-			"call", "clear", "clone", "depth", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick",
-			"rot", "swap",
+			"call", "clone", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot", "swap",
 			// Array operations. Creation is a literal -- `[10]i64`, `[]i64` -- not an
 			// instruction; see REMOVED_INSTRUCTIONS below.
 			"append", "set",
@@ -55,8 +54,9 @@ namespace Qd {
 	inline constexpr size_t BUILTIN_INSTRUCTION_COUNT = sizeof(BUILTIN_INSTRUCTIONS) / sizeof(BUILTIN_INSTRUCTIONS[0]);
 
 	// Builtins that used to exist and no longer do. Kept here only so their use
-	// reports what happened instead of a generic "undefined identifier", the same
-	// way the parser still recognises 'while'. The old stack effect is included
+	// reports what happened instead of a generic "undefined identifier". Only a name
+	// nothing else answers to reaches here, so a removed name is free to be reused. The
+	// old stack effect is included
 	// because it is the thing a reader porting old code needs to know, and the
 	// replacement spells out the exact rewrite: '->' binds top-of-stack first, so
 	// the binding order is the reverse of the effect's left-to-right names and is

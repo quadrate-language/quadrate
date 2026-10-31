@@ -992,8 +992,6 @@ Shifts a right by n bits, shifting in zeros (logical shift).
 | [`rot`](#rot) | `( a b c -- b c a )` | Rotates the top three values, moving third to top. |
 | [`nip`](#nip) | `( a b -- b )` | Removes the second value, keeping top. |
 | [`pick`](#pick) | `( x y z -- x y z x )` | Copies the third value from the top to the top. |
-| [`clear`](#clear) | `( ... -- )` | Removes all values from the stack. |
-| [`depth`](#depth) | `( ... -- ... n )` | Pushes the number of values on the stack. |
 
 #### dup
 
@@ -1107,27 +1105,6 @@ Copies the third value from the top to the top.
 
 ---
 
-#### clear
-
-Removes all values from the stack.
-
-**Signature:** `( ... -- )`
-
----
-
-#### depth
-
-Pushes the number of values on the stack.
-
-**Signature:** `( ... -- ... n )`
-
-**Example:**
-
-```qd
-1 2 3 depth // Stack: [1, 2, 3, 3]
-```
-
----
 
 ### ERROR HANDLING
 

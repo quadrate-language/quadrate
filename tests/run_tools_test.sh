@@ -362,9 +362,9 @@ out=$(repl '1 2 add\n:quit\n3 4 add\n')
 if [ "$(echo "$out" | tail -1)" = "3" ]; then pass ":quit ends the session"; else
     fail ":quit ends the session" "$(echo "$out" | tr '\n' ' ')"; fi
 
-out=$(repl '1 2 3 clear\nstack\n')
-if echo "$out" | grep -q 'Stack is empty'; then pass "'clear' inside a line runs as an instruction"; else
-    fail "'clear' inside a line runs as an instruction" "$(echo "$out" | tr '\n' ' ')"; fi
+out=$(repl '1 2 3\ndepth\nclear\nstack\n')
+if echo "$out" | grep -qx '3' && echo "$out" | grep -q 'Stack is empty'; then pass "depth counts and clear empties the stack"; else
+    fail "depth counts and clear empties the stack" "$(echo "$out" | tr '\n' ' ')"; fi
 
 out_dir="$WORK_DIR/replay"; mkdir -p "$out_dir"
 (cd "$out_dir" && printf 'use io\n"log.txt" "line\\n" io::append_file!\n1 print\n2 print\n3 print\n' \

@@ -33,13 +33,13 @@ through them.
       preference?
 
 - [ ] **R55 -- the stack model is not carrying its weight.** Counted over `examples/`,
-      `stdlib/` and `cmd/`: 4503 `->` bindings against roughly 270 uses of every stack-shuffling
-      word combined (`drop` 122, `swap` 39, `dup` 37, `depth` 23, `over` 18, `rot` 13, `nip` 11,
-      `clear` 6, `dup2` 5, `pick` 2). Real code uses the stack as a calling convention and named
-      locals for everything else. That is worth deciding about deliberately, because the stack
-      is what forced the old `while` design (R54, now `while`/`until` inside `loop`), the branch
-      depth-matching rules of §6.1.1, and the modularity hole of R52. Either the stack words get
-      good enough that locals become the exception, or the costs of pretending get paid down.
+      `stdlib/` and `cmd/`: 4503 `->` bindings against roughly 240 uses of every stack-shuffling
+      word combined (`drop` 122, `swap` 39, `dup` 37, `over` 18, `rot` 13, `nip` 11, `dup2` 5,
+      `pick` 2). Real code uses the stack as a calling convention and named locals for everything
+      else. That is worth deciding about deliberately, because the stack is what forced the old
+      `while` design (R54, now `while`/`until` inside `loop`) and the branch depth-matching rules
+      of §6.1.1. Either the stack words get good enough that locals become the exception, or the
+      costs of pretending get paid down.
 
 - [ ] **R56 -- an error is not a value, only a syntactic position.** A bare fallible call must
       be *immediately* followed by `if`, `switch`, `!` or `?`:
@@ -167,22 +167,6 @@ enough to be inlined here.
       silently break memory management for its callers by defining a method with an unlucky
       name. Method names are also in a single global namespace -- `v length` needs no module
       qualifier -- so there is nothing scoping the collision either.
-
-- [ ] **R52 -- `clear` and `depth` reach across call frames and the checker does not model
-      them.** There is one global stack (§4.1), so a callee sees and can wipe its caller's
-      values:
-
-          fn clr( -- ) { clear }
-          fn main() { 1 2 3 clr depth print nl }
-          // rejected: main "declares 0 output(s) but body leaves 3 value(s)"
-
-          fn d( -- n:i64) { depth }
-          fn main() { 1 2 3 d print nl drop drop drop }   // prints 3
-
-      `clear` is a sanctioned way to violate every declared stack effect in the program, and
-      the static model quietly disagrees with the runtime about what happened. Either both
-      words become frame-local, or the checker has to treat a call to a function containing
-      them as unpredictable.
 
 ## Standard library
 

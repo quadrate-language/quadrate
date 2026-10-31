@@ -50,5 +50,5 @@ fn main() {
 	h <<two call + print nl
 	// No results
 	7 h <<eat call
-	"depth: " print depth print nl
+	"stack: [" print prints "]" print nl
 }

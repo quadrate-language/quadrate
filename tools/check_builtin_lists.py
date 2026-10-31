@@ -170,7 +170,7 @@ def main():
 
     # --extra files are syntax definitions -- keyword lists, tree-sitter rules,
     # TextMate patterns -- where every name is a claim about Quadrate, so removed
-    # keywords count too: a grammar carrying a `while` or `ctx` rule parses what the
+    # keywords count too: a grammar carrying a `ctx` rule parses what the
     # compiler rejects.
     for path in args.extra:
         if not os.path.exists(path):

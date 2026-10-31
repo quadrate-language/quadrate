@@ -29,7 +29,7 @@ class QuadrateLexer(RegexLexer):
     builtins_stack = (
         'dup', 'dup2', 'drop',
         'swap', 'over', 'rot', 'nip',
-        'pick', 'clear', 'depth',
+        'pick',
     )
 
     # Built-in arithmetic

@@ -3,7 +3,7 @@ struct Stack {
 	top:i64
 }
 
-fn (s:Stack) depth( -- n:i64) {
+fn (s:Stack) dup( -- n:i64) {
 	s <<top
 }
 
@@ -13,6 +13,6 @@ fn (s:Stack) len( -- n:i64) {
 
 fn main() {
 	Stack { top = 1 } -> s
-	s depth print nl
+	s dup print nl
 	s len print nl
 }

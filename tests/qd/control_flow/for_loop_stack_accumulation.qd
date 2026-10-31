@@ -1,7 +1,7 @@
 // Test: a for-loop body that pushes a value per iteration is rejected.
 //
 // This file used to pin the opposite behaviour -- the body accumulated on the
-// runtime stack, `depth` observed 5 after five iterations, and the static model
+// runtime stack, five values after five iterations, and the static model
 // silently disagreed, treating the body as net-zero. Its note asked for this to
 // change "as a conscious decision, not silently" if strict loop stack-effect
 // checking ever landed. It has: the body's effect has to be zero, because the
@@ -11,6 +11,4 @@ fn main() {
 	0 5 1 for i {
 		i
 	}
-	"depth: " print depth print nl
-	clear
 }

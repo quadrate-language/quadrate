@@ -516,6 +516,9 @@ public:
 		} else if (isMeta({"clear", ":clear"})) {
 			clearStack();
 			return true;
+		} else if (isMeta({"depth", ":depth"})) {
+			printf("%zu\n", userStackDepth());
+			return true;
 		} else if (isMeta({"stack", ":stack"})) {
 			showStack();
 			return true;
@@ -917,6 +920,7 @@ private:
 		command("stack, :stack", "Show current stack values");
 		command("type, :type", "Show stack types (i64, f64, d128, str, ptr)");
 		command("clear, :clear", "Clear the stack");
+		command("depth, :depth", "Show how many values are on the stack");
 		command("reset, :reset", "Reset the REPL: stack, definitions and imports");
 		command(":doc <name>", "Show a signature; with no exact match, search names");
 		command(":save <file>", "Save session history to file");

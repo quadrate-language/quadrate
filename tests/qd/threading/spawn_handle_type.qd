@@ -33,5 +33,5 @@ fn main() {
 	&worker spawn wait
 
 	"done" print nl
-	"depth=" print depth print nl
+	"stack: [" print prints "]" print nl
 }

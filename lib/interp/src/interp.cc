@@ -115,8 +115,6 @@ namespace {
 				{"nip", {qd_nip, 2}},
 				{"rot", {qd_rot, 3}},
 				{"pick", {qd_pick, 3}},
-				{"depth", {qd_depth, 0}},
-				{"clear", {qd_clear, 0}},
 				{"free", {qd_free, 1}},
 
 				// Arrays

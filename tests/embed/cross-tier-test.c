@@ -50,7 +50,10 @@ int main(void) {
 	// it holds two copies of the runtime's file-scope state. Recovery lives on
 	// the context precisely so it survives that; reaching here at all means it
 	// did, because the alternative is _exit(1).
-	check(!qd_interp_eval(interp, "clear 1 0 /"), "division by zero is refused");
+	while (!qd_stack_is_empty(ctx->st)) {
+		qd_drop(ctx);
+	}
+	check(!qd_interp_eval(interp, "1 0 /"), "division by zero is refused");
 	check(strstr(qd_interp_error(interp), "Division by zero") != NULL, "and recovered, not fatal");
 
     qd_interp_destroy(interp);

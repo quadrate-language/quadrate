@@ -414,7 +414,9 @@ TEST(AssertApproxEqWrongType) {
 	qd_push_f(ctx, 1.0);
 	qd_push_f(ctx, 0.1);
 	ASSERT(expect_raise(ctx, usr_testing_assert_approx_eq), "assert_approx_eq raises on a non-number");
-	qd_clear(ctx);
+	while (!qd_stack_is_empty(ctx->st)) {
+		qd_drop(ctx);
+	}
 
 	destroy_test_context(ctx);
 }
@@ -527,7 +529,9 @@ TEST(AssertContainsNonStringFail) {
 	qd_push_i(ctx, 42);
 	qd_push_s(ctx, "42");
 	ASSERT(expect_raise(ctx, usr_testing_assert_contains), "assert_contains raises on a non-string haystack");
-	qd_clear(ctx);
+	while (!qd_stack_is_empty(ctx->st)) {
+		qd_drop(ctx);
+	}
 
 	destroy_test_context(ctx);
 }

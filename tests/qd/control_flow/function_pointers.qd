@@ -12,12 +12,9 @@ fn pushNumber() {
 }
 
 fn main() {
-	// Test 1: Push function pointer and check depth
+	// Test 1: A function pointer is a value like any other
 	&greet
-	depth
-	printv
-	// Should print nl: int:1
-	clear
+	drop
 	// Test 2: Call greet via function pointer
 	&greet
 	call
@@ -33,9 +30,6 @@ fn main() {
 	// Test 5: Multiple function pointers on stack
 	&greet
 	&farewell
-	depth
-	printv
-	// Should print nl: int:2
 	call
 	// Calls farewell
 	call

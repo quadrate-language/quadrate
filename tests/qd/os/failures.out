@@ -9,4 +9,4 @@ delete: os::delete: No such file or directory
 delete: ErrNotFound
 list: ErrNotDirectory
 glob: 0 0
-depth 0
+stack: []

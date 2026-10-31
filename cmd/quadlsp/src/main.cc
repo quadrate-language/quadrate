@@ -1728,7 +1728,7 @@ static bool isKeyword(const std::string& word) {
 // Helper to check if a word is a built-in stack operation.
 // Delegates to the compiler's own table: a second hand-maintained copy drifts
 // (this one had grown 'le', 'ge', 'ne', 'typeof' and 'alloc', none of which
-// exist, while missing 'dup2', 'clear', 'depth', 'len', 'nth', 'add' and 'neq').
+// exist, while missing 'dup2', 'len', 'nth', 'add' and 'neq').
 static bool isBuiltinOp(const std::string& word) {
 	return Qd::isBuiltInInstruction(word.c_str());
 }

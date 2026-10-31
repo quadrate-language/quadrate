@@ -1,5 +1,5 @@
 // Test: Regression: methods whose names collide with builtin instruction names
-// (e.g. `depth`, `clear`, `len`, `drop`) must still dispatch correctly.
+// (e.g. `dup`, `over`, `len`) must still dispatch correctly.
 // Previously, the parser produced an AstNodeInstruction for these names,
 // and the llvmgen instruction path constructed the function name via
 // string concatenation without the module prefix, so the method call
@@ -9,11 +9,11 @@ struct Stack {
 	top: i64
 }
 
-fn (s:Stack) depth( -- n:i64) {
+fn (s:Stack) dup( -- n:i64) {
 	s <<top 2 *
 }
 
-fn (s:Stack) clear( -- n:i64) {
+fn (s:Stack) over( -- n:i64) {
 	s <<top 0 *
 }
 
@@ -23,7 +23,7 @@ fn (s:Stack) len( -- n:i64) {
 
 fn main() {
 	Stack { top = 21 } -> s
-	s depth print nl
-	s clear print nl
+	s dup print nl
+	s over print nl
 	s len print nl
 }

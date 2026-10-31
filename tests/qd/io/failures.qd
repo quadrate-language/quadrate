@@ -21,7 +21,7 @@ fn main() {
 	"io_failures.txt" io::Read io::open! -> f
 	f 2 io::SeekSet io::seek! drop
 	f io::tell! -> pos
-	"tell " print pos print " depth " print depth print nl
+	"tell " print pos print " stack: [" print prints "]" print nl
 	f io::close
 
 	// A missing directory is ErrNotFound, not ErrPermission

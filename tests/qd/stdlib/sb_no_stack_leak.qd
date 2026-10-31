@@ -4,29 +4,17 @@
 // sb::append_char and sb::append_int each ended with three chained `>>field` writes
 // followed by `sb`, pushing four values where the signature declares one -- so every
 // call silently leaked three stack slots. A loop appending to a builder would grow the
-// stack without bound.
+// stack without bound, so enough appends overflow the stack if any of them leaks.
 use sb
+use strings
 
 fn main() {
 	sb::new -> b
-	b 0 sb::append_int -> b
-	depth print nl
-
-	b 12345 sb::append_int -> b
-	depth print nl
-
-	b -42 sb::append_int -> b
-	depth print nl
-
-	b " hello" sb::append -> b
-	depth print nl
-
-	// Many appends in a loop: depth must not grow with iteration count
-	0 20 1 for i {
+	0 100000 1 for i {
 		b "x" sb::append -> b
+		b 1 sb::append_int -> b
+		b 121 sb::append_char -> b
 	}
-	depth print nl
-
-	b sb::finish print nl
-	depth print nl
+	b sb::finish -> s
+	s strings::byte_len print nl
 }

@@ -3,9 +3,9 @@ fn main() {
 	// Test pick - copy the third value to the top: ( x y z -- x y z x )
 	100 200 300 pick
 	prints
-	clear
+	drop drop drop drop
 	// pick reads the three values below the top wherever they came from
 	1 2 3 4 pick
 	prints
-	clear
+	drop drop drop drop drop
 }

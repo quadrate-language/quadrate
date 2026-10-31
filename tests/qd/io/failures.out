@@ -1,4 +1,4 @@
-tell 2 depth 0
+tell 2 stack: []
 write_file: ErrNotFound
 open: ErrNotFound
 full: ErrWrite
