@@ -1,0 +1,9 @@
+// Test: a `for` also exits by running off its range, so `until` in one must leave the
+// stack as the head found it.
+fn main() {
+	0 10 1 for i {
+		1
+		i 5 == until
+		drop
+	}
+}

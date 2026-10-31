@@ -12,6 +12,7 @@
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
+#include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_field_access.h>
@@ -32,7 +33,6 @@
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/instructions.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
@@ -1087,6 +1087,14 @@ namespace Qd {
 			reportErrorConditional(body, msg.c_str(), true);
 		}
 
+		// `break`, or the `while` / `until` that left on its flag
+		auto exitWord = [](const IAstNode* node) -> std::string {
+			if (node->type() == IAstNode::Type::CONDITIONAL_BREAK) {
+				return static_cast<const AstNodeConditionalBreak*>(node)->keyword();
+			}
+			return "break";
+		};
+
 		const LoopJump* firstBreak = nullptr;
 		for (const auto& jump : mLoopJumps) {
 			if (!jump.isBreak) {
@@ -1101,7 +1109,7 @@ namespace Qd {
 			}
 			if (exitsByFallthrough) {
 				if (jump.typeStack.size() != headDepth) {
-					std::string msg = std::string("'break' leaves the stack ") +
+					std::string msg = "'" + exitWord(jump.node) + "' leaves the stack " +
 									  describe(jump.typeStack.size(), headDepth) + " than the " + loopKeyword +
 									  " head; a '" + loopKeyword +
 									  "' also exits by running off the end of its range, and what follows cannot "
@@ -1113,9 +1121,10 @@ namespace Qd {
 			if (!firstBreak) {
 				firstBreak = &jump;
 			} else if (jump.typeStack.size() != firstBreak->typeStack.size()) {
-				std::string msg = std::string("'break' leaves the stack ") +
-								  describe(jump.typeStack.size(), firstBreak->typeStack.size()) +
-								  " than another 'break' in the same loop; every way out has to agree, since "
+				std::string msg = "'" + exitWord(jump.node) + "' leaves the stack " +
+								  describe(jump.typeStack.size(), firstBreak->typeStack.size()) + " than '" +
+								  exitWord(firstBreak->node) +
+								  "' in the same loop; every way out has to agree, since "
 								  "what follows cannot read a value whose presence depends on which one ran";
 				reportErrorConditional(jump.node, msg.c_str(), true);
 			}
@@ -1161,8 +1170,6 @@ namespace Qd {
 		const bool savedInLoopBody = mInLoopBody;
 		auto savedLoopJumps = mLoopJumps;
 		auto savedPendingSig = mPendingFnSignature;
-		const IAstNode* savedProbeBlock = mDepthProbeBlock;
-		std::vector<size_t>* savedProbe = mDepthProbe;
 
 		mCurrentFunctionOutputCount = anonFunc->outputParameters().size();
 		// A lambda's own `!` is what makes its body fallible. Inheriting the enclosing function's
@@ -1174,8 +1181,6 @@ namespace Qd {
 		// known depth, so its errors are evidence and are worth reporting.
 		mInLoopBody = false;
 		mLoopJumps.clear();
-		mDepthProbeBlock = nullptr;
-		mDepthProbe = nullptr;
 		mPendingFnSignature.reset();
 
 		std::vector<StackValueType> typeStack;
@@ -1347,8 +1352,6 @@ namespace Qd {
 		mInLoopBody = savedInLoopBody;
 		mLoopJumps = savedLoopJumps;
 		mPendingFnSignature = savedPendingSig;
-		mDepthProbeBlock = savedProbeBlock;
-		mDepthProbe = savedProbe;
 	}
 
 	void SemanticValidator::checkAnonymousFunctionsWithin(
@@ -1452,9 +1455,6 @@ namespace Qd {
 			if (!child) {
 				continue;
 			}
-			if (mDepthProbe != nullptr && node == mDepthProbeBlock) {
-				mDepthProbe->push_back(typeStack.size());
-			}
 			if (mUndefinedNodes.count(child)) {
 				typeStack.push_back(StackValueType::UNKNOWN);
 				structTypeStack.push_back("");
@@ -1551,10 +1551,6 @@ namespace Qd {
 				break;
 			}
 
-			case IAstNode::Type::WHILE_STATEMENT:
-				typeCheckWhile(child, typeStack, localVariables, structTypeStack);
-				break;
-
 			case IAstNode::Type::LOCAL:
 				typeCheckLocal(child, typeStack, localVariables, structTypeStack);
 				break;
@@ -1648,6 +1644,26 @@ namespace Qd {
 				if (!structTypeStack.empty()) {
 					structTypeStack.back() = asCast->typeName();
 				}
+				break;
+			}
+
+			case IAstNode::Type::CONDITIONAL_BREAK: {
+				// `while` / `until` take the flag, then may leave the loop with the stack as it
+				// stands after that -- an exit like any `break`, and checked as one. It does not
+				// diverge: when the loop goes on, what follows runs on the same stack.
+				const char* keyword = static_cast<AstNodeConditionalBreak*>(child)->keyword();
+				if (typeStack.empty()) {
+					reportErrorWithHint(child,
+							(std::string("Type error in '") + keyword + "': Stack underflow (requires 1 flag)").c_str(),
+							(std::string("push a condition before '") + keyword + "', e.g. 'i n < " + keyword + "'")
+									.c_str());
+					break;
+				}
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+				mLoopJumps.push_back({child, true, typeStack, structTypeStack});
 				break;
 			}
 
@@ -2402,79 +2418,6 @@ namespace Qd {
 		// A `for` always leaves the stack at the head depth, so the parent stack already
 		// describes what follows. (Types a neutral body rewrote in place are still not
 		// modelled; only the depth is.)
-	}
-
-	void SemanticValidator::typeCheckWhile(IAstNode* child, std::vector<StackValueType>& typeStack,
-			std::unordered_map<std::string, StackValueType>& localVariables,
-			std::vector<std::string>& structTypeStack) {
-		AstNodeWhileStatement* whileStmt = static_cast<AstNodeWhileStatement*>(child);
-
-		// The condition runs before every iteration, including the first, so it is checked
-		// against the stack as it stands here and must leave exactly one value -- the flag
-		// the loop tests. The parser hands over the run of expression nodes that preceded
-		// the keyword; a run that nets to anything else is the author having written
-		// something the condition was never going to mean.
-		const size_t headDepth = typeStack.size();
-		std::vector<size_t> condDepths;
-		if (whileStmt->condition()) {
-			const IAstNode* savedProbeBlock = mDepthProbeBlock;
-			std::vector<size_t>* savedProbe = mDepthProbe;
-			mDepthProbeBlock = whileStmt->condition();
-			mDepthProbe = &condDepths;
-			typeCheckBlock(whileStmt->condition(), typeStack, localVariables, structTypeStack);
-			mDepthProbeBlock = savedProbeBlock;
-			mDepthProbe = savedProbe;
-		}
-
-		// Trim to the shortest suffix that produces the flag: the last point where the stack
-		// stood at the head depth, with nothing after it dipping below. What precedes it is a
-		// statement that happened to be expression-shaped, and is generated once.
-		if (!mHasUnpredictableStack && typeStack.size() == headDepth + 1) {
-			size_t start = 0;
-			for (size_t d = condDepths.size(); d-- > 0;) {
-				if (condDepths[d] < headDepth) {
-					break;
-				}
-				if (condDepths[d] == headDepth) {
-					// First match scanning backwards is the shortest such suffix.
-					start = d;
-					break;
-				}
-			}
-			whileStmt->setConditionStart(start);
-		}
-		if (!mHasUnpredictableStack) {
-			if (typeStack.size() != headDepth + 1) {
-				long long delta = static_cast<long long>(typeStack.size()) - static_cast<long long>(headDepth);
-				std::string msg = "the 'while' condition must leave exactly one value for the loop to "
-								  "test, but it leaves ";
-				msg += std::to_string(delta);
-				msg += (delta == 1 || delta == -1) ? " value" : " values";
-				msg += "; the condition is the words between the previous statement and 'while'";
-				reportErrorConditional(child, msg.c_str(), true);
-			} else {
-				// Pop the flag the loop consumes.
-				typeStack.pop_back();
-				structTypeStack.pop_back();
-			}
-		}
-
-		std::vector<StackValueType> loopStack = typeStack;
-		std::unordered_map<std::string, StackValueType> loopVars = localVariables;
-		std::vector<std::string> loopStructStack = structTypeStack;
-
-		bool wasInLoopBody = mInLoopBody;
-		mInLoopBody = true;
-		auto savedJumps = std::move(mLoopJumps);
-		mLoopJumps.clear();
-		if (whileStmt->body()) {
-			typeCheckBlock(whileStmt->body(), loopStack, loopVars, loopStructStack);
-		}
-		// A `while` may run zero times, so unlike `loop` it cannot leave anything behind:
-		// the body has to be neutral, which is what the fallthrough flag asks for.
-		checkLoopStackEffect(whileStmt->body(), "while", true, typeStack, structTypeStack, loopStack.size());
-		mLoopJumps = std::move(savedJumps);
-		mInLoopBody = wasInLoopBody;
 	}
 
 	void SemanticValidator::typeCheckLocal(IAstNode* child, std::vector<StackValueType>& typeStack,

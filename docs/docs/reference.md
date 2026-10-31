@@ -19,7 +19,8 @@ This page documents all Quadrate keywords and built-in instructions.
 | [`else`](#else) | Provides an alternative block when the if condition is false. |
 | [`for`](#for) | Iterates from start to end with a step, binding the iterator variable. |
 | [`loop`](#loop) | Repeats a block indefinitely until break is called. |
-| [`while`](#while) | Repeats a block while the preceding condition holds; the condition is re-evaluated before every iteration. |
+| [`while`](#while) | Inside a loop: takes a flag and leaves the innermost loop when it is false (zero). |
+| [`until`](#until) | Inside a loop: takes a flag and leaves the innermost loop when it is true (non-zero). |
 | [`break`](#break) | Exits the innermost loop immediately. |
 | [`continue`](#continue) | Skips to the next iteration of the innermost loop. |
 | [`return`](#return) | Exits the current function immediately. |
@@ -188,12 +189,24 @@ loop { "forever" print nl }
 
 ### while
 
-Repeats a block while the preceding condition holds; the condition is re-evaluated before every iteration.
+Inside a loop: takes a flag and leaves the innermost loop when it is false (zero).
 
 **Example:**
 
 ```qd
-0 -> i  i 5 < while { i print nl  i 1 + -> i }
+0 -> i  loop { i 5 < while  i print nl  i 1 + -> i }
+```
+
+---
+
+### until
+
+Inside a loop: takes a flag and leaves the innermost loop when it is true (non-zero).
+
+**Example:**
+
+```qd
+loop { read_line -> line  line process  line "quit" == until }
 ```
 
 ---

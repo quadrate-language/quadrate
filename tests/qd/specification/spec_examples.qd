@@ -122,11 +122,11 @@ fn main() {
         i print nl
     }
 
-    // Testing loop with condition...
+    // Section 6.4 - Conditional exits
     "Testing while loops..." print nl
     0 -> i
     loop {
-        i 3 >= if { break }
+        i 3 < while
         i print nl
         i ++ -> i
     }

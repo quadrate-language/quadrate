@@ -1,0 +1,68 @@
+// Test: `loop { ... cond until }` -- `until` takes a flag and leaves the loop when it is
+// true. Written last it is a do-while, written first a while with the test inverted, and
+// in the middle it exits between the two halves of an iteration.
+fn halvings(n:i64 -- steps:i64) {
+	n 0 swap
+	loop {
+		dup 1 <= until
+		2 / swap 1 + swap
+	}
+	drop
+}
+
+fn main() {
+	// do-while: the body runs once although the condition already holds
+	0 -> k
+	loop {
+		k 1 + -> k
+		true until
+	}
+	"k=" print k print nl
+
+	// test first
+	0 -> i
+	loop {
+		i 3 >= until
+		i print nl
+		i 1 + -> i
+	}
+
+	// exit mid-iteration: the second half does not run on the last pass
+	0 -> m
+	loop {
+		m 1 + -> m
+		m 3 == until
+		"m=" print m print nl
+	}
+
+	// loop state carried on the stack, on the native path
+	1024 halvings print nl
+
+	// inside `for`, leaving the stack as the head found it
+	"s" 0 10 1 for j {
+		j 3 == until
+		j print
+	}
+	" " print print nl
+
+	// leaves only the innermost loop
+	0 -> a
+	loop {
+		a 2 >= until
+		0 -> b
+		loop {
+			b 5 >= until
+			b 1 + -> b
+		}
+		a print ":" print b print nl
+		a 1 + -> a
+	}
+
+	// a defer registered in the iteration runs when `until` leaves
+	0 -> c
+	loop {
+		defer { "deferred" print nl }
+		c 1 + -> c
+		c 2 >= until
+	}
+}

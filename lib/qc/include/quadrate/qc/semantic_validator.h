@@ -333,9 +333,6 @@ namespace Qd {
 		void typeCheckFor(IAstNode* child, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
-		void typeCheckWhile(IAstNode* child, std::vector<StackValueType>& typeStack,
-				std::unordered_map<std::string, StackValueType>& localVariables,
-				std::vector<std::string>& structTypeStack);
 		void typeCheckLocal(IAstNode* child, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
@@ -709,12 +706,8 @@ namespace Qd {
 		// When true, output validation is skipped (e.g., 'read' has dynamic stack effect,
 		// or unhandled instructions whose stack effects are unknown)
 		bool mHasUnpredictableStack;
-		// While trimming a `while` condition: the block whose immediate children's pre-depths are
-		// being recorded, and where to put them. Null when not trimming.
-		const IAstNode* mDepthProbeBlock = nullptr;
-		std::vector<size_t>* mDepthProbe = nullptr;
 
-		// Where each `break`/`continue` in the loop body being checked leaves the stack. A
+		// Where each `break`/`continue`/`while`/`until` in the loop body being checked leaves the stack. A
 		// `loop` has no fall-through exit, so its breaks are what define the depth after it.
 		// Saved and restored around every loop, so an inner loop's jumps are not attributed to
 		// the outer one.

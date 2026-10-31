@@ -490,7 +490,7 @@ run_single_qd_test() {
         # correct but followed by a cascade of bogus ones, which is exactly the
         # failure mode the removed-keyword/removed-builtin tests guard against.
         local all_patterns_found=true
-        while IFS= read -r pattern; do
+        while IFS= read -r pattern || [[ -n "$pattern" ]]; do
             [[ -z "$pattern" ]] && continue
             if [[ "$pattern" == !* ]]; then
                 if grep -qF "${pattern#!}" "$compile_log"; then
@@ -535,7 +535,7 @@ run_single_qd_test() {
 
         # Check if all error patterns are present
         local all_patterns_found=true
-        while IFS= read -r pattern; do
+        while IFS= read -r pattern || [[ -n "$pattern" ]]; do
             if ! grep -qF "$pattern" "$actual_output"; then
                 all_patterns_found=false
                 break

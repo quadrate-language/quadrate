@@ -795,213 +795,65 @@ namespace Qd {
 		builder->SetInsertPoint(loopExitBB);
 	}
 
-	// Generates the part of a `while` condition block that runs once, before the loop: everything
-	// the validator trimmed off the front (see AstNodeWhileStatement::conditionStart).
-	void LlvmGenerator::Impl::generateWhileConditionPrefix(AstNodeWhileStatement* whileStmt, llvm::Value* ctx) {
-		IAstNode* cond = whileStmt->condition();
-		if (!cond) {
-			return;
-		}
-		for (size_t i = 0; i < whileStmt->conditionStart() && i < cond->childCount(); i++) {
-			generateNode(cond->child(i), ctx);
-		}
-	}
-
-	// Generates the condition proper -- the part re-evaluated at the head of every iteration.
-	void LlvmGenerator::Impl::generateWhileConditionTest(AstNodeWhileStatement* whileStmt, llvm::Value* ctx) {
-		IAstNode* cond = whileStmt->condition();
-		if (!cond) {
-			return;
-		}
-		for (size_t i = whileStmt->conditionStart(); i < cond->childCount(); i++) {
-			generateNode(cond->child(i), ctx);
-		}
-	}
-
-	// `cond while { body }` -- the condition is re-evaluated at the head of every iteration, so it
-	// is generated into the loop header rather than before the loop. The shape is `loop` with a
-	// conditional exit at the top: falling out of the test is an ordinary exit edge, which is why
-	// it joins breakInfos and merges with any explicit `break` the body wrote.
-	void LlvmGenerator::Impl::generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx) {
+	// `while` / `until` inside a loop body: pop the flag and, when it says so, leave the innermost
+	// loop the way `break` does -- defers first, then the exit edge, recorded for the merge at the
+	// loop exit. Otherwise control falls through to the rest of the body.
+	void LlvmGenerator::Impl::generateConditionalBreak(AstNodeConditionalBreak* node, llvm::Value* ctx) {
 		llvm::Function* currentFn = builder->GetInsertBlock()->getParent();
+		const std::string keyword = node->keyword();
+		llvm::BasicBlock* exitBB = llvm::BasicBlock::Create(*context, keyword + ".exit", currentFn);
+		llvm::BasicBlock* contBB = llvm::BasicBlock::Create(*context, keyword + ".cont", currentFn);
 
-		// Compile-time stack path
+		llvm::Value* flag = nullptr;
 		if (useCompileTimeStack) {
-			generateWhileConditionPrefix(whileStmt, ctx);
-			auto preLoopStack = compileTimeStack;
-
-			llvm::BasicBlock* headBB = llvm::BasicBlock::Create(*context, "while.head", currentFn);
-			llvm::BasicBlock* bodyBB = llvm::BasicBlock::Create(*context, "while.body", currentFn);
-			llvm::BasicBlock* exitBB = llvm::BasicBlock::Create(*context, "while.exit", currentFn);
-
-			llvm::BasicBlock* preBB = builder->GetInsertBlock();
-			builder->CreateBr(headBB);
-
-			// Header carries the stack PHIs, since both the pre-loop edge and the body back-edge
-			// reach the condition.
-			builder->SetInsertPoint(headBB);
-			std::vector<llvm::PHINode*> stackPHIs;
-			compileTimeStack.clear();
-			for (size_t i = 0; i < preLoopStack.size(); i++) {
-				llvm::Type* phiTy = preLoopStack[i]->getType();
-				auto* phi = builder->CreatePHI(phiTy, 2, "while.stk");
-				phi->addIncoming(preLoopStack[i], preBB);
-				stackPHIs.push_back(phi);
-				compileTimeStack.push_back(phi);
-			}
-
-			generateWhileConditionTest(whileStmt, ctx);
-
-			llvm::Value* flag = builder->getInt64(0);
+			flag = builder->getInt64(0);
 			if (!compileTimeStack.empty()) {
 				flag = compileTimeStack.back();
 				compileTimeStack.pop_back();
 			}
-			auto isTrue = builder->CreateICmpNE(flag, builder->getInt64(0), "while.test");
-			llvm::BasicBlock* testBlock = builder->GetInsertBlock();
-			auto exitStack = compileTimeStack;
-			builder->CreateCondBr(isTrue, bodyBB, exitBB);
+		} else {
+			// Inline pop of the flag, matching the shape `if` uses
+			llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, keyword + ".underflow", currentFn);
+			llvm::BasicBlock* popBB = llvm::BasicBlock::Create(*context, keyword + ".pop", currentFn);
 
-			loopStack.push_back({exitBB, headBB, {}, {}});
+			llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
+			llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
+			llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
+			llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
+			llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
+			builder->CreateCondBr(isEmpty, underflowBB, popBB);
 
-			builder->SetInsertPoint(bodyBB);
-			compileTimeStack = exitStack;
-			if (whileStmt->body()) {
-				generateNode(whileStmt->body(), ctx);
-			}
+			builder->SetInsertPoint(underflowBB);
+			emitFatalError(ctx,
+					("Fatal error in " + keyword + ": Stack underflow (requires 1 value for condition)\n").c_str());
 
-			auto bodyEndStack = compileTimeStack;
-			llvm::BasicBlock* bodyEndBlock = builder->GetInsertBlock();
-			auto wireBackEdge = [&](const std::vector<llvm::Value*>& state, llvm::BasicBlock* from) {
-				for (size_t i = 0; i < stackPHIs.size(); i++) {
-					llvm::Type* stkTy = stackPHIs[i]->getType();
-					llvm::Value* val;
-					if (i < state.size()) {
-						val = state[i];
-					} else {
-						val = stkTy->isDoubleTy()
-									  ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
-									  : static_cast<llvm::Value*>(builder->getInt64(0));
-					}
-					stackPHIs[i]->addIncoming(val, from);
-				}
-			};
-			if (bodyEndBlock != nullptr && !isTerminated(bodyEndBlock)) {
-				builder->CreateBr(headBB);
-				wireBackEdge(bodyEndStack, bodyEndBlock);
-			}
-
-			auto continueInfos = std::move(loopStack.back().continueInfos);
-			for (const auto& ci : continueInfos) {
-				wireBackEdge(ci.stackState, ci.fromBlock);
-			}
-
-			auto breakInfos = std::move(loopStack.back().breakInfos);
-			loopStack.pop_back();
-
-			// Falling out of the test is an exit edge like any break.
-			breakInfos.push_back({testBlock, exitStack});
-
-			builder->SetInsertPoint(exitBB);
-			if (breakInfos.size() == 1) {
-				compileTimeStack = breakInfos[0].stackState;
-			} else {
-				compileTimeStack.clear();
-				size_t maxSize = 0;
-				for (const auto& bi : breakInfos) {
-					maxSize = std::max(maxSize, bi.stackState.size());
-				}
-				for (size_t i = 0; i < maxSize; i++) {
-					bool allSame = true;
-					llvm::Value* firstVal =
-							(i < breakInfos[0].stackState.size()) ? breakInfos[0].stackState[i] : nullptr;
-					for (size_t j = 1; j < breakInfos.size(); j++) {
-						llvm::Value* val =
-								(i < breakInfos[j].stackState.size()) ? breakInfos[j].stackState[i] : nullptr;
-						if (val != firstVal) {
-							allSame = false;
-							break;
-						}
-					}
-					if (allSame && firstVal) {
-						compileTimeStack.push_back(firstVal);
-					} else {
-						llvm::Type* phiTy = (firstVal != nullptr) ? firstVal->getType() : int64Ty;
-						auto* exitPhi =
-								builder->CreatePHI(phiTy, static_cast<unsigned>(breakInfos.size()), "while.exit.stk");
-						for (const auto& bi : breakInfos) {
-							llvm::Value* val;
-							if (i < bi.stackState.size()) {
-								val = bi.stackState[i];
-							} else {
-								val = phiTy->isDoubleTy() ? static_cast<llvm::Value*>(
-																	llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
-														  : static_cast<llvm::Value*>(builder->getInt64(0));
-							}
-							exitPhi->addIncoming(val, bi.fromBlock);
-						}
-						compileTimeStack.push_back(exitPhi);
-					}
-				}
-			}
-			return;
+			builder->SetInsertPoint(popBB);
+			llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
+			llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
+			llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
+			llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
+			llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
+			flag = builder->CreateLoad(int64Ty, valuePtr, "value64");
+			llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
+			builder->CreateStore(newSize, sizePtr);
 		}
 
-		// Runtime stack path
-		generateWhileConditionPrefix(whileStmt, ctx);
+		auto leaves = node->breakWhen() ? builder->CreateICmpNE(flag, builder->getInt64(0), keyword + ".test")
+										: builder->CreateICmpEQ(flag, builder->getInt64(0), keyword + ".test");
+		builder->CreateCondBr(leaves, exitBB, contBB);
 
-		llvm::BasicBlock* headBB = llvm::BasicBlock::Create(*context, "while.head", currentFn);
-		llvm::BasicBlock* underflowBB = llvm::BasicBlock::Create(*context, "while.underflow", currentFn);
-		llvm::BasicBlock* popBB = llvm::BasicBlock::Create(*context, "while.pop", currentFn);
-		llvm::BasicBlock* bodyBB = llvm::BasicBlock::Create(*context, "while.body", currentFn);
-		llvm::BasicBlock* exitBB = llvm::BasicBlock::Create(*context, "while.exit", currentFn);
-
-		builder->CreateBr(headBB);
-		builder->SetInsertPoint(headBB);
-
-		generateWhileConditionTest(whileStmt, ctx);
-
-		// Inline pop of the flag, matching the shape `if` uses.
-		llvm::Value* stPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "st_ptr");
-		llvm::Value* st = builder->CreateLoad(ptrTy, stPtr, "st");
-		llvm::Value* sizePtr = builder->CreateStructGEP(stackStructTy, st, 2, "size_ptr");
-		llvm::Value* size = builder->CreateLoad(int64Ty, sizePtr, "size");
-		llvm::Value* isEmpty = builder->CreateICmpEQ(size, builder->getInt64(0), "is_empty");
-		builder->CreateCondBr(isEmpty, underflowBB, popBB);
-
-		builder->SetInsertPoint(underflowBB);
-		emitFatalError(ctx, "Fatal error in while: Stack underflow (requires 1 value for condition)\n");
-
-		builder->SetInsertPoint(popBB);
-		llvm::Value* dataPtr = builder->CreateStructGEP(stackStructTy, st, 0, "data_ptr");
-		llvm::Value* data = builder->CreateLoad(ptrTy, dataPtr, "data");
-		llvm::Value* topIdx = builder->CreateSub(size, builder->getInt64(1), "top_idx");
-		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, data, topIdx, "top_elem");
-		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr");
-		llvm::Value* value64 = builder->CreateLoad(int64Ty, valuePtr, "value64");
-		llvm::Value* newSize = builder->CreateSub(size, builder->getInt64(1), "new_size");
-		builder->CreateStore(newSize, sizePtr);
-		auto isTrue = builder->CreateICmpNE(value64, builder->getInt64(0), "while.test");
-		builder->CreateCondBr(isTrue, bodyBB, exitBB);
-
-		builder->SetInsertPoint(bodyBB);
-		loopStack.push_back({exitBB, headBB, {}, {}});
-		pushDeferScope();
-
-		if (whileStmt->body()) {
-			generateNode(whileStmt->body(), ctx);
-		}
-
-		emitDeferScope(ctx);
-		popDeferScope();
-
-		llvm::BasicBlock* bodyEnd = builder->GetInsertBlock();
-		if (bodyEnd != nullptr && !isTerminated(bodyEnd)) {
-			builder->CreateBr(headBB);
-		}
-
-		loopStack.pop_back();
 		builder->SetInsertPoint(exitBB);
+		if (!loopStack.empty()) {
+			emitDeferScope(ctx);
+			if (useCompileTimeStack) {
+				loopStack.back().breakInfos.push_back({builder->GetInsertBlock(), compileTimeStack});
+			}
+			builder->CreateBr(loopStack.back().breakTarget);
+		} else {
+			builder->CreateBr(contBB);
+		}
+
+		builder->SetInsertPoint(contBB);
 	}
 
 	void LlvmGenerator::Impl::generateNode(IAstNode* node, llvm::Value* ctx) {
@@ -1040,8 +892,8 @@ namespace Qd {
 		case IAstNode::Type::LOOP_STATEMENT:
 			generateLoop(static_cast<AstNodeLoopStatement*>(node), ctx);
 			break;
-		case IAstNode::Type::WHILE_STATEMENT:
-			generateWhile(static_cast<AstNodeWhileStatement*>(node), ctx);
+		case IAstNode::Type::CONDITIONAL_BREAK:
+			generateConditionalBreak(static_cast<AstNodeConditionalBreak*>(node), ctx);
 			break;
 		case IAstNode::Type::SWITCH_STATEMENT:
 			generateSwitchStatement(static_cast<AstNodeSwitchStatement*>(node), ctx);

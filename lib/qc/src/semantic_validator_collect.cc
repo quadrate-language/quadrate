@@ -8,6 +8,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
+#include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_enum.h>
@@ -558,20 +559,34 @@ namespace Qd {
 			return;
 		}
 
-		// Check if this is a break statement
-		if (node->type() == IAstNode::Type::BREAK_STATEMENT) {
-			if (iteratorNames.empty()) {
-				reportErrorWithHint(node, "break statement not within loop or switch",
-						"break can only be used inside 'loop', 'for', or 'switch' statements");
+		// `break`, `continue`, `while` and `until` act on the innermost loop. A `switch` is not one
+		// -- a `break` in it leaves the loop around it -- so a switch with no loop around it is not
+		// enough. Accepting it there compiled to nothing: the jump had no loop to go to.
+		if (node->type() == IAstNode::Type::BREAK_STATEMENT || node->type() == IAstNode::Type::CONTINUE_STATEMENT ||
+				node->type() == IAstNode::Type::CONDITIONAL_BREAK) {
+			bool inLoop = false;
+			for (const auto& name : iteratorNames) {
+				if (name != "__switch__") {
+					inLoop = true;
+					break;
+				}
 			}
-			return;
-		}
-
-		// Check if this is a continue statement
-		if (node->type() == IAstNode::Type::CONTINUE_STATEMENT) {
-			if (iteratorNames.empty()) {
-				reportErrorWithHint(node, "continue statement not within a loop",
-						"continue can only be used inside 'loop' or 'for' statements");
+			if (!inLoop) {
+				std::string keyword = node->type() == IAstNode::Type::BREAK_STATEMENT ? "break"
+									  : node->type() == IAstNode::Type::CONTINUE_STATEMENT
+											  ? "continue"
+											  : static_cast<AstNodeConditionalBreak*>(node)->keyword();
+				const char* example = node->type() == IAstNode::Type::BREAK_STATEMENT ? "loop { done if { break } }"
+									  : node->type() == IAstNode::Type::CONTINUE_STATEMENT
+											  ? "loop { skip if { continue } }"
+									  : node->type() == IAstNode::Type::CONDITIONAL_BREAK &&
+													  static_cast<AstNodeConditionalBreak*>(node)->breakWhen()
+											  ? "loop { done until }"
+											  : "loop { i n < while }";
+				reportErrorWithHint(node, ("'" + keyword + "' not within a loop").c_str(),
+						("'" + keyword + "' acts on the innermost 'loop' or 'for'; a 'switch' is not a loop, e.g. '" +
+								example + "'")
+								.c_str());
 			}
 			return;
 		}
@@ -1123,12 +1138,12 @@ namespace Qd {
 			return;
 		}
 
-		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking
+		// When entering a loop or switch statement, use a placeholder iterator name for break/continue tracking.
+		// The two are told apart because `while` and `until` need a loop, not just a switch.
 		// Also create a new scope so variables defined inside don't leak out
-		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::WHILE_STATEMENT ||
-				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> childIterators = iteratorNames;
-			childIterators.insert("__loop__"); // Placeholder to indicate we're inside a loop/switch
+			childIterators.insert(node->type() == IAstNode::Type::LOOP_STATEMENT ? "__loop__" : "__switch__");
 			std::unordered_set<std::string> loopLocals = localVariables; // New scope for the loop body
 			for (auto* child : node->children()) {
 				validateReferencesInternal(child, loopLocals, childIterators);
@@ -1208,7 +1223,7 @@ namespace Qd {
 			// placeholder loop/switch marker is not a real binding and is left out.
 			std::unordered_set<std::string> outerScope = localVariables;
 			for (const auto& iterName : iteratorNames) {
-				if (iterName != "__loop__") {
+				if (iterName != "__loop__" && iterName != "__switch__") {
 					outerScope.insert(iterName);
 				}
 			}
@@ -1327,8 +1342,7 @@ namespace Qd {
 		}
 
 		// Handle loop/switch - create new scope
-		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::WHILE_STATEMENT ||
-				node->type() == IAstNode::Type::SWITCH_STATEMENT) {
+		if (node->type() == IAstNode::Type::LOOP_STATEMENT || node->type() == IAstNode::Type::SWITCH_STATEMENT) {
 			std::unordered_set<std::string> loopLocals = localVariables;
 			for (auto* child : node->children()) {
 				collectCapturedVariables(child, loopLocals, iteratorNames, outerScopeVariables, anonFunc);

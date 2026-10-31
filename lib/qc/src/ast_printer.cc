@@ -79,8 +79,8 @@ namespace Qd {
 			return "ArrayLiteral";
 		case IAstNode::Type::LOOP_STATEMENT:
 			return "LoopStatement";
-		case IAstNode::Type::WHILE_STATEMENT:
-			return "WhileStatement";
+		case IAstNode::Type::CONDITIONAL_BREAK:
+			return "ConditionalBreak";
 		case IAstNode::Type::IMPORT_STATEMENT:
 			return "ImportStatement";
 		case IAstNode::Type::GLOBAL_VAR_DECLARATION:

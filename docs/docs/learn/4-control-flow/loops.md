@@ -84,14 +84,15 @@ fn main() {
 }
 ```
 
-## while - conditional loop
+## while and until - conditional exits
 
-Loop while a condition holds:
+Inside a `loop`, `while` takes a flag and leaves the loop when it is false:
 
 ```qd
 fn main() {
 	0 -> count
-	count 5 < while {
+	loop {
+		count 5 < while
 		count print nl
 		count 1 + -> count
 	}
@@ -99,22 +100,52 @@ fn main() {
 }
 ```
 
-The condition is the words immediately before `while` — here `count 5 <`. It is re-evaluated
-before every iteration, so the body does not restate it, and a condition that is false to begin
-with runs the body no times.
+`until` is the same with the flag the other way round: it leaves when the flag is true. Pick
+whichever lets you write the condition without `not`.
 
-It must leave exactly one value, which the loop consumes. Two values, or none, is a compile error
-naming what was left.
+Where you put the word decides the shape of the loop. At the top the body may run no times; at
+the bottom it runs at least once:
 
-The condition stops at the previous statement, so a line before the loop is not drawn into it:
+```qd
+fn main() {
+	0 -> tries
+	loop {
+		tries 1 + -> tries
+		tries 3 >= until
+	}
+	tries print nl
+	// Output: 3
+}
+```
+
+In the middle, the loop leaves between the two halves of an iteration:
+
+```qd
+fn main() {
+	0 -> n
+	loop {
+		n 1 + -> n
+		n 4 == until    // the line below does not run on the last pass
+		n print nl
+	}
+	// Output: 1 2 3
+}
+```
+
+Both are just a conditional `break`, so they also work in a `for`, and they leave the innermost
+loop. Since the condition is simply what comes before the word, a value waiting on the stack
+under the loop is left alone:
 
 ```qd
 fn main() {
 	0 -> i
-	"starting" print nl    // printed once, not once per iteration
-	i 3 < while {
+	42                     // still there after the loop
+	loop {
+		i 3 < while
 		i 1 + -> i
 	}
+	print nl
+	// Output: 42
 }
 ```
 

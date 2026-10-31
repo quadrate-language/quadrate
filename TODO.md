@@ -32,31 +32,14 @@ through them.
       have to look like to survive that — and if none presents itself, is this an item or a
       preference?
 
-- [ ] **R54 -- `while` is unusable as specified and unused in practice.** Across `examples/`,
-      `stdlib/` and `cmd/`: `loop` 217 uses, `for` 119, **`while` 0**. The only 19 uses in the
-      tree are in `tests/`. The cause is the condition-delimiting rule: the parser takes the
-      maximal backward run of expression-shaped nodes (`lib/qc/src/ast_parse.h:898`,
-      `lib/qc/src/ast_statements.cc:336`) and the validator then requires *that whole run* to
-      net exactly `+1` (`lib/qc/src/semantic_validator_typecheck.cc:2371`). So no value may be
-      pending on the stack where a `while` is written:
-
-          0 -> i
-          42                          // any pending value at all
-          i 3 < while { i 1 + -> i }  // rejected: condition "leaves 2 values"
-
-      A loop that cannot appear in the middle of stack code is not usable in a stack language,
-      and the corpus shows what people write instead: `loop { cond if { break } ... }`.
-      An explicit `while { cond } { body }` would cost one brace pair and delete the lookbehind
-      rule, the whole-run restriction and R78 together.
-
 - [ ] **R55 -- the stack model is not carrying its weight.** Counted over `examples/`,
       `stdlib/` and `cmd/`: 4503 `->` bindings against roughly 270 uses of every stack-shuffling
       word combined (`drop` 122, `swap` 39, `dup` 37, `depth` 23, `over` 18, `rot` 13, `nip` 11,
       `clear` 6, `dup2` 5, `pick` 2). Real code uses the stack as a calling convention and named
       locals for everything else. That is worth deciding about deliberately, because the stack
-      is what forces the `while` design (R54), the branch depth-matching rules of §6.1.1, and
-      the modularity hole of R52. Either the stack words get good enough that locals become the
-      exception, or the costs of pretending get paid down.
+      is what forced the old `while` design (R54, now `while`/`until` inside `loop`), the branch
+      depth-matching rules of §6.1.1, and the modularity hole of R52. Either the stack words get
+      good enough that locals become the exception, or the costs of pretending get paid down.
 
 - [ ] **R56 -- an error is not a value, only a syntactic position.** A bare fallible call must
       be *immediately* followed by `if`, `switch`, `!` or `?`:
@@ -245,12 +228,6 @@ not describe it.
 
 - [ ] **R77 -- §2.3.4's interpolation examples do not compile.** See R64. Appendix A's
       `interp_string = '$"' { character | "{" expression "}" } '"'` is wrong the same way.
-
-- [ ] **R78 -- §6.4 describes a `while` rule nobody implemented.** The spec says the condition
-      is *"the shortest run of words immediately preceding `while` whose net stack effect is
-      `( -- flag )`"*, under which `5 i 3 < while` is legal with condition `i 3 <`. The
-      implementation rejects it (R54). Fixing R54 should replace this paragraph rather than
-      correct it.
 
 ## Deferred
 

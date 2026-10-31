@@ -79,9 +79,13 @@ KEYWORD(for, "Iterates from start to end with a step, binding the iterator varia
 /// @example loop { "forever" print nl }
 KEYWORD(loop, "Repeats a block indefinitely until break is called.")
 
-/// Conditional loop keyword. The condition precedes it and is re-evaluated each iteration.
-/// @example 0 -> i  i 5 < while { i print nl  i 1 + -> i }
-KEYWORD(while, "Repeats a block while the preceding condition holds; the condition is re-evaluated before every iteration.")
+/// Conditional loop exit. Takes a flag and leaves the innermost loop when it is false.
+/// @example 0 -> i  loop { i 5 < while  i print nl  i 1 + -> i }
+KEYWORD(while, "Inside a loop: takes a flag and leaves the innermost loop when it is false (zero).")
+
+/// Conditional loop exit. Takes a flag and leaves the innermost loop when it is true.
+/// @example loop { read_line -> line  line process  line "quit" == until }
+KEYWORD(until, "Inside a loop: takes a flag and leaves the innermost loop when it is true (non-zero).")
 
 /// Loop exit keyword.
 /// @example loop { x 10 > if { break } }

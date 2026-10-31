@@ -1739,7 +1739,7 @@ static bool isTypeName(const std::string& word) {
 }
 
 bool lspIsReservedName(const std::string& name) {
-	static const std::set<std::string> syntax = {"loop", "while", "null", "self"};
+	static const std::set<std::string> syntax = {"loop", "while", "until", "null", "self"};
 	return isKeyword(name) || isTypeName(name) || isBuiltinOp(name) || syntax.count(name) > 0;
 }
 

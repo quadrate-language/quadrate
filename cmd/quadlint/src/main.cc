@@ -21,7 +21,6 @@
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <set>
@@ -410,8 +409,6 @@ const char* controlKeyword(IAstNode* node) {
 		return "for";
 	case IAstNode::Type::LOOP_STATEMENT:
 		return "loop";
-	case IAstNode::Type::WHILE_STATEMENT:
-		return "while";
 	case IAstNode::Type::SWITCH_STATEMENT:
 		return "switch";
 	default:
@@ -670,10 +667,6 @@ void detectEmptyBlocks(IAstNode* node, const std::string& filename, std::vector<
 		// Find the block child
 		for (size_t i = 0; i < node->childCount(); i++) {
 			IAstNode* child = node->child(i);
-			if (node->type() == IAstNode::Type::WHILE_STATEMENT &&
-					child != static_cast<AstNodeWhileStatement*>(node)->body()) {
-				continue;
-			}
 			if (child && child->type() == IAstNode::Type::BLOCK && countStatements(child) == 0) {
 				LintIssue issue;
 				issue.filename = filename;

@@ -163,9 +163,9 @@ inline std::string sizedTypeMisuseMessage(const std::string& name, const std::st
 inline bool isReservedKeyword(const std::string& name) {
 	// Narrower than Qd::KEYWORDS: a modifier such as `stack`, `inline` or `packed` is a keyword only
 	// where it modifies, and stays usable as a name
-	static const std::unordered_set<std::string> RESERVED = {"if", "else", "for", "loop", "switch", "case", "break",
-			"continue", "return", "fn", "struct", "enum", "type", "const", "pub", "test", "use", "import", "defer",
-			"as", "true", "false", "Ok", "Err", "null", "i64", "f64", "d128", "str", "ptr", "void"};
+	static const std::unordered_set<std::string> RESERVED = {"if", "else", "for", "loop", "while", "until", "switch",
+			"case", "break", "continue", "return", "fn", "struct", "enum", "type", "const", "pub", "test", "use",
+			"import", "defer", "as", "true", "false", "Ok", "Err", "null", "i64", "f64", "d128", "str", "ptr", "void"};
 	return RESERVED.find(name) != RESERVED.end();
 }
 

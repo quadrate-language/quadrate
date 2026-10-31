@@ -1,0 +1,10 @@
+// Test: a `switch` is not a loop, so `continue` in one with no loop around it is an error.
+fn main() {
+	1 switch {
+		1 {
+			continue
+		}
+		_ {
+		}
+	}
+}

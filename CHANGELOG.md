@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`json::parse` — a real JSON parser.**
 - **`tests/run_memory_test.sh`** (suite `memory`, test `memory_test`): three programs built and dropped at two iteration counts a hundredfold apart, failing if peak RSS grows by more than 4 MB between them.
 - **`stack fn` — a function whose arguments stay on the stack.**
-- **`while` is back, and the condition is written once.**
+- **`while` and `until` — conditional exits inside a loop.** Each takes a flag and leaves the innermost `loop` or `for`: `while` when the flag is false, `until` when it is true. `loop { i n < while ... }` is a loop tested first, `loop { ... done until }` one tested last, and the test can sit anywhere in between. Each is a word with the effect `( flag -- )`, so the condition is whatever precedes it and values pending on the stack under the loop are left alone. This replaces the `cond while { body }` form, whose condition was found by scanning backwards and had to account for the whole stack, so no value could be pending where a loop was written (R54, R78). The interpreter, which never ran that form, runs these.
 - **`strings::byte_len`**, the size of a string's UTF-8 encoding.
 - **`math::inf`, `math::nan`, `math::is_nan`, `math::is_inf`, `math::is_finite`.**
 - **`print` renders arrays.**
@@ -127,6 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`break` and `continue` in a `switch` with no loop around it compiled to nothing.** The checker counted a `switch` as a loop, but neither backend does: in a `switch` inside a loop both act on the loop, and with no loop there was nowhere to jump, so the code after a `break` ran as if it were not there. It is now an error, `'break' not within a loop`, as it is for `while` and `until`.
+- **Compile-error tests whose expectation file had no trailing newline checked nothing.** `tests/run_all.sh` read the patterns with `while read`, which skips a last line without a newline, so 32 of the 249 `.err` and `.runtime_err` files passed whatever the compiler said. Six of them had gone stale and now say what the compiler says, and `multiple_errors` moves its undefined name into a function of its own, since past one the checker stops trusting that function's stack model and did not report the underflow the test expects.
 - **`0 strings::from_char` gave the empty string.** The character was pushed as a C string, which ends at its first NUL; it is now the one-byte string holding NUL.
 - **A `switch` on a string leaked the string when the matching arm returned or broke out.** The value was released after the switch, which such an arm never reaches; it is now released as the arm is entered.
 - **A string `switch` label matched a string holding a NUL byte by its part before the NUL.** The label is now compared with the whole string, so `0 strings::from_char` no longer matches `""`.

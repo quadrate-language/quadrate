@@ -20,7 +20,7 @@ class QuadrateLexer(RegexLexer):
     keywords = (
         'fn', 'pub', 'inline', 'stack', 'const', 'var', 'struct', 'packed', 'enum', 'type',
         'use', 'import', 'as', 'test',
-        'if', 'else', 'for', 'loop', 'break', 'continue', 'return',
+        'if', 'else', 'for', 'loop', 'while', 'until', 'break', 'continue', 'return',
         'defer', 'switch', 'case',
         'true', 'false', 'null', 'Ok', 'Err',
     )

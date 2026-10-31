@@ -1,0 +1,6 @@
+// Test: `until` takes a flag, so an empty stack is an underflow.
+fn main() {
+	loop {
+		until
+	}
+}

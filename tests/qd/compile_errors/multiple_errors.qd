@@ -7,10 +7,13 @@ stack fn normal_func(i64 -- i64) {
 	++
 }
 
-fn main() {
-	// Error 1: undefined function
+// Error 1: undefined function. In a function of its own, since past an unresolved name the
+// checker stops trusting that function's stack model and would not report Error 4.
+fn calls_undefined() {
 	undefined_func
+}
 
+fn main() {
 	// Error 2: fallible without if
 	10 5 safe_div
 	print nl

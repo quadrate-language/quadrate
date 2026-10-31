@@ -1,0 +1,11 @@
+// Test: a `switch` is not a loop, so `break` in one with no loop around it is an error.
+// It used to compile to nothing: the jump had no loop to go to.
+fn main() {
+	1 switch {
+		1 {
+			break
+		}
+		_ {
+		}
+	}
+}

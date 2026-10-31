@@ -310,9 +310,13 @@ namespace Qd {
 				return boolNode;
 			}
 
-			// break, continue, and return are always allowed
+			// break, while, until, continue, and return are always allowed
 			if (strcmp(text, "break") == 0) {
 				IAstNode* node = new AstNodeBreak();
+				setNodePosition(node, scanner, src);
+				return node;
+			} else if (strcmp(text, "while") == 0 || strcmp(text, "until") == 0) {
+				IAstNode* node = new AstNodeConditionalBreak(strcmp(text, "until") == 0);
 				setNodePosition(node, scanner, src);
 				return node;
 			} else if (strcmp(text, "continue") == 0) {
@@ -379,8 +383,6 @@ namespace Qd {
 					return parseIfStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "for") == 0) {
 					return parseForStatement(scanner, errorReporter, src);
-				} else if (strcmp(text, "while") == 0) {
-					return parseWhileStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "loop") == 0) {
 					return parseLoopStatement(scanner, errorReporter, src);
 				} else if (strcmp(text, "switch") == 0) {

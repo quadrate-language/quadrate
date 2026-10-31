@@ -85,7 +85,7 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 ```
 fn        pub       inline    stack     struct    packed    enum
 type      use       import    if        else      for       loop
-while     switch    break     continue  return    defer
+while     until     switch    break     continue  return    defer
 const     var       test      as
 ```
 
@@ -1049,31 +1049,35 @@ loop {
 }
 ```
 
-### 6.4 Conditional Loops
+### 6.4 Conditional Exits
+
+`while` and `until` are words with the effect `( flag -- )`, written inside the body of a `loop`
+or `for`. Each pops a flag and either leaves the innermost loop or lets the body go on:
+
+| Word | Leaves the loop when the flag is |
+|------|----------------------------------|
+| `while` | zero |
+| `until` | non-zero |
+
+The condition is whatever precedes the word, as for any other word; nothing is delimited by
+looking backwards, so values below it on the stack are no concern of the loop's. Where in the
+body the word is written decides the shape of the loop:
 
 ```quadrate
 0 -> i
-i 5 < while {
-    // body
-}
+loop { i 5 < while  i print nl  i 1 + -> i }     // tested first: may run no times
+
+0 -> k
+loop { k 1 + -> k  k 3 >= until }                 // tested last: runs at least once
 ```
 
-The **condition** is the shortest run of words immediately preceding `while` whose net stack effect
-is `( -- flag )`. It is evaluated before every iteration, including the first, and the flag it
-leaves is consumed by the loop; a body that runs zero times is therefore well defined. The body
-MUST leave the stack as it found it.
+Leaving by `while` or `until` is a `break` taken with the stack as it stands after the flag is
+popped (§6.6), and is checked as one: in a `loop` every exit MUST leave the same depth, and in a
+`for` it MUST leave the depth the loop head had. Pending defers run as for `break`. When the loop
+goes on, the rest of the body runs on that same stack.
 
-Because the condition is delimited by its stack effect rather than by punctuation, a preceding
-statement whose own effect is neutral is not part of it: in
-
-```quadrate
-0 -> i
-"starting" print nl
-i 3 < while { i 1 + -> i }
-```
-
-the condition is `i 3 <`, and `"starting" print nl` is evaluated once. A run that does not leave
-exactly one value is a compile error.
+An implementation MUST reject `while` or `until` outside a `loop` or `for`. A `switch` is not a
+loop, so one inside a `switch` with no loop around it is an error.
 
 ### 6.5 Switch-Case
 
@@ -1106,7 +1110,13 @@ every other arm from the pre-call stack.
 ```quadrate
 break      // Exit innermost loop
 continue   // Skip to next iteration
+flag while // Exit innermost loop if flag is zero (§6.4)
+flag until // Exit innermost loop if flag is non-zero (§6.4)
 ```
+
+All four act on the innermost `loop` or `for`. A `switch` is not a loop: written in a `switch`
+arm, they act on the loop around the `switch`, and an implementation MUST reject them in a
+`switch` that has no loop around it.
 
 ### 6.7 Defer
 
@@ -2337,13 +2347,13 @@ field_decl      = identifier ":" type [ "=" expression ] ;
 import_fn       = ["pub"] "fn" identifier signature ["!"] ;
 
 block           = "{" { statement } "}" ;
-statement       = expression | if_stmt | for_stmt | loop_stmt | while_stmt
-                | switch_stmt | defer_stmt | "break" | "continue" | "return" ;
+statement       = expression | if_stmt | for_stmt | loop_stmt
+                | switch_stmt | defer_stmt | "break" | "continue" | "return"
+                | "while" | "until" ;   /* each pops a flag, see 6.4 */
 
 if_stmt         = expression "if" block [ "else" block ] ;
 for_stmt        = expression expression expression "for" identifier block ;
 loop_stmt       = "loop" block ;
-while_stmt      = expression "while" block ;   /* condition delimited by stack effect, see 6.4 */
 switch_stmt     = expression "switch" "{" { case_clause } "}" ;
 case_clause     = ( literal | identifier | "_" ) block ;
 defer_stmt      = "defer" ( block | statement ) ;

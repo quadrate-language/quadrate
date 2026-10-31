@@ -1,0 +1,19 @@
+// Test: `break` and `continue` in a `switch` act on the loop around it, not on the switch.
+fn main() {
+	0 -> i
+	loop {
+		i 1 + -> i
+		i switch {
+			2 {
+				continue
+			}
+			4 {
+				break
+			}
+			_ {
+			}
+		}
+		i print nl
+	}
+	"left at " print i print nl
+}

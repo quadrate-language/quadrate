@@ -1,0 +1,4 @@
+// Test: `while` leaves a loop, so it is an error outside one.
+fn main() {
+	1 while
+}

@@ -19,7 +19,8 @@ Language keywords for declarations, control flow, and more.
 | [`else`](#else) | Alternative block when if condition is false |
 | [`for`](#for) | Iteration with counter |
 | [`loop`](#loop) | Infinite loop |
-| [`while`](#while) | Loop while the preceding condition holds |
+| [`while`](#while) | Leave the loop if the flag is false |
+| [`until`](#until) | Leave the loop if the flag is true |
 | [`break`](#break) | Exit loop |
 | [`continue`](#continue) | Skip to next iteration |
 | [`return`](#return) | Exit function |
@@ -228,15 +229,28 @@ loop {
 
 ### while
 
-Repeats a block while the preceding condition holds. The condition is the words immediately before
-the keyword, re-evaluated before every iteration, so the body does not restate it; it must leave
-exactly one value.
+Inside a `loop` or `for`: takes a flag and leaves the innermost loop when it is false. The
+condition is whatever precedes it, so at the top of the body it makes a classic while loop.
 
 ```qd
 0 -> i
-i 5 < while {
+loop {
+	i 5 < while
 	i print nl
 	i 1 + -> i
+}
+```
+
+### until
+
+Inside a `loop` or `for`: takes a flag and leaves the innermost loop when it is true. At the end
+of the body it makes a do-while loop, which runs at least once.
+
+```qd
+0 -> k
+loop {
+	k 1 + -> k
+	k 3 >= until
 }
 ```
 

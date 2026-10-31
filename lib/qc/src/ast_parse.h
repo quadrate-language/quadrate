@@ -23,6 +23,7 @@
 #include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_break.h>
+#include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_continue.h>
 #include <quadrate/qc/ast_node_defer.h>
@@ -47,7 +48,6 @@
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/error_reporter.h>
 #include <u8t/scanner.h>
@@ -961,22 +961,6 @@ namespace Qd {
 	// Recovery after an error at the token just scanned (ast_statements.cc)
 	void synchronize(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 
-	// Node kinds that may form a `while` condition: the run of expression nodes immediately before
-	// the keyword. Anything else -- a binding, a nested statement, a comment -- ends the run, so the
-	// condition never swallows a preceding `-> x` and re-runs it every iteration.
-	inline bool isConditionExpressionNode(IAstNode::Type type) {
-		switch (type) {
-		case IAstNode::Type::IDENTIFIER:
-		case IAstNode::Type::SCOPED_IDENTIFIER:
-		case IAstNode::Type::INSTRUCTION:
-		case IAstNode::Type::LITERAL:
-		case IAstNode::Type::FIELD_ACCESS:
-			return true;
-		default:
-			return false;
-		}
-	}
-
 	// Skips a brace-delimited group, nesting included, starting from the '{' that follows.
 	// `synchronize` stops *at* the opening brace, which leaves the group's closing '}' to be read
 	// as if it closed the enclosing block -- so diagnosing a removed `name { ... }` construct
@@ -1073,7 +1057,6 @@ namespace Qd {
 			bool inFunctionBody = false);
 	IAstNode* parseForStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseLoopStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
-	IAstNode* parseWhileStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseIfStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 	IAstNode* parseSwitchStatement(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src);
 

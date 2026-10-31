@@ -59,6 +59,7 @@
 #include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_break.h>
+#include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_continue.h>
 #include <quadrate/qc/ast_node_defer.h>
@@ -81,7 +82,6 @@
 #include <quadrate/qc/ast_node_switch.h>
 #include <quadrate/qc/ast_node_test.h>
 #include <quadrate/qc/ast_node_use.h>
-#include <quadrate/qc/ast_node_while.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/string_literal.h>
 #include <quadrate/qc/type_names.h>
@@ -604,9 +604,7 @@ namespace Qd {
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
 		void generateFor(AstNodeForStatement* forStmt, llvm::Value* ctx);
 		void generateLoop(AstNodeLoopStatement* loopStmt, llvm::Value* ctx);
-		void generateWhile(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
-		void generateWhileConditionPrefix(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
-		void generateWhileConditionTest(AstNodeWhileStatement* whileStmt, llvm::Value* ctx);
+		void generateConditionalBreak(AstNodeConditionalBreak* node, llvm::Value* ctx);
 		void generateSwitchStatement(AstNodeSwitchStatement* switchStmt, llvm::Value* ctx);
 
 		// What a switch matches on: an SSA value on the native path, otherwise the top stack

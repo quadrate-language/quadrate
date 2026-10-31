@@ -8,6 +8,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_case.h>
+#include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -241,6 +242,27 @@ namespace {
 		}
 		if (node->childCount() > 1) {
 			return evalNode(interp, node->child(1));
+		}
+		return true;
+	}
+
+	// `while` / `until` take a flag and leave the innermost loop on it, as `break` would:
+	// `while` when the flag is zero, `until` when it is not.
+	bool evalConditionalBreak(qd_interp* interp, const Qd::AstNodeConditionalBreak* node) {
+		int64_t flag = 0;
+		if (qd_stack_size(interp->ctx->st) == 0) {
+			interp->error = std::string("'") + node->keyword() + "' needs a flag on the stack";
+			return false;
+		}
+		qd_clear_error(interp->ctx);
+		if (qd_pop_i(interp->ctx, &flag) != 0) {
+			const char* message = qd_error_message(interp->ctx);
+			interp->error =
+					(message != nullptr) ? message : std::string("'") + node->keyword() + "' flag must be an integer";
+			return false;
+		}
+		if ((flag != 0) == node->breakWhen()) {
+			interp->flow = Flow::Break;
 		}
 		return true;
 	}
@@ -1274,6 +1296,9 @@ namespace {
 		case Type::BREAK_STATEMENT:
 			interp->flow = Flow::Break;
 			return true;
+
+		case Type::CONDITIONAL_BREAK:
+			return evalConditionalBreak(interp, static_cast<const Qd::AstNodeConditionalBreak*>(node));
 
 		case Type::CONTINUE_STATEMENT:
 			interp->flow = Flow::Continue;
