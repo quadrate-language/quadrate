@@ -1,7 +1,7 @@
 // Test: conditional error
-stack fn process(i64 i64 -- i64)! {
+fn process(i64 i64 -- i64)! {
 	dup 0 > if {
-		add
+		+
 	} else {
 		drop drop
 		"Error occurred" 1 panic
@@ -10,23 +10,26 @@ stack fn process(i64 i64 -- i64)! {
 
 fn main() {
 	"5 + 3 = " print
-	5 3 process if {
+	5 3 process ok if {
 		print nl
 	} else {
+		drop
 		"Error" print nl
 	}
 
 	"10 + 0 = " print
-	10 0 process if {
+	10 0 process ok if {
 		print nl
 	} else {
+		drop
 		"Error (b was zero)" print nl
 	}
 
 	"7 + 2 = " print
-	7 2 process if {
+	7 2 process ok if {
 		print nl
 	} else {
+		drop
 		"Error" print nl
 	}
 }

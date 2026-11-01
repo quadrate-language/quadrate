@@ -62,6 +62,16 @@ test "time::second from epoch" {
 	0 time::second 0 testing::assert_eq
 }
 
+test "time::iso_week across year boundaries" {
+	// Early January in the previous year's last week, late December in the next year's first
+	1609502400 time::iso_week 53 testing::assert_eq // 2021-01-01
+	1609761600 time::iso_week 1 testing::assert_eq // 2021-01-04
+	1609416000 time::iso_week 53 testing::assert_eq // 2020-12-31
+	1735560000 time::iso_week 1 testing::assert_eq // 2024-12-30
+	1767268800 time::iso_week 1 testing::assert_eq // 2026-01-01
+	1798804800 time::iso_week 53 testing::assert_eq // 2027-01-01
+}
+
 test "time::weekday from epoch" {
 	0 time::weekday time::Thursday testing::assert_eq
 }
@@ -162,17 +172,17 @@ test "time::error constants" {
 
 test "time::format year-month-day" {
 	0 "%Y-%m-%d" time::format! -> result
-	result strings::len 10 testing::assert_eq
+	result len 10 testing::assert_eq
 }
 
 test "time::format time" {
 	0 "%H:%M:%S" time::format! -> result
-	result strings::len 8 testing::assert_eq
+	result len 8 testing::assert_eq
 }
 
 test "time::format full datetime" {
 	0 "%Y-%m-%d %H:%M:%S" time::format! -> result
-	result strings::len 19 testing::assert_eq
+	result len 19 testing::assert_eq
 }
 
 test "time::parse and format roundtrip" {
@@ -207,12 +217,12 @@ test "time::millis less than micros" {
 
 // strftime wrote into 256 bytes, and a longer result failed
 test "time::format a long result" {
-	0 "%Y-%m-%d " 30 strings::repeat time::format! strings::len 330 testing::assert_eq
+	0 "%Y-%m-%d " 30 strings::repeat time::format! len 330 testing::assert_eq
 }
 
 // strptime stopped where the format did, and the rest was ignored
 test "time::parse takes the whole input" {
-	"2024-01-15xyz" "%Y-%m-%d" time::parse if { drop "trailing text read" testing::fail }
+	"2024-01-15xyz" "%Y-%m-%d" time::parse ok if { "trailing text read" testing::fail } drop
 }
 
 // timegm returns -1 for this second as well as for failure

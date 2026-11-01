@@ -26,8 +26,8 @@ fn main() {
 
 	// Comparison chains
 	"=== Comparison chains ===" print nl
-	5 3 > 1 eq print nl       // (5 > 3) == 1 -> true
-	5 3 + 8 eq print nl       // (5 + 3) == 8 -> true
+	5 3 > 1 == print nl       // (5 > 3) == 1 -> true
+	5 3 + 8 == print nl       // (5 + 3) == 8 -> true
 	5 3 > 4 2 > and print nl  // (5>3) && (4>2) -> true
 
 	"done" print nl

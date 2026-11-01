@@ -1,6 +1,7 @@
-// Test: in a switch after a fallible call, `Ok` is the success arm and a literal `1` is the
-// error-code arm. Only the Ok arm receives the call's result.
-fn fails_with(code:i64 -- v:i64)! {
+// Test: in a switch after a fallible call, `Ok` (0) is the success arm and a literal `1` is the
+// error-code arm. Every arm starts with the call's result; on failure it is a zero
+// placeholder, which the failure arms drop.
+def fails_with(code:i64 -- v:i64)! {
 	code 0 != if {
 		"boom" code panic
 	}
@@ -10,12 +11,12 @@ fn fails_with(code:i64 -- v:i64)! {
 fn main() {
 	1 fails_with switch {
 		Ok { "ok " print print nl }
-		1 { "code 1" print nl }
-		_ { "other" print nl }
+		1 { drop "code 1" print nl }
+		_ { drop "other" print nl }
 	}
 	0 fails_with switch {
 		Ok { "ok " print print nl }
-		1 { "code 1" print nl }
-		_ { "other" print nl }
+		1 { drop "code 1" print nl }
+		_ { drop "other" print nl }
 	}
 }

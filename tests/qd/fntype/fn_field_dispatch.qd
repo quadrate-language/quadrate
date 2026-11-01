@@ -32,7 +32,7 @@ fn two_values( -- a:i64 b:i64) {
 	1 2
 }
 
-fn eat_one(x:i64 -- ) {
+def eat_one(x:i64 -- ) {
 	"ate " print x print nl
 }
 
@@ -50,5 +50,4 @@ fn main() {
 	h <<two call + print nl
 	// No results
 	7 h <<eat call
-	"stack: [" print prints "]" print nl
 }

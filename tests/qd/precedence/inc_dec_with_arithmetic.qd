@@ -16,9 +16,9 @@ fn main() {
 
 	// With comparisons
 	"=== Inc/Dec with comparisons ===" print nl
-	5 ++ 6 eq print nl         // (5+1)==6 -> true
-	10 -- 9 eq print nl        // (10-1)==9 -> true
-	0 -- 0 lt print nl         // (0-1)<0 -> true
+	5 ++ 6 == print nl         // (5+1)==6 -> true
+	10 -- 9 == print nl        // (10-1)==9 -> true
+	0 -- 0 < print nl         // (0-1)<0 -> true
 
 	// Float increment/decrement
 	"=== Float inc/dec ===" print nl

@@ -5,96 +5,112 @@
     {
       "name": "Stack Manipulation",
       "instructions": [
-        {"name": "dup", "signature": "(a -- a a)", "description": "Duplicate top element"},
-        {"name": "dup2", "signature": "(a b -- a b a b)", "description": "Duplicate top two elements"},
-        {"name": "swap", "signature": "(a b -- b a)", "description": "Swap top two elements"},
-        {"name": "over", "signature": "(a b -- a b a)", "description": "Copy second element to top"},
-        {"name": "nip", "signature": "(a b -- b)", "description": "Remove second element"},
-        {"name": "drop", "signature": "(a --)", "description": "Drop top element"},
-        {"name": "rot", "signature": "(a b c -- b c a)", "description": "Rotate three elements"},
-        {"name": "pick", "signature": "(x y z -- x y z x)", "description": "Copy the third value to the top"},
-        {"name": "call", "signature": "(fn --)", "description": "Call a function pointer"}
+        {"name": "dup", "signature": "(x -- x x)", "description": "Copies the top value."},
+        {"name": "dup2", "signature": "(x y -- x y x y)", "description": "Copies the top two values."},
+        {"name": "swap", "signature": "(x y -- y x)", "description": "Exchanges the top two values."},
+        {"name": "over", "signature": "(x y -- x y x)", "description": "Copies the second value to the top."},
+        {"name": "nip", "signature": "(x y -- y)", "description": "Removes the second value."},
+        {"name": "drop", "signature": "(x --)", "description": "Removes the top value."},
+        {"name": "rot", "signature": "(x y z -- y z x)", "description": "Moves the third value to the top."},
+        {"name": "rrot", "signature": "(x y z -- z x y)", "description": "Moves the top value below the next two; the inverse of rot."},
+        {"name": "tuck", "signature": "(x y -- y x y)", "description": "Copies the top value below the second."},
+        {"name": "drop2", "signature": "(x y --)", "description": "Removes the top two values."},
+        {"name": "pick", "signature": "(x y z -- x y z x)", "description": "Copies the third value to the top."}
+      ]
+    },
+    {
+      "name": "Combinators",
+      "instructions": [
+        {"name": "call", "signature": "(q -- ...)", "description": "Runs a function value: a fn { } literal, a local holding one, or &name."},
+        {"name": "dip", "signature": "(..a x q -- ..b x)", "description": "Runs q on what is under x, then puts x back."},
+        {"name": "keep", "signature": "(..a x q -- ..b x)", "description": "Runs q on x, then puts x back on top."},
+        {"name": "dip2", "signature": "(..a x y q -- ..b x y)", "description": "Runs q on what is under the top two values, then puts them back."},
+        {"name": "keep2", "signature": "(..a x y q -- ..b x y)", "description": "Runs q on the top two values, then puts them back on top."},
+        {"name": "bi", "signature": "(..a x p q -- ..c)", "description": "Runs p on x, then q on x again, each on what the last left."},
+        {"name": "tri", "signature": "(..a x p q r -- ..d)", "description": "Runs p, q and r on x in turn, as bi runs two."},
+        {"name": "both", "signature": "(..a x y q -- ..c)", "description": "Runs q on x, then on y."},
+        {"name": "times", "signature": "(..a n q -- ..a)", "description": "Runs q n times; it must leave the stack as it found it."},
+        {"name": "each", "signature": "(..a arr q -- ..a)", "description": "Runs q with each element, or character of a string, on top; it must leave the stack as it found it."},
+        {"name": "map", "signature": "(arr q -- arr2)", "description": "Returns a new array of what q leaves for each element."},
+        {"name": "filter", "signature": "(arr q -- arr2)", "description": "Returns a new array of the elements q leaves a true flag for."},
+        {"name": "fold", "signature": "(arr acc q -- acc)", "description": "Runs q on the accumulator and each element, or character of a string, in turn, starting from acc."},
+        {"name": "any", "signature": "(arr q -- flag)", "description": "Returns 1 if q leaves a true flag for any element, or character of a string, stopping at the first that does."},
+        {"name": "all", "signature": "(arr q -- flag)", "description": "Returns 1 if q leaves a true flag for every element, or character of a string, stopping at the first that does not."},
+        {"name": "find", "signature": "(arr q -- elem flag)", "description": "Returns the first element, or character of a string, q leaves a true flag for, and 1; or the zero of the element type, and 0."},
+        {"name": "index", "signature": "(arr q -- i)", "description": "Returns the position of the first element, or character of a string, q leaves a true flag for, or -1."},
+        {"name": "scan", "signature": "(arr start q -- i)", "description": "Returns the position of the first element, or character of a string, at or after start that q leaves a true flag for, or -1."}
       ]
     },
     {
       "name": "Arithmetic",
       "instructions": [
-        {"name": "add", "signature": "(a b -- a+b)", "description": "Add top two elements", "alias": "+"},
-        {"name": "sub", "signature": "(a b -- a-b)", "description": "Subtract top from second", "alias": "-"},
-        {"name": "mul", "signature": "(a b -- a*b)", "description": "Multiply top two elements", "alias": "*"},
-        {"name": "div", "signature": "(a b -- a/b)", "description": "Divide second by top", "alias": "/"},
-        {"name": "mod", "signature": "(a b -- a%b)", "description": "Modulo (remainder)", "alias": "%"},
-        {"name": "neg", "signature": "(a -- -a)", "description": "Negate top element"},
-        {"name": "inc", "signature": "(a -- a+1)", "description": "Increment by 1", "alias": "++"},
-        {"name": "dec", "signature": "(a -- a-1)", "description": "Decrement by 1", "alias": "--"}
+        {"name": "+", "signature": "(a b -- sum)", "description": "Adds two numbers."},
+        {"name": "-", "signature": "(a b -- diff)", "description": "Subtracts b from a."},
+        {"name": "*", "signature": "(a b -- product)", "description": "Multiplies two numbers."},
+        {"name": "/", "signature": "(a b -- quotient)", "description": "Divides a by b."},
+        {"name": "%", "signature": "(a b -- remainder)", "description": "Computes a modulo b."},
+        {"name": "neg", "signature": "(a -- -a)", "description": "Negates a number."},
+        {"name": "++", "signature": "(a -- a+1)", "description": "Adds 1 to a number."},
+        {"name": "--", "signature": "(a -- a-1)", "description": "Subtracts 1 from a number."}
       ]
     },
     {
       "name": "Comparison",
       "instructions": [
-        {"name": "eq", "signature": "(a b -- bool)", "description": "Test equality (a == b)", "alias": "=="},
-        {"name": "neq", "signature": "(a b -- bool)", "description": "Test inequality (a != b)", "alias": "!="},
-        {"name": "lt", "signature": "(a b -- bool)", "description": "Test less than (a < b)", "alias": "<"},
-        {"name": "gt", "signature": "(a b -- bool)", "description": "Test greater than (a > b)", "alias": ">"},
-        {"name": "lte", "signature": "(a b -- bool)", "description": "Test less or equal (a <= b)", "alias": "<="},
-        {"name": "gte", "signature": "(a b -- bool)", "description": "Test greater or equal (a >= b)", "alias": ">="},
-        {"name": "within", "signature": "(val min max -- bool)", "description": "Test if val is in [min, max]"}
+        {"name": "==", "signature": "(a b -- flag)", "description": "Returns 1 if a equals b, 0 otherwise."},
+        {"name": "!=", "signature": "(a b -- flag)", "description": "Returns 1 if a does not equal b, 0 otherwise."},
+        {"name": "<", "signature": "(a b -- flag)", "description": "Returns 1 if a is less than b, 0 otherwise."},
+        {"name": ">", "signature": "(a b -- flag)", "description": "Returns 1 if a is greater than b, 0 otherwise."},
+        {"name": "<=", "signature": "(a b -- flag)", "description": "Returns 1 if a is less than or equal to b, 0 otherwise."},
+        {"name": ">=", "signature": "(a b -- flag)", "description": "Returns 1 if a is greater than or equal to b, 0 otherwise."},
+        {"name": "within", "signature": "(a low high -- flag)", "description": "Returns 1 if a is in [low, high], both ends included, 0 otherwise."}
       ]
     },
     {
-      "name": "Bitwise",
+      "name": "Logical",
       "instructions": [
-        {"name": "and", "signature": "(a b -- result)", "description": "Logical AND (bits::and is the bitwise one)"},
-        {"name": "or", "signature": "(a b -- result)", "description": "Logical OR (bits::or is the bitwise one)"},
-        {"name": "not", "signature": "(a -- result)", "description": "Logical NOT (bits::not is the bitwise one)"},
-        {"name": "shl", "signature": "(a n -- a<<n)", "description": "Shift left by n bits", "alias": "<<"},
-        {"name": "shr", "signature": "(a n -- a>>n)", "description": "Shift right by n bits", "alias": ">>"}
+        {"name": "and", "signature": "(a b -- flag)", "description": "Returns 1 if both values are non-zero, 0 otherwise; both are always evaluated. `bits::and` is the bitwise one."},
+        {"name": "or", "signature": "(a b -- flag)", "description": "Returns 1 if either value is non-zero, 0 otherwise; both are always evaluated. `bits::or` is the bitwise one."},
+        {"name": "not", "signature": "(a -- flag)", "description": "Returns 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement."}
       ]
     },
     {
       "name": "Type Casting",
       "instructions": [
-        {"name": "cast<T>", "signature": "(a -- T)", "description": "Cast to specified type (i64, f64, str, ptr)"},
-        {"name": "sizeof<T>", "signature": "(-- size)", "description": "Get size of type in bytes: sizeof<MyStruct>"}
+        {"name": "cast<T>", "signature": "(x -- T)", "description": "Converts x to T, written cast<T>: one of i64, f64, d128, ptr and str."},
+        {"name": "sizeof<T>", "signature": "(-- n)", "description": "Returns the size of T in bytes, written sizeof<T>; known at compile time."}
       ]
     },
     {
       "name": "Arrays",
       "instructions": [
-        {"name": "nth", "signature": "(arr i -- val)", "description": "Get element at index i"},
-        {"name": "set", "signature": "(arr i val -- )", "description": "Set element at index i"},
-        {"name": "len", "signature": "(arr -- n)", "description": "Get array length"},
-        {"name": "append", "signature": "(arr val -- arr)", "description": "Append element to array"}
+        {"name": "nth", "signature": "(arr i -- elem)", "description": "Returns the element at index i; in a string, the character there, as its codepoint."},
+        {"name": "set", "signature": "(arr i x --)", "description": "Stores x at index i."},
+        {"name": "len", "signature": "(arr -- n)", "description": "Returns the number of elements in an array, or of characters in a string."},
+        {"name": "append", "signature": "(arr x -- arr)", "description": "Appends x and returns the array, which may have moved."}
       ]
     },
     {
       "name": "I/O",
       "instructions": [
-        {"name": "print", "signature": "(a --)", "description": "Print top value (no newline)"},
-        {"name": "prints", "signature": "(... -- ...)", "description": "Print entire stack"},
-        {"name": "printv", "signature": "(a --)", "description": "Print top value with type info"},
-        {"name": "nl", "signature": "(--)", "description": "Print newline"}
+        {"name": "print", "signature": "(x --)", "description": "Prints a value without a newline."},
+        {"name": "dump", "signature": "(x --)", "description": "Prints a value with its type, for debugging."},
+        {"name": "nl", "signature": "(--)", "description": "Prints a newline."}
       ]
     },
     {
       "name": "Memory",
       "instructions": [
-        {"name": "free", "signature": "(ptr --)", "description": "Free allocated memory"}
+        {"name": "free", "signature": "(p --)", "description": "Frees an array or a struct."}
       ]
     },
     {
       "name": "Error Handling",
       "instructions": [
-        {"name": "panic", "signature": "(msg code --)", "description": "Raise an error and return from current fallible function"},
-        {"name": "err", "signature": "(-- msg code)", "description": "Get last error message and code after a fallible function fails"}
-      ]
-    },
-    {
-      "name": "Threading",
-      "instructions": [
-        {"name": "spawn", "signature": "(fn -- thread)", "description": "Spawn new thread running function"},
-        {"name": "detach", "signature": "(thread --)", "description": "Detach thread (no join needed)"},
-        {"name": "wait", "signature": "(thread --)", "description": "Wait for thread to complete"}
+        {"name": "panic", "signature": "(msg code --)", "description": "Signals an error and returns from the fallible function."},
+        {"name": "err", "signature": "(-- msg code)", "description": "Returns the message and code of the last failed call, and clears them."},
+        {"name": "ok", "signature": "(status -- flag)", "description": "Returns 1 if a fallible call's status is Ok (0), and 0 if it is an error code."},
+        {"name": "fail", "signature": "(status -- flag)", "description": "Returns 1 if a fallible call's status is an error code, and 0 if it is Ok."}
       ]
     }
   ]

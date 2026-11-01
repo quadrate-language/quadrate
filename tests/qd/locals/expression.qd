@@ -1,7 +1,7 @@
 // Test: storing result of expression in local variable
 fn main() {
-	5 3 add -> result
+	5 3 + -> result
 	result print nl
-	10 2 mul -> doubled
+	10 2 * -> doubled
 	doubled print nl
 }

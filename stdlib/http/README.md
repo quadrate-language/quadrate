@@ -62,16 +62,16 @@ fn main() {
     http::engine -> e
 
     // Register routes
-    e "/" fn(c:http::Ctx -- ) {
+    e "/" def(c:http::Ctx -- ) {
         c 200 "Hello, World!" http::string
     } http::GET
 
-    e "/users/:id" fn(c:http::Ctx -- ) {
+    e "/users/:id" def(c:http::Ctx -- ) {
         c "id" http::param -> id
         c 200 id http::string
     } http::GET
 
-    e "/api/data" fn(c:http::Ctx -- ) {
+    e "/api/data" def(c:http::Ctx -- ) {
         c 200 "{\"ok\":true}" http::json
     } http::POST
 
@@ -91,14 +91,14 @@ fn main() {
     http::engine -> e
 
     // Global middleware
-    e fn(c:http::Ctx -- ) {
+    e def(c:http::Ctx -- ) {
         c "X-Server" "Quadrate" http::set_header
     } http::use
 
     // API group
     e "/api" http::group -> api
 
-    api "/users" fn(c:http::Ctx -- ) {
+    api "/users" def(c:http::Ctx -- ) {
         c 200 "[]" http::json
     } http::group_GET
 
@@ -116,7 +116,7 @@ fn main() {
     http::engine -> e
 
     // Serve files from ./public at /static/*
-    e "/static/*" fn(c:http::Ctx -- ) {
+    e "/static/*" def(c:http::Ctx -- ) {
         c "/static" "./public" http::static
     } http::GET
 

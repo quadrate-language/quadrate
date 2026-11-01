@@ -1,23 +1,23 @@
 // Test: generic apply function with function pointer
 
-fn apply<T>(val:T func:ptr -- result:T) {
+def apply<T>(val:T func:ptr -- result:T) {
 	val func call
 }
 
-stack fn double(i64 -- i64) {
+fn double(i64 -- i64) {
 	2 *
 }
 
-stack fn square(i64 -- i64) {
+fn square(i64 -- i64) {
 	dup *
 }
 
 fn main() {
 	// Apply double
-	5 stack fn (i64 -- i64) { 2 * } apply print nl
+	5 fn (i64 -- i64) { 2 * } apply print nl
 
 	// Apply square
-	4 stack fn (i64 -- i64) { dup * } apply print nl
+	4 fn (i64 -- i64) { dup * } apply print nl
 
 	// Apply named functions
 	7 &double apply print nl

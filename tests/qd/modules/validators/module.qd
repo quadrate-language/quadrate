@@ -1,6 +1,6 @@
 // Validation functions
-pub stack fn is_positive(f64 -- f64) {
-	0.0 gt
+pub fn is_positive(f64 -- f64) {
+	0.0 >
 	if {
 		1.0
 	} else {
@@ -8,8 +8,8 @@ pub stack fn is_positive(f64 -- f64) {
 	}
 }
 
-pub stack fn is_negative(f64 -- f64) {
-	0.0 lt
+pub fn is_negative(f64 -- f64) {
+	0.0 <
 	if {
 		1.0
 	} else {
@@ -17,8 +17,8 @@ pub stack fn is_negative(f64 -- f64) {
 	}
 }
 
-pub stack fn is_zero(f64 -- f64) {
-	0.0 eq
+pub fn is_zero(f64 -- f64) {
+	0.0 ==
 	if {
 		1.0
 	} else {

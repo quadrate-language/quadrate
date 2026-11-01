@@ -10,7 +10,7 @@ struct Point {
 	y: i64
 }
 
-fn render(kind:i64 flag:i64 -- s:str) {
+def render(kind:i64 flag:i64 -- s:str) {
 	kind switch {
 		Bool { flag 0 != if { "true and this arm is long enough to be wrapped" } else { "false" } }
 		Number { flag 7 == if { "seven and this arm is also long enough to wrap" } else { "other" } }

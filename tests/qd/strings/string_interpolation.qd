@@ -26,6 +26,6 @@ fn main() {
 	$"value={age}" print nl
 
 	// Module scoped call in interpolation
-	"hello" strings::len -> slen
+	"hello" len -> slen
 	$"len={slen}" print nl
 }

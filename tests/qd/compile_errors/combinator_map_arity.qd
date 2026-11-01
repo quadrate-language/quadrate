@@ -1,0 +1,4 @@
+// Test: `map` runs its function value on one element and keeps one result
+fn main() {
+	[1 2 3] fn { dup } map drop
+}

@@ -1,9 +1,9 @@
 // Test: mixing stack parameters and computed locals
-fn process(val:i64 mult:i64 -- result:i64) {
+def process(val:i64 mult:i64 -- result:i64) {
 	// Compute derived value
-	val mult mul -> product
+	val mult * -> product
 	// Use both original and derived
-	val product add
+	val product +
 }
 
 fn main() {

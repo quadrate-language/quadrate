@@ -6,413 +6,97 @@
 
 Higher-Order Function combinators.
 
-Every combinator is generic: `T` is the value's type and `U` the result's, so the same
-`apply`, `map` or `fold` works over integers, floats, strings and structs. They were fixed
-to `fn(i64 -- i64)` until generic function-pointer parameters started unifying.
-Combinators are functions that combine or apply other functions in useful patterns.
-They enable functional programming without explicit temporary variables.
+The combinators every program uses -- `dip`, `keep`, `bi`, `tri`, `both`, `times`, `each`,
+`map`, `filter`, `fold`, `find`, `any` and `all` -- are builtins, and need no `use`. This
+module has the rest: `when` and `unless`, which run a function value on a condition;
+`bi_star`, which runs two function values on two values; and `fold_right`.
 
-Three of them are `stack fn` and the rest bind their parameters, which is not an accident of
-who wrote what. A combinator that passes one value through one function -- `apply`, `when`,
-`unless` -- says what it means with no names at all: `apply` is the single word `call`, and
-`when` is "test it, then call it or throw it away". A combinator that uses a value twice or
-takes two functions does not: `bi` stack-direct is `pick rot call rot rot call`, which is
-correct, passes its tests, and tells the reader nothing. Both forms were written and run
-before choosing (see R47 in TODO.md).
+Every one is generic, and `when` and `unless` take their function value with a stack
+variable, `..a`, so it may have any arity.
 
 ## Functions
 
-### `fn` all
-
-Check if all elements satisfy a predicate.
-
-**Signature:** `(arr:[]T pred:fn(T -- i64) -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `[]T` | Array |
-| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if all elements satisfy pred, 0 otherwise |
-
-**Example:**
-
-```qd
-arr fn (x:i64 -- r:i64) { x 0 > } hof::all  // all positive?
-```
----
-
-### `fn` any
-
-Check if any element satisfies a predicate.
-
-**Signature:** `(arr:[]T pred:fn(T -- i64) -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `[]T` | Array |
-| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if any element satisfies pred, 0 otherwise |
-
-**Example:**
-
-```qd
-arr fn (x:i64 -- r:i64) { x 0 > } hof::any  // any positive?
-```
----
-
-### `fn` apply
-
-Apply a function to a value.
-
-**Signature:** `(x:T f:fn(T -- T) -- r:T)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | The input value |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `r` | `i64` | Result of f(x) |
-
-**Example:**
-
-```qd
-5 fn (x:i64 -- r:i64) { x 2 * } hof::apply print nl  // 10
-```
----
-
 ### `fn` bi_star
 
-Apply two functions to two values (first to first, second to second).
+Run two function values on two values, the first on the first and the second on the second. Factor's `bi*`: `f` runs under `y`, then `g` on `y`.
 
 **Signature:** `(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `x` | `T` | First value |
-| `y` | `i64` | Second value |
-| `f` | `fn` | Function for first value (i64 -- i64) |
-| `g` | `fn` | Function for second value (i64 -- i64) |
+| `y` | `T` | Second value |
+| `f` | `fn(T -- U)` | Function value for `x` |
+| `g` | `fn(T -- U)` | Function value for `y` |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `a` | `i64` | Result of f(x) |
-| `b` | `i64` | Result of g(y) |
+| `a` | `U` | What `f` leaves for `x` |
+| `b` | `U` | What `g` leaves for `y` |
 
 **Example:**
 
 ```qd
-3 4 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } hof::bi_star  // Stack: 4 8
-```
----
-
-### `fn` bi
-
-Apply two functions to the same value.
-
-**Signature:** `(x:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | The input value |
-| `f` | `fn` | First function |
-| `g` | `fn` | Second function |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `a` | `i64` | Result of f(x) |
-| `b` | `i64` | Result of g(x) |
-
-**Example:**
-
-```qd
-5 fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x 3 + } hof::bi  // Stack: 10 8
-```
----
-
-### `fn` both
-
-Apply a function to two values separately.
-
-**Signature:** `(x:T y:T f:fn(T -- U) -- a:U b:U)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | First value |
-| `y` | `i64` | Second value |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `a` | `i64` | Result of f(x) |
-| `b` | `i64` | Result of f(y) |
-
-**Example:**
-
-```qd
-3 4 fn (x:i64 -- r:i64) { x dup * } hof::both  // Stack: 9 16
-```
----
-
-### `fn` dip
-
-Apply a function to the second stack element, preserving the top.
-
-**Signature:** `(x:T y:U f:fn(T -- T) -- r:T top:U)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | Second element (will have f applied) |
-| `y` | `i64` | Top element (preserved) |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `r` | `i64` | Result of f(x) |
-| `y` | `i64` | Original top value (preserved) |
-
-**Example:**
-
-```qd
-10 20 fn (x:i64 -- r:i64) { x 2 * } hof::dip  // Stack: 20 20
-```
----
-
-### `fn` filter
-
-Filter an array, keeping only elements that satisfy a predicate.
-
-**Signature:** `(arr:[]T pred:fn(T -- i64) -- result:[]T)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `[]T` | Input array |
-| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `[]i64` | New array with filtered values |
-
-**Example:**
-
-```qd
-arr fn (x:i64 -- r:i64) { x 2 mod 0 == } hof::filter  // keep evens
-```
----
-
-### `fn` find
-
-Find the first element satisfying a predicate.
-
-**Signature:** `(arr:[]T pred:fn(T -- i64) -- elem:T found:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `[]T` | Array |
-| `pred` | `fn` | Predicate function (i64 -- bool:i64) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `elem` | `i64` | The found element (or 0 if not found) |
-| `found` | `i64` | 1 if found, 0 otherwise |
-
-**Example:**
-
-```qd
-arr fn (x:i64 -- r:i64) { x 10 > } hof::find  // first > 10
-```
----
-
-### `fn` fold
-
-Fold/reduce an array left-to-right with a binary function.
-
-**Signature:** `(arr:[]T acc:A f:fn(A T -- A) -- result:A)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `[]T` | Array |
-| `init` | `i64` | Initial accumulator value |
-| `f` | `fn(i64 i64 -- i64)` | Binary function (acc:i64 elem:i64 -- acc:i64) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | Final accumulated value |
-
-**Example:**
-
-```qd
-arr 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold  // sum of array
+3 4 fn { 1 + } fn { 2 * } hof::bi_star  // Stack: 4 8
 ```
 ---
 
 ### `fn` fold_right
 
-Fold/reduce an array right-to-left with a binary function.
+Fold an array right to left: `f` runs on each element and the accumulator, last element first, as `fold` runs on the accumulator and each element first to last.
 
 **Signature:** `(arr:[]T acc:A f:fn(T A -- A) -- result:A)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `arr` | `[]T` | Array |
-| `init` | `i64` | Initial accumulator value |
-| `f` | `fn(i64 i64 -- i64)` | Binary function (elem:i64 acc:i64 -- acc:i64) |
+| `acc` | `A` | Initial accumulator |
+| `f` | `fn(T A -- A)` | Function value (elem acc -- acc) |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `result` | `i64` | Final accumulated value |
+| `result` | `A` | Final accumulator |
 
 **Example:**
 
 ```qd
-arr 0 fn (x:i64 acc:i64 -- r:i64) { x acc + } hof::fold_right  // sum of array
-```
----
-
-### `fn` keep
-
-Apply a function but keep the original value.
-
-**Signature:** `(x:T f:fn(T -- U) -- r:U orig:T)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | The input value |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `r` | `i64` | Result of f(x) |
-| `x` | `i64` | Original value (preserved) |
-
-**Example:**
-
-```qd
-5 fn (x:i64 -- r:i64) { x 2 * } hof::keep  // Stack: 10 5
-```
----
-
-### `fn` map
-
-Map a function over an array, returning a new array.
-
-**Signature:** `(arr:[]T f:fn(T -- U) -- result:[]U)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `arr` | `[]T` | Input array |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `[]i64` | New array with mapped values |
-
-**Example:**
-
-```qd
-arr fn (x:i64 -- r:i64) { x 2 * } hof::map  // double each element
-```
----
-
-### `fn` times
-
-Apply function n times to an initial value.
-
-**Signature:** `(x:T n:i64 f:fn(T -- T) -- r:T)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | Initial value |
-| `n` | `i64` | Number of times to apply |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `r` | `i64` | Result after n applications |
-
-**Example:**
-
-```qd
-2 4 fn (x:i64 -- r:i64) { x dup * } hof::times print nl  // 65536 (2^16)
-```
----
-
-### `fn` tri
-
-Apply three functions to the same value.
-
-**Signature:** `(x:T f:fn(T -- U) g:fn(T -- U) h:fn(T -- U) -- a:U b:U c:U)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | The input value |
-| `f` | `fn` | First function |
-| `g` | `fn` | Second function |
-| `h` | `fn` | Third function |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `a` | `i64` | Result of f(x) |
-| `b` | `i64` | Result of g(x) |
-| `c` | `i64` | Result of h(x) |
-
-**Example:**
-
-```qd
-5 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x dup * } hof::tri  // Stack: 6 10 25
+arr 0 fn { + } hof::fold_right  // sum of array
 ```
 ---
 
 ### `fn` unless
 
-Apply function only if condition is false, otherwise return value unchanged.
+Run a function value only if the condition is false, as `when` runs it when it is true.
 
-**Signature:** `(x:T cond:i64 f:fn(T -- T) -- r:T)`
+**Signature:** `(..a cond:i64 q:fn(..a -- ..a) -- ..a)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `T` | The input value |
 | `cond` | `i64` | Condition (0 = false, non-zero = true) |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `r` | `i64` | Result of f(x) if cond is false, otherwise x |
+| `q` | `fn` | Function value, run when the condition is false |
 
 **Example:**
 
 ```qd
-5 0 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 10
-5 1 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 5
+5 0 fn { 2 * } hof::unless print nl  // 10
+5 1 fn { 2 * } hof::unless print nl  // 5
 ```
 ---
 
 ### `fn` when
 
-Apply function only if condition is true, otherwise return value unchanged.
+Run a function value only if the condition is true. It must leave the stack the shape it found it, since when the condition is false nothing runs.
 
-**Signature:** `(x:T cond:i64 f:fn(T -- T) -- r:T)`
+**Signature:** `(..a cond:i64 q:fn(..a -- ..a) -- ..a)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `T` | The input value |
 | `cond` | `i64` | Condition (0 = false, non-zero = true) |
-| `f` | `fn` | Function applied to the value |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `r` | `i64` | Result of f(x) if cond is true, otherwise x |
+| `q` | `fn` | Function value, run when the condition is true |
 
 **Example:**
 
 ```qd
-5 1 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 10
-5 0 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 5
+5 1 fn { 2 * } hof::when print nl  // 10
+5 0 fn { 2 * } hof::when print nl  // 5
 ```

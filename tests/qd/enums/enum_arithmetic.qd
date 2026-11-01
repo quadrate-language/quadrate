@@ -10,7 +10,7 @@ enum Perm {
 	All = 7
 }
 
-stack fn has_perm(i64 i64 -- i64) {
+fn has_perm(i64 i64 -- i64) {
 	bits::and 0 !=
 }
 
@@ -18,16 +18,16 @@ fn main() {
 	// Bitwise operations
 	Perm::Read Perm::Write bits::or print nl
 	Perm::All Perm::Execute bits::and print nl
-	Perm::ReadWrite Perm::Read bits::and 0 neq print nl
+	Perm::ReadWrite Perm::Read bits::and 0 != print nl
 
 	// Arithmetic
 	Perm::Read Perm::Write + print nl
 	Perm::All Perm::Execute - print nl
 
 	// Comparison
-	Perm::Read Perm::Write lt print nl
-	Perm::All Perm::All eq print nl
-	Perm::None 0 eq print nl
+	Perm::Read Perm::Write < print nl
+	Perm::All Perm::All == print nl
+	Perm::None 0 == print nl
 
 	// Function with enum args
 	Perm::ReadWrite Perm::Read has_perm print nl

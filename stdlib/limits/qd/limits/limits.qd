@@ -79,7 +79,7 @@ pub const F64Size = 8
 /// @return fits i64 1 if in range, 0 otherwise
 /// @example 100 limits::fits_i8 print  // 1
 pub fn fits_i8(v:i64 -- fits:i64) {
-	v I8Min >= v I8Max <= and
+	I8Min I8Max within
 }
 
 /// Check if value fits in i16 range.
@@ -87,7 +87,7 @@ pub fn fits_i8(v:i64 -- fits:i64) {
 /// @return fits i64 1 if in range, 0 otherwise
 /// @example 30000 limits::fits_i16 print  // 1
 pub fn fits_i16(v:i64 -- fits:i64) {
-	v I16Min >= v I16Max <= and
+	I16Min I16Max within
 }
 
 /// Check if value fits in i32 range.
@@ -95,7 +95,7 @@ pub fn fits_i16(v:i64 -- fits:i64) {
 /// @return fits i64 1 if in range, 0 otherwise
 /// @example 2000000000 limits::fits_i32 print  // 1
 pub fn fits_i32(v:i64 -- fits:i64) {
-	v I32Min >= v I32Max <= and
+	I32Min I32Max within
 }
 
 /// Check if value fits in u8 range.
@@ -103,7 +103,7 @@ pub fn fits_i32(v:i64 -- fits:i64) {
 /// @return fits i64 1 if in range, 0 otherwise
 /// @example 200 limits::fits_u8 print  // 1
 pub fn fits_u8(v:i64 -- fits:i64) {
-	v 0 >= v U8Max <= and
+	0 U8Max within
 }
 
 /// Check if value fits in u16 range.
@@ -111,7 +111,7 @@ pub fn fits_u8(v:i64 -- fits:i64) {
 /// @return fits i64 1 if in range, 0 otherwise
 /// @example 50000 limits::fits_u16 print  // 1
 pub fn fits_u16(v:i64 -- fits:i64) {
-	v 0 >= v U16Max <= and
+	0 U16Max within
 }
 
 /// Check if value fits in u32 range.
@@ -119,14 +119,14 @@ pub fn fits_u16(v:i64 -- fits:i64) {
 /// @return fits i64 1 if in range, 0 otherwise
 /// @example 3000000000 limits::fits_u32 print  // 1
 pub fn fits_u32(v:i64 -- fits:i64) {
-	v 0 >= v U32Max <= and
+	0 U32Max within
 }
 
 /// Clamp value to i8 range.
 /// @param v i64 Value to clamp
 /// @return clamped i64 Value clamped to [-128, 127]
 /// @example 200 limits::clamp_i8 print  // 127
-pub fn clamp_i8(v:i64 -- clamped:i64) {
+pub def clamp_i8(v:i64 -- clamped:i64) {
 	I8Min -> lo
 	I8Max -> hi
 	v lo < if { lo } else {
@@ -138,7 +138,7 @@ pub fn clamp_i8(v:i64 -- clamped:i64) {
 /// @param v i64 Value to clamp
 /// @return clamped i64 Value clamped to [-32768, 32767]
 /// @example 50000 limits::clamp_i16 print  // 32767
-pub fn clamp_i16(v:i64 -- clamped:i64) {
+pub def clamp_i16(v:i64 -- clamped:i64) {
 	I16Min -> lo
 	I16Max -> hi
 	v lo < if { lo } else {
@@ -150,7 +150,7 @@ pub fn clamp_i16(v:i64 -- clamped:i64) {
 /// @param v i64 Value to clamp
 /// @return clamped i64 Value clamped to [0, 255]
 /// @example 300 limits::clamp_u8 print  // 255
-pub fn clamp_u8(v:i64 -- clamped:i64) {
+pub def clamp_u8(v:i64 -- clamped:i64) {
 	v 0 < if { 0 } else {
 		v U8Max > if { U8Max } else { v }
 	}
@@ -160,7 +160,7 @@ pub fn clamp_u8(v:i64 -- clamped:i64) {
 /// @param v i64 Value to clamp
 /// @return clamped i64 Value clamped to [0, 65535]
 /// @example 70000 limits::clamp_u16 print  // 65535
-pub fn clamp_u16(v:i64 -- clamped:i64) {
+pub def clamp_u16(v:i64 -- clamped:i64) {
 	v 0 < if { 0 } else {
 		v U16Max > if { U16Max } else { v }
 	}

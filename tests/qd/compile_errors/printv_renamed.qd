@@ -1,0 +1,4 @@
+// Test: printv is dump now.
+fn main() {
+	42 printv
+}

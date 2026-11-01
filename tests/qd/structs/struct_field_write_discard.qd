@@ -1,11 +1,11 @@
 // Test: `>>field drop` — writes the field and discards the struct, leaving nothing
 struct Counter { value: i64 }
 
-fn bump(c:Counter -- ) {
+def bump(c:Counter -- ) {
 	c c <<value 1 + >>value drop
 }
 
-fn reset(c:Counter -- ) {
+def reset(c:Counter -- ) {
 	c 0 >>value drop
 }
 

@@ -851,6 +851,9 @@ namespace Qd {
 			// `bytes::fill` was registered as producing four values.
 			sig.throws = func->throws();
 			sig.typeParams = mCurrentTypeParams;
+			sig.stackVariables = func->stackVariables();
+			sig.inputStackVariable = func->inputStackVariable();
+			sig.outputStackVariable = func->outputStackVariable();
 
 			// For methods, include receiver as implicit first parameter and use mangled name
 			if (func->hasReceiver()) {

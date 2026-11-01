@@ -3,7 +3,7 @@
 // `good` is the only function the importing program calls. `bad` is never called, and its
 // body references a function that does not exist anywhere — so nothing but validating the
 // module body itself can catch it.
-pub fn good(x:i64 -- r:i64) {
+pub def good(x:i64 -- r:i64) {
 	x 2 *
 }
 

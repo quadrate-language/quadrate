@@ -75,7 +75,7 @@ In function signatures:
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-fn process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
+def process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 	// ...
 }
 ```
@@ -83,7 +83,7 @@ fn process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 With function pointer types:
 
 ```qd
-fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
 	x f call
 }
 ```
@@ -144,7 +144,7 @@ struct Dog {
 	name:str
 }
 
-fn get_name(p:ptr -- name:str) {
+def get_name(p:ptr -- name:str) {
 	p as Dog <<name
 }
 ```
@@ -157,7 +157,7 @@ Use `as` when the compiler cannot determine the struct type — typically when a
 struct Foo { value:i64 }
 struct Bar { value:str }
 
-fn read_foo(p:ptr -- v:i64) {
+def read_foo(p:ptr -- v:i64) {
 	p as Foo <<value   // disambiguates <<value
 }
 ```
@@ -183,7 +183,7 @@ struct Point {
 	y:i64
 }
 
-fn process(p:ptr -- ) {
+def process(p:ptr -- ) {
 	p as Point -> pt   // pt is now typed as Point
 	pt <<x print nl     // no ambiguity
 	pt <<y print nl     // type still known

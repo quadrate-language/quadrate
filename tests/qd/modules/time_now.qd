@@ -6,7 +6,7 @@ fn main() {
 	time::now
 	// Nanoseconds since epoch should be huge (> 1.7e18 for year 2023+)
 	// 1700000000000000000 = 1.7e18 nanoseconds
-	dup 1700000000 1000000000 * gt
+	dup 1700000000 1000000000 * >
 	if {
 		"Time in nanoseconds is valid" print nl
 		drop

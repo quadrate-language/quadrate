@@ -4,8 +4,8 @@ use limits
 fn main() {
 	// Epsilon precision
 	"=== Epsilon precision ===" print nl
-	1.0 limits::F64Epsilon + 1.0 neq print nl  // 1 (epsilon changes value)
-	1.0 limits::F64Epsilon - 1.0 neq print nl  // 1
+	1.0 limits::F64Epsilon + 1.0 != print nl  // 1 (epsilon changes value)
+	1.0 limits::F64Epsilon - 1.0 != print nl  // 1
 
 	// Very small numbers
 	"=== Very small numbers ===" print nl
@@ -19,8 +19,8 @@ fn main() {
 
 	// Float precision loss test
 	"=== Precision loss ===" print nl
-	0.1 0.2 + 0.3 eq print nl         // May be 0 due to float imprecision
-	0.1 0.1 + 0.1 + 0.3 eq print nl   // May be 0 due to float imprecision
+	0.1 0.2 + 0.3 == print nl         // May be 0 due to float imprecision
+	0.1 0.1 + 0.1 + 0.3 == print nl   // May be 0 due to float imprecision
 
 	// Large integer as float
 	"=== Large integer as float ===" print nl

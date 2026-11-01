@@ -4,7 +4,7 @@ namespace Qd {
 
 	// Whether the token just scanned is a keyword that starts a declaration or statement
 	static bool isRecoveryKeyword(u8t_scanner* scanner) {
-		static const char* const KEYWORDS_STARTING[] = {"pub", "inline", "stack", "packed", "fn", "const", "var",
+		static const char* const KEYWORDS_STARTING[] = {"pub", "inline", "def", "packed", "fn", "const", "var",
 				"struct", "enum", "type", "use", "import", "test", "if", "for", "loop", "switch", "return"};
 		size_t n;
 		const char* text = u8t_scanner_token_text(scanner, &n);
@@ -341,9 +341,9 @@ namespace Qd {
 						errorReporter->reportError(scanner, "'else' without preceding 'if'");
 						continue;
 					}
-				} else if (strcmp(tokenText, "fn") == 0 || strcmp(tokenText, "stack") == 0) {
+				} else if (strcmp(tokenText, "fn") == 0 || strcmp(tokenText, "def") == 0) {
 					// Anonymous function: fn (params -- outputs) { body }, or
-					// stack fn (params -- outputs) { body } to leave the inputs on the stack.
+					// def (params -- outputs) { body } to bind the inputs as locals.
 					// tokenText points into the scanner's buffer, which parsing invalidates.
 					const bool isFn = strcmp(tokenText, "fn") == 0;
 					IAstNode* anonFunc = tryParseAnonymousFunction(scanner, errorReporter, src, tokenText);
@@ -356,7 +356,7 @@ namespace Qd {
 															"Did you mean 'fn (...) { }' for an anonymous function?");
 						continue;
 					}
-					// A plain identifier that happens to be called `stack`: fall through to the
+					// A plain identifier that happens to be called `def`: fall through to the
 					// normal identifier handling below.
 				}
 			}

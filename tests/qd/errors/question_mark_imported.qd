@@ -2,7 +2,7 @@
 use strconv
 use strings
 
-fn parse_two(a:str b:str -- x:i64 y:i64)! {
+def parse_two(a:str b:str -- x:i64 y:i64)! {
 	a strconv::atoi?
 	-> x
 	b strconv::atoi?
@@ -10,25 +10,25 @@ fn parse_two(a:str b:str -- x:i64 y:i64)! {
 	x y
 }
 
-fn safe_slice(s:str start:i64 len:i64 -- part:str)! {
+def safe_slice(s:str start:i64 len:i64 -- part:str)! {
 	s start len strings::substring?
 }
 
 fn main() {
 	"10" "20" parse_two switch {
 		Ok { -> y -> x "x=" print x print " y=" print y print nl }
-		_ { "parse_two failed" print nl }
+		_ { drop drop "parse_two failed" print nl }
 	}
 	"10" "abc" parse_two switch {
 		Ok { -> y -> x "x=" print x print " y=" print y print nl }
-		_ { "parse_two failed on bad input" print nl }
+		_ { drop drop "parse_two failed on bad input" print nl }
 	}
 	"hello" 1 3 safe_slice switch {
 		Ok { "slice at 1: " print print nl }
-		_ { "substring failed" print nl }
+		_ { drop "substring failed" print nl }
 	}
 	"hi" 99 1 safe_slice switch {
 		Ok { "slice at 99: " print print nl }
-		_ { "substring out of bounds" print nl }
+		_ { drop "substring out of bounds" print nl }
 	}
 }

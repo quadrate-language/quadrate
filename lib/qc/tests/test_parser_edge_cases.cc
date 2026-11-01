@@ -278,7 +278,7 @@ TEST(FunctionNoParams) {
 
 TEST(FunctionManyParams) {
 	Qd::Ast ast;
-	const char* src = "fn test(a:i64 b:i64 c:i64 d:i64 e:i64 f:i64 g:i64 h:i64 -- r:i64) {}";
+	const char* src = "def test(a:i64 b:i64 c:i64 d:i64 e:i64 f:i64 g:i64 h:i64 -- r:i64) {}";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");
@@ -325,7 +325,7 @@ TEST(PublicFunction) {
 
 TEST(GenericFunctionSingleParam) {
 	Qd::Ast ast;
-	const char* src = "fn identity<T>(x:T -- y:T) { }";
+	const char* src = "def identity<T>(x:T -- y:T) { }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");
@@ -334,7 +334,7 @@ TEST(GenericFunctionSingleParam) {
 
 TEST(GenericFunctionMultipleParams) {
 	Qd::Ast ast;
-	const char* src = "fn pair<T U>(a:T b:U -- x:T y:U) { }";
+	const char* src = "def pair<T U>(a:T b:U -- x:T y:U) { }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");
@@ -432,7 +432,7 @@ TEST(MultipleUse) {
 
 TEST(SimpleAnonymousFunction) {
 	Qd::Ast ast;
-	const char* src = "fn main() { fn(x:i64 -- y:i64) { dup mul } }";
+	const char* src = "fn main() { def(x:i64 -- y:i64) { dup * } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");
@@ -574,7 +574,7 @@ TEST(AnnotatedSwitch) {
 	// A dispatch table is where a comment per case is most wanted, and the
 	// switch parser used to stop at the first one.
 	Qd::Ast ast;
-	const char* src = "fn k(x:i64 -- r:i64) {\n"
+	const char* src = "def k(x:i64 -- r:i64) {\n"
 					  "\tswitch {\n"
 					  "\t\t1 { 10 }\t// one\n"
 					  "\t\t// and the rest\n"
@@ -599,9 +599,9 @@ TEST(CompleteProgram) {
 			y:i64
 		}
 
-		fn add_points(a:Point b:Point -- r:Point) {
-			a.x b.x add -> rx
-			a.y b.y add -> ry
+		def add_points(a:Point b:Point -- r:Point) {
+			a.x b.x + -> rx
+			a.y b.y + -> ry
 			rx ry Point
 		}
 
@@ -716,7 +716,7 @@ TEST(UnterminatedStructConstructionIsAnError) {
 
 TEST(BraceInTypeArgumentsIsAnError) {
 	Qd::Ast ast;
-	const char* src = "fn i(){fn(i<}>--){}}";
+	const char* src = "fn i(){def(i<}>--){}}";
 	ast.generate(src, false, nullptr);
 
 	ASSERT(ast.hasErrors(), "a brace in a type argument list must be reported");
@@ -732,7 +732,7 @@ TEST(AmpersandWithoutAFunctionNameIsAnError) {
 
 TEST(BraceAsAParameterTypeIsAnError) {
 	Qd::Ast ast;
-	const char* src = "fn a(){fn(n:}--){}}";
+	const char* src = "fn a(){def(n:}--){}}";
 	ast.generate(src, false, nullptr);
 
 	ASSERT(ast.hasErrors(), "a parameter type that is not a type name must be reported");
@@ -740,7 +740,7 @@ TEST(BraceAsAParameterTypeIsAnError) {
 
 TEST(ArrayParameterTypeStillParses) {
 	Qd::Ast ast;
-	const char* src = "fn f(x:[]i64 -- r:i64) { x len }";
+	const char* src = "def f(x:[]i64 -- r:i64) { x len }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");
@@ -766,7 +766,7 @@ TEST(StringInterpolationStillParses) {
 
 TEST(GenericTypeParameterStillParses) {
 	Qd::Ast ast;
-	const char* src = "fn f(b:Box<i64> -- r:i64) { b <<v }";
+	const char* src = "def f(b:Box<i64> -- r:i64) { b <<v }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root should not be null");

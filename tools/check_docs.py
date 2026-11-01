@@ -115,7 +115,7 @@ def is_program(body):
 
 # A line that opens a top-level declaration, at column 0. An indented line is inside a body.
 DECL_OPENER = re.compile(
-    r"^(pub\s+)?(inline\s+)?(stack\s+)?(fn|struct|packed\s+struct|enum|const|var|use|import|type|test)\b"
+    r"^(pub\s+)?(inline\s+)?(fn|def|struct|packed\s+struct|enum|const|var|use|import|type|test)\b"
 )
 
 
@@ -124,7 +124,7 @@ def is_declarations_only(body):
 
     Such a block is a compilation unit already -- it lacks only an entry point -- so appending
     an empty `fn main` makes it checkable. This is what catches a broken signature on a page
-    that shows no whole program: the front page's `fn double(x:i64 -- result:i64) { 2 * }`
+    that shows no whole program: the front page's `def double(x:i64 -- result:i64) { 2 * }`
     underflowed, because naming `x` consumes it, and nothing checked it for a year.
 
     A block with a loose statement at top level (`point <<x`, a line of stack shuffling) is a

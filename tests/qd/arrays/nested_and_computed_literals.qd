@@ -9,7 +9,7 @@ struct P {
 	x:i64
 }
 
-fn make_from(x:i64 -- r:[]i64) {
+def make_from(x:i64 -- r:[]i64) {
 	[x 2 3]
 }
 

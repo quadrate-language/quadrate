@@ -222,26 +222,7 @@ int qd_print(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
-int qd_printv(qd_context* ctx);
-
-/**
- * @brief Print all stack values
- *
- * Prints all values currently on the stack.
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_prints(qd_context* ctx);
-
-/**
- * @brief Print all stack values with verbose format
- *
- * Prints all stack values with type information for debugging.
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
+int qd_dump(qd_context* ctx);
 
 /**
  * @brief Print a newline
@@ -498,6 +479,22 @@ int qd_lor(qd_context* ctx);
 int qd_lnot(qd_context* ctx);
 
 /**
+ * @brief ( status -- flag ) 1 if a fallible call's status is `Ok` (0) -- the language's `ok`
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+int qd_status_ok(qd_context* ctx);
+
+/**
+ * @brief ( status -- flag ) 1 if a fallible call's status is an error code -- the language's `fail`
+ *
+ * @param ctx Execution context
+ * @return Execution result (0 on success)
+ */
+int qd_status_fail(qd_context* ctx);
+
+/**
  * @brief Shift left ( a n -- a<<n )
  *
  * @param ctx Execution context
@@ -660,38 +657,6 @@ int qd_cast_param(qd_context* ctx, int64_t depth, int64_t type);
 int qd_check_param(qd_context* ctx, int64_t depth, int64_t type, int64_t param, const char* func_name);
 
 /** @} */ // end of TypeCast group
-
-/**
- * @defgroup Threading Threading Operations
- * @brief Functions for concurrency
- * @{
- */
-
-/**
- * @brief Spawn a new thread
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_spawn(qd_context* ctx);
-
-/**
- * @brief Detach a thread
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_detach(qd_context* ctx);
-
-/**
- * @brief Wait for a thread to complete
- *
- * @param ctx Execution context
- * @return Execution result (0 on success)
- */
-int qd_wait(qd_context* ctx);
-
-/** @} */ // end of Threading group
 
 /**
  * @defgroup ErrorHandling Error Handling

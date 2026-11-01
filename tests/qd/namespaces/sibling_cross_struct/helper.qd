@@ -5,14 +5,14 @@ struct Wrapper {
 	label:str
 }
 
-fn get_parent_value(p:Parent -- v:i64) {
+def get_parent_value(p:Parent -- v:i64) {
 	p <<value
 }
 
-fn get_parent_name(p:Parent -- n:str) {
+def get_parent_name(p:Parent -- n:str) {
 	p <<name
 }
 
-fn make_wrapper(p:Parent lbl:str -- w:Wrapper) {
+def make_wrapper(p:Parent lbl:str -- w:Wrapper) {
 	Wrapper { parent = p label = lbl }
 }

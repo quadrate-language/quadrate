@@ -3,39 +3,39 @@
 use http
 use strings
 
-fn handle_hello(c:ptr -- ) {
+def handle_hello(c:ptr -- ) {
 	c 200 "Hello, World!" http::string
 }
 
-fn handle_json(c:ptr -- ) {
+def handle_json(c:ptr -- ) {
 	c 200 "{}" http::json
 }
 
-fn handle_html(c:ptr -- ) {
+def handle_html(c:ptr -- ) {
 	c 200 "<h1>Hello</h1>" http::html
 }
 
-fn handle_user(c:ptr -- ) {
+def handle_user(c:ptr -- ) {
 	c "id" http::param -> id
 	c 200 id http::string
 }
 
-fn handle_search(c:ptr -- ) {
+def handle_search(c:ptr -- ) {
 	c "q" http::query_param -> q
 	c 200 q http::string
 }
 
-fn handle_echo_header(c:ptr -- ) {
+def handle_echo_header(c:ptr -- ) {
 	c "X-Test" http::get_header -> val
 	c 200 val http::string
 }
 
-fn handle_body(c:ptr -- ) {
+def handle_body(c:ptr -- ) {
 	c http::request_body -> body
 	c 200 body http::string
 }
 
-fn handle_big_header(c:ptr -- ) {
+def handle_big_header(c:ptr -- ) {
 	c "X-Big" "x" 6000 strings::repeat http::set_header
 	c 200 "ok" http::string
 }

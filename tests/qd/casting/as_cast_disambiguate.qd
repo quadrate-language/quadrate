@@ -7,11 +7,11 @@ struct Bar {
 	value: str
 }
 
-fn get_foo_value(p:ptr -- v:i64) {
+def get_foo_value(p:ptr -- v:i64) {
 	p as Foo <<value
 }
 
-fn get_bar_value(p:ptr -- v:str) {
+def get_bar_value(p:ptr -- v:str) {
 	p as Bar <<value
 }
 

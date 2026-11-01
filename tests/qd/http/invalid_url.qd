@@ -10,9 +10,11 @@ fn main( -- ) {
 			resp http::close
 		}
 		6 {
+			drop
 			"invalid url error" print nl
 		}
 		_ {
+			drop
 			"other error" print nl
 		}
 	}

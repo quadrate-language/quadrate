@@ -269,9 +269,9 @@ run_test "Get function: math::sqrt" \
     '{"jsonrpc":"2.0","method":"tools/call","id":42,"params":{"name":"quadrate_get_function","arguments":{"module":"math","function":"sqrt"}}}' \
     'name.*sqrt.*signature'
 
-run_test "Get function: strings::len" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":43,"params":{"name":"quadrate_get_function","arguments":{"module":"strings","function":"len"}}}' \
-    'name.*len.*signature'
+run_test "Get function: byte_len" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":43,"params":{"name":"quadrate_get_function","arguments":{"module":"strings","function":"byte_len"}}}' \
+    'name.*byte_len.*signature'
 
 run_test "Get function: strings::concat" \
     '{"jsonrpc":"2.0","method":"tools/call","id":44,"params":{"name":"quadrate_get_function","arguments":{"module":"strings","function":"concat"}}}' \
@@ -352,61 +352,45 @@ run_test "Get builtin: nip" \
     '{"jsonrpc":"2.0","method":"tools/call","id":65,"params":{"name":"quadrate_get_builtin","arguments":{"name":"nip"}}}' \
     'name.*nip.*signature'
 
-run_test "Get builtin: add" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":66,"params":{"name":"quadrate_get_builtin","arguments":{"name":"add"}}}' \
-    'name.*add.*signature'
+run_test "Get builtin: +" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":66,"params":{"name":"quadrate_get_builtin","arguments":{"name":"+"}}}' \
+    'name.*+.*signature'
 
-run_test "Get builtin: sub" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":67,"params":{"name":"quadrate_get_builtin","arguments":{"name":"sub"}}}' \
-    'name.*sub.*signature'
+run_test "Get builtin: -" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":67,"params":{"name":"quadrate_get_builtin","arguments":{"name":"-"}}}' \
+    'name.*-.*signature'
 
-run_test "Get builtin: mul" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":68,"params":{"name":"quadrate_get_builtin","arguments":{"name":"mul"}}}' \
-    'name.*mul.*signature'
+run_test "Get builtin: *" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":68,"params":{"name":"quadrate_get_builtin","arguments":{"name":"*"}}}' \
+    'name.*\*.*signature'
 
-run_test "Get builtin: div" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":69,"params":{"name":"quadrate_get_builtin","arguments":{"name":"div"}}}' \
-    'name.*div.*signature'
+run_test "Get builtin: /" \
+    '{"jsonrpc":"2.0","method":"tools/call","id":69,"params":{"name":"quadrate_get_builtin","arguments":{"name":"/"}}}' \
+    'name.*/.*signature'
 
-run_test "Get builtin by alias: +" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":70,"params":{"name":"quadrate_get_builtin","arguments":{"name":"+"}}}' \
-    'alias.*[+]'
-
-run_test "Get builtin by alias: -" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":71,"params":{"name":"quadrate_get_builtin","arguments":{"name":"-"}}}' \
-    'alias.*-'
-
-run_test "Get builtin by alias: *" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":72,"params":{"name":"quadrate_get_builtin","arguments":{"name":"*"}}}' \
-    'alias.*[*]'
-
-run_test "Get builtin by alias: /" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":73,"params":{"name":"quadrate_get_builtin","arguments":{"name":"/"}}}' \
-    'alias.*/'
-
-run_test "Get builtin by alias: ==" \
+run_test "Get builtin: ==" \
     '{"jsonrpc":"2.0","method":"tools/call","id":74,"params":{"name":"quadrate_get_builtin","arguments":{"name":"=="}}}' \
-    'alias.*=='
+    'name.*==.*signature'
 
-run_test "Get builtin by alias: !=" \
+run_test "Get builtin: !=" \
     '{"jsonrpc":"2.0","method":"tools/call","id":75,"params":{"name":"quadrate_get_builtin","arguments":{"name":"!="}}}' \
-    'alias.*!='
+    'name.*!=.*signature'
 
-run_test "Get builtin by alias: <" \
+run_test "Get builtin: <" \
     '{"jsonrpc":"2.0","method":"tools/call","id":76,"params":{"name":"quadrate_get_builtin","arguments":{"name":"<"}}}' \
-    'alias.*<'
+    'name.*<.*signature'
 
-run_test "Get builtin by alias: >" \
+run_test "Get builtin: >" \
     '{"jsonrpc":"2.0","method":"tools/call","id":77,"params":{"name":"quadrate_get_builtin","arguments":{"name":">"}}}' \
-    'alias.*>'
+    'name.*>.*signature'
 
-run_test "Get builtin by alias: ++" \
+run_test "Get builtin: ++" \
     '{"jsonrpc":"2.0","method":"tools/call","id":78,"params":{"name":"quadrate_get_builtin","arguments":{"name":"++"}}}' \
-    'name.*inc'
+    'name.*++.*signature'
 
-run_test "Get builtin by alias: --" \
+run_test "Get builtin: --" \
     '{"jsonrpc":"2.0","method":"tools/call","id":79,"params":{"name":"quadrate_get_builtin","arguments":{"name":"--"}}}' \
-    'name.*dec'
+    'name.*--.*signature'
 
 run_error_test "Get builtin: nonexistent" \
     '{"jsonrpc":"2.0","method":"tools/call","id":80,"params":{"name":"quadrate_get_builtin","arguments":{"name":"nonexistent"}}}' \
@@ -588,38 +572,6 @@ run_test "Get operator: >=" \
     '{"jsonrpc":"2.0","method":"tools/call","id":129,"params":{"name":"quadrate_get_operator","arguments":{"name":">="}}}' \
     'name.*>=.*signature'
 
-run_test "Get operator by alias: add" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":130,"params":{"name":"quadrate_get_operator","arguments":{"name":"add"}}}' \
-    'alias.*add'
-
-run_test "Get operator by alias: sub" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":131,"params":{"name":"quadrate_get_operator","arguments":{"name":"sub"}}}' \
-    'alias.*sub'
-
-run_test "Get operator by alias: mul" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":132,"params":{"name":"quadrate_get_operator","arguments":{"name":"mul"}}}' \
-    'alias.*mul'
-
-run_test "Get operator by alias: div" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":133,"params":{"name":"quadrate_get_operator","arguments":{"name":"div"}}}' \
-    'alias.*div'
-
-run_test "Get operator by alias: eq" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":134,"params":{"name":"quadrate_get_operator","arguments":{"name":"eq"}}}' \
-    'alias.*eq'
-
-run_test "Get operator by alias: neq" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":135,"params":{"name":"quadrate_get_operator","arguments":{"name":"neq"}}}' \
-    'alias.*neq'
-
-run_test "Get operator by alias: lt" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":136,"params":{"name":"quadrate_get_operator","arguments":{"name":"lt"}}}' \
-    'alias.*lt'
-
-run_test "Get operator by alias: gt" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":137,"params":{"name":"quadrate_get_operator","arguments":{"name":"gt"}}}' \
-    'alias.*gt'
-
 run_error_test "Get operator: nonexistent" \
     '{"jsonrpc":"2.0","method":"tools/call","id":138,"params":{"name":"quadrate_get_operator","arguments":{"name":"nonexistent"}}}' \
     'not found'
@@ -758,7 +710,7 @@ run_test "Special chars in search: underscore" \
     'io module'
 
 run_test "Special chars in search: double colon" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":184,"params":{"name":"quadrate_search","arguments":{"query":"strings::len"}}}' \
+    '{"jsonrpc":"2.0","method":"tools/call","id":184,"params":{"name":"quadrate_search","arguments":{"query":"len"}}}' \
     'strings module'
 
 run_test "Very long query returns results" \
@@ -1044,15 +996,15 @@ run_test "Trace stack: greater than" \
 
 run_test "Trace stack: not equal" \
     '{"jsonrpc":"2.0","method":"tools/call","id":511,"params":{"name":"quadrate_trace_stack","arguments":{"code":"3 5 !="}}}' \
-    'neq'
+    'not equal'
 
 run_test "Trace stack: less or equal" \
     '{"jsonrpc":"2.0","method":"tools/call","id":512,"params":{"name":"quadrate_trace_stack","arguments":{"code":"3 3 <="}}}' \
-    '<= / le'
+    'less or equal'
 
 run_test "Trace stack: greater or equal" \
     '{"jsonrpc":"2.0","method":"tools/call","id":513,"params":{"name":"quadrate_trace_stack","arguments":{"code":"5 3 >="}}}' \
-    '>= / ge'
+    'greater or equal'
 
 run_test "Trace stack: logical and" \
     '{"jsonrpc":"2.0","method":"tools/call","id":514,"params":{"name":"quadrate_trace_stack","arguments":{"code":"1 1 and"}}}' \
@@ -1071,11 +1023,11 @@ run_test "Trace stack: negate" \
     'negate'
 
 run_test "Trace stack: increment" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":518,"params":{"name":"quadrate_trace_stack","arguments":{"code":"5 inc"}}}' \
+    '{"jsonrpc":"2.0","method":"tools/call","id":518,"params":{"name":"quadrate_trace_stack","arguments":{"code":"5 ++"}}}' \
     'inc'
 
 run_test "Trace stack: decrement" \
-    '{"jsonrpc":"2.0","method":"tools/call","id":519,"params":{"name":"quadrate_trace_stack","arguments":{"code":"5 dec"}}}' \
+    '{"jsonrpc":"2.0","method":"tools/call","id":519,"params":{"name":"quadrate_trace_stack","arguments":{"code":"5 --"}}}' \
     'dec'
 
 run_test "Trace stack: shows reference header" \
@@ -1416,7 +1368,7 @@ run_test "Type conversion: f64 to bool" \
 
 run_test "Type conversion: str to bool" \
     '{"jsonrpc":"2.0","method":"tools/call","id":454,"params":{"name":"quadrate_type_conversion","arguments":{"from":"str","to":"bool"}}}' \
-    'strings::len'
+    'len'
 
 run_test "Type conversion: bool to str" \
     '{"jsonrpc":"2.0","method":"tools/call","id":455,"params":{"name":"quadrate_type_conversion","arguments":{"from":"bool","to":"str"}}}' \

@@ -1,5 +1,5 @@
 // Test: make<T> produces array that flows into typed parameter
-fn total(arr:[]i64 -- sum:i64) {
+def total(arr:[]i64 -- sum:i64) {
 	0 -> sum
 	0 arr len 1 for i {
 		sum arr i nth + -> sum

@@ -1,5 +1,5 @@
 // Test: chained operations
-stack fn validate_positive(i64 -- i64)! {
+fn validate_positive(i64 -- i64)! {
 	dup 0 > if {
 	} else {
 		0
@@ -7,30 +7,34 @@ stack fn validate_positive(i64 -- i64)! {
 	}
 }
 
-stack fn double_value(i64 -- i64)! {
-	2 mul
+fn double_value(i64 -- i64)! {
+	2 *
 }
 
 fn main() {
 	"Test 1: 5 validated and doubled = " print
-	5 validate_positive if {
-		double_value if {
+	5 validate_positive ok if {
+		double_value ok if {
 			print nl
 		} else {
+			drop
 			"Double failed" print nl
 		}
 	} else {
+		drop
 		"Validation failed" print nl
 	}
 
 	"Test 2: -3 validated and doubled = " print
-	-3 validate_positive if {
-		double_value if {
+	-3 validate_positive ok if {
+		double_value ok if {
 			print nl
 		} else {
+			drop
 			"Double failed" print nl
 		}
 	} else {
+		drop
 		"Validation failed" print nl
 	}
 }

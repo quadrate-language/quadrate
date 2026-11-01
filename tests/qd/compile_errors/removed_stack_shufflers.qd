@@ -1,8 +1,8 @@
-// The eight zero-use stack shufflers were removed; named parameters and '->'
-// locals cover what they did. Using one must report the removal rather than
-// falling through to a generic "undefined identifier", and must not then poison
-// the stack simulation into reporting an underflow on lines that are correct.
+// The zero-use stack shufflers were removed. Using one must report the removal
+// rather than falling through to a generic "undefined identifier", and must not
+// then poison the stack simulation into reporting an underflow on lines that
+// are correct.
 fn main() {
-	1 2 tuck
+	1 2 3 swapd
 	drop drop drop
 }

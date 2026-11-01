@@ -15,7 +15,7 @@ fn main() {
 	"/tmp/definitely_does_not_exist_12345.txt" os::exists print nl
 
 	// Test 3: Create a test directory (errno=0 on success)
-	"/tmp/quadrate_fs_test" os::mkdir if {
+	"/tmp/quadrate_fs_test" os::mkdir ok if {
 		// Success - errno is 0, nothing to print
 	}
 
@@ -23,7 +23,7 @@ fn main() {
 	"/tmp/quadrate_fs_test" os::exists print nl
 
 	// Test 5: Try to create the same directory again (should fail with EEXIST)
-	"/tmp/quadrate_fs_test" os::mkdir if {
+	"/tmp/quadrate_fs_test" os::mkdir ok if {
 		// Success branch shouldn't happen
 	}
 
@@ -31,7 +31,7 @@ fn main() {
 	"/tmp/quadrate_fs_test" os::exists print nl
 
 	// Cleanup: Try to delete the directory (will fail since unlink doesn't work on dirs)
-	"/tmp/quadrate_fs_test" os::delete if {
+	"/tmp/quadrate_fs_test" os::delete ok if {
 		// Success branch shouldn't happen
 	}
 }

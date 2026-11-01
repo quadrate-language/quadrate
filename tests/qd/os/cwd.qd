@@ -7,5 +7,5 @@ fn main() {
 	// Check it starts with /
 	dir "/" strings::starts_with print nl
 	// Check it's not empty
-	dir strings::len 0 > print nl
+	dir len 0 > print nl
 }

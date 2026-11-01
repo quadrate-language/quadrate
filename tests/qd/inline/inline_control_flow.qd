@@ -1,5 +1,5 @@
 // Test: inline function with control flow
-inline fn abs(x:i64 -- result:i64) {
+inline def abs(x:i64 -- result:i64) {
 	x 0 < if {
 		0 x -
 	} else {
@@ -7,7 +7,7 @@ inline fn abs(x:i64 -- result:i64) {
 	}
 }
 
-inline fn max(a:i64 b:i64 -- result:i64) {
+inline def max(a:i64 b:i64 -- result:i64) {
 	a b > if { a } else { b }
 }
 

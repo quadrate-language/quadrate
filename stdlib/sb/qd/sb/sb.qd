@@ -34,7 +34,7 @@ pub fn new( -- sb:StringBuilder) {
 /// @param capacity i64 Initial buffer size
 /// @return sb StringBuilder New empty builder
 /// @example 1024 sb::with_capacity -> builder
-pub fn with_capacity(capacity:i64 -- sb:StringBuilder) {
+pub def with_capacity(capacity:i64 -- sb:StringBuilder) {
 	capacity 16 < if {
 		16 -> capacity
 	}
@@ -50,12 +50,12 @@ pub fn with_capacity(capacity:i64 -- sb:StringBuilder) {
 /// @param s str String to append
 /// @return sb2 StringBuilder Updated builder
 /// @example builder "hello" sb::append -> builder
-pub fn (sb:StringBuilder) append(s:str -- sb2:StringBuilder) {
+pub def (sb:StringBuilder) append(s:str -- sb2:StringBuilder) {
 	sb <<buf -> buf
 	sb <<len -> curlen
 	sb <<cap -> cap
 
-	// Bytes, not characters. strings::len counts codepoints, so this used to copy four
+	// Bytes, not characters. len counts codepoints, so this used to copy four
 	// bytes of a five-byte string and the appended text came back cut off in the middle
 	// of a character -- "héllo" became "héll".
 	s strings::byte_len -> slen
@@ -88,7 +88,7 @@ pub fn (sb:StringBuilder) append(s:str -- sb2:StringBuilder) {
 /// @param c i64 Character code to append
 /// @return sb2 StringBuilder Updated builder
 /// @example builder 65 sb::append_char -> builder
-pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
+pub def (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 	sb <<buf -> buf
 	sb <<len -> curlen
 	sb <<cap -> cap
@@ -142,14 +142,14 @@ pub fn (sb:StringBuilder) append_char(c:i64 -- sb2:StringBuilder) {
 /// @return sb2 StringBuilder Updated builder
 /// @example builder 1.5 sb::append_value -> builder
 pub fn (sb:StringBuilder) append_value(x:any -- sb2:StringBuilder) {
-	sb x cast<str> append
+	cast<str> sb swap append
 }
 
 /// Append an integer as string.
 /// @param n i64 Integer to append
 /// @return sb2 StringBuilder Updated builder
 /// @example builder 42 sb::append_int -> builder
-pub fn (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder) {
+pub def (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder) {
 	// Handle negative
 	n 0 < if {
 		sb unicode::minus append_char -> sb
@@ -193,7 +193,7 @@ pub fn (sb:StringBuilder) append_int(n:i64 -- sb2:StringBuilder) {
 			n 0 == if {
 				break
 			}
-			n 10 mod unicode::digit0 + -> digit
+			n 10 % unicode::digit0 + -> digit
 			digit buf pos mem::set_byte
 			pos 1 - -> pos
 			n 10 / -> n

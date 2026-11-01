@@ -1,0 +1,17 @@
+// Test: a failed call leaves a zero placeholder where its result would be, so the arm that
+// does not use the result has to drop it. One that does not leaves the stack deeper than the
+// other arm.
+def divide(a:i64 b:i64 -- result:i64)! {
+	b 0 == if {
+		"division by zero" -1 panic
+	}
+	a b /
+}
+
+fn main() {
+	10 2 divide ok if {
+		print nl
+	} else {
+		"failed" print nl
+	}
+}

@@ -31,9 +31,9 @@ fn main() {
 
 	// Hex in comparisons
 	"=== Hex comparisons ===" print nl
-	0xFF 255 eq print nl          // true
-	0x100 256 eq print nl         // true
-	0xA 10 eq print nl            // true
+	0xFF 255 == print nl          // true
+	0x100 256 == print nl         // true
+	0xA 10 == print nl            // true
 
 	"done" print nl
 }

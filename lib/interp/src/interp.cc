@@ -22,6 +22,8 @@
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_switch.h>
+#include <quadrate/qc/instructions.h>
+#include <quadrate/qc/lower_combinators.h>
 #include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/string_literal.h>
 #include <quadrate/qc/type_names.h>
@@ -55,42 +57,31 @@ namespace {
 
 	const std::unordered_map<std::string, BuiltinOp>& opTable() {
 		static const std::unordered_map<std::string, BuiltinOp> table = {
-				// Arithmetic — symbol and word spellings reach the same op
+				// Arithmetic
 				{"+", {qd_add, 2}},
-				{"add", {qd_add, 2}},
 				{"-", {qd_sub, 2}},
-				{"sub", {qd_sub, 2}},
 				{"*", {qd_mul, 2}},
-				{"mul", {qd_mul, 2}},
 				{"/", {qd_div, 2}},
-				{"div", {qd_div, 2}},
 				{"%", {qd_mod, 2}},
-				{"mod", {qd_mod, 2}},
 				{"neg", {qd_neg, 1}},
 				{"++", {qd_inc, 1}},
-				{"inc", {qd_inc, 1}},
 				{"--", {qd_dec, 1}},
-				{"dec", {qd_dec, 1}},
 
 				// Comparison
 				{"==", {qd_eq, 2}},
-				{"eq", {qd_eq, 2}},
 				{"!=", {qd_neq, 2}},
-				{"neq", {qd_neq, 2}},
 				{"<", {qd_lt, 2}},
-				{"lt", {qd_lt, 2}},
 				{">", {qd_gt, 2}},
-				{"gt", {qd_gt, 2}},
 				{"<=", {qd_lte, 2}},
-				{"lte", {qd_lte, 2}},
 				{">=", {qd_gte, 2}},
-				{"gte", {qd_gte, 2}},
 				{"within", {qd_within, 3}},
 
 				// Logical
 				{"and", {qd_land, 2}},
 				{"or", {qd_lor, 2}},
 				{"not", {qd_lnot, 1}},
+				{"ok", {qd_status_ok, 1}},
+				{"fail", {qd_status_fail, 1}},
 
 				// Bitwise. This tier has no module system, so the qualified spellings are
 				// registered as plain names: bits::and is how the rest of the language
@@ -103,8 +94,10 @@ namespace {
 				{"__or", {qd_or, 2}},
 				{"__xor", {qd_xor, 2}},
 				{"__not", {qd_not, 1}},
-				{"shl", {qd_shl, 2}},
-				{"shr", {qd_shr, 2}},
+				{"bits::shl", {qd_shl, 2}},
+				{"bits::shr", {qd_shr, 2}},
+				{"__shl", {qd_shl, 2}},
+				{"__shr", {qd_shr, 2}},
 
 				// Stack
 				{"dup", {qd_dup, 1}},
@@ -120,13 +113,13 @@ namespace {
 				// Arrays
 				{"len", {qd_len, 1}},
 				{"nth", {qd_nth, 2}},
+				{"clone", {qd_clone_array, 1}},
 				{"append", {qd_append, 2}},
 				{"set", {qd_set, 3}},
 
 				// I/O
 				{"print", {qd_print, 1}},
-				{"printv", {qd_printv, 1}},
-				{"prints", {qd_prints, 1}},
+				{"dump", {qd_dump, 1}},
 				{"nl", {qd_nl, 0}},
 
 				// Errors
@@ -344,7 +337,7 @@ namespace {
 			return qd_push_s(interp->ctx, Qd::decodeStringLiteral(text).c_str()) == 0;
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
 			// 'true' and 'Ok' are 1, 'false' and 'Err' are 0
-			return qd_push_i(interp->ctx, (text == "true" || text == "Ok") ? 1 : 0) == 0;
+			return qd_push_i(interp->ctx, Qd::predefinedConstantValue(text)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::NULL_PTR:
 			return qd_push_p(interp->ctx, nullptr) == 0;
 		}
@@ -728,7 +721,7 @@ namespace {
 				break;
 			}
 			case Qd::AstNodeLiteral::LiteralType::BOOL:
-				number = (text == "true" || text == "Ok") ? 1.0 : 0.0;
+				number = static_cast<double>(Qd::predefinedConstantValue(text));
 				break;
 			case Qd::AstNodeLiteral::LiteralType::FLOAT:
 				number = std::strtod(text.c_str(), nullptr);
@@ -820,6 +813,19 @@ namespace {
 	}
 
 	bool evalInstruction(qd_interp* interp, const Qd::AstNodeInstruction* instruction) {
+		// A local that shares a builtin's name is the local, as it is in the compiled tier
+		{
+			const Frame& frame = interp->frames.back();
+			const auto local = frame.find(instruction->name());
+			if (local != frame.end()) {
+				if (!pushLocal(interp, local->second)) {
+					interp->error = "stack overflow";
+					return false;
+				}
+				return true;
+			}
+		}
+
 		// 'cast' carries its type parameter rather than spelling it in the name,
 		// so it resolves before the table lookup.
 		BuiltinOp cast{nullptr, 1};
@@ -909,7 +915,7 @@ namespace {
 	}
 
 	// `fn (` opens a method when a name follows the receiver and an anonymous function when
-	// the body does: `fn (v:Vec) push(x:i64 -- )` against `fn (x:i64 -- r:i64) { x 1 + }`.
+	// the body does: `def (v:Vec) push(x:i64 -- )` against `def (x:i64 -- r:i64) { x 1 + }`.
 	// Only the first declares. Reading the second as one is what made it report a method's
 	// parse error -- `Expected ')' after receiver type` -- instead of a refusal of what was
 	// actually written. `p` is at the '('.
@@ -929,10 +935,10 @@ namespace {
 	bool startsWithDeclaration(const char* source) {
 		const char* p = skipTrivia(source);
 
-		// The modifiers that may precede `fn` start a declaration just as `fn` does;
-		// without them `stack fn twice(i64 -- r:i64) { 2 * }` was wrapped in a main
-		// and parsed as an expression.
-		static const char* const MODIFIERS[] = {"pub", "inline", "stack"};
+		// The modifiers that may precede `fn` or `def` start a declaration just as they do;
+		// without them `pub fn twice(i64 -- r:i64) { 2 * }` was wrapped in a main and parsed
+		// as an expression.
+		static const char* const MODIFIERS[] = {"pub", "inline"};
 		bool modified = false;
 		for (bool matched = true; matched;) {
 			matched = false;
@@ -947,9 +953,12 @@ namespace {
 			}
 		}
 
-		if (std::strncmp(p, "fn", 2) == 0 && !isWordChar(p[2])) {
-			const char* signature = skipTrivia(p + 2);
-			return *signature != '(' || !anonymousFunctionFollows(signature);
+		for (const char* keyword : {"fn", "def"}) {
+			const size_t length = std::strlen(keyword);
+			if (std::strncmp(p, keyword, length) == 0 && !isWordChar(p[length])) {
+				const char* signature = skipTrivia(p + length);
+				return *signature != '(' || !anonymousFunctionFollows(signature);
+			}
 		}
 
 		static const char* const KEYWORDS[] = {"const ", "struct ", "enum ", "use ", "type ", "test "};
@@ -996,10 +1005,9 @@ namespace {
 		}
 	}
 
-	// Arguments arrive on the stack. A signature binds them into the frame and takes
-	// them off the stack -- the rule the type checker states in
-	// semantic_validator_typecheck.cc -- unless the function is `stack fn`, whose
-	// inputs stay on the stack where the body reads them positionally.
+	// Arguments arrive on the stack, and stay there for the body to read positionally --
+	// the rule the type checker states in semantic_validator_typecheck.cc -- unless the
+	// function is `def`, which binds them into the frame and takes them off the stack.
 	bool bindParameters(qd_interp* interp, const std::string& name, const Qd::AstNodeFunctionDeclaration* function) {
 		const auto& inputs = function->inputParameters();
 		if (inputs.empty() || function->hasReceiver() || function->isStack()) {
@@ -1179,7 +1187,7 @@ namespace {
 			return subject.type == QD_STACK_TYPE_INT && subject.value.i == Qd::integerLiteralOr(text, 0);
 
 		case Qd::AstNodeLiteral::LiteralType::BOOL:
-			return subject.type == QD_STACK_TYPE_INT && subject.value.i == ((text == "true" || text == "Ok") ? 1 : 0);
+			return subject.type == QD_STACK_TYPE_INT && subject.value.i == Qd::predefinedConstantValue(text);
 
 		case Qd::AstNodeLiteral::LiteralType::FLOAT:
 			return subject.type == QD_STACK_TYPE_FLOAT && subject.value.f == std::strtod(text.c_str(), nullptr);
@@ -1202,11 +1210,6 @@ namespace {
 	}
 
 	// switch takes its value off the stack, the way if takes its condition.
-	//
-	// The compiled tier has one more rule: where the value is the status left by
-	// a user-defined fallible call, `Ok` means "no error" rather than "equals 1".
-	// Nothing here can produce such a status -- this tier has no fallible calls --
-	// so the two cannot disagree.
 	bool evalSwitch(qd_interp* interp, const Qd::IAstNode* node) {
 		if (qd_stack_size(interp->ctx->st) == 0) {
 			interp->error = "'switch' needs a value on the stack";
@@ -1418,6 +1421,7 @@ namespace {
 			interp->error = errors.empty() ? "syntax error" : errors.front().message;
 			return false;
 		}
+		Qd::lowerCombinators(root);
 
 		if (declares) {
 			// Refuse before recording anything, so a program that mixes a method in with
@@ -1427,6 +1431,14 @@ namespace {
 				if (unsupported != nullptr) {
 					interp->error = std::string(unsupported) + " cannot be interpreted yet";
 					return false;
+				}
+				// As the compiler refuses it: a call by a builtin's name runs the builtin
+				if (root->child(i)->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+					const auto* fn = static_cast<const Qd::AstNodeFunctionDeclaration*>(root->child(i));
+					if (Qd::isBuiltInInstruction(fn->name().c_str())) {
+						interp->error = "'" + fn->name() + "' is a builtin, and a function cannot take its name";
+						return false;
+					}
 				}
 			}
 

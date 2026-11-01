@@ -1,0 +1,23 @@
+// Test: clone copies an array. The copy is a new array, so writing to one leaves the other
+// alone; it is shallow, so a struct the elements refer to is shared, as with a struct's clone.
+struct P {
+	x:i64
+}
+
+fn main() {
+	[1 2 3] -> a
+	a clone -> b
+	b 0 99 set
+	a 0 nth print " " print b 0 nth print nl          // 1 99
+	b len print nl                                     // 3
+
+	["x" "y"] clone -> s
+	s 1 nth print nl                                   // y
+	[1.5 2.5] clone 1 nth print nl                     // 2.5
+	[]i64 clone len print nl                           // 0
+
+	[P { x = 1 }] -> ps
+	ps clone -> qs
+	qs 0 nth 7 >>x drop
+	ps 0 nth <<x print nl                              // 7, shared
+}

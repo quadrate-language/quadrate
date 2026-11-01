@@ -120,7 +120,7 @@ Convert digit character to its numeric value.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `c` | `i64` | Character code (must be a digit) |
+| `c` | `i64` | Character code |
 
 | Output | Type | Description |
 |--------|------|-------------|

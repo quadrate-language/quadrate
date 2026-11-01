@@ -1,5 +1,5 @@
 // Test: []str parameter type accepts string arrays
-fn print_all(arr:[]str -- ) {
+def print_all(arr:[]str -- ) {
 	0 arr len 1 for i {
 		arr i nth print nl
 	}

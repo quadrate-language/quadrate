@@ -2,9 +2,8 @@
 // actually happened
 use io
 use os
-use strings
 
-fn report(label:str code:i64 -- ) {
+def report(label:str code:i64 -- ) {
 	label print ": " print
 	code switch {
 		io::ErrNotFound { "ErrNotFound" }
@@ -21,7 +20,7 @@ fn main() {
 	"io_failures.txt" io::Read io::open! -> f
 	f 2 io::SeekSet io::seek! drop
 	f io::tell! -> pos
-	"tell " print pos print " stack: [" print prints "]" print nl
+	"tell " print pos print nl
 	f io::close
 
 	// A missing directory is ErrNotFound, not ErrPermission
@@ -31,7 +30,7 @@ fn main() {
 	}
 	"no_such_dir/x.txt" io::Read io::open switch {
 		Ok { -> g g io::close "opened?" print nl }
-		_ { err -> code -> msg "open" code report }
+		_ { drop err -> code -> msg "open" code report }
 	}
 
 	// A full disk shows when the file is closed; that write used to report success
@@ -46,7 +45,7 @@ fn main() {
 
 	// A /proc file says its size is 0; it used to read as empty
 	"/proc/self/status" os::exists if {
-		"/proc/self/status" io::read_file! strings::len 0 gt print nl
+		"/proc/self/status" io::read_file! len 0 > print nl
 	} else {
 		1 print nl
 	}

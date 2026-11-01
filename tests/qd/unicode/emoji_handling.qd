@@ -10,19 +10,19 @@ fn main() {
 
 	// An emoji is one character, though it takes 4 bytes in UTF-8
 	"=== Emoji lengths ===" print nl
-	"🌍" strings::len print nl         // 1
-	"🎉" strings::len print nl         // 1
-	"👍" strings::len print nl         // 1
+	"🌍" len print nl         // 1
+	"🎉" len print nl         // 1
+	"👍" len print nl         // 1
 
 	// Strings with multiple emoji
 	"=== Multiple emoji ===" print nl
-	"🌍🎉👍" strings::len print nl     // 3
+	"🌍🎉👍" len print nl     // 3
 	"🌍🎉👍" print nl
 
 	// Mixed emoji and ASCII
 	"=== Mixed emoji and text ===" print nl
-	"Hi 🌍!" strings::len print nl     // 5 characters, 8 bytes
-	"A🎉B" strings::len print nl       // 3 characters, 6 bytes
+	"Hi 🌍!" len print nl     // 5 characters, 8 bytes
+	"A🎉B" len print nl       // 3 characters, 6 bytes
 
 	// Contains with emoji
 	"=== Contains emoji ===" print nl

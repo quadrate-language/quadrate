@@ -2,12 +2,12 @@ use fmt
 use strings
 use time
 
-fn benchmark_concat(limit:i64 -- result:i64) {
+def benchmark_concat(limit:i64 -- result:i64) {
 	"" -> s
 	0 limit 1 for it {
 		s "a" strings::concat -> s
 	}
-	s strings::len
+	s len
 }
 
 fn main() {
@@ -27,7 +27,7 @@ fn main() {
 		time::now -> start
 		0 50000 1 for i { s "a" strings::concat -> s }
 		time::now start - -> elapsed
-		elapsed best lt if { elapsed -> best }
+		elapsed best < if { elapsed -> best }
 	}
 
 	iterations benchmark_concat -> result

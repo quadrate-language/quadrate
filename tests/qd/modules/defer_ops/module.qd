@@ -1,39 +1,39 @@
 // Defer operations in modules
-pub stack fn with_cleanup(f64 -- f64) {
+pub fn with_cleanup(f64 -- f64) {
 	defer {
 		100.0 print nl
 	}
-	2.0 mul
+	2.0 *
 }
 
-pub stack fn nested_defer(f64 -- f64) {
+pub fn nested_defer(f64 -- f64) {
 	defer {
 		300.0 print nl
 	}
 	defer {
 		200.0 print nl
 	}
-	10.0 add
+	10.0 +
 	defer {
 		100.0 print nl
 	}
 }
 
-pub stack fn defer_with_computation(f64 f64 -- f64) {
+pub fn defer_with_computation(f64 f64 -- f64) {
 	defer {
-		50.0 25.0 add print nl
+		50.0 25.0 + print nl
 	}
-	add
+	+
 }
 
-pub stack fn early_return(f64 -- f64) {
+pub fn early_return(f64 -- f64) {
 	defer {
 		999.0 print nl
 	}
-	dup 0.0 lt
+	dup 0.0 <
 	if {
 		drop -1.0
 	} else {
-		2.0 mul
+		2.0 *
 	}
 }

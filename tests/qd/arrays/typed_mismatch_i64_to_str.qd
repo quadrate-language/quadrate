@@ -1,5 +1,5 @@
 // Test: passing []i64 where []str expected should fail
-fn names(arr:[]str -- ) {
+def names(arr:[]str -- ) {
 }
 
 fn main() {

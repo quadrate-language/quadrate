@@ -22,7 +22,7 @@ namespace Qd {
 
 	namespace {
 		// The node that follows this one in its parent block, or nullptr. A fallible call's
-		// consumer is its next sibling, which is what the rule about `if`/`switch` is about.
+		// next sibling is what the rule against an `if` straight after it is about.
 		IAstNode* nextSiblingOf(IAstNode* node) {
 			if (!node) {
 				return nullptr;
@@ -38,6 +38,20 @@ namespace Qd {
 			}
 			return nullptr;
 		}
+
+		// The node before this one in its parent block, or nullptr
+		IAstNode* previousSiblingOf(IAstNode* node) {
+			if (!node || !node->parent()) {
+				return nullptr;
+			}
+			IAstNode* parent = node->parent();
+			for (size_t i = 1; i < parent->childCount(); i++) {
+				if (parent->child(i) == node) {
+					return parent->child(i - 1);
+				}
+			}
+			return nullptr;
+		}
 	}
 
 #include "semantic_validator_internal.h"
@@ -49,40 +63,10 @@ namespace Qd {
 
 	void SemanticValidator::typeCheckInstructionInternal(IAstNode* node, const char* name,
 			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, bool reportErrors) {
-		// Handle instruction aliases
-		if (strcmp(name, "/") == 0) {
-			name = "div";
-		} else if (strcmp(name, "*") == 0) {
-			name = "mul";
-		} else if (strcmp(name, "+") == 0) {
-			name = "add";
-		} else if (strcmp(name, "-") == 0) {
-			name = "sub";
-		} else if (strcmp(name, "%") == 0) {
-			name = "mod";
-		} else if (strcmp(name, "==") == 0) {
-			name = "eq";
-		} else if (strcmp(name, "!=") == 0) {
-			name = "neq";
-		} else if (strcmp(name, "<") == 0) {
-			name = "lt";
-		} else if (strcmp(name, ">") == 0) {
-			name = "gt";
-		} else if (strcmp(name, "<=") == 0) {
-			name = "lte";
-		} else if (strcmp(name, ">=") == 0) {
-			name = "gte";
-		} else if (strcmp(name, "++") == 0) {
-			name = "inc";
-		} else if (strcmp(name, "--") == 0) {
-			name = "dec";
-		}
-
 		// Freestanding mode: reject builtins that need libc / hosted I/O.
 		// Pure stack/arithmetic/control-flow ops are still allowed.
 		if (mFreestandingMode) {
-			static const char* kUnsafeBuiltins[] = {
-					"print", "prints", "printv", "nl", "panic", "err", "spawn", "wait", "detach", nullptr};
+			static const char* kUnsafeBuiltins[] = {"print", "dump", "nl", "panic", "err", nullptr};
 			for (size_t i = 0; kUnsafeBuiltins[i] != nullptr; i++) {
 				if (strcmp(name, kUnsafeBuiltins[i]) == 0) {
 					std::string err = "builtin '" + std::string(name) + "' is not available in --freestanding mode";
@@ -96,8 +80,9 @@ namespace Qd {
 		// Can only be called inside fallible functions (marked with !)
 		if (strcmp(name, "panic") == 0) {
 			if (!mCurrentFunctionFallible) {
-				reportErrorConditional(
-						node, "'panic' can only be used inside fallible functions (marked with !)", reportErrors);
+				reportErrorConditional(node,
+						("'panic' can only be used inside fallible functions " + fallibleRemedy()).c_str(),
+						reportErrors);
 				return;
 			}
 
@@ -107,6 +92,25 @@ namespace Qd {
 						node, "Type error in 'panic': Stack underflow (requires msg and code)", reportErrors);
 				return;
 			}
+			// A status of 0 is `Ok`, so a failure carrying code 0 would read as a success to
+			// every caller that tests it. A code written as a literal is caught here; one
+			// computed at run time is caught by the runtime.
+			IAstNode* codeNode = previousSiblingOf(node);
+			if (codeNode && codeNode->type() == IAstNode::Type::LITERAL) {
+				auto* code = static_cast<AstNodeLiteral*>(codeNode);
+				int64_t value = 1;
+				if (code->literalType() == AstNodeLiteral::LiteralType::BOOL) {
+					value = predefinedConstantValue(code->value());
+				} else if (code->literalType() == AstNodeLiteral::LiteralType::INTEGER) {
+					parseIntegerLiteral(code->value(), value);
+				}
+				if (value == 0) {
+					reportErrorWithHint(node,
+							"'panic' with code 0, which is 'Ok': a caller would read the failure as a success",
+							"use 'Err' for a generic failure, or a code of your own >= 2");
+				}
+			}
+
 			// Pop msg and code
 			typeStack.pop_back();
 			typeStack.pop_back();
@@ -127,8 +131,8 @@ namespace Qd {
 			return;
 		}
 
-		// Increment/Decrement functions: inc, dec (preserve type)
-		if (strcmp(name, "inc") == 0 || strcmp(name, "dec") == 0) {
+		// Increment/decrement: ++, -- (preserve type)
+		if (strcmp(name, "++") == 0 || strcmp(name, "--") == 0) {
 			if (typeStack.empty()) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -149,15 +153,14 @@ namespace Qd {
 			// Type remains the same (already on stack)
 			return;
 		}
-		// Binary arithmetic operations: add, sub, mul, div
-		else if (strcmp(name, "add") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "mul") == 0 ||
-				 strcmp(name, "div") == 0) {
+		// Binary arithmetic: + - * /
+		else if (strcmp(name, "+") == 0 || strcmp(name, "-") == 0 || strcmp(name, "*") == 0 || strcmp(name, "/") == 0) {
 			checkBuiltinArithmetic(node, name, typeStack, structTypeStack, reportErrors);
 			return;
 		}
-		// Comparison operations: eq, neq, lt, gt, lte, gte (consume 2, produce int/bool)
-		else if (strcmp(name, "eq") == 0 || strcmp(name, "neq") == 0 || strcmp(name, "lt") == 0 ||
-				 strcmp(name, "gt") == 0 || strcmp(name, "lte") == 0 || strcmp(name, "gte") == 0) {
+		// Comparison: == != < > <= >= (consume 2, produce a flag)
+		else if (strcmp(name, "==") == 0 || strcmp(name, "!=") == 0 || strcmp(name, "<") == 0 ||
+				 strcmp(name, ">") == 0 || strcmp(name, "<=") == 0 || strcmp(name, ">=") == 0) {
 			checkBuiltinComparison(node, name, typeStack, structTypeStack, reportErrors);
 			return;
 		}
@@ -184,9 +187,10 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Negation: the logical 'not', and the bitwise form behind the bits module
-		// (consume 1, produce int)
-		else if (strcmp(name, "not") == 0 || strcmp(name, "__not") == 0) {
+		// Negation: the logical 'not', and the bitwise form behind the bits module; and 'ok' and
+		// 'fail', which test a fallible call's status (consume 1, produce int)
+		else if (strcmp(name, "not") == 0 || strcmp(name, "__not") == 0 || strcmp(name, "ok") == 0 ||
+				 strcmp(name, "fail") == 0) {
 			if (typeStack.empty()) {
 				std::string msg = std::string("Type error in '") + name + "': Stack underflow (requires 1 value)";
 				reportErrorConditional(node, msg.c_str(), reportErrors);
@@ -201,8 +205,9 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Bitwise shift operations: shl, shr (consume 2 ints, produce int)
-		else if (strcmp(name, "shl") == 0 || strcmp(name, "shr") == 0) {
+		// Bitwise shift operations: __shl, __shr, behind bits::shl and bits::shr (consume 2 ints,
+		// produce int)
+		else if (strcmp(name, "__shl") == 0 || strcmp(name, "__shr") == 0) {
 			if (typeStack.size() < 2) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -252,16 +257,16 @@ namespace Qd {
 		else if (checkBuiltinMachine(node, name, typeStack, structTypeStack, reportErrors)) {
 			return;
 		}
-		// Modulo: mod (consume 2 ints, produce int)
-		else if (strcmp(name, "mod") == 0) {
+		// Modulo: % (consume 2 ints, produce int)
+		else if (strcmp(name, "%") == 0) {
 			if (typeStack.size() < 2) {
 				reportErrorConditional(
-						node, "Type error in 'mod': Stack underflow (requires 2 integer values)", reportErrors);
+						node, "Type error in '%': Stack underflow (requires 2 integer values)", reportErrors);
 				return;
 			}
 			if (typeStack[typeStack.size() - 1] == StackValueType::D128 ||
 					typeStack[typeStack.size() - 2] == StackValueType::D128) {
-				reportErrorConditionalWithHint(node, "Type error in 'mod': mod is integer-only and does not take d128",
+				reportErrorConditionalWithHint(node, "Type error in '%': it is integer-only and does not take d128",
 						"use 'decimal::fmod' for the truncating remainder, or 'decimal::remainder' for IEEE's",
 						reportErrors);
 			}
@@ -277,8 +282,8 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
-		// Print operations: print, printv
-		else if (strcmp(name, "print") == 0 || strcmp(name, "printv") == 0) {
+		// Print operations: print, dump
+		else if (strcmp(name, "print") == 0 || strcmp(name, "dump") == 0) {
 			if (typeStack.empty()) {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
@@ -292,9 +297,8 @@ namespace Qd {
 			}
 			return;
 		}
-		// Non-destructive print: prints
-		else if (strcmp(name, "prints") == 0 || strcmp(name, "nl") == 0) {
-			// These don't modify the stack
+		// nl prints a newline and leaves the stack alone
+		else if (strcmp(name, "nl") == 0) {
 			return;
 		}
 		// Stack shuffles: dup, dup2, swap, over, pick, nip, drop, rot
@@ -306,54 +310,27 @@ namespace Qd {
 			checkBuiltinCall(node, typeStack, structTypeStack, reportErrors);
 			return;
 		}
-		// Threading: spawn ( fn:ptr -- handle:i64 )
-		//
-		// The handle qd_spawn pushes is an i64 (the OS thread handle cast to an integer), not the
-		// ptr that `&worker` put on the stack. Leaving this unmodelled meant the function
-		// pointer's PTR stayed on the type stack, so `threads i &worker spawn set` reported
-		// "Array is '[]i64' but value is ptr" and no array element type could satisfy it.
-		else if (strcmp(name, "spawn") == 0) {
+		// Length: len ( arr -- n ), or a string's length in characters
+		else if (strcmp(name, "len") == 0) {
 			if (typeStack.empty()) {
 				reportErrorConditional(
-						node, "Type error in 'spawn': Stack underflow (requires 1 function pointer)", reportErrors);
+						node, "Type error in 'len': Stack underflow (requires an array or a string)", reportErrors);
 				return;
 			}
-			if (typeStack.back() != StackValueType::PTR && typeStack.back() != StackValueType::UNKNOWN) {
-				reportErrorConditional(
-						node, "Type error in 'spawn': Expected a function pointer (use &function_name)", reportErrors);
+			StackValueType top = typeStack.back();
+			if (top != StackValueType::PTR && top != StackValueType::STRING) {
+				std::string errorMsg = "Type error in 'len': Expected an array or a string, got ";
+				errorMsg += typeToString(top);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
+			// Pop array, push int (length)
 			typeStack.pop_back();
 			if (!structTypeStack.empty()) {
 				structTypeStack.pop_back();
 			}
-			// The spawned function runs on its own fresh stack, so its signature has no bearing
-			// on this one.
-			mPendingFnSignature.reset();
 			typeStack.push_back(StackValueType::INT);
 			structTypeStack.push_back("");
-			return;
-		}
-		// Threading: wait, detach ( handle:i64 -- )
-		else if (strcmp(name, "wait") == 0 || strcmp(name, "detach") == 0) {
-			if (typeStack.empty()) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Stack underflow (requires 1 thread handle)";
-				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
-				return;
-			}
-			if (typeStack.back() != StackValueType::INT && typeStack.back() != StackValueType::UNKNOWN) {
-				std::string errorMsg = "Type error in '";
-				errorMsg += name;
-				errorMsg += "': Expected a thread handle from 'spawn'";
-				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
-				return;
-			}
-			typeStack.pop_back();
-			if (!structTypeStack.empty()) {
-				structTypeStack.pop_back();
-			}
 			return;
 		}
 		// Array length: len ( arr -- len )
@@ -380,6 +357,26 @@ namespace Qd {
 			structTypeStack.push_back("");
 			return;
 		}
+		// __size ( arr|s -- n ) and __at ( arr|s i -- elem ): internal, how a searching combinator
+		// reads a subject not known to be an array. Lowering writes them after validation, so
+		// this is only for one written by hand.
+		else if (strcmp(name, "__size") == 0 || strcmp(name, "__at") == 0) {
+			const size_t inputs = strcmp(name, "__at") == 0 ? 2 : 1;
+			if (typeStack.size() < inputs) {
+				std::string err = std::string("Type error in '") + name + "': Stack underflow";
+				reportErrorConditional(node, err.c_str(), reportErrors);
+				return;
+			}
+			for (size_t k = 0; k < inputs; k++) {
+				typeStack.pop_back();
+				if (!structTypeStack.empty()) {
+					structTypeStack.pop_back();
+				}
+			}
+			typeStack.push_back(inputs == 1 ? StackValueType::INT : StackValueType::UNKNOWN);
+			structTypeStack.push_back("");
+			return;
+		}
 		// Array access: nth ( arr idx -- elem )
 		// Returns element at index, consuming the array reference
 		else if (strcmp(name, "nth") == 0) {
@@ -398,7 +395,7 @@ namespace Qd {
 			checkBuiltinAppend(node, typeStack, structTypeStack, reportErrors);
 			return;
 		}
-		// clone - a new struct of the same type, fields copied
+		// clone - a shallow copy of a struct or an array
 		else if (strcmp(name, "clone") == 0) {
 			checkBuiltinClone(node, typeStack, structTypeStack, reportErrors);
 			return;
@@ -407,12 +404,12 @@ namespace Qd {
 		else if (strcmp(name, "free") == 0) {
 			if (typeStack.empty()) {
 				reportErrorConditional(
-						node, "Type error in 'free': Stack underflow (requires 1 pointer)", reportErrors);
+						node, "Type error in 'free': Stack underflow (requires a struct or an array)", reportErrors);
 				return;
 			}
 			StackValueType top = typeStack.back();
 			if (top != StackValueType::PTR) {
-				std::string errorMsg = "Type error in 'free': Expected pointer type, got ";
+				std::string errorMsg = "Type error in 'free': Expected a struct or an array, got ";
 				errorMsg += typeToString(top);
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
@@ -489,6 +486,23 @@ namespace Qd {
 						reportErrors);
 			}
 			typeStack.push_back(StackValueType::D128);
+			structTypeStack.push_back("");
+			return;
+		}
+
+		// An operand whose type is not known -- an inferred `fn { }`'s input, say -- gives a
+		// result whose type is not known either, unless the other is an f64, which wins whatever
+		// the first turns out to be. It used to give nothing at all, so the stack lost a value.
+		if (a == StackValueType::UNKNOWN || b == StackValueType::UNKNOWN) {
+			const StackValueType other = (a == StackValueType::UNKNOWN) ? b : a;
+			if (other == StackValueType::STRING || other == StackValueType::PTR) {
+				std::string errorMsg = "Type error in '";
+				errorMsg += name;
+				errorMsg += "': Expected numeric types, got ";
+				errorMsg += typeToString(other);
+				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
+			}
+			typeStack.push_back(other == StackValueType::FLOAT ? StackValueType::FLOAT : StackValueType::UNKNOWN);
 			structTypeStack.push_back("");
 			return;
 		}
@@ -664,9 +678,11 @@ namespace Qd {
 
 	// call - invoke function pointer from stack
 	void SemanticValidator::checkBuiltinCall(IAstNode* node, std::vector<StackValueType>& typeStack,
-			std::vector<std::string>& structTypeStack, bool reportErrors) {
+			std::vector<std::string>& structTypeStack, bool reportErrors, const char* name) {
 		if (typeStack.empty()) {
-			reportErrorConditional(node, "Type error in 'call': Stack underflow (requires 1 value)", reportErrors);
+			reportErrorConditional(node,
+					(std::string("Type error in '") + name + "': Stack underflow (requires 1 value)").c_str(),
+					reportErrors);
 			return;
 		}
 		// Pop the function pointer - runtime will verify it's a pointer type
@@ -708,29 +724,36 @@ namespace Qd {
 				}
 				if (propagate && !mCurrentFunctionFallible) {
 					reportErrorConditional(node,
-							"Cannot use '?' operator on 'call': enclosing function must be fallible "
-							"(add '!' to function signature)",
+							("Cannot use '?' operator on 'call': enclosing function must be fallible " +
+									fallibleRemedy())
+									.c_str(),
 							reportErrors);
 				}
 				if (sig.throws) {
 					callInst->setCalleeFallible(true);
 					mCallSiteSignatures[node] = sig;
-					if (!abort && !propagate) {
+					if (!abort && !propagate && reportErrors) {
 						IAstNode* nextNode = nextSiblingOf(node);
-						if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-												 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-							reportErrorConditional(node,
-									"Fallible 'call' must be immediately followed by 'if' or 'switch' to "
-									"check for errors, or use '!' to abort on error, or '?' to propagate",
-									reportErrors);
+						if (nextNode && nextNode->type() == IAstNode::Type::IF_STATEMENT) {
+							reportStatusTestedByIf(node, "call");
 						}
 					}
 				}
 			}
 
+			// A function value typed with stack variables works on the stack the function stands on
+			if (!sig.inputStackVariable.empty() || !sig.outputStackVariable.empty()) {
+				if (!applyFloorCall(node, name, sig.inputStackVariable, sig.outputStackVariable, sig.consumes.size(),
+							typeStack)) {
+					mPendingFnSignature.reset();
+					return;
+				}
+			}
+
 			// Consume input parameters from stack
 			if (typeStack.size() < sig.consumes.size()) {
-				std::string errorMsg = "Type error in 'call': Stack underflow for function pointer (requires ";
+				std::string errorMsg =
+						std::string("Type error in '") + name + "': Stack underflow for function pointer (requires ";
 				errorMsg += std::to_string(sig.consumes.size());
 				errorMsg += " values, have ";
 				errorMsg += std::to_string(typeStack.size());
@@ -778,8 +801,8 @@ namespace Qd {
 	void SemanticValidator::checkBuiltinNth(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::vector<std::string>& structTypeStack, bool reportErrors) {
 		if (typeStack.size() < 2) {
-			reportErrorConditional(
-					node, "Type error in 'nth': Stack underflow (requires array and index)", reportErrors);
+			reportErrorConditional(node,
+					"Type error in 'nth': Stack underflow (requires an array or a string, and an index)", reportErrors);
 			return;
 		}
 		// Pop index
@@ -787,10 +810,17 @@ namespace Qd {
 		if (!structTypeStack.empty()) {
 			structTypeStack.pop_back();
 		}
-		// Verify array is a pointer
+		// A string's element is a character, as its codepoint
 		StackValueType arr = typeStack.back();
+		if (arr == StackValueType::STRING) {
+			typeStack.back() = StackValueType::INT;
+			if (!structTypeStack.empty()) {
+				structTypeStack.back() = "";
+			}
+			return;
+		}
 		if (arr != StackValueType::PTR) {
-			std::string errorMsg = "Type error in 'nth': Expected array (ptr), got ";
+			std::string errorMsg = "Type error in 'nth': Expected an array or a string, got ";
 			errorMsg += typeToString(arr);
 			reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 			return;
@@ -947,7 +977,17 @@ namespace Qd {
 	void SemanticValidator::checkBuiltinClone(IAstNode* node, std::vector<StackValueType>& typeStack,
 			std::vector<std::string>& structTypeStack, bool reportErrors) {
 		if (typeStack.empty()) {
-			reportErrorConditional(node, "Type error in 'clone': Stack underflow (requires 1 struct)", reportErrors);
+			reportErrorConditional(
+					node, "Type error in 'clone': Stack underflow (requires a struct or an array)", reportErrors);
+			return;
+		}
+		// An array copies its elements, whatever they are, so it needs no more than to be one.
+		// Code generation tells it from a struct by the `[]` of the type recorded here.
+		const std::string topType = structTypeStack.empty() ? std::string() : structTypeStack.back();
+		if (typeStack.back() == StackValueType::PTR && topType.compare(0, 2, "[]") == 0) {
+			if (reportErrors && node != nullptr && node->type() == IAstNode::Type::INSTRUCTION) {
+				static_cast<AstNodeInstruction*>(node)->setResolvedType(topType);
+			}
 			return;
 		}
 		// The struct type is what decides the size to allocate and the fields to retain, so
@@ -957,12 +997,11 @@ namespace Qd {
 		const bool known = typeStack.back() == StackValueType::PTR && !structType.empty() &&
 						   lookupStructFieldTypes(structType) != nullptr;
 		if (!known) {
-			std::string errorMsg = "Type error in 'clone': Expected a struct, got ";
+			std::string errorMsg = "Type error in 'clone': Expected a struct or an array, got ";
 			errorMsg += structType.empty() ? typeToString(typeStack.back()) : structType;
 			if (typeStack.back() == StackValueType::PTR && structType.empty()) {
 				reportErrorConditionalWithHint(node, errorMsg.c_str(),
-						"the struct type has to be known here; narrow the pointer with 'as', e.g. 'p as Point "
-						"clone'",
+						"the type has to be known here; narrow the pointer with 'as', e.g. 'p as Point clone'",
 						reportErrors);
 			} else {
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
@@ -991,8 +1030,8 @@ namespace Qd {
 		static const Machine MACHINE[] = {
 				{{"__st8", "__st16", "__st32", "__st64"}, 3, false, "addr offset value"},
 				{{"__ld8", "__ld16", "__ld32", "__ld64"}, 2, true, "addr offset"},
-				{{"__port_out8", "__port_out16", "__port_out32", nullptr}, 2, false, "port value"},
-				{{"__port_in8", "__port_in16", "__port_in32", nullptr}, 1, true, "port"},
+				{{"__outb", "__outw", "__outl", nullptr}, 2, false, "port value"},
+				{{"__inb", "__inw", "__inl", nullptr}, 1, true, "port"},
 				{{"__cli", "__sti", "__hlt", nullptr}, 0, false, ""},
 		};
 		for (const Machine& machine : MACHINE) {
@@ -1038,7 +1077,10 @@ namespace Qd {
 				{"pick", 3, {0, 1, 2, 0}}, // ( x y z -- x y z x )
 				{"nip", 2, {1}},		   // ( a b -- b )
 				{"drop", 1, {}},		   // ( a -- )
+				{"drop2", 2, {}},		   // ( a b -- )
 				{"rot", 3, {1, 2, 0}},	   // ( a b c -- b c a )
+				{"rrot", 3, {2, 0, 1}},	   // ( a b c -- c a b )
+				{"tuck", 2, {1, 0, 1}},	   // ( a b -- b a b )
 		};
 		for (const Shuffle& shuffle : SHUFFLES) {
 			if (strcmp(name, shuffle.name) != 0) {

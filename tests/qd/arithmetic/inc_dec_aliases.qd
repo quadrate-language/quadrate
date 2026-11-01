@@ -31,8 +31,8 @@ fn main() {
 	3.5 -- print nl        // 2.5
 
 	// In expressions
-	10 ++ 2 mul print nl   // 22
-	10 -- 2 mul print nl   // 18
+	10 ++ 2 * print nl   // 22
+	10 -- 2 * print nl   // 18
 
 	// Edge cases - large numbers
 	999999 ++ print nl     // 1000000

@@ -512,7 +512,7 @@
       "signature": "(c:i64 -- result:i64)",
       "failable": false,
       "description": "Convert digit character to its numeric value.",
-      "params": [{"name": "c", "type": "i64", "description": "Character code (must be a digit)"}],
+      "params": [{"name": "c", "type": "i64", "description": "Character code"}],
       "returns": [{"name": "result", "type": "i64", "description": "Numeric value (0-9), or -1 if not a digit"}],
       "errors": [],
       "examples": ["53 unicode::digit_value print  // 5"]

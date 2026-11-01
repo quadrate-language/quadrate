@@ -5,9 +5,9 @@
 fn junk( -- r:i64) {
 	0 -> i
 	loop {
-		i 3 gte if { break }
+		i 3 >= if { break }
 		42
-		i 1 add -> i
+		i 1 + -> i
 	}
 	7
 }

@@ -1,0 +1,1 @@
+Cannot use '?' operator on function 'may_fail': enclosing function must be fallible (a 'fn { }' cannot be fallible: give it a signature, 'fn (...)! { }')

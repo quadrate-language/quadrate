@@ -124,9 +124,8 @@ static void collectPublicDeclarations(
 		};
 
 		skipKeyword("inline");
-		skipKeyword("stack");
-		if (!skipKeyword("fn") && !skipKeyword("const") && !skipKeyword("struct") && !skipKeyword("enum") &&
-				!skipKeyword("type")) {
+		if (!skipKeyword("fn") && !skipKeyword("def") && !skipKeyword("const") && !skipKeyword("struct") &&
+				!skipKeyword("enum") && !skipKeyword("type")) {
 			continue;
 		}
 
@@ -458,13 +457,16 @@ public:
 	bool hasUserFunction(const std::string& name) {
 		for (const auto& def : definitions) {
 			std::string d = trim(def);
-			if (d.compare(0, 4, "pub ") == 0) {
-				d = trim(d.substr(4));
+			for (const char* modifier : {"pub ", "inline "}) {
+				if (d.compare(0, strlen(modifier), modifier) == 0) {
+					d = trim(d.substr(strlen(modifier)));
+				}
 			}
-			if (d.compare(0, 3, "fn ") != 0) {
+			const size_t keyword = d.compare(0, 3, "fn ") == 0 ? 3 : d.compare(0, 4, "def ") == 0 ? 4 : 0;
+			if (keyword == 0) {
 				continue;
 			}
-			std::string rest = trim(d.substr(3));
+			std::string rest = trim(d.substr(keyword));
 			if (rest.compare(0, name.size(), name) == 0 && rest.size() > name.size() &&
 					(rest[name.size()] == '(' || rest[name.size()] == ' ' || rest[name.size()] == '<')) {
 				return true;
@@ -943,7 +945,7 @@ private:
 		printf("  [8]> dup mul\n");
 		printf("  [64]> print\n");
 		printf("  64\n");
-		printf("  []> fn double(x:i64 -- y:i64) { x x add }\n");
+		printf("  []> def double(x:i64 -- y:i64) { x x add }\n");
 		printf("  Function defined\n");
 		printf("  []> 21 double print\n");
 		printf("  42\n");
@@ -1081,6 +1083,8 @@ private:
 		static const std::pair<const char*, const char*> kinds[] = {
 				{"fn ", "Function"},
 				{"inline fn ", "Function"},
+				{"def ", "Function"},
+				{"inline def ", "Function"},
 				{"struct ", "Struct"},
 				{"packed struct ", "Struct"},
 				{"enum ", "Enum"},
@@ -1228,7 +1232,7 @@ private:
 
 	std::string convertPrint(const std::string& code) {
 		return rewriteWords(code, [](const std::string& word, std::string& out) {
-			if (word == "print" || word == "printv" || word == "prints" || word == "printsv") {
+			if (word == "print" || word == "dump") {
 				out = word + " nl";
 				return true;
 			}
@@ -1299,12 +1303,11 @@ private:
 			source += "\n";
 		}
 
-		// The unnamed flavour hands the carried stack straight to the body, which is
-		// what `stack fn` means; without the modifier an unnamed input is refused.
-		// With nothing carried there are no inputs at all, and `stack` would be an
-		// error of its own.
-		const bool stackForm = !named && !(stackTypes.empty() && locals.empty());
-		source += stackForm ? "pub stack fn repl_main(" : "pub fn repl_main(";
+		// The unnamed flavour hands the carried stack straight to the body, which is what a
+		// `fn` does; the named one binds it, which is what a `def` does. With nothing carried
+		// there are no inputs at all, and a `def` would be an error of its own.
+		const bool defForm = named && !(stackTypes.empty() && locals.empty());
+		source += defForm ? "pub def repl_main(" : "pub fn repl_main(";
 		for (size_t i = 0; i < stackTypes.size(); i++) {
 			source += named ? "_s" + std::to_string(i) + ":" + stackTypes[i] + " " : stackTypes[i] + " ";
 		}

@@ -1,0 +1,5 @@
+// Test: the function value of any, all and find leaves a flag
+use strings
+fn main() {
+	["a" "b"] fn { "x" strings::concat } any drop
+}

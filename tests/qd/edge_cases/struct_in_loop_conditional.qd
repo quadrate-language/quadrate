@@ -3,10 +3,10 @@ struct Counter {
 	value:i64
 }
 
-fn process_counter(val:i64 -- ) {
+def process_counter(val:i64 -- ) {
 	Counter { value = val } -> c
 
-	c <<value 5 lt
+	c <<value 5 <
 	if {
 		c <<value print nl
 	} else {

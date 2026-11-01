@@ -10,10 +10,10 @@ namespace Qd {
 	/**
 	 * AST node for anonymous functions (quotations/lambdas) with optional closures.
 	 *
-	 * Syntax without captures: fn (x:i64 y:i64 -- r:i64) { body }
-	 * Syntax with captures:    fn [a, b] (x:i64 y:i64 -- r:i64) { body }
-	 * Arguments left on stack:  stack fn (i64 i64 -- r:i64) { body }
-	 * Fallible:                 fn (x:i64 -- r:i64)! { body }
+	 * Arguments on the stack:  fn (i64 i64 -- r:i64) { body }
+	 * Arguments bound:         def (x:i64 y:i64 -- r:i64) { body }
+	 * Fallible:                fn (i64 -- r:i64)! { body }
+	 * Effect inferred:         fn { body }
 	 *
 	 * This node represents an inline function definition that produces
 	 * a function pointer (or closure) when evaluated. Unlike regular function
@@ -121,9 +121,10 @@ namespace Qd {
 			return mCapturedVariables;
 		}
 
-		// `stack fn (...) { }`: the inputs stay on the stack for the body to work on, and any
-		// names they carry are documentation. Without it every input must be named and is bound
-		// as a local -- the same rule, and the same spelling, as a named function.
+		// True unless the lambda is `def (...) { }`: the inputs stay on the stack for the body
+		// to work on, and any names they carry are documentation. In a `def` every input must be
+		// named and is bound as a local -- the same rule, and the same spelling, as a named
+		// function.
 		void setStack(bool isStack) {
 			mIsStack = isStack;
 		}
@@ -141,6 +142,26 @@ namespace Qd {
 			return mThrows;
 		}
 
+		// `fn { }`: no signature. The body works on the stack, as under `stack`, and its effect
+		// is inferred from the body by the validator.
+		void setHasSignature(bool hasSignature) {
+			mHasSignature = hasSignature;
+		}
+
+		bool hasSignature() const {
+			return mHasSignature;
+		}
+
+		// The `fn(...)` type the validator inferred for a `fn { }`, for the tools to show. Empty
+		// before validation, and when the effect could not be inferred.
+		void setInferredType(const std::string& type) {
+			mInferredType = type;
+		}
+
+		const std::string& inferredType() const {
+			return mInferredType;
+		}
+
 	private:
 		IAstNode* mParent;
 		std::unique_ptr<IAstNode> mBody;
@@ -149,6 +170,8 @@ namespace Qd {
 		std::vector<std::string> mCapturedVariables; // Variables captured from enclosing scope
 		bool mIsStack = false;
 		bool mThrows = false;
+		bool mHasSignature = true;
+		std::string mInferredType;
 		size_t mLine;
 		size_t mColumn;
 	};

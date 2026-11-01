@@ -478,14 +478,14 @@
                     </div>
                     <div class="quick-ref-section">
                         <h4>Functions</h4>
-                        <p>Define with inputs and outputs separated by <code>--</code>. Named params are auto-bound as locals.</p>
+                        <p>Define with inputs and outputs separated by <code>--</code>. The inputs stay on the stack; <code>def</code> binds them as locals.</p>
                         <div class="quick-ref-example">
-                            <code>fn add(a:i64 b:i64 -- i64)</code>
+                            <code>fn sum(a:i64 b:i64 -- i64)</code>
                             <span class="result">takes 2 ints, returns 1</span>
                         </div>
                         <div class="quick-ref-example">
-                            <code>stack fn double(i64 -- i64)</code>
-                            <span class="result">`stack` leaves the arguments on the stack</span>
+                            <code>fn double(i64 -- i64)</code>
+                            <span class="result">names are optional</span>
                         </div>
                         <div class="quick-ref-example">
                             <code>fn greet() { "Hi" print }</code>
@@ -552,7 +552,7 @@
                     <div class="quick-ref-section">
                         <h4>Error Handling</h4>
                         <div class="quick-ref-example">
-                            <code>fn divide(i64 i64 -- i64)!</code>
+                            <code>def divide(i64 i64 -- i64)!</code>
                             <span class="result">fallible function (may fail)</span>
                         </div>
                         <div class="quick-ref-example">
@@ -733,18 +733,17 @@
         let errorLines = new Set();
 
         // Quadrate syntax highlighting
-        const keywords = ['fn', 'pub', 'inline', 'stack', 'if', 'else', 'for', 'loop', 'while', 'until', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
+        const keywords = ['fn', 'def', 'pub', 'inline', 'if', 'else', 'for', 'loop', 'while', 'until', 'break', 'continue', 'return', 'use', 'import', 'as', 'struct', 'enum', 'type', 'const', 'defer', 'switch', 'test', 'true', 'false', 'null', 'Ok', 'Err'];
         const types = ['i64', 'f64', 'str', 'ptr', 'any', 'bool'];
         const builtins = [
             'dup', 'dup2', 'drop', 'swap',
-            'over', 'rot', 'nip', 'pick',
-            'add', 'sub', 'mul', 'div', 'mod', 'neg', 'inc', 'dec',
-            'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'within',
-            'and', 'or', 'not', 'shl', 'shr',
+            'over', 'rot', 'rrot', 'tuck', 'drop2', 'nip', 'pick',
+            'neg', 'within', 'and', 'or', 'not',
             'len', 'nth', 'set', 'append',
             'cast', 'sizeof',
-            'print', 'printv', 'prints', 'nl',
-            'err', 'panic', 'spawn', 'wait', 'detach', 'call', 'free',
+            'print', 'dump', 'nl',
+            'err', 'ok', 'fail', 'panic', 'call', 'free',
+            'dip', 'dip2', 'keep', 'keep2', 'bi', 'tri', 'both', 'times', 'each', 'map', 'filter', 'fold', 'find', 'index', 'scan', 'any', 'all',
             'abs', 'acos', 'asin', 'atan', 'atan2', 'cb', 'cbrt', 'ceil', 'cos',
             'exp', 'fac', 'floor', 'inv', 'ln', 'log', 'log10', 'max', 'min',
             'pow', 'round', 'sin', 'sq', 'sqrt', 'tan',
@@ -990,13 +989,13 @@ fn main() {
 }`,
 
             functions: `// Functions take inputs and produce outputs
-// Signature: fn name(inputs -- outputs)
-// Named params are auto-bound as local variables
-fn double(x:i64 -- i64) {
+// Signature: def name(inputs -- outputs)
+// The inputs stay on the stack; `def` binds them as local variables
+def double(x:i64 -- i64) {
 	x 2 *
 }
 
-fn greet(name:str) {
+def greet(name:str) {
 	"Hello, " print name print "!" print nl
 }
 
@@ -1006,7 +1005,7 @@ fn add(i64 i64 -- i64) {
 }
 
 // Inline functions are expanded at each call site
-inline fn square(x:i64 -- i64) {
+inline def square(x:i64 -- i64) {
 	x x *
 }
 
@@ -1039,7 +1038,7 @@ fn main() {
 }`,
 
             factorial: `// Factorial: n! = n * (n-1) * ... * 1
-fn factorial(n:i64 -- i64) {
+def factorial(n:i64 -- i64) {
 	1 -> result
 	1 n 1 + 1 for i {
 		result i * -> result
@@ -1058,18 +1057,18 @@ fn main() {
             multireturn: `// Functions can return multiple values on the stack
 // The stack naturally supports this - no tuples needed!
 // Returns BOTH quotient AND remainder
-fn divmod(a:i64 b:i64 -- i64 i64) {
+def divmod(a:i64 b:i64 -- i64 i64) {
 	a b /                  // push quotient
 	a b %                  // push remainder
 }
 
 // Named params make the swap explicit
-fn swap_pair(a:i64 b:i64 -- i64 i64) {
+def swap_pair(a:i64 b:i64 -- i64 i64) {
 	b a
 }
 
 // Return min AND max
-fn minmax(a:i64 b:i64 -- i64 i64) {
+def minmax(a:i64 b:i64 -- i64 i64) {
 	a b < if {
 		a b
 	} else {
@@ -1126,7 +1125,7 @@ fn (p:Point) magnitude( -- f64) {
 }
 
 // Method with named parameter
-fn (p:Point) distance_to(other:Point -- f64) {
+def (p:Point) distance_to(other:Point -- f64) {
 	other <<x p <<x - dup *    // dx squared
 	other <<y p <<y - dup *    // dy squared
 	+ math::sqrt
@@ -1172,9 +1171,9 @@ fn main() {
 }`,
 
             bubblesort: `// Bubble Sort using named parameters
-// Shows how auto-bound variables make sorting logic clear
+// Shows how `def` names make sorting logic clear
 // Compare and order two values: return smaller first
-fn order2(a:i64 b:i64 -- i64 i64) {
+def order2(a:i64 b:i64 -- i64 i64) {
 	a b > if {
 		b a
 	} else {
@@ -1183,7 +1182,7 @@ fn order2(a:i64 b:i64 -- i64 i64) {
 }
 
 // Sort 3 values using bubble sort passes
-fn sort3(a:i64 b:i64 c:i64 -- i64 i64 i64) {
+def sort3(a:i64 b:i64 c:i64 -- i64 i64 i64) {
 	// Pass 1: order b and c
 	b c order2 -> c -> b
 
@@ -1198,7 +1197,7 @@ fn sort3(a:i64 b:i64 c:i64 -- i64 i64 i64) {
 
 fn main() {
 	"=== Bubble Sort ===" print nl
-	"Sorting values using auto-bound variables!" print nl
+	"Sorting values using named parameters!" print nl
 	nl
 
 	// Sort 2 values

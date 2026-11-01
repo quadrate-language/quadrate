@@ -71,7 +71,7 @@ fn main() {
 		// Render frame
 		"\x1b[H" print  // Cursor home
 		0 1761 1 for it {
-			it 80 mod 0 != if {
+			it 80 % 0 != if {
 				o it nth switch {
 					0 {
 						"." print

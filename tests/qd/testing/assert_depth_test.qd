@@ -11,11 +11,11 @@
 // notes for R45.
 use testing
 
-fn via_helper(a:i64 b:i64 -- ) {
+def via_helper(a:i64 b:i64 -- ) {
 	a b > testing::assert_true
 }
 
-fn via_two_frames(a:i64 b:i64 -- ) {
+def via_two_frames(a:i64 b:i64 -- ) {
 	a b via_helper
 }
 

@@ -1,8 +1,8 @@
 // Test: invalid type
-stack fn test(i65 -- i64) {
+fn test(i65 -- i64) {
 	dup
 }
 
 fn main() {
-	42 test printv
+	42 test dump
 }

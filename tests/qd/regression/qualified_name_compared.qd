@@ -1,0 +1,11 @@
+// Test: `<` after a qualified name is a comparison. Type arguments touch the name,
+// `math::Box<i64>`, as after a bare one; `limits::I64Max < x` read the `<` as the start of a
+// type argument list and failed to parse, which is why such code used to say `lt`.
+use limits
+
+fn main() {
+	limits::I8Max 100 < print nl     // 0
+	100 limits::I8Max < print nl     // 1
+	limits::I8Min limits::I8Max < print nl     // 1
+	limits::U8Max 255 <= print nl    // 1
+}

@@ -4,7 +4,7 @@
 // stray tokens and an unnamed `str` and the result was typed `str`.
 use os
 
-fn wants_ints(a:[]i64 -- ) {
+def wants_ints(a:[]i64 -- ) {
 }
 
 fn main() {

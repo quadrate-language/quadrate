@@ -1,5 +1,5 @@
 // Test: division
-stack fn safe_divide(i64 i64 -- i64)! {
+fn safe_divide(i64 i64 -- i64)! {
 	dup 0 > if {
 		/
 	} else {
@@ -11,23 +11,26 @@ stack fn safe_divide(i64 i64 -- i64)! {
 
 fn main() {
 	"Test 1: 10 / 2 = " print
-	10 2 safe_divide if {
+	10 2 safe_divide ok if {
 		print nl
 	} else {
+		drop
 		"ERROR" print nl
 	}
 
 	"Test 2: 10 / 0 = " print
-	10 0 safe_divide if {
+	10 0 safe_divide ok if {
 		print nl
 	} else {
+		drop
 		"ERROR" print nl
 	}
 
 	"Test 3: 100 / 5 = " print
-	100 5 safe_divide if {
+	100 5 safe_divide ok if {
 		print nl
 	} else {
+		drop
 		"ERROR" print nl
 	}
 }

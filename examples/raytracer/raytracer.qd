@@ -8,7 +8,7 @@ use testing
 
 // Ray-sphere intersection (half-b optimization)
 // Returns closest t > 0.001, or -1.0 if no hit
-fn hit(origin:math::Vec3 dir:math::Vec3 center:math::Vec3 rad:f64 -- t:f64) {
+def hit(origin:math::Vec3 dir:math::Vec3 center:math::Vec3 rad:f64 -- t:f64) {
 	origin center subtract -> oc
 	dir oc dot -> half_b
 	half_b half_b * oc length_sq - rad rad * + -> disc
@@ -31,7 +31,7 @@ fn hit(origin:math::Vec3 dir:math::Vec3 center:math::Vec3 rad:f64 -- t:f64) {
 }
 
 // Clamp float to [0, 255] integer
-fn to_byte(v:f64 -- b:i64) {
+def to_byte(v:f64 -- b:i64) {
 	v 0.0 < if {
 		0
 	} else {
@@ -289,7 +289,7 @@ fn main() {
 
 			best_t 0.0 > if {
 				// Hit point and normal
-				cam dir best_t scale add -> hp
+				cam dir best_t scale + -> hp
 
 				math::vec3_zero -> center   0.0 -> rad
 				best_id 0 == if {
@@ -311,7 +311,7 @@ fn main() {
 				diff 0.0 < if { 0.0 -> diff }
 
 				// Shadow test
-				hp normal 0.001 scale add -> shadow_org
+				hp normal 0.001 scale + -> shadow_org
 				0 -> in_shadow
 				shadow_org light sc1 0.5 hit 0.0 > if { 1 -> in_shadow }
 				shadow_org light sc2 0.5 hit 0.0 > if { 1 -> in_shadow }
@@ -321,7 +321,7 @@ fn main() {
 				// Material color
 				math::vec3_zero -> mat
 				best_id 0 == if {
-					hp <<x math::floor cast<i64> hp <<z math::floor cast<i64> + 2 mod 0 == if {
+					hp <<x math::floor cast<i64> hp <<z math::floor cast<i64> + 2 % 0 == if {
 						math::Vec3 {
 							x = 0.9
 							y = 0.9

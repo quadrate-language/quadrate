@@ -1,0 +1,4 @@
+// Test: the shifts are in the bits module.
+fn main() {
+	1 4 shl print nl
+}

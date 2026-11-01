@@ -300,7 +300,7 @@
       "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}, {"name": "callback", "type": "ptr", "description": "Callback function (line:str -- )"}],
       "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [{"code": "ErrIo", "description": "Failed to execute command"}],
-      "examples": ["\"ls -la\" fn (line:str -- ) { print nl } os::popen! -> code"]
+      "examples": ["\"ls -la\" def (line:str -- ) { print nl } os::popen! -> code"]
     },
     {
       "name": "program_name",
@@ -400,7 +400,7 @@
       "params": [{"name": "path", "type": "str", "description": "Directory path to walk"}, {"name": "callback", "type": "ptr", "description": "Callback function (path:str is_dir:i64 depth:i64 -- )"}],
       "returns": [],
       "errors": [{"code": "ErrNotFound", "description": "Path not found"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
-      "examples": ["\"/tmp\" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!"]
+      "examples": ["\"/tmp\" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!"]
     }
   ]
 }

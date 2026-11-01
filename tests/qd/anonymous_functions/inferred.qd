@@ -1,0 +1,61 @@
+// Test: `fn { }` -- no signature, and the effect is inferred from the body
+use hof
+
+struct Point {
+	x: i64
+	y: i64
+}
+
+def twice(x:i64 f:fn(i64 -- i64) -- r:i64) {
+	x f call f call
+}
+
+def pick_larger<T>(a:T b:T f:fn(T T -- T) -- r:T) {
+	a b f call
+}
+
+fn main() {
+	// One input, one result
+	5 fn { 2 * } call print nl                 // 10
+	// Two inputs, and none
+	3 4 fn { + } call print nl                 // 7
+	fn { 42 } call print nl                    // 42
+	// More results than inputs
+	6 fn { dup 1 + } call print " " print print nl   // 7 6
+	// A local inside the body
+	3 fn { -> v v v * } call print nl          // 9
+	// A capture
+	7 -> k
+	fn { k + } -> addk
+	1 addk call print nl                       // 8
+	// Control flow
+	-3 fn { dup 0 < if { neg } } call print nl       // 3
+	// Stored, then passed where a typed function value is expected
+	fn { 3 * } -> triple
+	2 triple twice print nl                    // 18
+	1 2 fn { dup2 > if { drop } else { nip } } pick_larger print nl   // 2
+	// A struct result
+	fn { Point { x = 1 y = 2 } } -> mk
+	mk call -> p
+	p <<y print nl                             // 2
+	// Nested
+	4 fn { fn { 1 + } call 10 * } call print nl     // 50
+
+	// The combinators, at whatever arity the body has
+	10 20 fn { 1 + } dip print " " print print nl    // 20 11
+	1 2 3 fn { + } dip print " " print print nl      // 3 3
+	2 fn { dup * } keep print " " print print nl     // 2 4
+	5 fn { 1 + } fn { 2 * } bi print " " print print nl   // 10 6
+	1 3 fn { 2 * } times print nl                    // 8
+	5 1 fn { 100 + } hof::when print nl                   // 105
+
+	[1 2 3 4] -> arr
+	arr fn { dup * } map -> squares
+	squares 3 nth print nl                     // 16
+	arr fn { 2 % 0 == } filter len print nl   // 2
+	arr 0 fn { + } fold print nl          // 10
+
+	// A body that calls a function value of unknown effect has an unknown effect itself
+	fn { call } -> run
+	1 fn { 2 + } run call print nl             // 3
+}

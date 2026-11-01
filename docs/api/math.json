@@ -1394,16 +1394,6 @@
       "returns": [{"name": "v", "type": "Vec4", "description": "Zero vector (0, 0, 0, 0)"}],
       "errors": [],
       "examples": ["math::vec4_zero -> v"]
-    },
-    {
-      "name": "within",
-      "signature": "(x:any min_val:any max_val:any -- result:i64)",
-      "failable": false,
-      "description": "Check if value is within range (inclusive).",
-      "params": [{"name": "x", "type": "any", "description": "Value to check"}, {"name": "min_val", "type": "any", "description": "Minimum bound"}, {"name": "max_val", "type": "any", "description": "Maximum bound"}],
-      "returns": [{"name": "result", "type": "i64", "description": "1 if in range, 0 otherwise"}],
-      "errors": [],
-      "examples": ["5 0 10 math::within print  // 1"]
     }
   ]
 }

@@ -9,11 +9,12 @@ on one once it exists.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `len` | `(arr -- len)` | Get length |
-| `nth` | `(arr index -- value)` | Get element |
-| `set` | `(arr index value --)` | Set element |
-| `append` | `(arr value -- arr)` | Append element |
-| `free` | `(arr --)` | Free memory |
+| `len` | `(arr -- n)` | Number of elements; a string's characters |
+| `nth` | `(arr i -- elem)` | Element at index `i`; a string's character, as its codepoint |
+| `set` | `(arr i x --)` | Store `x` at index `i` |
+| `append` | `(arr x -- arr)` | Append `x` |
+| `clone` | `(arr -- arr2)` | A shallow copy |
+| `free` | `(p --)` | Free an array or struct |
 
 ---
 
@@ -21,29 +22,31 @@ on one once it exists.
 
 ### len
 
-Outputs the number of elements in an array.
+Returns the number of elements in an array, or of characters in a string.
 
-**Signature:** `(arr -- len)`
+**Signature:** `(arr -- n)`
 
 ```qd
-arr len // number of elements
+arr len      // number of elements
+"héllo" len  // 5
 ```
 
 ### nth
 
-Outputs the element at the given index.
+Returns the element at index `i`; in a string, the character there, as its codepoint.
 
-**Signature:** `(arr index -- value)`
+**Signature:** `(arr i -- elem)`
 
 ```qd
-arr 0 nth // first element
+arr 0 nth    // first element
+"abc" 1 nth  // 98
 ```
 
 ### set
 
-Sets the element at the given index.
+Stores a value at the given index.
 
-**Signature:** `(arr index value --)`
+**Signature:** `(arr i x --)`
 
 ```qd
 arr 0 42 set
@@ -57,7 +60,7 @@ arr 0 42 set
 
 Appends a value to the array, returning the modified array.
 
-**Signature:** `(arr value -- arr)`
+**Signature:** `(arr x -- arr)`
 
 ```qd
 arr 42 append -> arr
@@ -67,7 +70,7 @@ arr 42 append -> arr
 
 Frees the memory used by an array or struct.
 
-**Signature:** `(arr --)`
+**Signature:** `(p --)`
 
 ```qd
 arr free

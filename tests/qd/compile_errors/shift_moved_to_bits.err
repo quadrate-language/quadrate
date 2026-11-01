@@ -1,0 +1,1 @@
+'shl' has been removed (it was ( a n -- result )); the shifts are in the bits module, with the other bitwise operations: 'bits::shl'

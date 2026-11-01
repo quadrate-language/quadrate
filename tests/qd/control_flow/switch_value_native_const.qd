@@ -10,7 +10,7 @@
 const CaseA = 0
 const CaseB = 1
 
-fn classify(d:i64 -- r:i64) {
+def classify(d:i64 -- r:i64) {
 	d switch {
 		CaseA {
 			100

@@ -191,13 +191,14 @@ parse_module() {
         # published every such signature truncated mid-type, with the return section missing and
         # the parenthesis unbalanced: `(arr:[]T pred:fn(T -- i64)`. Match non-paren runs and
         # balanced one-level groups instead. Group 5 is the repeat, so `!` moved to group 6.
-        local fn_regex='fn[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)(<[^>]*>)?[[:space:]]*\(([^()]*(\([^()]*\)[^()]*)*)\)[[:space:]]*(!?)'
+        # `fn` or `def`: a `def` binds its inputs, which is the body's business, not the caller's
+        local fn_regex='(fn|def)[[:space:]]+(\([^)]*\)[[:space:]]+)?([a-zA-Z_][a-zA-Z0-9_]*)(<[^>]*>)?[[:space:]]*\(([^()]*(\([^()]*\)[^()]*)*)\)[[:space:]]*(!?)'
         if [[ "$trimmed" =~ $fn_regex ]]; then
-            local fn_receiver="${BASH_REMATCH[1]}"
-            local fn_name="${BASH_REMATCH[2]}"
-            local fn_type_params="${BASH_REMATCH[3]}"
-            local fn_sig="${BASH_REMATCH[4]}"
-            local fn_failable="${BASH_REMATCH[6]}"
+            local fn_receiver="${BASH_REMATCH[2]}"
+            local fn_name="${BASH_REMATCH[3]}"
+            local fn_type_params="${BASH_REMATCH[4]}"
+            local fn_sig="${BASH_REMATCH[5]}"
+            local fn_failable="${BASH_REMATCH[7]}"
 
             if [[ $is_public -eq 1 ]]; then
                 # Parse doc comment

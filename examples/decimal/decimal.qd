@@ -1,18 +1,14 @@
 use decimal
 
 // Balance after `years` of yearly compounding at `rate`, rounded to cents
-fn compound(principal:d128 rate:d128 years:i64 -- balance:d128) {
+def compound(principal:d128 rate:d128 years:i64 -- balance:d128) {
 	1 rate + years decimal::pow principal * 0.01d decimal::quantize
 }
 
 fn main() {
 	// A tenth is exact in decimal, so ten of them make exactly one
-	0.0 -> f
-	0.0d -> d
-	0 10 1 for i {
-		f 0.1 + -> f
-		d 0.1d + -> d
-	}
+	0.0 10 fn { 0.1 + } times -> f
+	0.0d 10 fn { 0.1d + } times -> d
 	"f64:  " print f 1.0 == print nl
 	"d128: " print d 1 == print nl
 

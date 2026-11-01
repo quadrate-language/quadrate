@@ -18,11 +18,11 @@ fn main() {
 	0 0 bits::or bits::not print nl
 
 	// Test: (10 > 5) AND (3 < 7) = true
-	10 5 gt 3 7 lt bits::and print nl
+	10 5 > 3 7 < bits::and print nl
 
 	// Test: (10 == 10) OR (5 > 10) = true
-	10 10 eq 5 10 gt bits::or print nl
+	10 10 == 5 10 > bits::or print nl
 
 	// Test: (5 < 3) AND (10 == 10) = false
-	5 3 lt 10 10 eq bits::and print nl
+	5 3 < 10 10 == bits::and print nl
 }

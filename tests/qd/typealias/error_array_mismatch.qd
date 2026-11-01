@@ -1,7 +1,7 @@
 // Test: passing []str where alias for []i64 expected should fail
 type IntArray = []i64
 
-fn sum(arr:IntArray -- total:i64) { 0 }
+def sum(arr:IntArray -- total:i64) { 0 }
 
 fn main() {
 	["a" "b"] sum print nl

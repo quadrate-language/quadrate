@@ -57,27 +57,6 @@ Get a cryptographically secure random 64-bit value directly from the OS entropy 
 ```qd
 rand::secure_i64  // token
 ```
----
-
-### `fn` with_seed
-
-Create a new RNG with specific seed.
-
-**Signature:** `(seed:i64 -- rng:Rng)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `seed` | `i64` | Initial seed value (must be non-zero) |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `rng` | `ptr` | New random number generator |
-
-**Example:**
-
-```qd
-12345 rand::with_seed  // rng
-```
 ## Rng
 
 Random number generator state.
@@ -104,6 +83,28 @@ Create a new RNG seeded from the OS entropy pool. The seed is unpredictable, but
 
 ```qd
 rand::secure  // rng
+```
+---
+
+#### `fn` with_seed
+
+Create a new RNG with specific seed.
+
+**Signature:** `(seed:i64 -- rng:Rng)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `seed` | `i64` | Initial seed value |
+| ` 0, which the generator cannot use, is taken as 1` | `` |  |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `rng` | `Rng` | New random number generator |
+
+**Example:**
+
+```qd
+12345 rand::with_seed  // rng
 ```
 
 ### Methods

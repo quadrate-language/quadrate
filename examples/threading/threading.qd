@@ -2,17 +2,17 @@
 use thread
 
 fn alpha() {
-	0 10 1 for it {
+	10 fn {
 		10 thread::sleep
 		"alpha" print nl
-	}
+	} times
 }
 
 fn bravo() {
-	0 10 1 for it {
+	10 fn {
 		25 thread::sleep
 		"bravo" print nl
-	}
+	} times
 }
 
 fn main() {

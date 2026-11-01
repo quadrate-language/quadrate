@@ -14,10 +14,10 @@ fn main() {
 	io::SeekEnd print nl
 
 	"=== Mode constants exist ===" print nl
-	io::Read strings::len 0 gt print nl
-	io::Write strings::len 0 gt print nl
-	io::Append strings::len 0 gt print nl
-	io::ReadWrite strings::len 0 gt print nl
+	io::Read len 0 > print nl
+	io::Write len 0 > print nl
+	io::Append len 0 > print nl
+	io::ReadWrite len 0 > print nl
 
 	"=== write_file and read_file ===" print nl
 	os::mktemp! -> tmpdir

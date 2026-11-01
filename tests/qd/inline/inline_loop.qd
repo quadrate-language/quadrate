@@ -1,5 +1,5 @@
 // Test: inline function with loop
-inline fn factorial(n:i64 -- result:i64) {
+inline def factorial(n:i64 -- result:i64) {
 	1 -> acc
 	1 n 1 + 1 for i {
 		acc i * -> acc

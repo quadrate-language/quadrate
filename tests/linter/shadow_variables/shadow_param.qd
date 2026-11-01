@@ -1,5 +1,5 @@
 // Test: a for-loop iterator shadowing a parameter
-fn sum(i:i64 -- total:i64) {
+def sum(i:i64 -- total:i64) {
 	0 -> total
 	0 i 1 for i {
 		total i + -> total

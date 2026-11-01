@@ -1,2 +1,1 @@
-helper.qd
-'tuck' has been removed (it was ( a b -- b a b )); use named locals instead: '-> b -> a  b a b'
+'swapd' has been removed (it was ( a b c -- b a c )); write it with the stack words: 'fn { swap } dip'

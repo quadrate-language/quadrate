@@ -9,7 +9,7 @@ Use `fn (signature) { body }` to create an anonymous function:
 ```qd
 fn main() {
 	// Define and store an anonymous function
-	fn (x:i64 -- r:i64) { x 2 * } -> double
+	fn (x:i64 -- r:i64) { 2 * } -> double
 
 	// Call it with 'call'
 	5 double call print nl  // 10
@@ -23,28 +23,27 @@ The signature follows the same format as regular functions: `(inputs -- outputs)
 An anonymous function is a function that happens to have no name. Everything a named function's
 signature means, its signature means too.
 
-**Named inputs are bound.** `fn (x:i64 -- r:i64)` binds `x` as a local at entry, so the body says
-`x 2 *`, not `2 *` — the argument is not on the stack any more. This is the mistake to watch for
-when writing one inline:
+**The inputs stay on the stack.** The body starts with its arguments where the caller left them,
+and the names are documentation, so they are optional:
 
 ```qd
 fn main() {
-	5 fn (x:i64 -- r:i64) { x 2 * } call print nl  // 10
+	3 4 fn (i64 i64 -- r:i64) { + } call print nl  // 7
 }
 ```
 
-**`stack fn` leaves them on the stack.** Write it when the body should work on the values
-directly, exactly as with a named `stack fn`. Then the names are optional:
+**`def` binds them.** With `def`, each input is taken off the stack at entry and bound as a
+local, so the body says `x 2 *` and not `2 *`:
 
 ```qd
 fn main() {
-	3 4 stack fn (i64 i64 -- r:i64) { + } call print nl  // 7
+	5 def (x:i64 -- r:i64) { x 2 * } call print nl  // 10
 }
 ```
 
-Without `stack`, every input must be named — an unnamed one is an error that tells you to name it
-or to write `stack fn`. A bare type name in the parameter list is a *type*, never a parameter
-name: `stack fn (Point -- r:f64)` takes a `Point`.
+In a `def`, every input must be named — an unnamed one is an error that tells you to name it or
+to write `fn`. A bare type name in the parameter list is a *type*, never a parameter name:
+`fn (Point -- r:f64)` takes a `Point`.
 
 **The body must leave what the signature declares**, in the number and the types it declares. A
 body that leaves two values under `-- r:i64` does not compile.
@@ -55,13 +54,37 @@ happens on failure — `call!` to abort, `call?` to propagate, or a bare `call` 
 
 ```qd
 fn main() {
-	0 fn (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call if {
+	0 def (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call ok if {
 		print nl
 	} else {
+		drop
 		"caught" print nl  // caught
 	}
 }
 ```
+
+## Without a signature
+
+`fn { body }` has no signature at all. The body works on the stack, as any function's does, and
+the compiler works out what it takes and leaves from what the body does:
+
+```qd
+fn main() {
+	5 fn { 2 * } call print nl                // 10
+	3 4 fn { + } call print nl                // 7
+	10 20 fn { 1 + } dip print " " print print nl   // 20 11
+	[1 2 3] fn { dup * } map 2 nth print nl         // 9
+}
+```
+
+`fn { 2 * }` takes one value and leaves one; `fn { + }` takes two. Its effect is checked
+wherever it goes exactly as a written signature is, so passing `fn { + }` to `map`, which
+runs its function value on one value at a time, is a compile error.
+
+The effect is worked out from the *counts*; the types are left open where the body does not fix
+them. Editors show the inferred effect next to the `fn` — `fn (_ -- _) { 2 * }` — with `_` for a
+type the body leaves open. Write a signature when the types matter to a reader, when the body
+binds names, or when the function value must be fallible: a `fn { }` cannot be.
 
 ## Inline usage
 
@@ -70,10 +93,10 @@ Anonymous functions can be used directly without storing them:
 ```qd
 fn main() {
 	// Define and call immediately
-	5 fn (x:i64 -- r:i64) { x 2 * } call print nl  // 10
+	5 def (x:i64 -- r:i64) { x 2 * } call print nl  // 10
 
 	// Multiple parameters
-	10 20 fn (a:i64 b:i64 -- r:i64) { a b + } call print nl  // 30
+	10 20 def (a:i64 b:i64 -- r:i64) { a b + } call print nl  // 30
 }
 ```
 
@@ -89,10 +112,10 @@ struct Ops {
 }
 
 fn main() {
-	Ops { add = fn (x:i64 -- r:i64) { x 1 + }  name = "ops" } -> o
+	Ops { add = def (x:i64 -- r:i64) { x 1 + }  name = "ops" } -> o
 	10 o <<add call print nl  // 11
 
-	[fn (x:i64 -- r:i64) { x 2 * }] -> fns
+	[def (x:i64 -- r:i64) { x 2 * }] -> fns
 	5 fns 0 nth call print nl  // 10
 	fns free
 }
@@ -107,7 +130,7 @@ struct Ops {
 }
 
 fn main() {
-	fn (x:i64 -- r:i64) { x 2 * } -> double
+	def (x:i64 -- r:i64) { x 2 * } -> double
 	Ops { add = double  mul = double } -> o
 	5 o <<add call print nl  // 10
 }
@@ -133,7 +156,7 @@ Once stored, an anonymous function can be called multiple times:
 
 ```qd
 fn main() {
-	fn (x:i64 -- r:i64) { x 2 * } -> double
+	def (x:i64 -- r:i64) { x 2 * } -> double
 
 	// Use in a loop
 	1 6 1 for i {
@@ -149,7 +172,7 @@ Anonymous functions can contain conditionals and other control flow:
 
 ```qd
 fn main() {
-	fn (x:i64 -- r:i64) {
+	def (x:i64 -- r:i64) {
 		x 0 > if {
 			10
 		} else {
@@ -171,7 +194,7 @@ fn main() {
 	10 -> multiplier
 
 	// This closure captures 'multiplier' from the outer scope
-	fn (x:i64 -- r:i64) { x multiplier * } -> scale
+	def (x:i64 -- r:i64) { x multiplier * } -> scale
 
 	5 scale call print nl   // 50
 	7 scale call print nl   // 70
@@ -205,7 +228,7 @@ fn main() {
 	20 -> b
 	30 -> c
 
-	fn ( -- r:i64) { a b add c add } -> sum_all
+	fn ( -- r:i64) { a b + c + } -> sum_all
 
 	sum_all call print nl  // 60
 }
@@ -272,9 +295,9 @@ fn main() {
 Functions can return closures that capture their local variables:
 
 ```qd
-stack fn make_adder(i64 -- adder:ptr) {
+fn make_adder(i64 -- adder:ptr) {
 	-> n
-	fn (x:i64 -- r:i64) { x n + }
+	def (x:i64 -- r:i64) { x n + }
 }
 
 fn main() {
@@ -291,12 +314,12 @@ fn main() {
 Anonymous functions can call regular named functions:
 
 ```qd
-fn helper(a:i64 -- r:i64) {
+def helper(a:i64 -- r:i64) {
 	a 10 +
 }
 
 fn main() {
-	fn (a:i64 -- r:i64) { a helper 2 * } -> process
+	def (a:i64 -- r:i64) { a helper 2 * } -> process
 	5 process call print nl  // 30 (5+10=15, 15*2=30)
 }
 ```
@@ -307,7 +330,7 @@ Anonymous functions and function pointers both use `call`:
 
 ```qd
 // Named function with pointer
-fn double(x:i64 -- r:i64) { x 2 * }
+def double(x:i64 -- r:i64) { x 2 * }
 
 fn main() {
 	// Function pointer to named function
@@ -315,7 +338,7 @@ fn main() {
 	5 fp1 call print nl  // 10
 
 	// Anonymous function
-	fn (x:i64 -- r:i64) { x 2 * } -> fp2
+	def (x:i64 -- r:i64) { x 2 * } -> fp2
 	5 fp2 call print nl  // 10
 }
 ```

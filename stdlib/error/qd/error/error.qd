@@ -15,7 +15,7 @@
 /// @example
 /// use error
 ///
-/// fn parse_port(s:str -- port:i64)! {
+/// def parse_port(s:str -- port:i64)! {
 ///     s "" == if { "port is empty" 1 panic }
 ///     8080
 /// }
@@ -52,11 +52,7 @@ pub struct Error {
 /// @return e Error The error
 /// @example "disk full" 5 error::new -> e
 pub fn new(msg:str code:i64 -- e:Error) {
-	Error {
-		code = code
-		message = msg
-		cause = null
-	}
+	swap null Error
 }
 
 /// The error the last fallible call failed with, as one value.
@@ -84,7 +80,7 @@ pub fn last( -- e:Error) {
 /// @return wrapped Error The wrapped error
 /// @example e "cannot save the document" error::wrap -> wrapped
 pub fn (e:Error) wrap(msg:str -- wrapped:Error) {
-	msg ": " strings::concat e <<message strings::concat -> composed
+	": " strings::concat e <<message strings::concat -> composed
 	Error {
 		code = e <<code
 		message = composed

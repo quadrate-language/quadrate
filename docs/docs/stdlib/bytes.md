@@ -159,7 +159,7 @@ Fill a buffer with a byte value.
 ```
 ---
 
-### `fn` find
+### `fn` index_of
 
 Find the first occurrence of a byte value in a buffer.
 
@@ -179,7 +179,7 @@ Find the first occurrence of a byte value in a buffer.
 **Example:**
 
 ```qd
-buf 0 10 0x41 bytes::find  // idx
+buf 0 10 0x41 bytes::index_of  // idx
 ```
 ---
 

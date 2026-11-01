@@ -1,5 +1,5 @@
 // Test: nth on []str returns string element type
-fn get_first(arr:[]str -- val:str) {
+def get_first(arr:[]str -- val:str) {
 	arr 0 nth
 }
 

@@ -12,7 +12,7 @@ use io
 fn main() {
 	"/etc/hostname" io::read_file switch {
 		Ok { -> content "Hostname: " print content print }
-		_ { err drop drop "Could not read file" print nl }
+		_ { drop err drop drop "Could not read file" print nl }
 	}
 }
 ```
@@ -41,7 +41,7 @@ For more control, use `io::open!`, `io::read!`, etc:
 use io
 use mem
 
-fn read_file(path:str -- content:str)! {
+def read_file(path:str -- content:str)! {
 	path io::Read io::open! -> file
 	defer { file io::close }
 
@@ -58,7 +58,7 @@ fn read_file(path:str -- content:str)! {
 fn main() {
 	"test.txt" read_file switch {
 		Ok { -> content "File contents:" print nl content print nl }
-		_ { err drop drop "Could not read file" print nl }
+		_ { drop err drop drop "Could not read file" print nl }
 	}
 }
 ```
@@ -69,7 +69,7 @@ fn main() {
 use io
 use mem
 
-fn write_file(path:str content:str -- )! {
+def write_file(path:str content:str -- )! {
 	path io::Write io::open! -> file
 	defer { file io::close }
 
@@ -93,7 +93,7 @@ fn main() {
 use io
 use strings
 
-fn process_line(num:i64 line:str -- ) {
+def process_line(num:i64 line:str -- ) {
 	num print ": " print line print nl
 }
 
@@ -107,7 +107,7 @@ fn main() {
 			}
 			lines free
 		}
-		_ { err drop drop "Could not read file" print nl }
+		_ { drop err drop drop "Could not read file" print nl }
 	}
 }
 ```
@@ -119,17 +119,17 @@ fn main() {
 use io
 use strings
 
-fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
+def count_words(path:str -- words:i64 lines:i64 chars:i64)! {
 	path io::read_file! -> content
 
-	content strings::len -> chars
+	content len -> chars
 	content strings::lines! -> line_array
 	line_array len -> lines
 
 	0 -> words
 	0 lines 1 for i {
 		line_array i nth -> line
-		line strings::len 0 > if {
+		line len 0 > if {
 			line strings::words! -> word_arr
 			words word_arr len + -> words
 			word_arr free
@@ -148,7 +148,7 @@ fn main() {
 			"Lines: " print lines print nl
 			"Chars: " print chars print nl
 		}
-		_ { err drop drop "Could not count" print nl }
+		_ { drop drop drop err drop drop "Could not count" print nl }
 	}
 }
 ```
@@ -162,7 +162,7 @@ use mem
 
 const BufferSize = 4096
 
-fn copy_file(src:str dst:str -- total:i64)! {
+def copy_file(src:str dst:str -- total:i64)! {
 	src io::ReadBinary io::open! -> src_file
 	defer { src_file io::close }
 
@@ -192,7 +192,7 @@ fn copy_file(src:str dst:str -- total:i64)! {
 fn main() {
 	"input.txt" "output.txt" copy_file switch {
 		Ok { -> total "Copied " print total print " bytes" print nl }
-		_ { err drop drop "Copy failed" print nl }
+		_ { drop err drop drop "Copy failed" print nl }
 	}
 }
 ```

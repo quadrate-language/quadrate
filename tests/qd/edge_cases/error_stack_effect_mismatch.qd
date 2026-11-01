@@ -1,6 +1,6 @@
 // Test: error stack effect mismatch
-stack fn bad_function(f64 f64 -- f64) {
-	add add
+fn bad_function(f64 f64 -- f64) {
+	+ +
 	// This uses 3 values but signature only provides 2!
 }
 

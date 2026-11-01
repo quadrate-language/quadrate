@@ -8,7 +8,7 @@ fn farewell() {
 }
 
 fn pushNumber() {
-	42 printv
+	42 dump
 }
 
 fn main() {

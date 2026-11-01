@@ -5,7 +5,7 @@ struct Box {
 	v:i64
 }
 
-fn (b:Box) get(name:str -- value:i64)! {
+def (b:Box) get(name:str -- value:i64)! {
 	name "x" == if {
 		b <<v
 	} else {
@@ -15,14 +15,16 @@ fn (b:Box) get(name:str -- value:i64)! {
 
 fn main() {
 	Box { v = 7 } -> b
-	b "x" get if {
+	b "x" get ok if {
 		"got " print print nl
 	} else {
+		drop
 		"missing" print nl
 	}
-	b "y" get if {
+	b "y" get ok if {
 		"got " print print nl
 	} else {
+		drop
 		"missing" print nl
 	}
 }

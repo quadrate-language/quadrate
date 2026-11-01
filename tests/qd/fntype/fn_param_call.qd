@@ -2,19 +2,19 @@
 // including through a type alias and when passed on to another function.
 type Transform = fn(i64 -- i64)
 
-fn apply_once(x:i64 f:Transform -- r:i64) {
+def apply_once(x:i64 f:Transform -- r:i64) {
 	x f call
 }
 
-fn apply_twice(x:i64 f:Transform -- r:i64) {
+def apply_twice(x:i64 f:Transform -- r:i64) {
 	x f apply_once f apply_once
 }
 
-fn run_thunk(f:fn( -- f64) -- r:f64) {
+def run_thunk(f:fn( -- f64) -- r:f64) {
 	f call
 }
 
-fn dbl(x:i64 -- r:i64) {
+def dbl(x:i64 -- r:i64) {
 	x 2 *
 }
 
@@ -26,6 +26,6 @@ fn main() {
 	5 &dbl apply_once print nl
 	5 &dbl apply_twice print nl
 	&pi run_thunk print nl
-	fn (x:i64 -- r:i64) { x 1 + } -> inc
+	def (x:i64 -- r:i64) { x 1 + } -> inc
 	10 inc apply_once print nl
 }

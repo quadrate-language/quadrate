@@ -330,14 +330,6 @@ int usr_fmt_fprintf(qd_context* ctx) {
 	return 0;
 }
 
-int usr_fmt_print(qd_context* ctx) {
-	qd_string_t* s;
-	qd_args(ctx, "fmt::print", "s", &s);
-	write_string(stdout, s);
-	qd_string_release(s);
-	return 0;
-}
-
 int usr_fmt_println(qd_context* ctx) {
 	qd_string_t* s;
 	qd_args(ctx, "fmt::println", "s", &s);

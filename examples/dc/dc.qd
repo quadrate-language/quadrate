@@ -33,10 +33,10 @@ fn stack_new( -- s:ptr) {
 }
 
 fn stack_free(s:ptr -- ) {
-	s <<data mem::free
+	<<data mem::free
 }
 
-fn stack_push(s:ptr val:f64 -- ) {
+def stack_push(s:ptr val:f64 -- ) {
 	s <<size -> sz
 	s <<capacity -> cap
 	sz cap >= if {
@@ -48,7 +48,7 @@ fn stack_push(s:ptr val:f64 -- ) {
 	}
 }
 
-fn stack_pop(s:ptr -- val:f64) {
+def stack_pop(s:ptr -- val:f64) {
 	s <<size -> sz
 	sz 0 <= if {
 		"dc: stack empty" print nl
@@ -60,7 +60,7 @@ fn stack_pop(s:ptr -- val:f64) {
 	}
 }
 
-fn stack_peek(s:ptr -- val:f64) {
+def stack_peek(s:ptr -- val:f64) {
 	s <<size -> sz
 	sz 0 <= if {
 		0.0
@@ -70,15 +70,15 @@ fn stack_peek(s:ptr -- val:f64) {
 }
 
 fn stack_depth(s:ptr -- n:i64) {
-	s <<size
+	<<size
 }
 
 fn stack_clear(s:ptr -- ) {
-	s 0 >>size drop
+	0 >>size drop
 }
 
 // Check if stack has at least n items, print error if not
-fn stack_check(s:ptr n:i64 -- ok:i64) {
+def stack_check(s:ptr n:i64 -- ok:i64) {
 	s <<size n >= -> ok
 	ok 0 == if {
 		"dc: stack empty" print nl
@@ -87,7 +87,7 @@ fn stack_check(s:ptr n:i64 -- ok:i64) {
 }
 
 // Check if value is non-zero, print error if not
-fn check_nonzero(val:f64 msg:str -- ok:i64) {
+def check_nonzero(val:f64 msg:str -- ok:i64) {
 	val 0.0 != -> ok
 	ok 0 == if {
 		msg print nl
@@ -96,7 +96,7 @@ fn check_nonzero(val:f64 msg:str -- ok:i64) {
 }
 
 // Check if value is non-negative, print error if not
-fn check_nonneg(val:f64 msg:str -- ok:i64) {
+def check_nonneg(val:f64 msg:str -- ok:i64) {
 	val 0.0 >= -> ok
 	ok 0 == if {
 		msg print nl
@@ -104,7 +104,7 @@ fn check_nonneg(val:f64 msg:str -- ok:i64) {
 	ok
 }
 
-fn stack_dup(s:ptr -- ) {
+def stack_dup(s:ptr -- ) {
 	s 1 stack_check if {
 		s <<size -> sz
 		s <<data sz 1 - 8 * mem::get_f64 -> val
@@ -112,7 +112,7 @@ fn stack_dup(s:ptr -- ) {
 	}
 }
 
-fn stack_swap(s:ptr -- ) {
+def stack_swap(s:ptr -- ) {
 	s 2 stack_check if {
 		s <<size -> sz
 		s <<data sz 1 - 8 * mem::get_f64 -> a
@@ -122,7 +122,7 @@ fn stack_swap(s:ptr -- ) {
 	}
 }
 
-fn stack_pick(s:ptr n:i64 -- val:f64) {
+def stack_pick(s:ptr n:i64 -- val:f64) {
 	s <<size -> sz
 	n sz >= n 0 < or if {
 		0.0
@@ -145,17 +145,17 @@ fn print_help() {
 	"Report bugs at:  https://github.com/quadrate-language/quadrate/issues" print nl
 }
 
-fn is_number(tok:str -- result:i64) {
+def is_number(tok:str -- result:i64) {
 	0 -> first
 	0 -> second
 	0 -> result
-	tok strings::len 0 > if {
+	tok len 0 > if {
 		tok 0 strings::char_at -> first
 		first unicode::is_digit if {
 			1 -> result
 		} else {
 			first unicode::underscore == first unicode::minus == or if {
-				tok strings::len 1 > if {
+				tok len 1 > if {
 					tok 1 strings::char_at -> second
 					second unicode::is_digit -> result
 				}
@@ -165,12 +165,12 @@ fn is_number(tok:str -- result:i64) {
 	result
 }
 
-fn process_token(s:ptr tok:str -- ) {
+def process_token(s:ptr tok:str -- ) {
 	tok is_number -> is_num
 	is_num if {
 		tok 0 strings::char_at -> first
 		first unicode::underscore == if {
-			tok 1 tok strings::len 1 - strings::substring! strconv::parse_float! -> val
+			tok 1 tok len 1 - strings::substring! strconv::parse_float! -> val
 			s 0.0 val - stack_push
 		} else {
 			tok strconv::parse_float! -> val
@@ -178,13 +178,13 @@ fn process_token(s:ptr tok:str -- ) {
 		}
 	}
 	is_num 0 == if {
-		tok strings::len 0 > if {
+		tok len 0 > if {
 			s tok process_operator
 		}
 	}
 }
 
-fn process_operator(s:ptr op:str -- ) {
+def process_operator(s:ptr op:str -- ) {
 	0 -> n
 	0.0 -> a
 	0.0 -> b
@@ -314,7 +314,7 @@ fn process_operator(s:ptr op:str -- ) {
 	}
 }
 
-fn process_line(s:ptr input:str -- ) {
+def process_line(s:ptr input:str -- ) {
 	0 -> comment_pos
 	"" -> trimmed
 	"" -> token
@@ -328,7 +328,7 @@ fn process_line(s:ptr input:str -- ) {
 
 	// Process space-separated tokens
 	loop {
-		trimmed strings::len 0 <= if {
+		trimmed len 0 <= if {
 			break
 		}
 		trimmed " " strings::index_of -> space_pos
@@ -339,15 +339,15 @@ fn process_line(s:ptr input:str -- ) {
 		}
 		// Extract token before space
 		trimmed 0 space_pos strings::substring! -> token
-		token strings::len 0 > if {
+		token len 0 > if {
 			s token process_token
 		}
 		// Skip past space and continue
-		trimmed space_pos 1 + trimmed strings::len space_pos - 1 - strings::substring! -> trimmed
+		trimmed space_pos 1 + trimmed len space_pos - 1 - strings::substring! -> trimmed
 	}
 }
 
-fn run_file(s:ptr path:str -- ) {
+def run_file(s:ptr path:str -- ) {
 	0 -> bytes_read
 	"" -> content
 	"" -> line
@@ -363,11 +363,13 @@ fn run_file(s:ptr path:str -- ) {
 					-> bytes_read file io::close buf bytes_read mem::to_string -> content
 				}
 				_ {
+					drop
 					file io::close "dc: could not read file: " print path print nl buf mem::free 1 os::exit
 				}
 			}
 		}
 		_ {
+			drop
 			"dc: could not open file: " print path print nl
 			buf mem::free
 			1 os::exit
@@ -378,7 +380,7 @@ fn run_file(s:ptr path:str -- ) {
 
 	// Process content line by line
 	loop {
-		content strings::len 0 <= if {
+		content len 0 <= if {
 			break
 		}
 		content "\n" strings::index_of -> newline_pos
@@ -391,18 +393,18 @@ fn run_file(s:ptr path:str -- ) {
 			content 0 newline_pos strings::substring! -> line
 			s line process_line
 			// Skip past newline and continue
-			content newline_pos 1 + content strings::len newline_pos - 1 - strings::substring! -> content
+			content newline_pos 1 + content len newline_pos - 1 - strings::substring! -> content
 		}
 	}
 }
 
-fn repl(s:ptr -- ) {
+def repl(s:ptr -- ) {
 	"" -> input
 	loop {
 		io::readline switch {
 			Ok {
-				-> ok -> input
-				ok 0 == if {
+				-> more -> input
+				more 0 == if {
 					// End of input
 					input drop
 					0 os::exit
@@ -410,6 +412,7 @@ fn repl(s:ptr -- ) {
 				s input process_line input drop
 			}
 			_ {
+				drop drop
 				// A genuine read failure
 				1 os::exit
 			}

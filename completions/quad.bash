@@ -10,8 +10,8 @@ _QUAD_COMMON="-h --help -v --version --no-color"
 
 # Per-tool options, without the common three.
 _QUAD_OPTS_QUADC="-o --output -O0 -O1 -O2 -O3 -g --debug -s --stack-size -I --include -l --module -r --run --no-jit --test --coverage --default-float --target --freestanding --werror --verbose --save-temps --dump-tokens --dump-ast --dump-ir"
-_QUAD_OPTS_QUADFMT="-c --check -w --write --no-sort-imports"
-_QUAD_OPTS_QUADLINT="--json -q --quiet --max-nesting --no-unused-functions --no-unused-variables --no-dead-code --no-deep-nesting --no-missing-defer --no-shadow-variables --no-empty-blocks --no-constant-conditions --check-magic-numbers --check-long-functions --check-naming --max-function-lines --source-path"
+_QUAD_OPTS_QUADFMT="-c --check -w --write --no-sort-imports --migrate"
+_QUAD_OPTS_QUADLINT="--json -q --quiet --max-nesting --no-unused-functions --no-unused-variables --no-dead-code --no-deep-nesting --no-missing-defer --no-shadow-variables --no-empty-blocks --no-constant-conditions --no-needless-binding --check-magic-numbers --check-long-functions --check-naming --max-function-lines --source-path"
 _QUAD_OPTS_QUADUSES="-w --write -c --check -n --dry-run"
 _QUAD_OPTS_QUADDOC="-o --output -q --quiet --title --css"
 _QUAD_OPTS_QUADREPL="-p --print"

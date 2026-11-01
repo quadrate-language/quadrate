@@ -1,17 +1,17 @@
 // Test: Deep nesting detection (default max: 4)
 fn main() {
-	1 1 eq
+	1 1 ==
 	if {
-		2 2 eq
+		2 2 ==
 		if {
-			3 3 eq
+			3 3 ==
 			if {
-				4 4 eq
+				4 4 ==
 				if {
-					5 5 eq
+					5 5 ==
 					if {
 						// This is too deep!
-						6 6 add drop
+						6 6 + drop
 					}
 				}
 			}

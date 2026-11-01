@@ -1224,7 +1224,7 @@ namespace Qd {
 						lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
 					int64_t val = 0;
 					if (lit->literalType() == AstNodeLiteral::LiteralType::BOOL) {
-						val = (lit->value() == "true" || lit->value() == "Ok") ? 1 : 0;
+						val = predefinedConstantValue(lit->value());
 					} else {
 						parseIntegerLiteral(lit->value(), val);
 					}

@@ -11,11 +11,11 @@ int main(void) {
 	printf("=== Building Module Incrementally ===\n\n");
 
 	printf("Adding base functions...\n");
-	qd_add_script(app, "fn add(a:i64 b:i64 -- result:i64) { + }");
-	qd_add_script(app, "fn sub(a:i64 b:i64 -- result:i64) { - }");
+	qd_add_script(app, "def add(a:i64 b:i64 -- result:i64) { + }");
+	qd_add_script(app, "def sub(a:i64 b:i64 -- result:i64) { - }");
 
 	printf("Adding higher-level functions that use base functions...\n");
-	qd_add_script(app, "fn double_sum(a:i64 b:i64 -- result:i64) { + 2 * }");
+	qd_add_script(app, "def double_sum(a:i64 b:i64 -- result:i64) { + 2 * }");
 
 	printf("Building all at once...\n");
 	qd_build(app);

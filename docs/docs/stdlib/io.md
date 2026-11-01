@@ -206,15 +206,15 @@ f buf 1024 io::read!  // n
 
 ### `fn` readline
 
-Read a line from stdin.  Running out of input is not an error -- it is how a read loop ends -- so it comes back as ok=0 with the error state untouched. Only a genuine read failure is reported through the fallible status.
+Read a line from stdin.  Running out of input is not an error -- it is how a read loop ends -- so it comes back as more=0 with the error state untouched. Only a genuine read failure is reported through the fallible status.
 
-**Signature:** `( -- line:str ok:i64)!`
+**Signature:** `( -- line:str more:i64)!`
 
 | Output | Type | Description |
 |--------|------|-------------|
 | `line` | `str` | The line read, without its trailing newline |
 | ` "" at end of input` | `` |  |
-| `ok` | `i64` | 1 if a line was read, 0 at end of input |
+| `more` | `i64` | 1 if a line was read, 0 at end of input |
 
 | Error | Description |
 |-------|-------------|
@@ -223,7 +223,7 @@ Read a line from stdin.  Running out of input is not an error -- it is how a rea
 **Example:**
 
 ```qd
-io::readline switch { Ok { -> ok -> line line print nl } _ { } }
+io::readline switch { Ok { -> more -> line line print nl } _ { drop drop } }
 ```
 ---
 

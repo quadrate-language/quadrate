@@ -1,0 +1,7 @@
+// Test: a stack variable is declared with the type parameters, like one.
+fn apply2(..a q:fn(..a -- ..a) -- ..a) {
+	call
+}
+
+fn main() {
+}

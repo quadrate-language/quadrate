@@ -1,0 +1,8 @@
+// Test: a plain fn leaves its inputs on the stack, so naming one in the body asks for 'let'
+fn sq(n:i64 -- result:i64) {
+	n n *
+}
+
+fn main() {
+	6 sq print nl
+}

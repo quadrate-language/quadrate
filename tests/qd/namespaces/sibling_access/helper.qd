@@ -1,6 +1,6 @@
 // Helper file - no pub needed for same-namespace access
 
-fn helper_add(a:i64 b:i64 -- c:i64) {
+def helper_add(a:i64 b:i64 -- c:i64) {
 	a b +
 }
 
@@ -11,6 +11,6 @@ struct Point {
 	y:i64
 }
 
-fn point_sum(p:Point -- sum:i64) {
+def point_sum(p:Point -- sum:i64) {
 	p <<x p <<y +
 }

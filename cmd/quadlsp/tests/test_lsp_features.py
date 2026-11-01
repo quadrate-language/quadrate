@@ -518,7 +518,7 @@ class LSPFeatureTester:
             # Create a test file
             test_file = os.path.join(tmpdir, "test_module.qd")
             with open(test_file, "w") as f:
-                f.write("fn workspace_test_func(x:i64 -- y:i64) { x 2 * }\n")
+                f.write("def workspace_test_func(x:i64 -- y:i64) { x 2 * }\n")
                 f.write("struct WorkspaceTestStruct { field:i64 }\n")
 
             # Initialize with rootUri - this tests that the server accepts rootUri

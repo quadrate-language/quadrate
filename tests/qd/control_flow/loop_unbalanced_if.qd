@@ -5,13 +5,13 @@
 fn main() {
 	0 -> n
 	loop {
-		n 3 gte if { break }
-		n 1 eq if {
+		n 3 >= if { break }
+		n 1 == if {
 			1 2
 		} else {
 			3
 		}
 		-> _ -> _
-		n 1 add -> n
+		n 1 + -> n
 	}
 }

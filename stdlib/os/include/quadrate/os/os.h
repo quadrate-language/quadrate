@@ -17,7 +17,7 @@
  * These match the constants defined in os/module.qd
  * Ok=1 (success), specific errors start at 2
  */
-#define OS_ERR_OK 1				/**< Success (matches builtin Ok) */
+#define OS_ERR_OK 1				/**< Success (a native's success status; the call site reads it as Ok) */
 #define OS_ERR_NOT_FOUND 2		/**< No such file or directory */
 #define OS_ERR_PERMISSION 3		/**< Permission denied */
 #define OS_ERR_EXISTS 4			/**< File already exists */
@@ -252,7 +252,7 @@ int usr_os_program_name(qd_context* ctx);
  *
  * @par Example:
  * @code
- * "ls -la" fn (line:str -- ) { line . nl } os::popen! -> exitcode
+ * "ls -la" def (line:str -- ) { line . nl } os::popen! -> exitcode
  * @endcode
  */
 int usr_os_popen(qd_context* ctx);

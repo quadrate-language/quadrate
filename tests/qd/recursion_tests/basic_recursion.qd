@@ -1,5 +1,5 @@
 // Test: basic recursion patterns
-fn factorial(num:i64 -- result:i64) {
+def factorial(num:i64 -- result:i64) {
 	num 1 <= if {
 		1
 	} else {
@@ -7,7 +7,7 @@ fn factorial(num:i64 -- result:i64) {
 	}
 }
 
-fn fibonacci(num:i64 -- result:i64) {
+def fibonacci(num:i64 -- result:i64) {
 	num 2 < if {
 		num
 	} else {
@@ -15,7 +15,7 @@ fn fibonacci(num:i64 -- result:i64) {
 	}
 }
 
-fn sum_to_n(num:i64 -- result:i64) {
+def sum_to_n(num:i64 -- result:i64) {
 	num 0 <= if {
 		0
 	} else {

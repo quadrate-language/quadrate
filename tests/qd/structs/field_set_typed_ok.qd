@@ -6,7 +6,7 @@ use mem
 struct Node { value:i64  next:*Node }
 struct Holder { buf:ptr  xs:[]i64  cb:fn(i64 -- i64)  inner:Node }
 
-fn double(x:i64 -- r:i64) { x 2 * }
+def double(x:i64 -- r:i64) { x 2 * }
 
 fn main() {
 	Node { value = 1 next = 0 } -> a

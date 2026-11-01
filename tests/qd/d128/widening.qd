@@ -4,19 +4,19 @@
 
 use decimal
 
-fn half(x:d128 -- y:d128) {
+def half(x:d128 -- y:d128) {
 	x 2 /
 }
 
 // Each argument where it lies: the deepest and the top widen, the middle one stays an i64
-fn mix(a:d128 b:i64 c:d128 -- r:d128) {
+def mix(a:d128 b:i64 c:d128 -- r:d128) {
 	a b + c *
 }
 
 // The same for f64, whose casts go through the same place. The deepest one used to be
 // swapped to the top and back, which for anything below second place left it uncast:
 // 1 / 2 as integers, 0.
-fn halff(a:f64 b:i64 c:f64 -- r:f64) {
+def halff(a:f64 b:i64 c:f64 -- r:f64) {
 	a 2 /
 }
 

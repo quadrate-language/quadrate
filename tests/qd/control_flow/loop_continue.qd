@@ -3,15 +3,15 @@ fn main() {
 	// Test loop with continue
 	0
 	loop {
-		1 add
-		dup 10 gt
+		1 +
+		dup 10 >
 		if {
 			drop
 			break
 		}
 
 		// Skip even numbers
-		dup 2 mod 0 ==
+		dup 2 % 0 ==
 		if {
 			continue
 		}

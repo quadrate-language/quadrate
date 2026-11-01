@@ -1,12 +1,12 @@
 // Test: ? operator in loop with accumulation - error at specific iteration
 use strconv
 
-fn parse_and_double(s:str -- result:i64)! {
+def parse_and_double(s:str -- result:i64)! {
 	s strconv::atoi?
 	2 *
 }
 
-fn sum_parsed(n:i64 -- total:i64)! {
+def sum_parsed(n:i64 -- total:i64)! {
 	0 -> total
 	0 n 1 for i {
 		i 5 == if {
@@ -23,18 +23,18 @@ fn main() {
 	// Errors at i=5
 	10 sum_parsed switch {
 		Ok { "sum(0..9): " print print nl }
-		_ { err -> c -> m "failed: " print m print nl }
+		_ { drop err -> c -> m "failed: " print m print nl }
 	}
 
 	// Completes without hitting bad case (0..4)
 	5 sum_parsed switch {
 		Ok { "sum(0..4): " print print nl }
-		_ { err -> c -> m "failed: " print m print nl }
+		_ { drop err -> c -> m "failed: " print m print nl }
 	}
 
 	// Errors at i=5 (barely hitting it)
 	6 sum_parsed switch {
 		Ok { "sum(0..5): " print print nl }
-		_ { err -> c -> m "failed: " print m print nl }
+		_ { drop err -> c -> m "failed: " print m print nl }
 	}
 }

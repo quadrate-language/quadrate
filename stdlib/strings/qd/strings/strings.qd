@@ -14,14 +14,6 @@ pub const ErrInvalidArg = 4
 pub const NotAChar = -1
 
 import "libstrings.a" as "strings" {
-	/// Get string length in characters.
-	/// Counts UTF-8 codepoints, so "héllo" is 5 even though it occupies 6 bytes.
-	/// Use strings::data for the byte buffer when byte extent is what you need.
-	/// @param str str Input string
-	/// @return len i64 Length in characters
-	/// @example "héllo" strings::len print  // 5
-	pub fn len(str:str -- len:i64)
-
 	/// Get raw char pointer to string data.
 	/// @param str str Source string
 	/// @return ptr ptr Raw pointer to string bytes
@@ -115,7 +107,7 @@ import "libstrings.a" as "strings" {
 	/// never lands in the middle of a multi-byte character.
 	/// An index past the end, or a negative one, gives NotAChar (-1) rather than an error:
 	/// scanners read "the character here, if there is one", and -1 matches nothing they
-	/// test for, so the loop ends on its own. Use strings::len to tell "past the end" from
+	/// test for, so the loop ends on its own. Use `len` to tell "past the end" from
 	/// a character the string really holds.
 	/// @param index i64 Character position
 	/// @return char_code i64 Unicode codepoint, or NotAChar
@@ -369,7 +361,7 @@ import "libstrings.a" as "strings" {
 	pub fn is_uppercase(s:str -- result:i64)
 
 	/// Size of the string's UTF-8 encoding, in bytes.
-	/// strings::len counts characters; this is what you want when sizing a buffer or
+	/// The builtin `len` counts characters; this is what you want when sizing a buffer or
 	/// writing to something that counts octets.
 	/// @param s str Input string
 	/// @return bytes i64 Number of bytes

@@ -1,0 +1,10 @@
+// Test: a function value typed on the stack variable takes everything above it, so a value left
+// above it when it is called is an error.
+fn twice<..a>(..a q:fn(..a -- ..a) -- ..a) {
+	-> q
+	q call
+	1 q call
+}
+
+fn main() {
+}

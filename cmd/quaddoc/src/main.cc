@@ -369,7 +369,7 @@ static std::string formatParams(
 	if (in.empty() && out.empty()) {
 		return "()";
 	}
-	// A parameter may be written as a bare type -- `fn sq(f64 -- f64)` is a
+	// A parameter may be written as a bare type -- `def sq(f64 -- f64)` is a
 	// legal stack effect -- in which case there is no `name:` to print.
 	auto one = [](const Qd::AstNodeParameter* p) {
 		return p->name().empty() ? p->typeString() : p->name() + ":" + p->typeString();
@@ -391,6 +391,22 @@ static std::string formatParams(
 	}
 	s += ")";
 	return s;
+}
+
+// A signature's lists as the function node gives them, stack variables first
+static std::string formatItems(const std::vector<std::string>& in, const std::vector<std::string>& out) {
+	if (in.empty() && out.empty()) {
+		return "()";
+	}
+	std::string s = "(";
+	for (size_t i = 0; i < in.size(); i++) {
+		s += (i > 0 ? " " : "") + in[i];
+	}
+	s += " -- ";
+	for (size_t i = 0; i < out.size(); i++) {
+		s += (i > 0 ? " " : "") + out[i];
+	}
+	return s + ")";
 }
 
 static std::string formatTypeParams(const std::vector<std::string>& typeParams) {
@@ -544,7 +560,8 @@ static void collectDecls(const Qd::IAstNode* node, Module& mod, const DocIndex& 
 			}
 			fn.params.insert(fn.params.begin(), self);
 		}
-		fn.signature += fnNode->name() + formatTypeParams(fnNode->typeParams()) + formatParams(in, out);
+		fn.signature += fnNode->name() + formatTypeParams(fnNode->declaredParameters()) +
+						formatItems(fnNode->inputItems(), fnNode->outputItems());
 		if (fn.fallible) {
 			fn.signature += "!";
 		}

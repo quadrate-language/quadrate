@@ -3,7 +3,7 @@
 use vec2
 
 // Function with invalid qualified struct type (NoSuchStruct doesn't exist)
-fn bad_func(p:vec2::NoSuchStruct -- ) {
+def bad_func(p:vec2::NoSuchStruct -- ) {
 	p <<x print nl
 }
 

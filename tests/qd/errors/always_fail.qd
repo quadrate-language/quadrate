@@ -1,21 +1,23 @@
 // Test: always fail
-stack fn always_error(i64 -- i64)! {
+fn always_error(i64 -- i64)! {
 	0
 	"Error occurred" 1 panic
 }
 
 fn main() {
 	"Test 1: " print
-	42 always_error if {
+	42 always_error ok if {
 		print nl
 	} else {
+		drop
 		"Failed (expected)" print nl
 	}
 
 	"Test 2: " print
-	10 always_error if {
+	10 always_error ok if {
 		print nl
 	} else {
+		drop
 		"Failed (expected)" print nl
 	}
 }

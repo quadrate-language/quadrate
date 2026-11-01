@@ -1,0 +1,4 @@
+// Test: scan starts at a position, which is an i64
+fn main() {
+	"abc" "x" fn { 97 == } scan drop
+}

@@ -6,7 +6,7 @@ Functions are the building blocks of Quadrate programs. They transform values on
 
 <!-- doccheck: skip syntax template: `inputs`/`outputs` stand for type lists, not types -->
 ```qd
-fn name(inputs -- outputs) {
+def name(inputs -- outputs) {
 	// body
 }
 ```
@@ -20,7 +20,7 @@ Every function has:
 ## Your first function
 
 ```qd
-fn square(x:i64 -- result:i64) {
+def square(x:i64 -- result:i64) {
 	x x *
 }
 
@@ -39,11 +39,11 @@ The signature `(x:i64 -- result:i64)` means:
 The `--` separates inputs from outputs:
 
 ```qd
-fn sum(a:i64 b:i64 -- result:i64) {
+def sum(a:i64 b:i64 -- result:i64) {
 	a b +
 }
 
-fn swap_print(a:i64 b:i64 -- ) {
+def swap_print(a:i64 b:i64 -- ) {
 	b print nl a print nl
 }
 
@@ -60,52 +60,46 @@ fn push_two( -- a:i64 b:i64) {
 | `(-- x:i64)` | No inputs, 1 output |
 | `()` | No inputs, no outputs |
 
-## Parameter names
+## Inputs stay on the stack
 
-Named input parameters are automatically bound as local variables:
+A function's inputs are on the stack when its body starts, where the caller put them, and the body
+works on them directly. The names in the signature are documentation: they show up in editor
+hints, generated docs and error messages, but they are not in scope.
+
+```qd
+fn double(x:i64 -- r:i64) {
+	2 *       // the value is on the stack
+}
+
+fn sum(a:i64 b:i64 -- s:i64) {
+	+
+}
+```
+
+Names are optional, so a short word can say just the types: `fn double(i64 -- i64) { 2 * }`.
+
+## `def` — binding the inputs to names
+
+When a body would rather read its inputs by name, declare it with `def`. Each input is then taken off the
+stack at entry and bound as a local of that name, and the body starts on an empty stack:
 
 ```qd
 use math
 
-fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
+def distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
 	x2 x1 - dup *  // (x2-x1)^2
 	y2 y1 - dup *  // (y2-y1)^2
 	+ math::sqrt
 }
 ```
 
-Simply use the parameter names to refer to their values:
-
-```qd
-fn add(a:i64 b:i64 -- sum:i64) {
-	a b +
-}
-```
-
-## `stack fn` — working on the stack directly
-
-A parameter is bound to a local on entry, which is why `fn double(x:i64 -- i64) { 2 * }` fails:
-`x` was consumed into the binding, so the body starts with nothing on the stack. Mark the
-function `stack` when you want the arguments left where the caller put them:
-
-```qd
-stack fn double(i64 -- i64) {
-	2 *       // operates directly on the stack value
-}
-
-stack fn add(a:i64 b:i64 -- i64) {
-	+         // the names are documentation; the values are on the stack
-}
-```
-
-Under `stack`, names are optional and never in scope — they show up in documentation, editor
-hints and error messages, and the body may bind a local of the same name with `->` when it
-wants one. Without `stack`, every input must be named, because there would be nothing to bind.
+In a `def` every input must be named, since each one is bound. Naming an input in the body of a
+`fn` is an error that says to write `def`.
 
 **When to use which:**
-- **Plain `fn`** — the default: name each input, refer to it by name
-- **`stack fn`** — for small words whose body is a stack expression, where naming the operands
-  would add nothing
+- **Plain `fn`** — the default: the body is a stack expression over its inputs
+- **`def`** — when the inputs are used several times or in an order the stack makes awkward,
+  and names read better than shuffling
 
 The same applies to return types: name them for clarity in public APIs (`-- result:i64`), leave unnamed in lambdas and trivial functions (`-- i64`).
 
@@ -114,7 +108,7 @@ The same applies to return types: name them for clarity in public APIs (`-- resu
 Functions can have multiple outputs:
 
 ```qd
-fn divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
+def divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
 	a b /      // quotient
 	a b %      // remainder
 }
@@ -184,7 +178,7 @@ Booleans are represented as `i64` (0 = false, non-zero = true).
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-fn format_price(price:f64 currency:str -- formatted:str) {
+def format_price(price:f64 currency:str -- formatted:str) {
 	// ... implementation using price and currency
 }
 ```
@@ -197,7 +191,7 @@ Use `///` for documentation:
 /// Calculates the factorial of n
 /// @param n The number to calculate factorial of
 /// <<output The factorial result
-fn factorial(n:i64 -- result:i64) {
+def factorial(n:i64 -- result:i64) {
 	n 1 <= if {
 		1
 	} else {
@@ -211,7 +205,7 @@ fn factorial(n:i64 -- result:i64) {
 The `inline` keyword requests the compiler to inline the function body at call sites, eliminating function call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls.
 
 ```qd
-inline fn double(x:i64 -- result:i64) {
+inline def double(x:i64 -- result:i64) {
 	x 2 *
 }
 ```
@@ -219,7 +213,7 @@ inline fn double(x:i64 -- result:i64) {
 Can be combined with `pub`:
 
 ```qd
-pub inline fn inc(x:i64 -- result:i64) {
+pub inline def incr(x:i64 -- result:i64) {
 	x 1 +
 }
 ```

@@ -875,6 +875,8 @@ namespace Qd {
 
 		switch (nodeType) {
 		case IAstNode::Type::LITERAL:
+			// What this pushes is not an array, whatever was pushed before it
+			lastPushedWasArray = false;
 			generateLiteral(static_cast<AstNodeLiteral*>(node), ctx);
 			break;
 		case IAstNode::Type::INSTRUCTION:
@@ -941,9 +943,13 @@ namespace Qd {
 			generateIdentifier(static_cast<AstNodeIdentifier*>(node), ctx);
 			break;
 		case IAstNode::Type::FUNCTION_POINTER_REFERENCE:
+			// What this pushes is not an array, whatever was pushed before it
+			lastPushedWasArray = false;
 			generateFunctionPointer(static_cast<AstNodeFunctionPointerReference*>(node), ctx);
 			break;
 		case IAstNode::Type::ANONYMOUS_FUNCTION:
+			// What this pushes is not an array, whatever was pushed before it
+			lastPushedWasArray = false;
 			generateAnonymousFunction(static_cast<AstNodeAnonymousFunction*>(node), ctx);
 			break;
 		case IAstNode::Type::BLOCK:

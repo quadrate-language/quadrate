@@ -1,0 +1,8 @@
+// Test: `def` binds a function's inputs, so a function with none should be a `fn`
+def answer( -- result:i64) {
+	42
+}
+
+fn main() {
+	answer print nl
+}

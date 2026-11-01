@@ -29,33 +29,40 @@ pub const Array = 4
 /// Type: Object value.
 pub const Object = 5
 
+// JSON's whitespace: space, tab, newline and carriage return
+def is_ws(c:i64 -- ws:i64) {
+	c unicode::space == c unicode::tab == or c unicode::newline == or c unicode::cr == or
+}
+
+// A character a number can hold
+def is_num_char(c:i64 -- num:i64) {
+	c unicode::digit0 unicode::digit9 within
+	c unicode::minus == or c unicode::plus == or c unicode::dot == or
+	c unicode::e == or c unicode::E == or
+}
+
+// A character that ends a scalar inside an array or object
+def ends_scalar(c:i64 -- ends:i64) {
+	c unicode::comma == c unicode::rbrace == or c unicode::rbracket == or
+}
+
+// The position scan found, or the end of the document when it found none
+fn or_end(json:str i:i64 -- pos:i64) {
+	dup 0 < if { drop len } else { nip }
+}
+
 fn skip_ws(json:str pos:i64 -- new_pos:i64) {
-	0 -> slen
-	0 -> ch
-	json strings::len -> slen
-	loop {
-		pos slen < if {
-			json pos strings::char_at -> ch
-			ch unicode::space == ch unicode::tab == + ch unicode::newline == + ch unicode::cr == + 0 > if {
-				pos 1 + -> pos
-			} else {
-				break
-			}
-		} else {
-			break
-		}
-	}
-	pos
+	over swap fn { is_ws not } scan or_end
 }
 
 /// Find end of JSON string (pos at opening quote).
 /// @param json str JSON string
 /// @param pos i64 Position of opening quote
 /// @return end_pos i64 Position after closing quote
-pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
+pub def find_str_end(json:str pos:i64 -- end_pos:i64) {
 	0 -> slen
 	0 -> ch
-	json strings::len -> slen
+	json len -> slen
 	pos 1 + -> pos
 	loop {
 		pos slen < if {
@@ -78,37 +85,16 @@ pub fn find_str_end(json:str pos:i64 -- end_pos:i64) {
 }
 
 fn find_num_end(json:str pos:i64 -- end_pos:i64) {
-	0 -> slen
-	0 -> ch
-	json strings::len -> slen
-	loop {
-		pos slen < if {
-			json pos strings::char_at -> ch
-			ch unicode::digit0 >= ch unicode::digit9 <= *
-			ch unicode::minus == +
-			ch unicode::plus == +
-			ch unicode::dot == +
-			ch unicode::e == +
-			ch unicode::E == +
-			0 > if {
-				pos 1 + -> pos
-			} else {
-				break
-			}
-		} else {
-			break
-		}
-	}
-	pos
+	over swap fn { is_num_char not } scan or_end
 }
 
-fn find_bracket(json:str pos:i64 -- end_pos:i64) {
+def find_bracket(json:str pos:i64 -- end_pos:i64) {
 	0 -> slen
 	0 -> open_ch
 	0 -> close_ch
 	0 -> nesting
 	0 -> ch
-	json strings::len -> slen
+	json len -> slen
 	json pos strings::char_at -> open_ch
 	open_ch unicode::lbrace == if {
 		unicode::rbrace
@@ -148,9 +134,9 @@ fn find_bracket(json:str pos:i64 -- end_pos:i64) {
 /// @param pos i64 Position to check
 /// @return result i64 Type constant (Null, Bool, Number, String, Array, Object)
 /// @example "{\"a\":1}" 5 json::type_at print  // 2 (Number)
-pub fn type_at(json:str pos:i64 -- result:i64) {
+pub def type_at(json:str pos:i64 -- result:i64) {
 	json pos skip_ws -> pos
-	json strings::len -> slen
+	json len -> slen
 	pos slen >= if {
 		Null
 	} else {
@@ -187,7 +173,7 @@ pub fn type_at(json:str pos:i64 -- result:i64) {
 /// @param json str JSON string
 /// @param pos i64 Position of opening quote
 /// @return value str Extracted string
-pub fn extract_str(json:str pos:i64 -- value:str) {
+pub def extract_str(json:str pos:i64 -- value:str) {
 	pos 1 + -> start
 	json pos find_str_end -> after_end
 	after_end 1 - -> end_pos
@@ -204,7 +190,7 @@ pub fn extract_str(json:str pos:i64 -- value:str) {
 	}
 }
 
-fn decode_escapes(raw:str -- value:str) {
+def decode_escapes(raw:str -- value:str) {
 	raw strings::byte_len -> n
 	Parser {
 		buf = raw strings::data
@@ -214,16 +200,11 @@ fn decode_escapes(raw:str -- value:str) {
 	} -> p
 	p 0 n unescape switch {
 		Ok { }
-		_ { raw }
+		_ { drop raw }
 	}
 }
 
-fn skip_value(json:str pos:i64 -- new_pos:i64) {
-	0 -> slen
-	0 -> val_type
-	0 -> ch
-	0 -> next_pos
-	json strings::len -> slen
+def skip_value(json:str pos:i64 -- new_pos:i64) {
 	json pos type_at -> val_type
 	pos -> next_pos
 	val_type String == if {
@@ -232,18 +213,7 @@ fn skip_value(json:str pos:i64 -- new_pos:i64) {
 		val_type Object == val_type Array == + 0 > if {
 			json pos find_bracket -> next_pos
 		} else {
-			loop {
-				next_pos slen < if {
-					json next_pos strings::char_at -> ch
-					ch unicode::comma == ch unicode::rbrace == + ch unicode::rbracket == + 0 > if {
-						break
-					} else {
-						next_pos 1 + -> next_pos
-					}
-				} else {
-					break
-				}
-			}
+			json json next_pos fn { ends_scalar } scan or_end -> next_pos
 		}
 	}
 	// Always advance. A character that starts no value -- type_at reports Number for anything
@@ -257,13 +227,13 @@ fn skip_value(json:str pos:i64 -- new_pos:i64) {
 	}
 }
 
-fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
+def find_key(json:str pos:i64 key:str -- value_pos:i64) {
 	0 -> slen
 	0 -> result
 	0 -> ch
 	"" -> current_key
 	json pos skip_ws -> pos
-	json strings::len -> slen
+	json len -> slen
 
 	pos slen >= if {
 		-1
@@ -324,13 +294,13 @@ fn find_key(json:str pos:i64 key:str -- value_pos:i64) {
 	}
 }
 
-fn parse_int(num_str:str -- value:i64) {
+def parse_int(num_str:str -- value:i64) {
 	0 -> num_len
 	0 -> value
 	0 -> i
 	1 -> sign
 	0 -> ch
-	num_str strings::len -> num_len
+	num_str len -> num_len
 	num_len 0 > if {
 		num_str 0 strings::char_at unicode::minus == if {
 			-1 -> sign
@@ -359,7 +329,7 @@ fn parse_int(num_str:str -- value:i64) {
 /// @return value str String value
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"name\":\"Bob\"}" "name" json::get_string  // "Bob" 1
-pub fn get_string(json:str key:str -- value:str found:i64) {
+pub def get_string(json:str key:str -- value:str found:i64) {
 	json 0 key find_key -> pos
 	pos 0 < if {
 		"" 0
@@ -374,7 +344,7 @@ pub fn get_string(json:str key:str -- value:str found:i64) {
 /// @return value i64 Integer value
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"age\":42}" "age" json::get_int  // 42 1
-pub fn get_int(json:str key:str -- value:i64 found:i64) {
+pub def get_int(json:str key:str -- value:i64 found:i64) {
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -402,7 +372,7 @@ pub fn get_int(json:str key:str -- value:i64 found:i64) {
 /// @return value f64 Float value
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"pi\":3.14}" "pi" json::get_float  // 3.14 1
-pub fn get_float(json:str key:str -- value:f64 found:i64) {
+pub def get_float(json:str key:str -- value:f64 found:i64) {
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -423,7 +393,7 @@ pub fn get_float(json:str key:str -- value:f64 found:i64) {
 			// function already has for "not a usable number".
 			num_str strconv::parse_float switch {
 				Ok { -> num_val num_val 1 }
-				_ { 0.0 0 }
+				_ { drop 0.0 0 }
 			}
 		} else {
 			0.0 0
@@ -437,7 +407,7 @@ pub fn get_float(json:str key:str -- value:f64 found:i64) {
 /// @return value i64 1 for true, 0 for false
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"ok\":true}" "ok" json::get_bool  // 1 1
-pub fn get_bool(json:str key:str -- value:i64 found:i64) {
+pub def get_bool(json:str key:str -- value:i64 found:i64) {
 	0 -> ch
 	json 0 key find_key -> pos
 	pos 0 < if {
@@ -463,11 +433,7 @@ pub fn get_bool(json:str key:str -- value:i64 found:i64) {
 /// @return exists i64 1 if exists, 0 otherwise
 /// @example "{\"a\":1}" "a" json::has_key print  // 1
 pub fn has_key(json:str key:str -- exists:i64) {
-	json 0 key find_key 0 >= if {
-		1
-	} else {
-		0
-	}
+	0 swap find_key 0 >=
 }
 
 /// Get nested object as string by key.
@@ -476,7 +442,7 @@ pub fn has_key(json:str key:str -- exists:i64) {
 /// @return value str Nested object as string
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"obj\":{\"x\":1}}" "obj" json::get_object  // "{\"x\":1}" 1
-pub fn get_object(json:str key:str -- value:str found:i64) {
+pub def get_object(json:str key:str -- value:str found:i64) {
 	0 -> end_pos
 	0 -> length
 	json 0 key find_key -> pos
@@ -504,7 +470,7 @@ pub fn get_object(json:str key:str -- value:str found:i64) {
 /// @return value str Array as string
 /// @return found i64 1 if found, 0 otherwise
 /// @example "{\"arr\":[1,2]}" "arr" json::get_array  // "[1,2]" 1
-pub fn get_array(json:str key:str -- value:str found:i64) {
+pub def get_array(json:str key:str -- value:str found:i64) {
 	0 -> end_pos
 	0 -> length
 	json 0 key find_key -> pos
@@ -526,13 +492,13 @@ pub fn get_array(json:str key:str -- value:str found:i64) {
 	}
 }
 
-fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
+def find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 	0 -> slen
 	0 -> current_index
 	0 -> result
 	0 -> ch
 	json pos skip_ws -> pos
-	json strings::len -> slen
+	json len -> slen
 
 	pos slen >= if {
 		-1
@@ -582,7 +548,7 @@ fn find_elem(json:str pos:i64 index:i64 -- elem_pos:i64) {
 /// @return value str String value
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[\"a\",\"b\"]" 1 json::array_get_string  // "b" 1
-pub fn array_get_string(json:str index:i64 -- value:str found:i64) {
+pub def array_get_string(json:str index:i64 -- value:str found:i64) {
 	json 0 index find_elem -> pos
 	pos 0 < if {
 		"" 0
@@ -597,7 +563,7 @@ pub fn array_get_string(json:str index:i64 -- value:str found:i64) {
 /// @return value i64 Integer value
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[10,20,30]" 2 json::array_get_int  // 30 1
-pub fn array_get_int(json:str index:i64 -- value:i64 found:i64) {
+pub def array_get_int(json:str index:i64 -- value:i64 found:i64) {
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -625,7 +591,7 @@ pub fn array_get_int(json:str index:i64 -- value:i64 found:i64) {
 /// @return value f64 Float value
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[1.5,2.5]" 0 json::array_get_float  // 1.5 1
-pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
+pub def array_get_float(json:str index:i64 -- value:f64 found:i64) {
 	0 -> start
 	0 -> end_pos
 	0 -> length
@@ -646,7 +612,7 @@ pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
 			// function already has for "not a usable number".
 			num_str strconv::parse_float switch {
 				Ok { -> num_val num_val 1 }
-				_ { 0.0 0 }
+				_ { drop 0.0 0 }
 			}
 		} else {
 			0.0 0
@@ -660,7 +626,7 @@ pub fn array_get_float(json:str index:i64 -- value:f64 found:i64) {
 /// @return value str Object as JSON string
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[{\"a\":1},{\"b\":2}]" 1 json::array_get_object  // "{\"b\":2}" 1
-pub fn array_get_object(json:str index:i64 -- value:str found:i64) {
+pub def array_get_object(json:str index:i64 -- value:str found:i64) {
 	0 -> end_pos
 	0 -> length
 	json 0 index find_elem -> pos
@@ -688,7 +654,7 @@ pub fn array_get_object(json:str index:i64 -- value:str found:i64) {
 /// @return value str Nested array as JSON string
 /// @return found i64 1 if found, 0 otherwise
 /// @example "[[1,2],[3,4]]" 0 json::array_get_array  // "[1,2]" 1
-pub fn array_get_array(json:str index:i64 -- value:str found:i64) {
+pub def array_get_array(json:str index:i64 -- value:str found:i64) {
 	0 -> end_pos
 	0 -> length
 	json 0 index find_elem -> pos
@@ -714,13 +680,13 @@ pub fn array_get_array(json:str index:i64 -- value:str found:i64) {
 /// @param json str JSON array string
 /// @return length i64 Number of elements
 /// @example "[1,2,3]" json::array_len print  // 3
-pub fn array_len(json:str -- length:i64) {
+pub def array_len(json:str -- length:i64) {
 	0 -> pos
 	0 -> slen
 	0 -> count
 	0 -> ch
 	json 0 skip_ws -> pos
-	json strings::len -> slen
+	json len -> slen
 
 	pos slen >= if {
 		0
@@ -762,9 +728,9 @@ pub fn array_len(json:str -- length:i64) {
 /// @param pos i64 Position to check
 /// @return is_null i64 1 if null, 0 otherwise
 /// @example "null" 0 json::is_null_at print  // 1
-pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
+pub def is_null_at(json:str pos:i64 -- is_null:i64) {
 	json pos skip_ws -> pos
-	json strings::len -> slen
+	json len -> slen
 	pos slen >= if {
 		1
 	} else {
@@ -784,7 +750,7 @@ pub fn is_null_at(json:str pos:i64 -- is_null:i64) {
 /// @param s str String to encode
 /// @return encoded str JSON-encoded string with quotes
 /// @example "hello" json::encode print  // "hello"
-pub fn encode(s:str -- encoded:str) {
+pub def encode(s:str -- encoded:str) {
 	buf_new -> b
 	b s quoted
 	b finish
@@ -796,7 +762,7 @@ pub fn encode(s:str -- encoded:str) {
 /// @return kv str JSON key-value pair
 /// @example "name" "Bob" json::kv print  // "name":"Bob"
 pub fn kv(key:str value:str -- kv:str) {
-	key encode ":" strings::concat value encode strings::concat
+	fn { encode ":" strings::concat } dip encode strings::concat
 }
 
 /// Build a key-value pair with integer value.
@@ -804,7 +770,7 @@ pub fn kv(key:str value:str -- kv:str) {
 /// @param value i64 Integer value
 /// @return kv str JSON key-value pair
 /// @example "age" 42 json::kv_int print  // "age":42
-pub fn kv_int(key:str value:i64 -- kv:str) {
+pub def kv_int(key:str value:i64 -- kv:str) {
 	key encode ":" strings::concat
 	0 -> neg
 	value 0 < if {
@@ -836,8 +802,8 @@ pub fn kv_int(key:str value:i64 -- kv:str) {
 /// @return kv str JSON key-value pair
 /// @example "active" 1 json::kv_bool print  // "active":true
 pub fn kv_bool(key:str value:i64 -- kv:str) {
-	key encode ":" strings::concat
-	value 0 != if { "true" } else { "false" }
+	fn { encode ":" strings::concat } dip
+	0 != if { "true" } else { "false" }
 	strings::concat
 }
 
@@ -847,7 +813,7 @@ pub fn kv_bool(key:str value:i64 -- kv:str) {
 /// @return kv str JSON key-value pair
 /// @example "data" "{}" json::kv_raw print  // "data":{}
 pub fn kv_raw(key:str value:str -- kv:str) {
-	key encode ":" strings::concat value strings::concat
+	fn { encode ":" strings::concat } dip strings::concat
 }
 
 /// Build a JSON object from comma-separated key-value pairs.
@@ -855,7 +821,7 @@ pub fn kv_raw(key:str value:str -- kv:str) {
 /// @return obj str JSON object
 /// @example "\"a\":1,\"b\":2" json::obj print  // {"a":1,"b":2}
 pub fn obj(content:str -- obj:str) {
-	"{" content strings::concat "}" strings::concat
+	"{" swap strings::concat "}" strings::concat
 }
 
 /// Build an empty JSON object.
@@ -870,7 +836,7 @@ pub fn empty_obj( -- obj:str) {
 /// @return arr str JSON array
 /// @example "1,2,3" json::arr print  // [1,2,3]
 pub fn arr(content:str -- arr:str) {
-	"[" content strings::concat "]" strings::concat
+	"[" swap strings::concat "]" strings::concat
 }
 
 /// Build an empty JSON array.
@@ -886,7 +852,7 @@ pub fn empty_arr( -- arr:str) {
 /// @return joined str Comma-joined fragments
 /// @example "\"a\":1" "\"b\":2" json::join print  // "a":1,"b":2
 pub fn join(a:str b:str -- joined:str) {
-	a "," strings::concat b strings::concat
+	fn { "," strings::concat } dip strings::concat
 }
 
 // ============================================================
@@ -937,7 +903,7 @@ pub struct Value {
 	count: i64
 }
 
-fn node(kind:i64 -- v:Value) {
+def node(kind:i64 -- v:Value) {
 	Value {
 		kind = kind
 		inum = 0
@@ -964,16 +930,14 @@ pub fn new_null( -- v:Value) {
 /// @return v Value JSON boolean
 /// @example 1 json::new_bool -> v
 pub fn new_bool(b:i64 -- v:Value) {
-	Bool node -> v
-	v b 0 != >>inum drop
-	v
+	Bool node swap 0 != >>inum
 }
 
 /// Create a number from an integer.
 /// @param n i64 Integer value
 /// @return v Value JSON number
 /// @example 42 json::new_int -> v
-pub fn new_int(n:i64 -- v:Value) {
+pub def new_int(n:i64 -- v:Value) {
 	Number node -> v
 	v n >>inum drop
 	v n cast<f64> >>num drop
@@ -985,7 +949,7 @@ pub fn new_int(n:i64 -- v:Value) {
 /// @param f f64 Floating point value
 /// @return v Value JSON number
 /// @example 1.5 json::new_float -> v
-pub fn new_float(f:f64 -- v:Value) {
+pub def new_float(f:f64 -- v:Value) {
 	Number node -> v
 	v f >>num drop
 	v f cast<i64> >>inum drop
@@ -997,9 +961,7 @@ pub fn new_float(f:f64 -- v:Value) {
 /// @return v Value JSON string
 /// @example "hello" json::new_string -> v
 pub fn new_string(s:str -- v:Value) {
-	String node -> v
-	v s >>text drop
-	v
+	String node swap >>text
 }
 
 /// Create an empty array.
@@ -1137,7 +1099,7 @@ pub fn (v:Value) name( -- k:str) {
 /// @param index i64 Zero-based position
 /// @return child Value Value at that position
 /// @example doc 0 json::at! -> first
-pub fn (v:Value) at(index:i64 -- child:Value)! {
+pub def (v:Value) at(index:i64 -- child:Value)! {
 	v <<kind Array != v <<kind Object != * if {
 		"json: value is not an array or object" ErrType panic
 	}
@@ -1161,7 +1123,7 @@ pub fn (v:Value) at(index:i64 -- child:Value)! {
 /// @param key str Member name
 /// @return child Value Member value
 /// @example doc "name" json::get! -> name_value
-pub fn (v:Value) get(key:str -- child:Value)! {
+pub def (v:Value) get(key:str -- child:Value)! {
 	v <<kind Object != if {
 		"json: value is not an object" ErrType panic
 	}
@@ -1188,7 +1150,7 @@ pub fn (v:Value) get(key:str -- child:Value)! {
 /// @param key str Member name
 /// @return exists i64 1 when the member is present
 /// @example doc "name" json::has -> exists
-pub fn (v:Value) has(key:str -- exists:i64) {
+pub def (v:Value) has(key:str -- exists:i64) {
 	v <<kind Object != if {
 		0
 	} else {
@@ -1244,7 +1206,7 @@ pub fn (v:Value) next( -- sibling:Value)! {
 // Building a Value
 // ============================================================
 
-fn (parent:Value) link(child:Value -- p:Value) {
+def (parent:Value) link(child:Value -- p:Value) {
 	parent <<tail -> t
 	t null == if {
 		parent child >>head drop
@@ -1261,7 +1223,7 @@ fn (parent:Value) link(child:Value -- p:Value) {
 /// @param child Value Value to append
 /// @return v2 Value The same array
 /// @example arr 42 json::new_int json::push! -> arr
-pub fn (v:Value) push(child:Value -- v2:Value)! {
+pub def (v:Value) push(child:Value -- v2:Value)! {
 	v <<kind Array != if {
 		"json: push on a value that is not an array" ErrType panic
 	}
@@ -1276,7 +1238,7 @@ pub fn (v:Value) push(child:Value -- v2:Value)! {
 /// @param child Value Member value
 /// @return v2 Value The same object
 /// @example obj "n" 1 json::new_int json::put! -> obj
-pub fn (v:Value) put(key:str child:Value -- v2:Value)! {
+pub def (v:Value) put(key:str child:Value -- v2:Value)! {
 	v <<kind Object != if {
 		"json: put on a value that is not an object" ErrType panic
 	}
@@ -1355,7 +1317,7 @@ fn (p:Parser) ws() {
 }
 
 fn (p:Parser) errmsg(msg:str -- out:str) {
-	"json: " msg strings::concat " at offset " strings::concat p <<pos strconv::itoa strings::concat
+	"json: " swap strings::concat " at offset " strings::concat p <<pos strconv::itoa strings::concat
 }
 
 fn (p:Parser) enter()! {
@@ -1371,7 +1333,7 @@ fn (p:Parser) leave() {
 }
 
 // The document text from start, n bytes long.
-fn (p:Parser) slice(start:i64 n:i64 -- s:str) {
+def (p:Parser) slice(start:i64 n:i64 -- s:str) {
 	n 0 <= if {
 		""
 	} else {
@@ -1379,7 +1341,7 @@ fn (p:Parser) slice(start:i64 n:i64 -- s:str) {
 	}
 }
 
-fn hex_val(ch:i64 -- v:i64) {
+def hex_val(ch:i64 -- v:i64) {
 	ch unicode::digit0 >= ch unicode::digit9 <= * if {
 		ch unicode::digit0 -
 	} else {
@@ -1396,7 +1358,7 @@ fn hex_val(ch:i64 -- v:i64) {
 }
 
 // Write a codepoint to out as UTF-8, and report the offset after it.
-fn utf8_put(cp:i64 out:ptr o:i64 -- o2:i64) {
+def utf8_put(cp:i64 out:ptr o:i64 -- o2:i64) {
 	cp 128 < if {
 		cp out o mem::set_byte
 		o 1 +
@@ -1423,7 +1385,7 @@ fn utf8_put(cp:i64 out:ptr o:i64 -- o2:i64) {
 }
 
 // The four hex digits of a \u escape, starting at at.
-fn (p:Parser) hex4(at:i64 -- cp:i64)! {
+def (p:Parser) hex4(at:i64 -- cp:i64)! {
 	at 4 + p <<len > if {
 		p "truncated unicode escape" errmsg ErrSyntax panic
 	}
@@ -1442,7 +1404,7 @@ fn (p:Parser) hex4(at:i64 -- cp:i64)! {
 // Decode the n bytes of string body at start. Every JSON escape is at least as
 // long as what it stands for -- \n is two bytes for one, and a surrogate pair
 // is twelve for four -- so n bytes of room is always enough.
-fn (p:Parser) unescape(start:i64 n:i64 -- s:str)! {
+def (p:Parser) unescape(start:i64 n:i64 -- s:str)! {
 	n 1 + mem::alloc? -> out
 	defer { out mem::free }
 	0 -> o
@@ -1591,17 +1553,18 @@ fn (p:Parser) take_number( -- v:Value)! {
 	isint if {
 		// An integer literal too wide for i64 is still a JSON number; it keeps
 		// the value a double can hold rather than failing the parse.
-		text 10 strconv::parse_int if {
+		text 10 strconv::parse_int ok if {
 			new_int
 		} else {
-			text strconv::parse_float if {
+			drop
+			text strconv::parse_float ok if {
 				new_float
 			} else {
 				p "number out of range" errmsg ErrSyntax panic
 			}
 		}
 	} else {
-		text strconv::parse_float if {
+		text strconv::parse_float ok if {
 			new_float
 		} else {
 			p "number out of range" errmsg ErrSyntax panic
@@ -1609,8 +1572,8 @@ fn (p:Parser) take_number( -- v:Value)! {
 	}
 }
 
-fn (p:Parser) take_word(word:str -- )! {
-	word strings::len -> n
+def (p:Parser) take_word(word:str -- )! {
+	word len -> n
 	p <<pos n + p <<len <= if {
 		p p <<pos n slice word strings::compare 0 ==
 	} else {
@@ -1712,7 +1675,7 @@ fn (p:Parser) take_value( -- v:Value)! {
 /// @param text str JSON document
 /// @return v Value Parsed value
 /// @example "{\x22a\x22:1}" json::parse! -> doc
-pub fn parse(text:str -- v:Value)! {
+pub def parse(text:str -- v:Value)! {
 	text strings::byte_len -> n
 	Parser {
 		buf = text strings::data
@@ -1752,7 +1715,7 @@ fn buf_new( -- b:Buf) {
 	}
 }
 
-fn (b:Buf) reserve(extra:i64 -- ) {
+def (b:Buf) reserve(extra:i64 -- ) {
 	b <<len extra + -> need
 	need b <<cap > if {
 		b <<cap -> cap
@@ -1768,13 +1731,13 @@ fn (b:Buf) reserve(extra:i64 -- ) {
 	}
 }
 
-fn (b:Buf) byte(ch:i64 -- ) {
+def (b:Buf) byte(ch:i64 -- ) {
 	b 1 reserve
 	ch b <<data b <<len mem::set_byte
 	b b <<len 1 + >>len drop
 }
 
-fn (b:Buf) raw(src:ptr off:i64 n:i64 -- ) {
+def (b:Buf) raw(src:ptr off:i64 n:i64 -- ) {
 	n 0 > if {
 		b n reserve
 		b <<data b <<len mem::ptr_add src off mem::ptr_add n mem::copy
@@ -1782,7 +1745,7 @@ fn (b:Buf) raw(src:ptr off:i64 n:i64 -- ) {
 	}
 }
 
-fn (b:Buf) text(s:str -- ) {
+def (b:Buf) text(s:str -- ) {
 	b s strings::data 0 s strings::byte_len raw
 }
 
@@ -1794,7 +1757,7 @@ fn (b:Buf) finish( -- s:str) {
 
 // Shortest representation that reads back as the same double, which is what
 // strconv::format_float writes.
-fn float_text(f:f64 -- s:str) {
+def float_text(f:f64 -- s:str) {
 	// Infinities and NaN subtract to NaN, which equals nothing, itself included.
 	f f - 0.0 == if {
 		f strconv::format_float
@@ -1805,7 +1768,7 @@ fn float_text(f:f64 -- s:str) {
 }
 
 fn bool_text(v:Value -- s:str) {
-	v <<inum if {
+	<<inum if {
 		"true"
 	} else {
 		"false"
@@ -1813,25 +1776,25 @@ fn bool_text(v:Value -- s:str) {
 }
 
 fn number_text(v:Value -- s:str) {
-	v <<isint if {
-		v <<inum strconv::itoa
+	dup <<isint if {
+		<<inum strconv::itoa
 	} else {
-		v <<num float_text
+		<<num float_text
 	}
 }
 
 fn hex_digit(v:i64 -- ch:i64) {
-	v 10 < if {
-		unicode::digit0 v +
+	dup 10 < if {
+		unicode::digit0 +
 	} else {
-		unicode::a v 10 - +
+		10 - unicode::a +
 	}
 }
 
 // Write s to b as a quoted JSON string. Runs of ordinary bytes are written
 // whole, so a string with nothing to escape costs one copy; bytes above 127 are
 // copied through, which keeps the UTF-8 the caller gave us.
-fn (b:Buf) quoted(s:str -- ) {
+def (b:Buf) quoted(s:str -- ) {
 	b unicode::dquote byte
 	s strings::data -> src
 	s strings::byte_len -> n
@@ -1896,7 +1859,7 @@ fn (b:Buf) quoted(s:str -- ) {
 	b unicode::dquote byte
 }
 
-fn (v:Value) write(b:Buf -- ) {
+def (v:Value) write(b:Buf -- ) {
 	v <<kind switch {
 		Bool { b v bool_text text }
 		Number { b v number_text text }
@@ -1941,14 +1904,14 @@ fn (v:Value) write(b:Buf -- ) {
 	}
 }
 
-fn (b:Buf) newline_indent(width:i64 depth:i64 -- ) {
+def (b:Buf) newline_indent(width:i64 depth:i64 -- ) {
 	b unicode::newline byte
 	0 width depth * 1 for k {
 		b unicode::space byte
 	}
 }
 
-fn (v:Value) write_pretty(b:Buf width:i64 depth:i64 -- ) {
+def (v:Value) write_pretty(b:Buf width:i64 depth:i64 -- ) {
 	v <<kind switch {
 		Array {
 			v <<head null == if {
@@ -2018,7 +1981,7 @@ pub fn (v:Value) stringify( -- s:str) {
 /// @param width i64 Spaces per nesting level
 /// @return s str JSON text, one element or member to a line
 /// @example doc 2 json::pretty print
-pub fn (v:Value) pretty(width:i64 -- s:str) {
+pub def (v:Value) pretty(width:i64 -- s:str) {
 	buf_new -> b
 	v b width 0 write_pretty
 	b finish

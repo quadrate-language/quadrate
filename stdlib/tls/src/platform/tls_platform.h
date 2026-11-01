@@ -24,7 +24,7 @@ typedef void* tls_conn_t;
 
 /** TLS error codes - Ok=1 matches Quadrate builtin, errors start at 2 */
 typedef enum {
-	TLS_OK = 1,				  // Success (matches Quadrate Ok)
+	TLS_OK = 1,				  // Success: a native's success status, which the call site reads as Ok
 	TLS_ERR_INIT = 2,		  // Failed to initialize TLS library
 	TLS_ERR_CONNECT = 3,	  // TLS handshake failed (client)
 	TLS_ERR_ACCEPT = 4,		  // TLS handshake failed (server)

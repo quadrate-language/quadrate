@@ -1,5 +1,5 @@
 // Test: []f64 parameter type accepts float arrays
-fn sum_floats(arr:[]f64 -- total:f64) {
+def sum_floats(arr:[]f64 -- total:f64) {
 	0.0 -> total
 	0 arr len 1 for i {
 		total arr i nth cast<f64> + -> total

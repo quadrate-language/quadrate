@@ -1,5 +1,5 @@
-pub stack fn fib(n:i64 -- i64) {
-	dup 2 gte if {
+pub fn fib(n:i64 -- i64) {
+	dup 2 >= if {
 		// Recursive case: fib(n-1) + fib(n-2)
 		dup 1 - fib
 		swap 2 - fib

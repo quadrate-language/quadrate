@@ -169,8 +169,8 @@
       "signature": "(seed:i64 -- rng:Rng)",
       "failable": false,
       "description": "Create a new RNG with specific seed.",
-      "params": [{"name": "seed", "type": "i64", "description": "Initial seed value (must be non-zero)"}],
-      "returns": [{"name": "rng", "type": "ptr", "description": "New random number generator"}],
+      "params": [{"name": "seed", "type": "i64", "description": "Initial seed value"}, {"name": " 0, which the generator cannot use, is taken as 1", "type": "", "description": ""}],
+      "returns": [{"name": "rng", "type": "Rng", "description": "New random number generator"}],
       "errors": [],
       "examples": ["12345 rand::with_seed -> rng"]
     }

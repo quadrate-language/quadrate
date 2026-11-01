@@ -1,16 +1,15 @@
 // Test: HTTP GET request
 use http
-use strings
 
 fn main( -- ) {
 	"https://example.com" http::get switch {
 		Ok {
 			-> resp
-			resp <<status 200 eq
+			resp <<status 200 ==
 			if {
 				"status ok" print nl
 			}
-			"body length:" print resp <<body strings::len print nl
+			"body length:" print resp <<body len print nl
 			resp http::close
 		}
 		_ {

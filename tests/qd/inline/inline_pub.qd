@@ -1,5 +1,5 @@
 // Test: pub inline function
-pub inline fn add3(a:i64 b:i64 c:i64 -- result:i64) {
+pub inline def add3(a:i64 b:i64 c:i64 -- result:i64) {
 	a b + c +
 }
 

@@ -23,7 +23,7 @@ use strings
 const COUNT = 4
 
 fn get_url(id:i64 -- url:str) {
-	id switch {
+	switch {
 		0 { "https://quad.r8.rs" }
 		1 { "https://sr.ht" }
 		2 { "https://llvm.org" }
@@ -33,7 +33,7 @@ fn get_url(id:i64 -- url:str) {
 }
 
 fn get_title(id:i64 -- title:str) {
-	id switch {
+	switch {
 		0 { "Quadrate docs" }
 		1 { "Sourcehut" }
 		2 { "LLVM Project" }
@@ -42,21 +42,21 @@ fn get_title(id:i64 -- title:str) {
 	}
 }
 
-fn link_json(id:i64 -- result:str) {
+def link_json(id:i64 -- result:str) {
 	"id" id json::kv_int -> s
 	s "url" id get_url json::kv json::join -> s
 	s "title" id get_title json::kv json::join -> s
 	s json::obj
 }
 
-fn handle_root(c:ptr -- ) {
+def handle_root(c:ptr -- ) {
 	"service" "links-api" json::kv -> s
 	s "version" "1.0" json::kv json::join -> s
 	s "links" COUNT json::kv_int json::join -> s
 	c 200 s json::obj http::json
 }
 
-fn handle_list(c:ptr -- ) {
+def handle_list(c:ptr -- ) {
 	sb::new -> out
 	out "[" append -> out
 	0 -> i
@@ -74,7 +74,7 @@ fn handle_list(c:ptr -- ) {
 	c 200 body http::json
 }
 
-fn handle_get_one(c:ptr -- ) {
+def handle_get_one(c:ptr -- ) {
 	c "id" http::param 10 strconv::parse_int! -> id
 	id 0 >= id COUNT < and if {
 		c 200 id link_json http::json
@@ -83,9 +83,9 @@ fn handle_get_one(c:ptr -- ) {
 	}
 }
 
-fn handle_search(c:ptr -- ) {
+def handle_search(c:ptr -- ) {
 	c "q" http::query_param -> query
-	query strings::len 0 == if {
+	query len 0 == if {
 		c 400 "{\"error\":\"missing q parameter\"}" http::json
 	} else {
 		sb::new -> out
@@ -111,9 +111,9 @@ fn handle_search(c:ptr -- ) {
 	}
 }
 
-fn handle_echo(c:ptr -- ) {
+def handle_echo(c:ptr -- ) {
 	c http::request_body -> body
-	body strings::len 0 == if {
+	body len 0 == if {
 		c 400 "{\"error\":\"empty body\"}" http::json
 	} else {
 		c 200 body http::json

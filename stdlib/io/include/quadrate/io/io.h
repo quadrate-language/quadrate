@@ -18,7 +18,7 @@
  * These match the constants defined in io/module.qd
  * Ok=1, Err=0 are reserved, specific errors start at 2
  */
-#define IO_ERR_OK 1				/**< Success (matches builtin Ok) */
+#define IO_ERR_OK 1				/**< Success (a native's success status; the call site reads it as Ok) */
 #define IO_ERR_NOT_FOUND 2		/**< File not found */
 #define IO_ERR_PERMISSION 3		/**< Permission denied */
 #define IO_ERR_INVALID_HANDLE 4 /**< Invalid file handle */

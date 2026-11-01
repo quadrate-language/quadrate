@@ -4,6 +4,6 @@ struct H {
 }
 
 fn main() {
-	H { f = fn (a:str -- r:str) { a } } -> h
+	H { f = def (a:str -- r:str) { a } } -> h
 	h drop
 }

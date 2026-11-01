@@ -1,0 +1,14 @@
+// Test: a call's stack variables are fixed by its function-value arguments. A bare `ptr` says
+// nothing about how many values it takes, so how far `under` reaches cannot be known.
+fn under<..a, ..b, T>(..a x:T q:fn(..a -- ..b) -- ..b x:T) {
+	-> q -> x
+	q call
+	x
+}
+
+def reach(p:ptr -- ) {
+	1 2 p under
+}
+
+fn main() {
+}

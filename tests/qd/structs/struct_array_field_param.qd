@@ -5,7 +5,7 @@ struct Matrix {
 	cols:i64
 }
 
-fn sum_matrix(m:Matrix -- total:i64) {
+def sum_matrix(m:Matrix -- total:i64) {
 	0 -> total
 	0 m <<data len 1 for i {
 		total m <<data i nth + -> total

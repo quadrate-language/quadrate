@@ -1,0 +1,3 @@
+// Test: a function cannot take a builtin's name, since a call by that name runs the builtin
+def fold(x:i64 -- r:i64) { x }
+fn main() { 1 fold print nl }

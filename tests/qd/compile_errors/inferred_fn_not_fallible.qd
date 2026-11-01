@@ -1,0 +1,8 @@
+// Test: a `fn { }` is not fallible, so `?` inside it has nowhere to propagate to
+def may_fail(x:i64 -- y:i64)! {
+	x
+}
+
+fn main() {
+	fn { may_fail? } drop
+}

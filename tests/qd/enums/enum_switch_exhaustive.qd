@@ -7,7 +7,7 @@ enum Color {
 	Blue
 }
 
-fn name(c:i64 -- s:str) {
+def name(c:i64 -- s:str) {
 	c switch {
 		Color::Red { "red" }
 		Color::Green { "green" }
@@ -16,7 +16,7 @@ fn name(c:i64 -- s:str) {
 	}
 }
 
-fn describe(c:i64 -- ) {
+def describe(c:i64 -- ) {
 	// Stack-neutral, so no `_` arm is needed
 	c switch {
 		Color::Red { "warm" print nl }

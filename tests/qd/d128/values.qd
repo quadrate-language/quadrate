@@ -9,7 +9,7 @@ struct Box<T> {
 	value:T
 }
 
-fn wrap<T>(x:T -- b:Box<T>) {
+def wrap<T>(x:T -- b:Box<T>) {
 	Box<T> { value = x }
 }
 
@@ -18,15 +18,15 @@ struct Account {
 	balance:d128
 }
 
-fn (a:Account) deposit(amount:d128 -- ) {
+def (a:Account) deposit(amount:d128 -- ) {
 	a a <<balance amount + >>balance drop
 }
 
-fn interest(balance:d128 -- earned:d128) {
+def interest(balance:d128 -- earned:d128) {
 	balance Rate *
 }
 
-fn total(xs:[]d128 -- sum:d128) {
+def total(xs:[]d128 -- sum:d128) {
 	0d -> sum
 	xs len -> n
 	0 n 1 for i {
@@ -35,7 +35,7 @@ fn total(xs:[]d128 -- sum:d128) {
 	sum
 }
 
-fn describe(x:d128 -- ) {
+def describe(x:d128 -- ) {
 	x switch {
 		0d { "zero" print nl }
 		Rate { "the rate" print nl }
@@ -44,7 +44,7 @@ fn describe(x:d128 -- ) {
 	}
 }
 
-fn show(x:any -- ) {
+def show(x:any -- ) {
 	x print nl
 }
 
@@ -84,7 +84,7 @@ fn main() {
 
 	// Closures capture a d128 like any other value
 	1.5d -> factor
-	fn(x:d128 -- r:d128) { x factor * } -> scale
+	def(x:d128 -- r:d128) { x factor * } -> scale
 	2d scale call print nl
 
 	// A global holds its own reference across reassignment

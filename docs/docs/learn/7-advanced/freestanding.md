@@ -17,7 +17,7 @@ against your own entry stub and linker script.
 | `quadc` emits `int main(int, char**)` and links an executable | `quadc` emits a `void _start(void)` shim and stops at `.o` |
 | Runtime context is heap-allocated per run | A single statically allocated `qd_freestanding_ctx` |
 | Whole stdlib available | `bits`, `limits`, `mem`, `sys`, plus your own `.qd` files |
-| `print`/`panic`/`spawn` work | Rejected at compile time |
+| `print`/`panic` work | Rejected at compile time |
 | A fatal error prints a stack trace and aborts | It calls `qd_freestanding_halt()` |
 
 ## The entry point
@@ -51,8 +51,8 @@ operations — `set_byte`/`get_byte`, `set_i64`/`get_i64`, `set_f64`/`get_f64`,
 `to_string`, `from_string`) lives in `libmem.a` and is simply not linked, so reaching for
 it is a link error rather than a silent heap dependency.
 
-**Rejected builtins** — `print`, `prints`, `printv`, `nl`, `read`, `panic`,
-`err`, `spawn`, `wait`, `detach`. Each gives
+**Rejected builtins** — `print`, `dump`, `nl`, `read`, `panic`,
+`err`. Each gives
 `builtin 'X' is not available in --freestanding mode`. Arithmetic, comparison, bitwise
 ops, stack manipulation, locals, `if`/`loop`/`for`/`switch`, structs, arrays, function
 pointers and FFI all work normally.
@@ -71,7 +71,7 @@ use sys
 
 const VGA_BASE = 0xB8000
 
-fn vga_put(row:i64 col:i64 ch:i64 -- ) {
+def vga_put(row:i64 col:i64 ch:i64 -- ) {
 	VGA_BASE row 80 * col + 2 * + 0 ch sys::st8
 	VGA_BASE row 80 * col + 2 * + 1 0x0F sys::st8
 }
@@ -82,8 +82,8 @@ fn vga_put(row:i64 col:i64 ch:i64 -- ) {
 | `sys::st8` / `st16` / `st32` / `st64` | `(addr:i64 offset:i64 value:i64 -- )` — store the low 8/16/32/64 bits |
 | `sys::ld8` / `ld16` / `ld32` / `ld64` | `(addr:i64 offset:i64 -- value:i64)` — load, zero-extended |
 
-**x86 I/O ports** — `sys::port_out8` / `port_out16` / `port_out32`
-`(port:i64 value:i64 -- )` and `sys::port_in8` / `port_in16` / `port_in32`
+**x86 I/O ports** — `sys::outb` / `outw` / `outl`
+`(port:i64 value:i64 -- )` and `sys::inb` / `inw` / `inl`
 `(port:i64 -- value:i64)`.
 
 **CPU control** — `sys::cli`, `sys::sti`, `sys::hlt`. The idle loop is

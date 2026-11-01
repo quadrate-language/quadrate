@@ -2,7 +2,7 @@
 fn main() {
 	0 -> sum
 	0 10 1 for it {
-		sum it add -> sum
+		sum it + -> sum
 	}
 	sum print nl
 }

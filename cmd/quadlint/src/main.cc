@@ -10,6 +10,7 @@
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_function_pointer.h>
@@ -20,6 +21,7 @@
 #include <quadrate/qc/ast_node_local.h>
 #include <quadrate/qc/ast_node_parameter.h>
 #include <quadrate/qc/ast_node_scoped.h>
+#include <quadrate/qc/ast_node_string_interpolation.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/colors.h>
 #include <quadrate/qc/numeric_literal.h>
@@ -40,6 +42,7 @@ struct LintOptions {
 	bool noShadowVariables = false;
 	bool noEmptyBlocks = false;
 	bool noConstantConditions = false;
+	bool noNeedlessBinding = false;
 	// Stricter checks (disabled by default, enable with flags)
 	bool checkMagicNumbers = false;
 	bool checkLongFunctions = false;
@@ -134,6 +137,7 @@ void printHelp() {
 			.option("--no-shadow-variables", "Disable shadow variable warnings")
 			.option("--no-empty-blocks", "Disable empty block warnings")
 			.option("--no-constant-conditions", "Disable constant condition warnings")
+			.option("--no-needless-binding", "Disable warnings for a def that could be a fn")
 			.section("Stricter checks (disabled by default)")
 			.option("--check-magic-numbers", "Enable magic number detection")
 			.option("--check-long-functions", "Enable long function detection")
@@ -824,6 +828,118 @@ void detectLongFunctions(IAstNode* node, const std::string& filename, int maxLin
 	}
 }
 
+// How often each of `names` is used in `node`: an identifier, a builtin-named local, or a
+// `{name}` in an interpolated string. A `->` that rebinds one counts too, since the body then
+// means something else by it.
+static void countUses(
+		IAstNode* node, const std::vector<std::string>& names, std::unordered_map<std::string, int>& uses) {
+	if (!node) {
+		return;
+	}
+	auto count = [&](const std::string& name) {
+		if (std::find(names.begin(), names.end(), name) != names.end()) {
+			uses[name]++;
+		}
+	};
+	switch (node->type()) {
+	case IAstNode::Type::IDENTIFIER:
+		count(static_cast<AstNodeIdentifier*>(node)->name());
+		break;
+	case IAstNode::Type::INSTRUCTION:
+		count(static_cast<AstNodeInstruction*>(node)->name());
+		break;
+	case IAstNode::Type::LOCAL:
+		for (const std::string& name : static_cast<AstNodeLocal*>(node)->names()) {
+			count(name);
+		}
+		break;
+	case IAstNode::Type::STRING_INTERPOLATION: {
+		const std::string& text = static_cast<AstNodeStringInterpolation*>(node)->templateString();
+		for (const std::string& name : names) {
+			if (text.find("{" + name + "}") != std::string::npos) {
+				uses[name]++;
+			}
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	for (size_t i = 0; i < node->childCount(); i++) {
+		countUses(node->child(i), names, uses);
+	}
+}
+
+// A `def` whose body starts by pushing its inputs back, in order, and never names them again is
+// a `fn` with extra steps: the inputs were on the stack in that order before `def` took them off.
+// `def sum(a:i64 b:i64 -- s:i64) { a b + }` is `fn sum(a:i64 b:i64 -- s:i64) { + }`. A method
+// is left alone, since its receiver is bound either way.
+void detectNeedlessBinding(IAstNode* node, const std::string& filename, std::vector<LintIssue>& issues) {
+	if (!node) {
+		return;
+	}
+
+	const std::vector<std::unique_ptr<IAstNode>>* inputs = nullptr;
+	IAstNode* body = nullptr;
+	std::string what;
+	if (node->type() == IAstNode::Type::FUNCTION_DECLARATION) {
+		auto* func = static_cast<AstNodeFunctionDeclaration*>(node);
+		if (!func->isStack() && !func->hasReceiver()) {
+			inputs = &func->inputParameters();
+			body = func->body();
+			what = "'" + func->name() + "'";
+		}
+	} else if (node->type() == IAstNode::Type::ANONYMOUS_FUNCTION) {
+		auto* lambda = static_cast<AstNodeAnonymousFunction*>(node);
+		if (!lambda->isStack()) {
+			inputs = &lambda->inputParameters();
+			body = lambda->body();
+			what = "This anonymous function";
+		}
+	}
+
+	// The body's statements, comments aside
+	std::vector<IAstNode*> statements;
+	for (size_t i = 0; body && i < body->childCount(); i++) {
+		if (body->child(i)->type() != IAstNode::Type::COMMENT) {
+			statements.push_back(body->child(i));
+		}
+	}
+	if (inputs && !inputs->empty() && statements.size() >= inputs->size()) {
+		std::vector<std::string> names;
+		bool inOrder = true;
+		for (size_t i = 0; i < inputs->size() && inOrder; i++) {
+			const auto* param = static_cast<const AstNodeParameter*>((*inputs)[i].get());
+			IAstNode* first = statements[i];
+			const bool pushesIt = first->type() == IAstNode::Type::IDENTIFIER &&
+								  static_cast<AstNodeIdentifier*>(first)->name() == param->name();
+			inOrder = param->hasName() && pushesIt;
+			names.push_back(param->name());
+		}
+		std::unordered_map<std::string, int> uses;
+		if (inOrder) {
+			countUses(body, names, uses);
+		}
+		const bool onceEach = inOrder && std::all_of(names.begin(), names.end(),
+												 [&](const std::string& name) { return uses[name] == 1; });
+		if (onceEach) {
+			LintIssue issue;
+			issue.filename = filename;
+			issue.line = node->line();
+			issue.column = node->column();
+			issue.message = what + " only pushes its inputs back in the order they came; write 'fn' instead of " +
+							"'def' and drop them from the body";
+			issue.level = "warning";
+			issue.rule = "needless-binding";
+			issues.push_back(issue);
+		}
+	}
+
+	for (size_t i = 0; i < node->childCount(); i++) {
+		detectNeedlessBinding(node->child(i), filename, issues);
+	}
+}
+
 // Helper to check if string is snake_case
 bool isSnakeCase(const std::string& name) {
 	if (name.empty()) {
@@ -1082,6 +1198,11 @@ std::vector<LintIssue> lintFile(
 			detectConstantConditions(root, filename, issues);
 		}
 
+		// Check for a `def` that could be a `fn`
+		if (!opts.noNeedlessBinding) {
+			detectNeedlessBinding(root, filename, issues);
+		}
+
 		// Check for magic numbers (opt-in)
 		if (opts.checkMagicNumbers) {
 			detectMagicNumbers(root, filename, issues);
@@ -1227,6 +1348,10 @@ int main(int argc, char* argv[]) {
 		}
 		if (strcmp(arg, "--no-shadow-variables") == 0) {
 			opts.noShadowVariables = true;
+			return true;
+		}
+		if (strcmp(arg, "--no-needless-binding") == 0) {
+			opts.noNeedlessBinding = true;
 			return true;
 		}
 		if (strcmp(arg, "--no-empty-blocks") == 0) {

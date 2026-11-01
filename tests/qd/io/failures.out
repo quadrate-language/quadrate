@@ -1,4 +1,4 @@
-tell 2 stack: []
+tell 2
 write_file: ErrNotFound
 open: ErrNotFound
 full: ErrWrite

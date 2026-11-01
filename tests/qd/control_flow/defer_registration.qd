@@ -14,21 +14,21 @@
 // scope exit, so registration is dynamic while collection stays lexical.
 use mem
 
-fn acquire(ok:i64 -- p:ptr)! {
+def acquire(ok:i64 -- p:ptr)! {
 	ok 0 == if {
 		"acquire failed" 2 panic
 	}
 	8 mem::alloc!
 }
 
-fn release(p:ptr -- ) {
+def release(p:ptr -- ) {
 	p mem::free
 	"    released" print nl
 }
 
 // --- branches -------------------------------------------------------------
 
-fn in_if(c:i64 -- ) {
+def in_if(c:i64 -- ) {
 	c if {
 		defer { "    defer from then-arm" print nl }
 		"    then-arm ran" print nl
@@ -37,7 +37,7 @@ fn in_if(c:i64 -- ) {
 	}
 }
 
-fn in_switch(c:i64 -- ) {
+def in_switch(c:i64 -- ) {
 	c switch {
 		1 {
 			defer { "    defer from arm 1" print nl }
@@ -51,7 +51,7 @@ fn in_switch(c:i64 -- ) {
 
 // --- ? propagation --------------------------------------------------------
 
-fn via_propagate(ok:i64 -- )! {
+def via_propagate(ok:i64 -- )! {
 	ok acquire? -> p
 	defer { p release }
 	"    body ran" print nl
@@ -59,7 +59,7 @@ fn via_propagate(ok:i64 -- )! {
 
 // --- ordering -------------------------------------------------------------
 
-fn conditional_lifo(c:i64 -- ) {
+def conditional_lifo(c:i64 -- ) {
 	defer { "    last" print nl }
 	c if {
 		defer { "    middle (only when c)" print nl }
@@ -113,5 +113,4 @@ fn main() {
 	"loop, conditional:" print nl conditional_in_loop
 	"loop, break:" print nl before_break
 
-	"stack: [" print prints "]" print nl
 }

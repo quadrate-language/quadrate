@@ -3,7 +3,7 @@
 use fmt
 
 fn main() {
-	"first " fmt::print
+	"first " print
 	"second" 1 "%s\n" fmt::fprintf
 	1 2 1 "%d+%d\n" fmt::fprintf
 }

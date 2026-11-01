@@ -1,4 +1,4 @@
 Undefined identifier 'undefined_func'
-Fallible function 'safe_div' must be immediately followed by 'if' or 'switch' to check for errors
+'safe_div' leaves a status that is 0 on success
 Cannot use '!' operator on function 'normal_func'
 Stack underflow

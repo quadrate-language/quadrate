@@ -470,14 +470,12 @@ namespace Qd {
 								memberName != nullptr && memberName[0] != '\0' && std::isupper(memberName[0]);
 						bool isGenericBracket = false;
 						if (afterMember == '<' && memberLooksLikeStruct) {
-							// Check if this is '<=' operator by looking at character after '<'
-							// Look ahead in the raw string to see if '<' is followed by '='
+							// Type arguments touch the name, `math::Box<i64>`, as they do after a bare one:
+							// `limits::I64Max < x` is a comparison
 							const char* currentPos = scanner->_str;
-							// Skip whitespace and find '<'
-							while (*currentPos && (*currentPos == ' ' || *currentPos == '\t' || *currentPos == '\n')) {
-								currentPos++;
-							}
-							if (*currentPos == '<' && *(currentPos + 1) != '=') {
+							// Not `<=`, and not `<<`: a field read after a positional construction or
+							// a qualified constant, `1.0 2.0 3.0 math::Vec3 <<z`, is no type argument list
+							if (*currentPos == '<' && *(currentPos + 1) != '=' && *(currentPos + 1) != '<') {
 								isGenericBracket = true;
 							}
 						}
@@ -554,7 +552,8 @@ namespace Qd {
 				if (immediateNext == '<') {
 					// Check it's not '<=' operator
 					const char* afterLt = scanner->_str;
-					if (*afterLt == '<' && *(afterLt + 1) != '=') {
+					// Not `<=`, and not `<<`, a field read: `Point<<x`
+					if (*afterLt == '<' && *(afterLt + 1) != '=' && *(afterLt + 1) != '<') {
 						isGenericBracketIdent = true;
 					}
 				}

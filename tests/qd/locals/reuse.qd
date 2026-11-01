@@ -1,6 +1,6 @@
 // Test: using the same local variable multiple times
 fn main() {
 	5 -> x
-	x x add print nl
-	x x x add add print nl
+	x x + print nl
+	x x x + + print nl
 }

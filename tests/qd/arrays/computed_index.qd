@@ -1,7 +1,7 @@
 // Test: Computed index using arithmetic
 fn main() {
 	[100 200 300 400 500] -> arr
-	arr 1 1 add nth print nl
-	arr 2 2 mul nth print nl
-	arr 5 2 sub nth print nl
+	arr 1 1 + nth print nl
+	arr 2 2 * nth print nl
+	arr 5 2 - nth print nl
 }

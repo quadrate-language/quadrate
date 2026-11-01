@@ -17,11 +17,11 @@ Constants are defined at the top level, outside functions.
 ```qd
 const Pi = 3.14159265358979
 
-fn circle_area(r:f64 -- area:f64) {
+def circle_area(r:f64 -- area:f64) {
 	r dup * Pi *
 }
 
-fn circle_circumference(r:f64 -- c:f64) {
+def circle_circumference(r:f64 -- c:f64) {
 	2.0 r * Pi *
 }
 
@@ -140,7 +140,7 @@ Replace magic numbers with named constants:
 ### Before (unclear)
 
 ```qd
-fn is_valid_port(port:i64 -- valid:i64) {
+def is_valid_port(port:i64 -- valid:i64) {
 	port 0 > port 65535 <= and
 }
 ```
@@ -151,7 +151,7 @@ fn is_valid_port(port:i64 -- valid:i64) {
 const MinPort = 1
 const MaxPort = 65535
 
-fn is_valid_port(port:i64 -- valid:i64) {
+def is_valid_port(port:i64 -- valid:i64) {
 	port MinPort >= port MaxPort <= and
 }
 ```
@@ -164,7 +164,7 @@ const ErrNotFound = 1
 const ErrPermission = 2
 const ErrTimeout = 3
 
-fn handle_error(code:i64 -- ) {
+def handle_error(code:i64 -- ) {
 	code switch {
 		0 { "Success" print nl }
 		1 { "Not found" print nl }
@@ -185,11 +185,11 @@ const FlagRead = 1
 const FlagWrite = 2
 const FlagExecute = 4
 
-fn has_read(flags:i64 -- result:i64) {
+def has_read(flags:i64 -- result:i64) {
 	flags FlagRead and 0 !=
 }
 
-fn has_write(flags:i64 -- result:i64) {
+def has_write(flags:i64 -- result:i64) {
 	flags FlagWrite and 0 !=
 }
 
@@ -268,7 +268,7 @@ enum Direction {
 	Right
 }
 
-fn describe(d:i64 -- ) {
+def describe(d:i64 -- ) {
 	d switch {
 		Direction::Up { "up" print nl }
 		Direction::Down { "down" print nl }

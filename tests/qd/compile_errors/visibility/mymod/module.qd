@@ -1,8 +1,8 @@
 // module
-pub fn public_func(x:i64 -- y:i64) {
+pub def public_func(x:i64 -- y:i64) {
 	x 2 *
 }
 
-fn private_func(x:i64 -- y:i64) {
+def private_func(x:i64 -- y:i64) {
 	x 3 *
 }

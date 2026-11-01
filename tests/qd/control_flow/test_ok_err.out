@@ -1,4 +1,4 @@
-Ok=1
-Err=0
-matched Ok
+Ok=0
+Err=1
 matched Err
+matched Ok

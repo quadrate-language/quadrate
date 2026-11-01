@@ -663,7 +663,7 @@ test "Map of strings survives rehashing" {
 }
 
 test "Map keys are compared by bytes" {
-	// The key was copied with strings::len bytes, which counts codepoints, so a key with any
+	// The key was copied with len bytes, which counts codepoints, so a key with any
 	// non-ASCII character in it was stored truncated -- and "héllo" collided with "héll".
 	Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
 	m "héllo" 5 insert! -> m
@@ -703,22 +703,24 @@ test "Pair carries two different types" {
 
 test "Queue reports an empty dequeue" {
 	Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
-	q dequeue if {
+	q dequeue ok if {
 		-> q2 -> val
 		val drop
 		q2 release
 		"dequeue on an empty queue should fail" testing::fail
 	} else {
+		drop drop
 		q release
 	}
 }
 
 test "Queue reports an empty peek" {
 	Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
-	q peek if {
+	q peek ok if {
 		drop
 		"peek on an empty queue should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	q release
@@ -726,32 +728,36 @@ test "Queue reports an empty peek" {
 
 test "Deque reports empty pops and peeks" {
 	Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
-	d pop_front if {
+	d pop_front ok if {
 		-> d2 -> val
 		val drop
 		d2 release
 		"pop_front on an empty deque should fail" testing::fail
 	} else {
+		drop drop
 		1 testing::assert_true
 	}
-	d pop_back if {
+	d pop_back ok if {
 		-> d3 -> val
 		val drop
 		d3 release
 		"pop_back on an empty deque should fail" testing::fail
 	} else {
+		drop drop
 		1 testing::assert_true
 	}
-	d peek_front if {
+	d peek_front ok if {
 		drop
 		"peek_front on an empty deque should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
-	d peek_back if {
+	d peek_back ok if {
 		drop
 		"peek_back on an empty deque should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	d release
@@ -759,25 +765,28 @@ test "Deque reports empty pops and peeks" {
 
 test "Map reports a missing key" {
 	Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
-	m "absent" get if {
+	m "absent" get ok if {
 		drop
 		"get on an empty map should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	m "a" 1 insert! -> m
-	m "absent" get if {
+	m "absent" get ok if {
 		drop
 		"get of a missing key should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	m "a" get! 1 testing::assert_eq
-	m "absent" remove if {
+	m "absent" remove ok if {
 		-> m2
 		m2 release
 		"remove of a missing key should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	m release
@@ -785,19 +794,21 @@ test "Map reports a missing key" {
 
 test "Set reports a missing element" {
 	Set { keys = null states = null len = 0 cap = 0 } -> s
-	s "absent" remove if {
+	s "absent" remove ok if {
 		-> s2
 		s2 release
 		"remove on an empty set should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	s "a" add! -> s
-	s "absent" remove if {
+	s "absent" remove ok if {
 		-> s3
 		s3 release
 		"remove of a missing element should fail" testing::fail
 	} else {
+		drop
 		1 testing::assert_true
 	}
 	s release

@@ -2,11 +2,11 @@ fn helper() {
 	1 print nl
 }
 
-fn process(x:i64 -- y:i64) {
+def process(x:i64 -- y:i64) {
 	x 2 *
 }
 
-fn complex_fn(a:i64 b:i64 c:i64 -- result:i64)! {
+def complex_fn(a:i64 b:i64 c:i64 -- result:i64)! {
 	a 0 < if { "negative a" 1 panic }
 	a b + c *
 }

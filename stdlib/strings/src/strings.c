@@ -109,21 +109,6 @@ static size_t pad_char_bytes(const char* pad) {
 	return utf8_decode((const unsigned char*)pad, bytes, &cp);
 }
 
-// len - get string length ( str:s -- len:i )
-int usr_strings_len(qd_context* ctx) {
-	qd_string_t* s;
-	qd_args(ctx, "strings::len", "s", &s);
-
-	// Codepoints, not bytes: `str` is UTF-8 (specification 3.1), so "héllo" is 5 characters
-	// even though it occupies 6 bytes. strings::byte_len gives the encoded size.
-	// The count is memoised on the string, so repeated calls in a loop cost nothing.
-	const int64_t len = (int64_t)qd_string_char_length(s);
-	qd_string_release(s);
-
-	qd_push_i(ctx, len);
-	return (int){0};
-}
-
 // data - get raw char* pointer to string data ( s:str -- p:ptr )
 int usr_strings_data(qd_context* ctx) {
 	qd_string_t* s;
@@ -589,7 +574,7 @@ int usr_strings_index_of(qd_context* ctx) {
 
 	// The search itself is safe on bytes -- UTF-8 is self-synchronising, so a match can only
 	// begin on a character boundary -- but the *index* returned must count codepoints, to
-	// match strings::len and char_at. It used to be a byte offset, so "héllo wörld" reported
+	// match len and char_at. It used to be a byte offset, so "héllo wörld" reported
 	// 8 for "ö" where the character index is 7.
 	int64_t result = -1;
 	if (pos != NULL) {
@@ -1809,7 +1794,7 @@ int usr_strings_is_uppercase(qd_context* ctx) {
 
 // byte_len - size of the UTF-8 encoding ( str:s -- bytes:i )
 //
-// This is what strings::len used to return. len now counts characters, which is the useful
+// This is what len used to return. len now counts characters, which is the useful
 // answer nearly everywhere; the byte size still matters when sizing a buffer or writing to
 // something that counts octets, so it keeps a name of its own rather than being reachable
 // only through strings::data. It replaces char_count, which counted codepoints and so became

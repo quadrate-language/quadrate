@@ -5,8 +5,10 @@
 //
 // -1 is all ones, so a logical `1 shr` yields 0x7FFFFFFFFFFFFFFF (9223372036854775807).
 // An arithmetic shift would yield -1.
-fn shift_native(v:i64 n:i64 -- r:i64) {
-	v n shr
+use bits
+
+def shift_native(v:i64 n:i64 -- r:i64) {
+	v n bits::shr
 }
 
 fn main() {
@@ -15,10 +17,10 @@ fn main() {
 	-8 2 shift_native print nl
 
 	// Same expressions inline in main (non-native path)
-	-1 1 shr print nl
-	-8 2 shr print nl
+	-1 1 bits::shr print nl
+	-8 2 bits::shr print nl
 
 	// Positive values are unaffected and agree across paths
 	256 4 shift_native print nl
-	256 4 shr print nl
+	256 4 bits::shr print nl
 }

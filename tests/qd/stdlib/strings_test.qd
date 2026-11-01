@@ -2,11 +2,11 @@
 use strings
 use testing
 
-test "strings::len" {
-	"hello" strings::len 5 testing::assert_eq
-	"" strings::len 0 testing::assert_eq
-	"a" strings::len 1 testing::assert_eq
-	"hello world" strings::len 11 testing::assert_eq
+test "len" {
+	"hello" len 5 testing::assert_eq
+	"" len 0 testing::assert_eq
+	"a" len 1 testing::assert_eq
+	"hello world" len 11 testing::assert_eq
 }
 
 test "strings::concat" {
@@ -330,11 +330,11 @@ test "strings::byte_len" {
 	"abc" strings::byte_len 3 testing::assert_eq
 
 	"héllo" strings::byte_len 6 testing::assert_eq
-	"héllo" strings::len 5 testing::assert_eq
+	"héllo" len 5 testing::assert_eq
 	"日本語" strings::byte_len 9 testing::assert_eq
-	"日本語" strings::len 3 testing::assert_eq
+	"日本語" len 3 testing::assert_eq
 	"🎉" strings::byte_len 4 testing::assert_eq
-	"🎉" strings::len 1 testing::assert_eq
+	"🎉" len 1 testing::assert_eq
 }
 
 test "strings::slice" {
@@ -460,12 +460,12 @@ test "strings::substring reports its documented error" {
 	// wraps it in dead code -- the process was gone before any arm ran.
 	"hi" 99 1 strings::substring switch {
 		Ok { -> _  "substring should not have succeeded" testing::fail }
-		_ { err -> code -> _  code strings::ErrOutOfBounds testing::assert_eq }
+		_ { drop err -> code -> _  code strings::ErrOutOfBounds testing::assert_eq }
 	}
 
 	"hi" -1 1 strings::substring switch {
 		Ok { -> _  "a negative start should not have succeeded" testing::fail }
-		_ { err -> code -> _  code strings::ErrOutOfBounds testing::assert_eq }
+		_ { drop err -> code -> _  code strings::ErrOutOfBounds testing::assert_eq }
 	}
 
 	// A length running past the end is still truncated, not an error.
@@ -475,6 +475,6 @@ test "strings::substring reports its documented error" {
 
 // The character was pushed as a C string, so codepoint 0 came back empty
 test "strings::from_char 0 is one byte" {
-	0 strings::from_char strings::len 1 testing::assert_eq
+	0 strings::from_char len 1 testing::assert_eq
 	0 strings::from_char 0 strings::char_at 0 testing::assert_eq
 }

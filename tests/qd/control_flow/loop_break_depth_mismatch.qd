@@ -5,7 +5,7 @@ fn main() {
 	0 10 1 for it {
 		it
 		it
-		5 eq if {
+		5 == if {
 			break
 		}
 		print nl

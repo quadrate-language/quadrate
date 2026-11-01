@@ -1,0 +1,4 @@
+// Test: the operators have no word forms; the error names the symbol.
+fn main() {
+	1 2 add print nl
+}

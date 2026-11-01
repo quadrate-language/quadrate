@@ -86,7 +86,7 @@ fi
 # Test 7: Incomplete function signature
 echo "Testing incomplete function signature..."
 cat > "$TMP_DIR/incomplete_sig.qd" << 'EOF'
-fn test(a:i64 -- {
+def test(a:i64 -- {
     a print nl
 }
 EOF

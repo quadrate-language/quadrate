@@ -1,32 +1,36 @@
 // Test: multiple checks
-stack fn might_fail(i64 -- i64)! {
+fn might_fail(i64 -- i64)! {
 	dup 10 > if {
 		"Error occurred" 1 panic
 	}
 }
 
 fn main() {
-	5 might_fail if {
+	5 might_fail ok if {
 		"Check 1: Success with " print print nl
 	} else {
+		drop
 		"Check 1: Failed" print nl
 	}
 
-	15 might_fail if {
+	15 might_fail ok if {
 		"Check 2: Success with " print print nl
 	} else {
+		drop
 		"Check 2: Failed" print nl
 	}
 
-	8 might_fail if {
+	8 might_fail ok if {
 		"Check 3: Success with " print print nl
 	} else {
+		drop
 		"Check 3: Failed" print nl
 	}
 
-	20 might_fail if {
+	20 might_fail ok if {
 		"Check 4: Success with " print print nl
 	} else {
+		drop
 		"Check 4: Failed" print nl
 	}
 }

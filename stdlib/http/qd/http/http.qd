@@ -224,14 +224,14 @@ import "libhttp.a" as "http" {
 	///   - :param for path parameters (e.g., "/users/:id")
 	///   - /* for wildcard suffix (e.g., "/static/*" matches /static/anything)
 	/// @param handler ptr Handler function receiving Ctx
-	/// @example e "/" fn(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
+	/// @example e "/" def(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
 	pub fn GET(engine:ptr path:str handler:ptr -- )
 
 	/// Register POST route.
 	/// @param engine ptr Engine
 	/// @param path str Route path
 	/// @param handler ptr Handler function
-	/// @example e "/api/users" fn(c:Ctx -- ) { c 200 "created" http::string } http::POST
+	/// @example e "/api/users" def(c:Ctx -- ) { c 200 "created" http::string } http::POST
 	pub fn POST(engine:ptr path:str handler:ptr -- )
 
 	/// Register PUT route.
@@ -256,7 +256,7 @@ import "libhttp.a" as "http" {
 	/// Middleware runs before route handlers on every request.
 	/// @param engine ptr Engine
 	/// @param middleware ptr Middleware function
-	/// @example e fn(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
+	/// @example e def(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
 	pub fn use(engine:ptr middleware:ptr -- )
 
 	/// Start server (blocking).
@@ -375,14 +375,14 @@ import "libhttp.a" as "http" {
 	/// Add middleware to group.
 	/// @param group ptr Group handle
 	/// @param middleware ptr Middleware function
-	/// @example api fn(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
+	/// @example api def(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
 	pub fn group_use(group:ptr middleware:ptr -- )
 
 	/// Register GET on group.
 	/// @param group ptr Group handle
 	/// @param path str Route path (relative to group prefix)
 	/// @param handler ptr Handler function
-	/// @example api "/users" fn(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
+	/// @example api "/users" def(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
 	pub fn group_GET(group:ptr path:str handler:ptr -- )
 
 	/// Register POST on group.
@@ -415,7 +415,7 @@ import "libhttp.a" as "http" {
 	/// @param fs_path str Filesystem directory path (e.g., "./public")
 	/// @example
 	/// // Serve files from ./public at /static/*
-	/// fn handle_static(c:ptr -- ) {
+	/// def handle_static(c:ptr -- ) {
 	///     -> c
 	///     c "/static" "./public" http::static
 	/// }

@@ -8,7 +8,7 @@ Language keywords for declarations, control flow, and more.
 |---------|-------------|
 | [`fn`](#fn) | Declares a function with a stack signature |
 | [`pub`](#pub) | Makes a function, constant, or struct visible to other modules |
-| [`stack`](#stack) | Function modifier: the inputs stay on the stack instead of being bound |
+| [`def`](#def) | Declares a function whose inputs are bound to their names instead of staying on the stack |
 | [`inline`](#inline) | Requests the compiler to inline a function at call sites |
 | [`const`](#const) | Declares a compile-time constant value |
 | [`var`](#var) | Declares a module-level mutable global variable |
@@ -34,8 +34,8 @@ Language keywords for declarations, control flow, and more.
 | [`as`](#as) | Type narrowing cast / import module namespace |
 | [`null`](#null) | Null pointer literal (0) |
 | [`$"..."`](#string-interpolation) | String interpolation |
-| [`Ok`](#ok) | Success literal (1) for switch matching |
-| [`Err`](#err) | Error literal (0) for switch matching |
+| [`Ok`](#ok) | The status of a call that succeeded (0) |
+| [`Err`](#err) | The generic error code (1) |
 | [`true`](#true) | Boolean true (1) |
 | [`false`](#false) | Boolean false (0) |
 
@@ -45,21 +45,22 @@ Language keywords for declarations, control flow, and more.
 
 ### fn
 
-Declares a function with a stack signature.
+Declares a function with a stack signature. Its inputs stay on the stack for the body to work on,
+and the names in the signature are documentation.
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) {
-	a b +
+fn sum(a:i64 b:i64 -- s:i64) {
+	+
 }
 ```
 
 Written without a name it is an anonymous function, and every rule here applies to it unchanged —
-named inputs are bound, `stack` leaves them on the stack, `!` makes it fallible, and the body must
-leave what the signature declares:
+the inputs stay on the stack (`def` binds them), `!` makes it fallible, and the body must leave
+what the signature declares:
 
 ```qd
 fn main() {
-	5 fn (x:i64 -- r:i64) { x 2 * } call print nl  // 10
+	5 fn (x:i64 -- r:i64) { 2 * } call print nl  // 10
 }
 ```
 
@@ -73,20 +74,20 @@ pub fn greet() {
 }
 ```
 
-### stack
+### def
 
-Function modifier: the input parameters are not bound as locals; they stay on the stack for the
-body to work on, and any names they carry are documentation. Without it every input must be named,
-since there would be nothing to bind. A `stack fn` must declare at least one input.
+Declares a function like `fn`, except that each input parameter is bound as a local at entry and
+taken off the stack, so the body reads its inputs by name. Every input must be named, since each
+is bound, and a `def` must declare at least one input.
 
 ```qd
-stack fn scaled(value:i64 -- result:i64) {
-	3 *
+def scaled(value:i64 factor:i64 -- result:i64) {
+	value factor *
 }
 
 fn main() {
-	7 scaled print nl  // 21
-	3 4 stack fn (i64 i64 -- r:i64) { + } call print nl  // 7
+	7 3 scaled print nl  // 21
+	3 4 def (a:i64 b:i64 -- r:i64) { a b + } call print nl  // 7
 }
 ```
 
@@ -97,11 +98,11 @@ Requests the compiler to inline a function at call sites, eliminating function c
 The compiler will inline in most cases, but may decline for recursive functions or indirect calls through function pointers. Best suited for small wrapper functions where the call overhead would dominate the function body.
 
 ```qd
-inline fn double(x:i64 -- result:i64) {
+inline def double(x:i64 -- result:i64) {
 	x 2 *
 }
 
-pub inline fn inc(x:i64 -- result:i64) {
+pub inline def incr(x:i64 -- result:i64) {
 	x 1 +
 }
 ```
@@ -176,7 +177,7 @@ Imports a module, making its functions available with `module::function` syntax.
 use strings
 
 fn main() {
-	"hello" strings::len print nl  // 5
+	"hello" len print nl  // 5
 }
 ```
 
@@ -295,7 +296,7 @@ fn do_work( -- ) {
 `loop` and `switch` arms — which makes the guard-clause style available:
 
 ```qd
-fn classify(n:i64 -- label:str) {
+def classify(n:i64 -- label:str) {
 	n 0 < if {
 		"negative"
 		return
@@ -380,7 +381,7 @@ Has two uses:
 ```qd
 use http
 
-fn get_body(c:ptr -- body:str) {
+def get_body(c:ptr -- body:str) {
 	c as http::Ctx <<body
 }
 ```
@@ -425,7 +426,7 @@ Use `pub type` to export from a module.
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-fn filter(arr:IntArray pred:Predicate -- result:IntArray) { ... }
+def keep_if(arr:IntArray pred:Predicate -- result:IntArray) { ... }
 ```
 
 ### null
@@ -452,23 +453,26 @@ Desugars to `sb::new` / `sb::append` / `sb::finish` calls. The `sb` module is au
 
 ### Ok
 
-Literal `1` (same as `true`). Used in `switch` to match the success case after a fallible function call.
+Literal `0`: the status a fallible call leaves when it succeeded. Used in `switch` to match the
+success case.
 
 ```qd
 "test.txt" io::read_file switch {
 	Ok { -> content content print }
-	_ { "error" print nl }
+	_ { drop "error" print nl }
 }
 ```
 
 ### Err
 
-Literal `0` (same as `false`). Used in `switch` to match the error case after a fallible function call.
+Literal `1`: the generic error code, which `"message" Err panic` raises. Used in `switch` to
+match that code.
 
 ```qd
 "test.txt" io::read_file switch {
 	Ok { -> content content print }
-	Err { "error reading file" print nl }
+	Err { drop "generic error" print nl }
+	_ { drop "error reading file" print nl }
 }
 ```
 

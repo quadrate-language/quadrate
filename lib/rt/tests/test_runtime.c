@@ -80,7 +80,7 @@ static void peek_empty_stack_child(void) {
 }
 
 static void printv_empty_stack_child(void) {
-	qd_printv(qd_create_context(64));
+	qd_dump(qd_create_context(64));
 }
 
 static void neg_empty_stack_child(void) {
@@ -1407,8 +1407,8 @@ TEST(PeekEmptyStackTest) {
 
 TEST(PrintvEmptyStackTest) {
 	int status = run_in_child(printv_empty_stack_child);
-	ASSERT(WIFSIGNALED(status), "printv on empty stack should abort, not return");
-	ASSERT_EQ(WTERMSIG(status), SIGABRT, "printv on empty stack should raise SIGABRT");
+	ASSERT(WIFSIGNALED(status), "dump on empty stack should abort, not return");
+	ASSERT_EQ(WTERMSIG(status), SIGABRT, "dump on empty stack should raise SIGABRT");
 }
 
 TEST(NegEmptyStackTest) {
@@ -1465,11 +1465,11 @@ TEST(PrintvPopsStackTest) {
 	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
 
 	// Printv (pop) the top element
-	int result = qd_printv(ctx);
-	ASSERT_EQ(result, 0, "printv should succeed");
+	int result = qd_dump(ctx);
+	ASSERT_EQ(result, 0, "dump should succeed");
 
 	// Stack should now have 2 elements
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after printv");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 2, "Stack should have 2 elements after dump");
 
 	// Top element should be 2 now
 	qd_stack_element_t elem;
@@ -1484,10 +1484,10 @@ TEST(PrintvIntegerTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_i(ctx, 42);
-	int result = qd_printv(ctx);
+	int result = qd_dump(ctx);
 
-	ASSERT_EQ(result, 0, "printv should succeed");
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after printv");
+	ASSERT_EQ(result, 0, "dump should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after dump");
 
 	destroy_test_context(ctx);
 }
@@ -1496,55 +1496,10 @@ TEST(PrintvFloatTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_f(ctx, 3.14);
-	int result = qd_printv(ctx);
+	int result = qd_dump(ctx);
 
-	ASSERT_EQ(result, 0, "printv should succeed");
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after printv");
-
-	destroy_test_context(ctx);
-}
-
-TEST(PrintsNonDestructiveTest) {
-	qd_context* ctx = create_test_context();
-
-	// Push three values
-	qd_push_i(ctx, 1);
-	qd_push_i(ctx, 2);
-	qd_push_i(ctx, 3);
-
-	// Stack should have 3 elements
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should have 3 elements");
-
-	// Prints (non-destructive)
-	int result = qd_prints(ctx);
-	ASSERT_EQ(result, 0, "prints should succeed");
-
-	// Stack should still have 3 elements (non-destructive)
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements after prints");
-
-	destroy_test_context(ctx);
-}
-
-TEST(PrintsEmptyStackTest) {
-	qd_context* ctx = create_test_context();
-
-	// Prints on empty stack should succeed but output nothing
-	int result = qd_prints(ctx);
-	ASSERT_EQ(result, 0, "prints on empty stack should succeed");
-
-	destroy_test_context(ctx);
-}
-
-TEST(PrintsMixedTypesTest) {
-	qd_context* ctx = create_test_context();
-
-	qd_push_i(ctx, 42);
-	qd_push_f(ctx, 3.14);
-	qd_push_s(ctx, "hello");
-
-	int result = qd_prints(ctx);
-	ASSERT_EQ(result, 0, "prints should succeed with mixed types");
-	ASSERT_EQ((int)qd_stack_size(ctx->st), 3, "Stack should still have 3 elements");
+	ASSERT_EQ(result, 0, "dump should succeed");
+	ASSERT_EQ((int)qd_stack_size(ctx->st), 0, "Stack should be empty after dump");
 
 	destroy_test_context(ctx);
 }

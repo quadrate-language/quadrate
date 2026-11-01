@@ -22,7 +22,8 @@ quadlint [options] <file|directory>...
 
 Default rules: `unused-functions`, `unused-variables`, `dead-code`,
 `deep-nesting`, `missing-defer`, `shadow-variables`, `empty-blocks`,
-`constant-conditions`.
+`constant-conditions`, `needless-binding` (a `def` that only pushes its inputs back in
+order, and could be a `fn`).
 
 Stricter rules, off by default: `--check-magic-numbers`,
 `--check-long-functions`, `--check-naming` (with `--max-function-lines <N>`).

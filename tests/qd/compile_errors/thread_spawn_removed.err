@@ -1,0 +1,1 @@
+'spawn' has been removed (it was ( fn -- thread )); threads are the thread module's: 'use thread  &f thread::spawn! -> t'

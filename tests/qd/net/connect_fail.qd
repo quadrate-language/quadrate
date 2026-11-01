@@ -10,9 +10,11 @@ fn main( -- ) {
 			"connected" print nl
 		}
 		net::ErrConnect {
+			drop
 			"connect error handled" print nl
 		}
 		_ {
+			drop
 			"unexpected error" print nl
 		}
 	}

@@ -6,7 +6,7 @@ struct State {
 }
 
 // Function that returns a struct from a method call
-fn normalize_pos(s:State -- n:math::Vec3) {
+def normalize_pos(s:State -- n:math::Vec3) {
 	s <<pos -> p
 	p normalize
 }

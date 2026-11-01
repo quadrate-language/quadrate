@@ -1,0 +1,7 @@
+// Test: a function ends on the stack variable it declares for its outputs.
+fn run<..a, ..b>(..a q:fn(..a -- ..b) -- ..a) {
+	call
+}
+
+fn main() {
+}

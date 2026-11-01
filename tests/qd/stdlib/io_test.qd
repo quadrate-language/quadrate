@@ -63,7 +63,7 @@ test "io::read_file empty file" {
 	tmpdir "/empty.txt" strings::concat -> path
 	path "" io::write_file!
 	path io::read_file! -> contents
-	contents strings::len 0 testing::assert_eq
+	contents len 0 testing::assert_eq
 	path os::delete!
 	tmpdir os::rmdir!
 }
@@ -293,7 +293,7 @@ test "io::read_file large content" {
 	"x" 1000 strings::repeat -> content
 	path content io::write_file!
 	path io::read_file! -> read_content
-	read_content strings::len 1000 testing::assert_eq
+	read_content len 1000 testing::assert_eq
 
 	path os::delete!
 	tmpdir os::rmdir!

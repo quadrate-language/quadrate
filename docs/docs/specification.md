@@ -97,11 +97,12 @@ These identifiers are reserved and MUST evaluate to integer literals:
 |----------|-------|-------------|
 | `true` | `1` | Boolean true |
 | `false` | `0` | Boolean false |
-| `Ok` | `1` | Success result |
-| `Err` | `0` | Error result |
+| `Ok` | `0` | The status of a fallible call that succeeded (§10.3) |
+| `Err` | `1` | The generic error code (§10.4) |
 | `null` | `0` | Null pointer |
 
-**Note**: `true`/`Ok` and `false`/`Err` are interchangeable pairs. `null` pushes `0` with pointer type for use in struct pointer fields.
+**Note**: `Ok` and `Err` are a status and an error code, not `false` and `true` under other
+names: no error is 0. `null` pushes `0` with pointer type for use in struct pointer fields.
 
 #### 2.3.3 Identifiers
 
@@ -232,8 +233,9 @@ $"pi={math::Pi}"               // A module-qualified constant
 
 **Note**: `and`, `or` and `not` are the logical operators and MUST use named forms (no
 symbolic equivalents). The bitwise operations of the same names live in the `bits` module
-as `bits::and`, `bits::or`, `bits::xor` and `bits::not`. Shift operators are `shl` and
-`shr`; they have no logical counterpart and stay builtins.
+as `bits::and`, `bits::or`, `bits::xor` and `bits::not`, and the shifts with them as
+`bits::shl` and `bits::shr`. The arithmetic and comparison operators MUST be written as
+symbols; they have no word forms.
 
 ### 2.4 Whitespace
 
@@ -273,7 +275,7 @@ place, so a `d128` is copied by value and needs no reference counting; a `str` i
 reference.
 
 **Strings are UTF-8, and their unit is the codepoint.** Every index and length a string
-operation takes or returns MUST count codepoints, not bytes: `"héllo" strings::len` is 5, and
+operation takes or returns MUST count codepoints, not bytes: `"héllo" len` is 5, and
 `strings::char_at 1` is U+00E9, not the byte `0xC3` that happens to begin its encoding. No
 string operation may produce invalid UTF-8; an operation that would cut a multi-byte sequence
 MUST instead act on whole characters. `strings::data` exposes the underlying bytes for the
@@ -359,7 +361,7 @@ A `d128` prints in the IEEE to-scientific-string form: the digits held, with an 
 once it is positive or the value is smaller than 1e-6 — `1.10`, `1.5e+40`, `1e-7` —
 and infinity and NaN spelled as `f64` spells them, `inf`, `-inf` and `nan`.
 
-`mod`/`%`, `inc` and `dec` are integer and `f64` operations and reject `d128`; `decimal::fmod`
+`%`, `++` and `--` are integer and `f64` operations and reject `d128`; `decimal::fmod`
 and `decimal::remainder` are its remainders.
 
 ### 3.2 Composite Types
@@ -449,7 +451,7 @@ fn sum(arr:[]i64 -- total:i64)           // an array; `arr len` gives the count
 Functions and structs can be parameterized over types:
 
 ```quadrate
-fn identity<T>(x:T -- y:T) {
+def identity<T>(x:T -- y:T) {
     x
 }
 
@@ -470,7 +472,7 @@ Type parameters SHOULD be single uppercase letters or short uppercase names.
 Function pointers MUST be represented using typed `fn(...)` syntax:
 
 ```quadrate
-fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
     x f call
 }
 
@@ -479,6 +481,57 @@ fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
 ```
 
 The `fn(...)` type specifies the full signature of the function pointer, including parameter types and return types. Using `ptr` for function pointers is permitted but `fn(...)` is preferred as it enables compile-time type checking of `call` arguments.
+
+A parameter in a function type MAY carry a name, `fn(x:i64 -- r:i64)`. The name documents it and
+is not part of the type.
+
+#### 3.4.1 Stack Variables
+
+A function type of fixed arity leaves the rest of the stack as it was, whatever that is, so
+`fn(T -- U)` already works on any stack. A **stack variable** names that rest, so that a
+function can say its function value takes or leaves *however many values the caller gives it*:
+
+```quadrate
+// The builtin `dip` (7.7), written as a function
+fn under<..a, ..b, T>(..a x:T q:fn(..a -- ..b) -- ..b x:T) {
+    -> q -> x
+    q call
+    x
+}
+
+fn main() {
+    1 2 3 def (a:i64 b:i64 -- s:i64) { a b + } under   // 3 3: + runs under the 3
+    print " " print print nl
+}
+```
+
+A stack variable is `..` followed by a name. It MUST be declared in the `<...>` list with the
+type parameters, and MAY appear only as the first element of a signature's inputs or outputs, or
+of a function type's inputs or outputs; a list has at most one. An implementation MUST reject a
+stack variable that is used without being declared, or declared without being used.
+
+In a function type, `fn(..a x:T -- ..b)` is a function value that consumes the values `..a`
+stands for and an `x`, and leaves the values `..b` stands for. In a signature, the variable at
+the bottom of the inputs is the part of the caller's stack below the named inputs that the
+function reaches into, and the one at the bottom of the outputs is what it leaves there.
+
+**At a call**, the stack variables are bound by unifying each function-typed parameter with the
+function value passed for it: the tops of the lists are matched type by type, and a stack
+variable is bound to what is left below them. A function type written without a stack variable
+has one implicitly, the same for its inputs and its outputs: `fn(T -- U)` is `fn(..r T -- ..r U)`
+for a fresh `..r`. After binding, a variable that is the same at the bottom of the call's inputs
+and outputs is the part of the stack the call does not touch, and cancels; what remains is a
+fixed effect. An implementation MUST reject a call whose stack variable no function argument
+binds, since how far it reaches cannot be known.
+
+**In a body**, the modelled stack stands on the input variable: the body MAY move the values
+above it but MUST NOT reach into it, which is an underflow. Calling a function value whose type
+reaches into that variable MUST find nothing else above it, and replaces it with the value's
+output variable; this MAY change the variable only at the top level of the body, not inside a
+branch or loop. The body MUST end on the declared output variable.
+
+A fallible function MUST NOT have stack variables: its failure exit restores a depth computed
+from its parameters (§10.3), and a stack variable has no depth until the call.
 
 ### 3.5 Special Types
 
@@ -489,8 +542,8 @@ The `fn(...)` type specifies the full signature of the function pointer, includi
 A value of type `any` carries its type with it, so a parameter of type `any` accepts every value. Passing an `any` on to a parameter of a definite type is checked when the call runs: the value MUST hold that type, or an `i64` where the parameter takes `f64` or `d128`, which widens as a plain `i64` argument does. Anything else MUST stop the program with a type mismatch naming the function and the parameter.
 
 ```quadrate
-fn next(x:i64 -- r:i64) { x 1 + }
-fn relay(a:any -- r:i64) { a next }
+def next(x:i64 -- r:i64) { x 1 + }
+def relay(a:any -- r:i64) { a next }
 
 1 relay print nl       // 2
 "two" relay print nl   // fatal: Type mismatch for parameter 1 (expected int, got str)
@@ -506,7 +559,7 @@ The `null` keyword pushes the integer value `0` with pointer semantics. It is us
 
 ```quadrate
 null 0 == if { "true" print nl }     // true — null equals 0
-42 null neq if { "true" print nl }   // true — non-zero is not null
+42 null != if { "true" print nl }   // true — non-zero is not null
 null print nl                         // prints: null, as any null ptr does
 ```
 
@@ -629,6 +682,7 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 | Operation | Stack Effect | Description |
 |-----------|--------------|-------------|
 | `drop` | `( a -- )` | Remove top |
+| `drop2` | `( a b -- )` | Remove top two |
 | `nip` | `( a b -- b )` | Remove second |
 
 **Rearrangement:**
@@ -637,6 +691,8 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 |-----------|--------------|-------------|
 | `over` | `( a b -- a b a )` | Copy second to top |
 | `rot` | `( a b c -- b c a )` | Rotate three |
+| `rrot` | `( a b c -- c a b )` | Rotate three the other way |
+| `tuck` | `( a b -- b a b )` | Copy top below second |
 | `pick` | `( x y z -- x y z x )` | Copy the third value to the top |
 
 Every stack word has a fixed effect. A word whose depth comes from a value on the stack cannot be
@@ -677,28 +733,28 @@ fn example( -- result:i64) {
 }
 ```
 
-Input parameters are bound automatically on entry, so a function MUST NOT re-bind them with
-`->`. The parameters have already been consumed from the stack, and attempting `-> x` for a
-declared parameter `x` is a stack underflow:
+The input parameters of a `def` are bound on entry, so it MUST NOT re-bind them with `->`.
+The parameters have already been consumed from the stack, and attempting `-> x` for a declared
+parameter `x` is a stack underflow:
 
 <!-- doccheck: expect-error the second function is the error this passage describes -->
 ```quadrate
-fn good(x:i64 y:i64 -- result:i64) {
+def good(x:i64 y:i64 -- result:i64) {
     x y +       // Parameters are already in scope
 }
 
-fn bad(x:i64 -- result:i64) {
+def bad(x:i64 -- result:i64) {
     -> x        // ERROR: nothing left on the stack to bind
     x 2 *
 }
 ```
 
-A `stack fn` (§5.7) binds nothing: its inputs stay on the stack for the body to work on, and
-any names they carry are documentation that is NOT in scope. A body MAY therefore bind a local
-of the same name:
+A `fn` (§5.7) binds nothing: its inputs stay on the stack for the body to work
+on, and any names they carry are documentation that is NOT in scope. A body MAY therefore bind a
+local of the same name:
 
 ```quadrate
-stack fn scaled(value:i64 -- result:i64) {
+fn scaled(value:i64 -- result:i64) {
     10 *        // The argument is on the stack, `value` is not in scope
     -> value    // ... until the body binds a local of that name
     value 1 +
@@ -893,30 +949,37 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ### 5.7 Function Declarations
 
 ```quadrate
-[pub] [inline] [stack] fn name [<TypeParams>] (params -- returns) [!] {
+[pub] [inline] fn name [<TypeParams>] (params -- returns) [!] {
+    body
+}
+[pub] [inline] def name [<TypeParams>] (params -- returns) [!] {
     body
 }
 ```
 
 - `pub`: Makes function publicly accessible from other modules
 - `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions.
-- `stack`: The input parameters are NOT bound as locals; they stay on the stack for the body to
-  work on (§4.4). Names on them are documentation and are not in scope. Without it every input
-  MUST be named, since there would be nothing to bind; with it, naming is optional and naming
-  some inputs and not others is permitted, as it changes nothing but the documentation. A
-  `stack fn` MUST declare at least one input.
-- `<TypeParams>`: Generic type parameters
+- `fn`: The inputs stay on the stack for the body to work on (§4.4); names on them are
+  documentation and are not in scope, so naming is optional and naming some inputs and not others
+  is permitted.
+- `def`: Each input parameter is bound as a local at entry and taken off the stack, so the body
+  starts on an empty stack and reads its inputs by name. Every input MUST be named, since each is
+  bound, and a `def` MUST declare at least one input.
+- `<TypeParams>`: Generic type parameters, and stack variables (`..a`, §3.4.1)
 - `!`: Marks function as fallible (can fail with error)
 
-The modifiers MAY be written in any order; the canonical order, which the formatter produces,
-is `pub inline stack`. A receiver (§8.4) is always bound, including on a `stack fn`.
+`pub` comes first, then `inline`, then `fn` or `def`. A receiver (§8.4) is always bound, in a
+`fn` as in a `def`.
+
+An identifier in the body of a `fn` that names one of its inputs, and nothing else in scope,
+MUST be reported as an input that is not bound, with a hint to write `def`.
 
 ### 5.8 Import Declarations (FFI)
 
 <!-- doccheck: skip grammar: the shape of an import block -->
 ```quadrate
 import "library.a" as "namespace" {
-    [pub] fn funcname(params -- returns) [!]
+    [pub] def funcname(params -- returns) [!]
     ...
 }
 ```
@@ -967,7 +1030,7 @@ reject a program whose arms disagree:
 
 ```quadrate
 // doccheck: expect-error arms leave 1 and 2 values respectively
-fn pick(c:i64 -- r:i64) {
+def pick(c:i64 -- r:i64) {
     c if {
         1
     } else {
@@ -991,20 +1054,19 @@ One case is exempt, because the arm never reaches the merge point:
   `c if { "..." panic }` is unaffected whatever the other arm leaves. Any statement after the
   diverging one is unreachable and does not count.
 
-An `if` immediately after a bare fallible call (§10.3) is **not** exempt. The two arms start
-from different stacks — the success arm from the call's results, the failure arm from the stack
-as it was before the call — and MUST still end at the same depth. In practice the success arm
-consumes or drops the results:
+An `if` testing a bare fallible call (§10.3) is no exception. Both arms start from the same
+stack, the call's results, which on failure are zero values; the arm that does not use them
+drops them, and an arm that forgets is the mismatch this rule reports:
 
 ```quadrate
-// doccheck: expect-error the success arm leaves the result, the failure arm has none
-fn divide(a:i64 b:i64 -- result:i64)! {
+// doccheck: expect-error the success arm consumes the result, the failure arm leaves it
+def divide(a:i64 b:i64 -- result:i64)! {
     b 0 == if { "division by zero" -1 panic }
     a b /
 }
 
 fn main() {
-    10 2 divide if { "ok" print nl } else { "failed" print nl }
+    10 2 divide ok if { print nl } else { "failed" print nl }
 }
 ```
 
@@ -1012,10 +1074,6 @@ An `if` without an `else` is an `if` whose other arm is empty, so the same rule 
 then-arm MUST leave the stack at the depth it found it, and an implementation MUST reject an arm
 that does not. The reasoning is the one above — the arm may not run, so what follows cannot read
 a value whose presence depends on it — and the exemption for a diverging arm applies here too.
-
-The exception is again a bare fallible call: with no failure arm to run, what follows sees the
-pre-call stack, so the success arm MUST leave that same depth — by consuming the results or by
-diverging.
 
 ### 6.2 For Loops
 
@@ -1100,8 +1158,8 @@ The rule of §6.1.1 applies to `switch` arms: every arm that reaches the merge p
 the stack at the same depth, and an implementation MUST reject a program whose arms disagree.
 Diverging arms are exempt as for `if`. A `switch` with no `_` arm may match nothing, in which
 case no arm runs; its arms MUST therefore leave the stack at the depth it had before the
-`switch`. After a bare fallible call (§10.3) the `Ok` arm starts from the call's results and
-every other arm from the pre-call stack.
+`switch`. After a bare fallible call (§10.3) every arm starts from the call's results, which
+are zero values in the arms a failure reaches.
 
 ### 6.6 Break and Continue
 
@@ -1150,7 +1208,7 @@ after a point from which the function already returned, MUST NOT run:
 
 <!-- doccheck: skip pattern sketch: acquire and release stand for a program's own words -->
 ```quadrate
-fn open_maybe(c:i64 -- ) {
+def open_maybe(c:i64 -- ) {
     c if {
         acquire -> r
         defer { r release }    // registered only when c is non-zero
@@ -1203,17 +1261,17 @@ Functions are called by name; arguments must already be on stack:
 **Module-qualified calls:**
 ```quadrate
 3.14 math::sin      // Call 'sin' from 'math' module
-"hello" strings::len    // Call 'len' from 'strings' module
+"hello" len    // Call 'len' from 'strings' module
 ```
 
 ### 7.3 Generic Functions
 
 ```quadrate
-fn identity<T>(x:T -- y:T) {
+def identity<T>(x:T -- y:T) {
     x
 }
 
-fn pair<A, B>(a:A b:B -- first:A second:B) {
+def pair<A, B>(a:A b:B -- first:A second:B) {
     a b
 }
 ```
@@ -1239,16 +1297,17 @@ vec length
 
 <!-- doccheck: skip grammar: the shape of an anonymous function -->
 ```quadrate
-[stack] fn (params -- returns) [!] { body }
+[let] fn (params -- returns) [!] { body }
+fn { body }
 ```
 
 An anonymous function is a function that has no name. Every rule in §5.7 about a named function's
 parameters, body and fallibility applies to it unchanged, and an implementation MUST NOT accept in
 one what it rejects in the other:
 
-- Without `stack`, every input MUST be named, and each name is bound as a local at entry, so the
-  body reads its arguments by name and does not find them on the stack.
-- With `stack`, the inputs stay on the stack, naming is optional, and a `stack fn` MUST declare at
+- A `fn` leaves the inputs on the stack, and naming is optional.
+- A `def` binds them: every input MUST be named, and each name is bound as a local at entry, so the body
+  reads its arguments by name and does not find them on the stack. A `def` MUST declare at
   least one input.
 - `!` marks it fallible. Only then may its body `panic`, and a `call` on it MUST be written `!`,
   `?`, or be followed immediately by `if` or `switch` (§9.2) — the rule that governs a call to a
@@ -1259,7 +1318,7 @@ one what it rejects in the other:
   error, so the program still compiles.
 
 A bare identifier in the parameter list is a **type**, as it is in a named function's parameter
-list: `stack fn (Point -- r:f64)` takes a `Point`. It does not declare a parameter called `Point`.
+list: `fn (Point -- r:f64)` takes a `Point`. It does not declare a parameter called `Point`.
 
 **Implicit capture**: Variables from the enclosing scope MUST be automatically captured when referenced inside the closure body. An explicit capture list MUST NOT be required. A `for` iterator is in scope for the loop body and MUST be capturable there.
 
@@ -1288,22 +1347,52 @@ sum call print nl                // Prints 30
 
 **Closure without captures** (plain function pointer):
 ```quadrate
-fn (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
+def (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 3 4 add_fn call print nl         // Prints 7
 ```
 
 **Arguments left on the stack**:
 ```quadrate
-3 4 stack fn (i64 i64 -- r:i64) { + } call print nl   // Prints 7
+3 4 fn (i64 i64 -- r:i64) { + } call print nl   // Prints 7
 ```
 
 **Fallible**:
 ```quadrate
-0 fn (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call if {
+0 def (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call if {
     print nl
 } else {
     "caught" print nl            // Prints caught
 }
+```
+
+#### 7.5.1 Inferred Stack Effect
+
+`fn { body }` has no signature. Its body works on the stack, as any function's does, and its stack
+effect is **inferred** from the body rather than declared:
+
+- **Inputs.** The fewest values the body has to find on the stack for none of its words to
+  underflow. A body that never reaches below what it pushes takes none.
+- **Outputs.** What the body leaves, with those inputs consumed.
+- **Types.** An output's type is the one the body gives it: `fn { 2.0 * }` leaves an `f64`. An
+  input's type is not inferred, and neither is the type of an output that is an input passed
+  through, or that arithmetic on an input produced. These are written `_` where the type is
+  shown, in a diagnostic or an editor's hint, and match any type.
+
+The inferred effect is the function value's type, `fn(_ -- f64)`, and every check that applies
+to a declared type applies to it: `call`, a parameter of function type, and a stack variable
+(§3.4.1) all see exactly that effect. Errors in the body are reported as in any body. If the body
+calls a function value whose effect is unknown (§7.6), its own effect is unknown too, and the
+checks that depend on it are switched off for it.
+
+A `fn { }` captures as any anonymous function does. It is not fallible: its body MUST NOT
+`panic`, and `?` inside it is an error. A fallible function value needs a signature.
+`def { }` is an error, since there are no inputs for it to bind.
+
+```quadrate
+5 fn { 2 * } call print nl                   // 10
+3 4 fn { + } call print nl                   // 7
+10 20 fn { 1 + } dip print " " print print nl   // 20 11
+[1 2 3] fn { dup * } map -> squares     // [1 4 9]
 ```
 
 ### 7.6 Function Pointers
@@ -1312,6 +1401,68 @@ fn (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 &function_name      // Get function pointer
 pointer call        // Invoke function via pointer
 ```
+
+
+### 7.7 Combinators
+
+A combinator is a builtin that runs function values in a fixed pattern. Each takes its function
+values from the top of the stack and the values they work on from below them:
+
+| Combinator | Effect | Runs |
+|------------|--------|------|
+| `dip` | `( ..a x q -- ..b x )` | `q` on what is under `x`, then pushes `x` back |
+| `keep` | `( ..a x q -- ..b x )` | `q` on `x`, then pushes `x` back |
+| `dip2` | `( ..a x y q -- ..b x y )` | `q` on what is under `x` and `y`, then pushes them back |
+| `keep2` | `( ..a x y q -- ..b x y )` | `q` on `x` and `y`, then pushes them back |
+| `bi` | `( ..a x p q -- ..c )` | `p` on `x`, then `q` on `x` pushed again |
+| `tri` | `( ..a x p q r -- ..d )` | `p`, `q` and `r` on `x` in turn, as `bi` does |
+| `both` | `( ..a x y q -- ..c )` | `q` on `x`, then `q` on `y` |
+| `times` | `( ..a n q -- ..a )` | `q` `n` times |
+| `each` | `( ..a arr q -- ..a )` | `q` with each element of `arr` pushed, in order |
+| `map` | `( arr q -- arr2 )` | `q` on each element alone; `arr2` holds what it leaves |
+| `filter` | `( arr q -- arr2 )` | `q` on each element alone; `arr2` holds the elements it leaves a true flag for |
+| `fold` | `( arr acc q -- acc )` | `q` on the accumulator and each element in turn, starting from `acc` |
+| `any` | `( arr q -- flag )` | `q` on each element alone until one leaves a true flag; 1 if one did |
+| `all` | `( arr q -- flag )` | `q` on each element alone until one leaves a false flag; 1 if none did |
+| `find` | `( arr q -- elem flag )` | `q` on each element alone until one leaves a true flag; that element and 1, or the zero of the element type and 0 |
+| `index` | `( arr q -- i )` | `q` on each element alone until one leaves a true flag; its position, or -1 |
+| `scan` | `( arr start q -- i )` | as `index`, from position `start` on; a negative `start` is 0 |
+
+A combinator MUST be type-checked by doing what it does to the modelled stack: a function value
+it runs on the stack (`dip`, `dip2`, `keep`, `keep2`, `bi`, `tri`, `both`, `times`, `each`) MAY take and leave
+any number of values, and its effect is applied where it runs. The function value of `times` and
+`each` runs again on what it leaves, so it MUST leave the stack as it found it, in depth and in
+types. That of `map`, `filter`, `any`, `all`, `find`, `index` and `scan` MUST take one value
+and leave one, a flag for all but `map`; `any`, `all`, `find`, `index` and `scan` MUST stop at
+the first element that decides the answer; that of `fold` MUST take two and leave one, of the
+accumulator's type. The start position of `scan` MUST be an `i64`.
+
+`each`, `fold`, `any`, `all`, `find`, `index` and `scan` MUST also accept a `str` in place of the
+array. Its
+elements are its characters, each an `i64` codepoint, in order (§3.1), and a position is a
+character index, as `strings::char_at` counts them. A string that is not well-formed UTF-8 MUST
+be read as the strings module reads it: a byte that does not begin a well-formed sequence is one
+character, whose value is that byte.
+
+A function value of a combinator MUST NOT be fallible: there is nowhere for its failure to go.
+
+**Written in place.** When the function values are `fn { }` literals written immediately before
+the combinator, their bodies MUST be checked on the stack where they run, with the types of the
+real values, and an implementation SHOULD compile them inline, creating no function value. A
+body runs under the rules of an anonymous function's body (7.5) wherever it is compiled: it is
+not fallible, and a loop exit in it does not leave a loop outside it. Any other function value
+-- a local, a parameter, `&name`, a lambda with a signature -- is called, and checked by its
+type.
+
+```quadrate
+10 20 fn { 1 + } dip              // 11 20
+0 [1 2 3] fn { + } each           // 6
+[1 2 3 4] fn { 2 % 0 == } filter fn { dup * } map 0 fn { + } fold   // 20
+```
+
+The combinators are builtins, so a function in a program MUST NOT take one of their names, nor
+any other builtin's: a call by that name would run the builtin. A module's function MAY, since it
+is called qualified.
 
 ---
 
@@ -1360,10 +1511,27 @@ it accepts as a value elsewhere — including a nested struct literal, an array 
 anonymous function:
 
 ```quadrate
-Box { items = [1 2 3]  f = fn (x:i64 -- r:i64) { x 10 * } }
+Box { items = [1 2 3]  f = def (x:i64 -- r:i64) { x 10 * } }
 ```
 
 The same holds for the elements of an array literal (3.2.2).
+
+**Positional construction.** A struct's name used as a word builds one from the stack: it takes
+one value per field, in declaration order -- the first field deepest, the last on top -- as a
+function takes its inputs.
+
+```quadrate
+struct Point { x:f64 y:f64 }
+
+1.0 2.0 Point -> p      // Point { x = 1.0 y = 2.0 }
+fn new_point(x:f64 y:f64 -- p:Point) { Point }
+```
+
+Every field MUST be given, including one with a default, and each value MUST have the field's
+type, an `i64` widening to an `f64` field as it does for an argument. A module's struct is built
+by its qualified name, `1.0 2.0 3.0 math::Vec3`, and a generic struct takes its type arguments
+from the values, `7 Box`. The named form above stays the one to use when the values do not
+arrive on the stack in field order, or when the field names say something the order does not.
 
 ### 8.3 Field Access (Read)
 
@@ -1428,6 +1596,10 @@ p <<x            // unchanged
 Implementations MUST reject `clone` where the struct type is not known at the call site,
 including on an untyped `ptr`: the type is what gives the size to allocate and the fields
 to retain. `as` narrows a pointer and is the way through.
+
+`clone` on an array MUST produce a new array of the same element type and length, with the
+elements copied, and is shallow in the same way: a string, array or struct an element refers
+to is shared.
 
 ### 8.5 Generic Structs
 
@@ -1564,7 +1736,7 @@ Where a directory sits does not matter: one named `lib` or `tests` is a namespac
 Functions that can fail MUST be marked with `!`:
 
 ```quadrate
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
     b 0 == if {
         "division by zero" -1 panic
     }
@@ -1587,11 +1759,10 @@ Signal an error from within a fallible function:
 - Sets runtime error state and returns from the enclosing function immediately
 - Only valid in fallible functions
 
-The error code is chosen by the program and MAY be any `i64`, including `0`. Implementations
-MUST therefore record "an error is signalled" separately from the code itself: a `panic`
-carrying code `0` is a failure, even though `0` is also the conventional "no error" value and
-the value of `Err` (§10.4). Testing the code alone would report such a call as a success and
-hand the caller a return value that was never produced.
+The error code is chosen by the program and MAY be any `i64` except `0`. A caller reads the code
+as the call's status (§10.3), where `0` is `Ok`, so a failure carrying it would read as a success.
+An implementation MUST reject a `panic` whose code is written as `0` or `Ok`, and MUST stop the
+program when a code computed at run time turns out to be `0`.
 
 ### 10.3 Error Handling at Call Site
 
@@ -1603,7 +1774,7 @@ hand the caller a return value that was never produced.
 **Propagate error (`?` operator):**
 <!-- doccheck: continues -->
 ```quadrate
-fn wrapper(a:i64 b:i64 -- result:i64)! {
+def wrapper(a:i64 b:i64 -- result:i64)! {
     a b divide?     // Propagates error to caller if divide fails
     2 *
 }
@@ -1611,70 +1782,80 @@ fn wrapper(a:i64 b:i64 -- result:i64)! {
 
 The `?` operator requires the enclosing function to be fallible. On error, the function returns immediately, preserving the callee's error state.
 
-**Check with if-else:**
+**A bare call** — neither `!` nor `?` — MUST leave the same shape whichever way it went: the
+function's results, then a **status**. The status MUST be `Ok` (`0`) on success and the error code
+on failure. On failure each result MUST be the zero value of its declared type (§3.2.2): `0`,
+`0.0`, an empty string, or null. The call's stack effect therefore never depends on what follows
+it, and the status is an ordinary `i64` that MAY be bound, stored, returned or passed on:
+
+<!-- doccheck: continues -->
 ```quadrate
-10 0 divide if {
-    // Success - result on stack
-    print nl
-} else {
-    // Failure - the status has already been consumed by `if`
-    "Division failed" print nl
+fn main() {
+    10 0 divide -> status -> q
+    status ok if { q print nl } else { "failed with code " print status print nl }
 }
 ```
 
-The status value a bare fallible call leaves is consumed by the `if` (or `switch`) that reads
-it. Neither arm receives it, so an arm MUST NOT `drop` it — doing so underflows the stack. On
-success the call's own return values are on the stack for the success arm to use; on failure
-there are none: the failure arm sees the stack exactly as it was before the call.
-
 That guarantee holds whatever the callee's body did before it failed. A fallible function's
-failure exit MUST discard anything above the depth the caller expects — the depth at entry
-minus the declared inputs (and the receiver) — so a callee with unnamed parameters that panics
-before consuming them, or one that pushes a value and then panics, leaves nothing behind. An
-implementation MUST model the failure arm from that pre-call stack and MUST reject a `drop` in
-it (§6.1.1).
+failure exit MUST discard anything above the depth the caller expects — the depth at entry minus
+the declared inputs (and the receiver) — and then push a zero value of each declared result. This
+holds for anonymous functions marked `!` as for named ones.
 
-**Check with switch:**
+**Test with `ok` or `fail` and `if`:**
 
-A bare fallible call MUST leave a status value that the following `if` or `switch` consumes.
-The two consumers require different shapes, and an implementation MUST provide each:
+`ok` (`( status -- flag )`) is `1` when the status is `Ok`, and `fail` is its inverse. Both arms
+start with the call's results; the arm that does not use them drops them.
 
-- Before an `if`, the status MUST be a boolean — non-zero on success, zero on failure — because
-  `if` tests truthiness. Pushing a raw error code here would make any code >= 2 select the
-  success branch.
-- Before a `switch`, the status MUST carry the error code, so specific codes can be matched.
+<!-- doccheck: continues -->
+```quadrate
+fn main() {
+    10 0 divide ok if {
+        print nl
+    } else {
+        drop
+        "Division failed" print nl
+    }
+}
+```
 
-`Ok` as a case label MUST mean "the call succeeded", not "the status equals 1". Error codes are
-chosen by the program, so a `panic` carrying code `1` MUST NOT match `Ok`, and a `panic`
-carrying code `0` MUST NOT match it either (§10.2).
+An implementation MUST reject an `if` written immediately after a bare fallible call. The status
+is `0` on success, so such an `if` would take its first arm when the call failed — the opposite of
+what a reader expects, and of what the same code meant when the status was a success flag. The
+status is tested with `ok` or `fail` first.
+
+**Match with switch:**
+
+`switch` reads the status itself, so the `Ok` arm is the success arm and a specific error code,
+or `_`, a failure arm. Every arm starts with the call's results:
+
+```quadrate
+use io
+
+fn main() {
+    "/no/such/file" io::Read io::open switch {
+        Ok {
+            -> handle
+            handle io::close
+        }
+        io::ErrNotFound {
+            drop
+            "File not found" print nl
+        }
+        _ {
+            drop
+            "Unknown error" print nl
+        }
+    }
+}
+```
 
 This MUST hold identically for functions defined in Quadrate and for those declared in an
 `import` block (§5.8).
 
-As with `if`, the `switch` consumes the status: no arm receives it, and an arm MUST NOT `drop`
-it.
-
-```quadrate
-path io::Read io::open switch {
-    Ok {
-        -> handle
-        // use handle
-        handle io::close
-    }
-    io::ErrNotFound {
-        "File not found" print nl
-    }
-    _ {
-        "Unknown error" print nl
-    }
-}
-```
-
 ### 10.4 Error Constants
 
-By convention:
-- `Ok` = 1 (success)
-- `Err` = 0 (generic error)
+- `Ok` = 0, the status of a call that succeeded
+- `Err` = 1, the generic error code
 - Module-specific errors start at 2
 
 Example from `io` module:
@@ -1692,23 +1873,21 @@ Retrieve error information after a failed call:
 err    // Stack effect: ( -- msg:str code:i64 )
 ```
 
-`err` reports the code the `panic` carried, whatever it was — including `0`. Reading the error
-state clears it.
+`err` reports the code the `panic` carried. Reading the error state clears it.
 
 A fallible function implemented natively rather than in Quadrate MUST report failure through the
-same error state, not only by pushing a status value. The `!` and `?` operators read the error
-state; a `switch` reads the pushed status. An implementation that sets only the status makes the
-two disagree — `switch` sees the failure while `!` sees success, falls through, and pops the status
-as if it were the call's result, so the failure surfaces later as an unrelated stack error. A
-native fallible function therefore MUST, on failure, set the error code, set an error message, push
-the status, and return the status.
+error state: on failure it MUST set the error code and an error message, push the code, and
+return it; on success it pushes its results and then `1`. The call site turns either into the
+status of §10.3, pushing the zero results a failed native call did not. The `!` and `?` operators
+read the error state, so a native that only pushed a code would make `switch` see a failure that
+`!` did not.
 
 ### 10.6 Worked Example
 
-A complete program exercising all four call-site forms against one fallible function:
+A complete program exercising the call-site forms against one fallible function:
 
 ```quadrate
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
     b 0 == if {
         "division by zero" -1 panic
     }
@@ -1716,30 +1895,34 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 }
 
 // `?` propagates: doubled is fallible too, so a failure in divide returns from it immediately.
-fn doubled(a:i64 b:i64 -- result:i64)! {
+def doubled(a:i64 b:i64 -- result:i64)! {
     a b divide?
     2 *
 }
 
 fn main() {
-    // 1. if/else -- the status is a boolean, consumed by the `if`
-    10 2 divide if { "10/2 = " print print nl } else { "failed" print nl }
-    10 0 divide if { "unreachable: " print print nl } else { "10/0 failed as expected" print nl }
+    // 1. ok/fail and if -- the status turned into a flag
+    10 2 divide ok if { "10/2 = " print print nl } else { drop "failed" print nl }
+    10 0 divide ok if { "unreachable: " print print nl } else { drop "10/0 failed as expected" print nl }
 
-    // 2. switch -- the status carries the error code, so specific codes can be matched
+    // 2. switch -- the status is the error code, so specific codes can be matched
     10 0 divide switch {
         Ok { "unreachable: " print print nl }
-        -1 { "caught code -1: " print err print " " print print nl }
-        _  { "some other error" print nl }
+        -1 { drop "caught code -1: " print err print " " print print nl }
+        _  { drop "some other error" print nl }
     }
 
-    // 3. ! aborts the program on failure; here it succeeds
+    // 3. the status kept as a value
+    10 0 divide -> status drop
+    "status: " print status print nl
+
+    // 4. ! aborts the program on failure; here it succeeds
     "20/4 = " print 20 4 divide! print nl
 
-    // 4. ? propagates to the caller
+    // 5. ? propagates to the caller
     10 2 doubled switch {
         Ok { "(10/2)*2 = " print print nl }
-        _  { "failed" print nl }
+        _  { drop "failed" print nl }
     }
 }
 ```
@@ -1750,6 +1933,7 @@ Output:
 10/2 = 5
 10/0 failed as expected
 caught code -1: -1 division by zero
+status: -1
 20/4 = 5
 (10/2)*2 = 10
 ```
@@ -1868,8 +2052,9 @@ the capacity they allocate, and a zeroed slot holds nothing.
 
 **An instruction that pops a value releases it, unless it hands the value on.** `drop` releases;
 `==` and `!=` release both operands; `dup` retains the copy it makes; `swap`, `over`, `rot` and
-`nip` leave the net count unchanged. A function's parameters are bound as locals and released
-when it returns; its results are pushed with a reference the caller then owns.
+`nip` leave the net count unchanged. The parameters of a `def` are bound as locals and
+released when it returns; those of any other function stay on the stack and are released by
+whatever consumes them. Its results are pushed with a reference the caller then owns.
 
 **A value may be held in several places at once**, and each gives its reference back
 independently: a node reachable from a list's head pointer and from its tail pointer is freed
@@ -1956,7 +2141,7 @@ Use `defer` for explicit cleanup:
 
 <!-- doccheck: skip excerpt: the body is elided and io is used without an import, to keep defer in view -->
 ```quadrate
-fn process(path:str -- )! {
+def process(path:str -- )! {
     path io::Read io::open!
     -> file
     defer { file io::close }
@@ -1972,16 +2157,16 @@ fn process(path:str -- )! {
 
 ### 12.1 Arithmetic
 
-| Instruction | Alias | Stack Effect | Description |
-|-------------|-------|--------------|-------------|
-| `add` | `+` | `(a b -- c)` | Addition |
-| `sub` | `-` | `(a b -- c)` | Subtraction |
-| `mul` | `*` | `(a b -- c)` | Multiplication |
-| `div` | `/` | `(a b -- c)` | Division |
-| `mod` | `%` | `(a b -- c)` | Modulo |
-| `neg` | | `(a -- b)` | Negation |
-| `inc` | `++` | `(a -- b)` | Increment by 1 |
-| `dec` | `--` | `(a -- b)` | Decrement by 1 |
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `+` | `(a b -- c)` | Addition |
+| `-` | `(a b -- c)` | Subtraction |
+| `*` | `(a b -- c)` | Multiplication |
+| `/` | `(a b -- c)` | Division |
+| `%` | `(a b -- c)` | Modulo |
+| `neg` | `(a -- b)` | Negation |
+| `++` | `(a -- b)` | Increment by 1 |
+| `--` | `(a -- b)` | Decrement by 1 |
 
 **Integer semantics.** Integer arithmetic is two's-complement and wraps on overflow:
 `9223372036854775807 1 +` yields `-9223372036854775808`, and `-9223372036854775808 -1 /`
@@ -2000,7 +2185,7 @@ NaN. The integer rule above does not apply to floats, and neither the compiler n
 runtime rejects a zero float divisor. NaN compares unequal to everything including itself,
 so `x x ==` is `0` when `x` is NaN; test for it with `math::is_nan` rather than `==`.
 Infinity and NaN have no literal spelling — `math::inf` and `math::nan` name them, and
-`math::is_inf` and `math::is_finite` classify. `mod`/`%` is integer-only and reports a type
+`math::is_inf` and `math::is_finite` classify. `%` is integer-only and reports a type
 error on float operands; `math::fmod` is the float remainder.
 
 **d128 semantics.** `d128` arithmetic follows IEEE 754-2008 decimal128, with the rules of
@@ -2012,15 +2197,15 @@ and `10d 4d /` is `2.5`.
 
 ### 12.2 Comparison
 
-| Instruction | Alias | Stack Effect | Description |
-|-------------|-------|--------------|-------------|
-| `eq` | `==` | `(a b -- bool)` | Equal |
-| `neq` | `!=` | `(a b -- bool)` | Not equal |
-| `lt` | `<` | `(a b -- bool)` | Less than |
-| `gt` | `>` | `(a b -- bool)` | Greater than |
-| `lte` | `<=` | `(a b -- bool)` | Less than or equal |
-| `gte` | `>=` | `(a b -- bool)` | Greater than or equal |
-| `within` | | `(x lo hi -- bool)` | lo <= x <= hi |
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `==` | `(a b -- flag)` | Equal |
+| `!=` | `(a b -- flag)` | Not equal |
+| `<` | `(a b -- flag)` | Less than |
+| `>` | `(a b -- flag)` | Greater than |
+| `<=` | `(a b -- flag)` | Less than or equal |
+| `>=` | `(a b -- flag)` | Greater than or equal |
+| `within` | `(a lo hi -- flag)` | lo <= a <= hi |
 
 **Operands of `==` and `!=`.** Numbers compare by value, and an `i64` may be compared with an
 `f64`. Strings compare by content, so two strings with the same characters are equal whether or
@@ -2040,24 +2225,24 @@ Every non-zero value counts as true and the result is always 0 or 1, so `2 1 and
 Both operands are always evaluated: these are ordinary stack words, and a guard of the
 form `i len < xs i nth ... and` reads `xs[i]` whether or not the bound check passed.
 
-| Instruction | Alias | Stack Effect | Description |
-|-------------|-------|--------------|-------------|
-| `and` | | `(a b -- c)` | 1 if both operands are non-zero |
-| `or` | | `(a b -- c)` | 1 if either operand is non-zero |
-| `not` | | `(a -- b)` | 1 if the operand is zero |
+| Instruction | Stack Effect | Description |
+|-------------|--------------|-------------|
+| `and` | `(a b -- flag)` | 1 if both operands are non-zero |
+| `or` | `(a b -- flag)` | 1 if either operand is non-zero |
+| `not` | `(a -- flag)` | 1 if the operand is zero |
 
 ### 12.3.1 Bitwise
 
-The shifts are builtins. AND, OR, XOR and NOT would collide with the logical words above,
-so they live in the `bits` module and MUST be written `bits::and`, `bits::or`,
-`bits::xor` and `bits::not`.
+AND, OR, XOR and NOT would collide with the logical words above, so they live in the `bits`
+module with the shifts, and MUST be written `bits::and`, `bits::or`, `bits::xor`, `bits::not`,
+`bits::shl` and `bits::shr`.
 
-| Instruction | Alias | Stack Effect | Description |
-|-------------|-------|--------------|-------------|
-| `shl` | | `(a n -- b)` | Shift left |
-| `shr` | | `(a n -- b)` | Shift right (logical) |
+| Function | Stack Effect | Description |
+|----------|--------------|-------------|
+| `bits::shl` | `(a n -- b)` | Shift left |
+| `bits::shr` | `(a n -- b)` | Shift right (logical) |
 
-**Shift semantics.** `shr` is a logical shift: the operand is treated as unsigned and
+**Shift semantics.** `bits::shr` is a logical shift: the operand is treated as unsigned and
 zeros are shifted in. The shift count `n` MUST be in the range 0..63; any other count is
 a fatal error, whether the operation is compiled, inlined, or executed by the runtime.
 
@@ -2069,10 +2254,16 @@ See [Section 4.2](#42-stack-operations) for complete list.
 
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
-| `append` | `(arr elem -- arr)` | Append element |
-| `set` | `(arr idx elem -- )` | Set element at index |
-| `nth` | `(arr idx -- elem)` | Get element at index |
-| `len` | `(arr -- n)` | Get array length |
+| `append` | `(arr x -- arr)` | Append an element |
+| `set` | `(arr i x -- )` | Store an element at index `i` |
+| `nth` | `(arr i -- elem)` | The element at index `i` |
+| `len` | `(arr -- n)` | The number of elements |
+| `clone` | `(arr -- arr2)` | A shallow copy |
+
+`len` and `nth` MUST also accept a `str`, as a sequence of characters: `len` is its length in
+characters and `nth` the codepoint of the character at a character index, the values
+`len` and `strings::char_at` give. An index outside the string is a fatal error, as it
+is for an array.
 
 ### 12.6 Type Operations
 
@@ -2086,8 +2277,7 @@ See [Section 4.2](#42-stack-operations) for complete list.
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
 | `print` | `(x -- )` | Print value |
-| `printv` | `(x -- )` | Print value with type info |
-| `prints` | `( -- )` | Print entire stack contents (debug) |
+| `dump` | `(x -- )` | Print value with type info |
 | `nl` | `( -- )` | Print newline |
 
 ### 12.8 Error Handling
@@ -2096,6 +2286,8 @@ See [Section 4.2](#42-stack-operations) for complete list.
 |-------------|--------------|-------------|
 | `panic` | `(msg code -- )` | Signal error (fallible functions only) |
 | `err` | `( -- msg code)` | Get last error info |
+| `ok` | `(status -- flag)` | 1 if a fallible call's status is `Ok` (§10.3) |
+| `fail` | `(status -- flag)` | 1 if a fallible call's status is an error code |
 
 ### 12.9 Function Calls
 
@@ -2302,7 +2494,7 @@ Implementations MUST provide the following runtime functions:
 - `qd_lt`, `qd_gt`, `qd_eq`, `qd_neq`, `qd_lte`, `qd_gte` - Comparison
 - `qd_land`, `qd_lor`, `qd_lnot` - Logical (§12.3): the operations `and`, `or` and `not` name
 - `qd_and`, `qd_or`, `qd_xor`, `qd_not`, `qd_shl`, `qd_shr` - Bitwise (§12.3.1): the operations
-  `bits::and`, `bits::or`, `bits::xor`, `bits::not`, `shl` and `shr` name
+  `bits::and`, `bits::or`, `bits::xor`, `bits::not`, `bits::shl` and `bits::shr` name
 
 **Memory:**
 - `qd_struct_alloc(size, destructor)` - Allocate struct
@@ -2333,12 +2525,14 @@ enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
 enum_variant    = identifier [ "=" integer ] ;
 type_alias_decl = ["pub"] "type" identifier "=" type ;
 struct_decl     = ["pub"] ["packed"] "struct" identifier [type_params] "{" { field_decl } "}" ;
-fn_decl         = ["pub"] "fn" identifier [type_params] signature ["!"] block ;
+fn_decl         = ["pub"] { "inline" | "let" } "fn" identifier [type_params] signature ["!"] block ;
 import_decl     = "import" string "as" string "{" { import_fn } "}" ;
 test_decl       = "test" string block ;
 
-type_params     = "<" identifier { "," identifier } ">" ;
-signature       = "(" [ param_list ] "--" [ param_list ] ")" ;
+type_params     = "<" type_param { "," type_param } ">" ;
+type_param      = identifier | stack_var ;
+stack_var       = ".." identifier ;   /* 3.4.1 */
+signature       = "(" [ stack_var ] [ param_list ] "--" [ stack_var ] [ param_list ] ")" ;
 param_list      = param { param } ;
 param           = identifier ":" type ;
 field_decl      = identifier ":" type [ "=" expression ] ;
@@ -2369,11 +2563,13 @@ array_lit       = "[" { expression } "]" ;
 field_access    = "<<" identifier ;
 field_set       = ">>" identifier ;
 local_bind      = "->" identifier ;
-anon_fn         = "fn" signature block ;  /* captures are implicit */
+anon_fn         = [ "let" ] "fn" signature [ "!" ] block     /* captures are implicit */
+                | "fn" block ;                             /* effect inferred, 7.5.1 */
 fn_call         = identifier [ "!" ] ;
 
 type            = "i64" | "f64" | "d128" | "str" | "ptr" | "bool" | sized_int
-                | "[]" type | identifier [type_args] | "*" type ;
+                | "[]" type | identifier [type_args] | "*" type
+                | "fn" signature [ "!" ] ;
 sized_int       = "i8" | "u8" | "i16" | "u16" | "i32" | "u32" | "u64" ;
 type_args       = "<" type { "," type } ">" ;
 
@@ -2381,10 +2577,10 @@ operator        = "+" | "-" | "*" | "/" | "%" | "++" | "--"
                 | "<" | ">" | "==" | "!=" | "<=" | ">="
                 ;
 
-instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
+instruction     = "dup" | "dup2" | "swap" | "drop" | "drop2" | "over" | "rot" | "rrot" | "tuck" | "nip"
                 | "pick" | "nth" | "len" | "append" | "set"
                 | "clone" | "cast" "<" type ">" | "sizeof" "<" type ">"
-                | "print" | "nl" | "call" | "panic" | "err" | ... ;
+                | "print" | "nl" | "call" | "panic" | "err" | "ok" | "fail" | ... ;
 ```
 
 ---
@@ -2393,45 +2589,45 @@ instruction     = "dup" | "swap" | "drop" | "over" | "rot" | "nip"
 
 ### B.1 Arithmetic Operators
 
-| Operator | Named | Stack Effect | Description |
-|----------|-------|--------------|-------------|
-| `+` | `add` | `(a b -- c)` | a + b |
-| `-` | `sub` | `(a b -- c)` | a - b |
-| `*` | `mul` | `(a b -- c)` | a * b |
-| `/` | `div` | `(a b -- c)` | a / b |
-| `%` | `mod` | `(a b -- c)` | a mod b |
-| `++` | `inc` | `(a -- b)` | a + 1 |
-| `--` | `dec` | `(a -- b)` | a - 1 |
+| Operator | Stack Effect | Description |
+|----------|--------------|-------------|
+| `+` | `(a b -- c)` | a + b |
+| `-` | `(a b -- c)` | a - b |
+| `*` | `(a b -- c)` | a * b |
+| `/` | `(a b -- c)` | a / b |
+| `%` | `(a b -- c)` | a mod b |
+| `++` | `(a -- b)` | a + 1 |
+| `--` | `(a -- b)` | a - 1 |
 
 ### B.2 Comparison Operators
 
-| Operator | Named | Stack Effect | Result |
-|----------|-------|--------------|--------|
-| `==` | `eq` | `(a b -- bool)` | 1 if a == b, else 0 |
-| `!=` | `neq` | `(a b -- bool)` | 1 if a != b, else 0 |
-| `<` | `lt` | `(a b -- bool)` | 1 if a < b, else 0 |
-| `>` | `gt` | `(a b -- bool)` | 1 if a > b, else 0 |
-| `<=` | `lte` | `(a b -- bool)` | 1 if a <= b, else 0 |
-| `>=` | `gte` | `(a b -- bool)` | 1 if a >= b, else 0 |
+| Operator | Stack Effect | Result |
+|----------|--------------|--------|
+| `==` | `(a b -- flag)` | 1 if a == b, else 0 |
+| `!=` | `(a b -- flag)` | 1 if a != b, else 0 |
+| `<` | `(a b -- flag)` | 1 if a < b, else 0 |
+| `>` | `(a b -- flag)` | 1 if a > b, else 0 |
+| `<=` | `(a b -- flag)` | 1 if a <= b, else 0 |
+| `>=` | `(a b -- flag)` | 1 if a >= b, else 0 |
 
 ### B.3 Logical Operators
 
-| Operator | Named | Stack Effect | Description |
-|----------|-------|--------------|-------------|
-| | `and` | `(a b -- c)` | 1 if both operands are non-zero |
-| | `or` | `(a b -- c)` | 1 if either operand is non-zero |
-| | `not` | `(a -- b)` | 1 if the operand is zero |
+| Word | Stack Effect | Description |
+|------|--------------|-------------|
+| `and` | `(a b -- flag)` | 1 if both operands are non-zero |
+| `or` | `(a b -- flag)` | 1 if either operand is non-zero |
+| `not` | `(a -- flag)` | 1 if the operand is zero |
 
 ### B.3.1 Bitwise Operators
 
-| Operator | Named | Stack Effect | Description |
-|----------|-------|--------------|-------------|
-| `shl` | | `(a n -- b)` | Shift left |
-| `shr` | | `(a n -- b)` | Shift right |
-| | `bits::and` | `(a b -- c)` | a & b |
-| | `bits::or` | `(a b -- c)` | a \| b |
-| | `bits::xor` | `(a b -- c)` | a ^ b |
-| | `bits::not` | `(a -- b)` | ~a |
+| Function | Stack Effect | Description |
+|----------|--------------|-------------|
+| `bits::and` | `(a b -- c)` | a & b |
+| `bits::or` | `(a b -- c)` | a \| b |
+| `bits::xor` | `(a b -- c)` | a ^ b |
+| `bits::not` | `(a -- b)` | ~a |
+| `bits::shl` | `(a n -- b)` | Shift left |
+| `bits::shr` | `(a n -- b)` | Shift right |
 
 ### B.4 Special Operators
 

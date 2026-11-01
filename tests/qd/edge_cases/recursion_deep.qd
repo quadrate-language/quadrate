@@ -1,9 +1,9 @@
 // Test: recursion deep
-fn countdown(num:i64 -- ) {
-	num 0 gt
+def countdown(num:i64 -- ) {
+	num 0 >
 	if {
 		num print nl
-		num 1 sub countdown
+		num 1 - countdown
 	}
 }
 

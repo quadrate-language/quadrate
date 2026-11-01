@@ -6,7 +6,7 @@
 // yielded 300, and `var count:u32 = 1000` stored a u32 in name only.
 var count:u32 = 1000
 
-fn scaled(x:u8 -- r:i64) {
+def scaled(x:u8 -- r:i64) {
 	x 2 *
 }
 

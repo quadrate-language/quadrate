@@ -1,10 +1,10 @@
 // Helper functions for local import testing
 const MAGIC = 42
 
-stack fn triple(i64 -- i64) {
+fn triple(i64 -- i64) {
 	3 *
 }
 
-stack fn add_magic(i64 -- i64) {
+fn add_magic(i64 -- i64) {
 	MAGIC +
 }

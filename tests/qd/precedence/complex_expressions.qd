@@ -16,15 +16,15 @@ fn main() {
 
 	// Comparison with arithmetic
 	"=== Comparison with arithmetic ===" print nl
-	5 3 + 10 2 - eq print nl      // (5+3) == (10-2) -> true
-	10 2 * 5 4 * gt print nl      // (10*2) > (5*4) -> false
-	100 10 / 5 2 + lt print nl    // (100/10) < (5+2) -> false
+	5 3 + 10 2 - == print nl      // (5+3) == (10-2) -> true
+	10 2 * 5 4 * > print nl      // (10*2) > (5*4) -> false
+	100 10 / 5 2 + < print nl    // (100/10) < (5+2) -> false
 
 	// Logical with comparison
 	"=== Logical with comparison ===" print nl
-	5 3 gt 4 2 gt bits::and print nl    // (5>3) && (4>2) -> true
-	5 3 lt 4 2 gt bits::or print nl     // (5<3) || (4>2) -> true
-	1 0 neq print nl              // 1 != 0 -> true
+	5 3 > 4 2 > bits::and print nl    // (5>3) && (4>2) -> true
+	5 3 < 4 2 > bits::or print nl     // (5<3) || (4>2) -> true
+	1 0 != print nl              // 1 != 0 -> true
 
 	// Deeply nested
 	"=== Deeply nested ===" print nl

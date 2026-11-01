@@ -4,7 +4,7 @@ struct Person {
 	age:f64
 }
 
-fn get_age(person:Person -- age:f64) {
+def get_age(person:Person -- age:f64) {
 	person <<age
 }
 

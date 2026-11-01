@@ -53,32 +53,32 @@ TEST(SimplePrint) {
 }
 
 TEST(IntegerAddition) {
-	const char* src = "fn main() { 10 20 add print }";
+	const char* src = "fn main() { 10 20 + print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for addition");
 	ASSERT(irContains(ir, "10") || irContains(ir, "20"), "should contain operands");
 }
 
 TEST(IntegerMultiplication) {
-	const char* src = "fn main() { 5 6 mul print }";
+	const char* src = "fn main() { 5 6 * print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for multiplication");
 }
 
 TEST(IntegerSubtraction) {
-	const char* src = "fn main() { 100 30 sub print }";
+	const char* src = "fn main() { 100 30 - print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for subtraction");
 }
 
 TEST(IntegerDivision) {
-	const char* src = "fn main() { 100 5 div print }";
+	const char* src = "fn main() { 100 5 / print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for division");
 }
 
 TEST(ChainedArithmetic) {
-	const char* src = "fn main() { 1 2 add 3 mul 4 sub print }";
+	const char* src = "fn main() { 1 2 + 3 * 4 - print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for chained arithmetic");
 }
@@ -90,7 +90,7 @@ TEST(FloatLiteral) {
 }
 
 TEST(FloatArithmetic) {
-	const char* src = "fn main() { 1.5 2.5 add print }";
+	const char* src = "fn main() { 1.5 2.5 + print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for float arithmetic");
 }
@@ -103,13 +103,13 @@ TEST(StringLiteral) {
 }
 
 TEST(StackDup) {
-	const char* src = "fn main() { 42 dup add print }";
+	const char* src = "fn main() { 42 dup + print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for dup operation");
 }
 
 TEST(StackSwap) {
-	const char* src = "fn main() { 10 20 swap sub print }";
+	const char* src = "fn main() { 10 20 swap - print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for swap operation");
 }
@@ -121,13 +121,13 @@ TEST(StackDrop) {
 }
 
 TEST(StackOver) {
-	const char* src = "fn main() { 10 20 over add add print }";
+	const char* src = "fn main() { 10 20 over + + print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for over operation");
 }
 
 TEST(StackRot) {
-	const char* src = "fn main() { 1 2 3 rot add add print }";
+	const char* src = "fn main() { 1 2 3 rot + + print }";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for rot operation");
 }
@@ -176,10 +176,10 @@ TEST(LoopStatement) {
 		fn main() {
 			0 -> count
 			loop {
-				count 3 gte if {
+				count 3 >= if {
 					break
 				}
-				count inc -> count
+				count ++ -> count
 			}
 			count print
 		}
@@ -190,7 +190,7 @@ TEST(LoopStatement) {
 
 TEST(SimpleFunctionCall) {
 	const char* src = R"(
-		fn add_one( x:i64 -- y:i64 ) {
+		def add_one( x:i64 -- y:i64 ) {
 			x 1 +
 		}
 		fn main() {
@@ -204,7 +204,7 @@ TEST(SimpleFunctionCall) {
 
 TEST(FunctionMultipleParams) {
 	const char* src = R"(
-		stack fn add_three( i64 i64 i64 -- sum:i64 ) {
+		fn add_three( i64 i64 i64 -- sum:i64 ) {
 			+ +
 		}
 		fn main() {
@@ -221,7 +221,7 @@ TEST(FunctionMultipleReturns) {
 			10 20
 		}
 		fn main() {
-			get_pair add print
+			get_pair + print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -230,11 +230,11 @@ TEST(FunctionMultipleReturns) {
 
 TEST(RecursiveFunction) {
 	const char* src = R"(
-		fn factorial( n:i64 -- r:i64 ) {
-			n 1 lte if {
+		def factorial( n:i64 -- r:i64 ) {
+			n 1 <= if {
 				1
 			} else {
-				n n 1 sub factorial mul
+				n n 1 - factorial *
 			}
 		}
 		fn main() {
@@ -263,7 +263,7 @@ TEST(MultipleLocals) {
 		fn main() {
 			10 -> a
 			20 -> b
-			a b add print
+			a b + print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -273,9 +273,9 @@ TEST(MultipleLocals) {
 TEST(IntegerComparison) {
 	const char* src = R"(
 		fn main() {
-			10 20 lt print
-			10 10 eq print
-			20 10 gt print
+			10 20 < print
+			10 10 == print
+			20 10 > print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -294,7 +294,7 @@ TEST(StructDefinition) {
 				x = 10
 				y = 20
 			} -> p
-			p <<x p <<y add print
+			p <<x p <<y + print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -448,7 +448,7 @@ TEST(TargetTripleWithComplexCode) {
 			x:i64
 			y:i64
 		}
-		fn add_points(a:Point b:Point -- c:Point) {
+		def add_points(a:Point b:Point -- c:Point) {
 			Point {
 				x = a <<x b <<x +
 				y = a <<y b <<y +
@@ -544,7 +544,7 @@ TEST(StructAsParameter) {
 			x:i64
 			y:i64
 		}
-		fn distance_squared(p:Point -- d:i64) {
+		def distance_squared(p:Point -- d:i64) {
 			p <<x p <<x * p <<y p <<y * +
 		}
 		fn main() {
@@ -612,7 +612,7 @@ TEST(NestedDeferScopes) {
 	const char* src = R"(
 		fn main() {
 			defer { 1 print }
-			1 1 eq if {
+			1 1 == if {
 				defer { 2 print }
 			}
 			defer { 3 print }
@@ -624,11 +624,11 @@ TEST(NestedDeferScopes) {
 
 TEST(SimpleAnonymousFunction) {
 	const char* src = R"(
-		fn apply(x:i64 f:ptr -- r:i64) {
+		def apply(x:i64 f:ptr -- r:i64) {
 			x f call
 		}
 		fn main() {
-			fn (n:i64 -- r:i64) { n 2 * } -> doubler
+			def (n:i64 -- r:i64) { n 2 * } -> doubler
 			5 doubler apply print
 		}
 	)";
@@ -640,7 +640,7 @@ TEST(ClosureWithCapture) {
 	const char* src = R"(
 		fn main() {
 			10 -> multiplier
-			fn (x:i64 -- r:i64) { x multiplier mul } -> times_mult
+			def (x:i64 -- r:i64) { x multiplier * } -> times_mult
 			5 times_mult call print
 		}
 	)";
@@ -650,12 +650,12 @@ TEST(ClosureWithCapture) {
 
 TEST(HigherOrderFunction) {
 	const char* src = R"(
-		fn apply(x:i64 f:ptr -- r:i64) {
+		def apply(x:i64 f:ptr -- r:i64) {
 			x f call
 		}
-		fn double(n:i64 -- r:i64) { n 2 * }
+		def double(n:i64 -- r:i64) { n 2 * }
 		fn main() {
-			fn (n:i64 -- r:i64) { n 2 * } -> doubler
+			def (n:i64 -- r:i64) { n 2 * } -> doubler
 			5 doubler apply print
 		}
 	)";
@@ -667,7 +667,7 @@ TEST(HigherOrderFunction) {
 TEST(ClosureNoCapture) {
 	const char* src = R"(
 		fn main() {
-			fn (a:i64 b:i64 -- r:i64) { a b add } -> add_fn
+			def (a:i64 b:i64 -- r:i64) { a b + } -> add_fn
 			3 4 add_fn call print
 		}
 	)";
@@ -725,7 +725,7 @@ TEST(LoopWithCondition) {
 		fn main() {
 			0 -> i
 			loop {
-				i 5 gte if { break }
+				i 5 >= if { break }
 				i print
 				i 1 + -> i
 			}
@@ -739,7 +739,7 @@ TEST(BreakInLoop) {
 	const char* src = R"(
 		fn main() {
 			0 10 1 for i {
-				i 5 eq if { break }
+				i 5 == if { break }
 				i print
 			}
 		}
@@ -752,7 +752,7 @@ TEST(ContinueInLoop) {
 	const char* src = R"(
 		fn main() {
 			0 10 1 for i {
-				i 2 mod 0 eq if { continue }
+				i 2 % 0 == if { continue }
 				i print
 			}
 		}
@@ -780,7 +780,7 @@ TEST(NestedControlFlow) {
 		fn main() {
 			0 3 1 for i {
 				0 3 1 for j {
-					i j eq if {
+					i j == if {
 						i print
 					}
 				}
@@ -839,7 +839,7 @@ TEST(BitwiseXor) {
 TEST(ModuloOperator) {
 	const char* src = R"(
 		fn main() {
-			17 5 mod print
+			17 5 % print
 			17 5 % print
 		}
 	)";
@@ -849,9 +849,9 @@ TEST(ModuloOperator) {
 
 TEST(MultipleReturnValuesUsed) {
 	const char* src = R"(
-		stack fn divmod(i64 i64 -- quot:i64 rem:i64) {
-			over over div
-			rot rot mod
+		fn divmod(i64 i64 -- quot:i64 rem:i64) {
+			over over /
+			rot rot %
 		}
 		fn main() {
 			17 5 divmod -> rem -> quot
@@ -877,8 +877,8 @@ TEST(LogicalOperations) {
 TEST(ShiftOperations) {
 	const char* src = R"(
 		fn main() {
-			8 2 shl print
-			8 2 shr print
+			8 2 __shl print
+			8 2 __shr print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -888,8 +888,8 @@ TEST(ShiftOperations) {
 TEST(IncrementDecrement) {
 	const char* src = R"(
 		fn main() {
-			5 inc print
-			5 dec print
+			5 ++ print
+			5 -- print
 		}
 	)";
 	std::string ir = generateIR(src);
@@ -931,7 +931,7 @@ TEST(StackNip) {
 TEST(StructMethodSum) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
-		fn (p:Point) sum(-- s:i64) { p <<x p <<y add }
+		fn (p:Point) sum(-- s:i64) { p <<x p <<y + }
 		fn main() {
 			Point { x = 3 y = 4 } -> pt
 			pt sum print
@@ -943,7 +943,7 @@ TEST(StructMethodSum) {
 
 TEST(PublicFunction) {
 	const char* src = R"(
-		pub fn exported(x:i64 -- r:i64) { x 2 * }
+		pub def exported(x:i64 -- r:i64) { x 2 * }
 		fn main() {
 			5 exported print
 		}

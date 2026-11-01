@@ -507,19 +507,58 @@ static void check_fits(qd_context* ctx, const char* op, qd_array_t* arr, qd_stac
 	}
 }
 
+// A string is a sequence of characters, so `len` and `nth` read one as they read an array: its
+// length in characters and a character's codepoint, as len and strings::char_at do.
+// That is what lets `each`, `fold` and the searching combinators walk a string. A string is
+// read where it lies -- its length is memoised and qd_string_char_offset resumes a forward scan
+// from where the last one stopped -- so walking it allocates nothing.
+
+// The codepoint at `p`, `avail` bytes left, by the rule the strings module decodes by
+// (unicode/codepoint.h, which the runtime cannot include): a malformed or truncated sequence is
+// one character, the value of its lead byte.
+static int64_t decode_char(const unsigned char* p, size_t avail) {
+	const unsigned char lead = p[0];
+	size_t need = lead < 0x80u				? 1
+				  : (lead & 0xE0u) == 0xC0u ? 2
+				  : (lead & 0xF0u) == 0xE0u ? 3
+				  : (lead & 0xF8u) == 0xF0u ? 4
+											: 1;
+	if (need > avail) {
+		return lead;
+	}
+	for (size_t k = 1; k < need; k++) {
+		if ((p[k] & 0xC0u) != 0x80u) {
+			return lead;
+		}
+	}
+	if (need == 1) {
+		return lead;
+	}
+	int64_t cp = need == 2 ? (lead & 0x1Fu) : need == 3 ? (lead & 0x0Fu) : (lead & 0x07u);
+	for (size_t k = 1; k < need; k++) {
+		cp = (cp << 6) | (p[k] & 0x3Fu);
+	}
+	return cp;
+}
+
 int qd_len(qd_context* ctx) {
-	void* p;
-	qd_args(ctx, "len", "p", &p);
-	qd_array_t* arr = array_arg(ctx, "len", p, NULL);
+	qd_stack_element_t v;
+	qd_args(ctx, "len", "v", &v);
+	if (v.type == QD_STACK_TYPE_STR) {
+		const int64_t n = (int64_t)qd_string_char_length(v.value.s);
+		qd_string_release(v.value.s);
+		return qd_push_i(ctx, n);
+	}
+	if (v.type != QD_STACK_TYPE_PTR) {
+		QDRT_FATAL(ctx, "len", "Expected an array or a string, got %s", qd_type_name(v.type));
+	}
+	qd_array_t* arr = array_arg(ctx, "len", v.value.p, NULL);
 	const size_t len = arr->length;
 	qd_array_release(arr); // Release the consumed array
 	return qd_push_i(ctx, (int64_t)len);
 }
 
-int qd_nth(qd_context* ctx) {
-	void* p;
-	int64_t index;
-	qd_args(ctx, "nth", "pi", &p, &index);
+static int nth_array(qd_context* ctx, void* p, int64_t index) {
 	qd_array_t* arr = array_arg(ctx, "nth", p, NULL);
 	check_index(ctx, "nth", arr, index, NULL);
 
@@ -563,6 +602,76 @@ int qd_nth(qd_context* ctx) {
 
 	qd_array_release(arr); // Release the consumed array
 	return 0;
+}
+
+int qd_nth(qd_context* ctx) {
+	qd_stack_element_t v;
+	int64_t index;
+	qd_args(ctx, "nth", "vi", &v, &index);
+	if (v.type == QD_STACK_TYPE_STR) {
+		qd_string_t* s = v.value.s;
+		const size_t n = qd_string_char_length(s);
+		if (index < 0 || (size_t)index >= n) {
+			qd_string_release(s);
+			QDRT_FATAL(ctx, "nth", "Index %" PRId64 " out of bounds (length %zu)", index, n);
+		}
+		const size_t off = qd_string_char_offset(s, (size_t)index);
+		const int64_t c = decode_char((const unsigned char*)s->data + off, s->length - off);
+		qd_string_release(s);
+		return qd_push_i(ctx, c);
+	}
+	if (v.type != QD_STACK_TYPE_PTR) {
+		QDRT_FATAL(ctx, "nth", "Expected an array or a string, got %s", qd_type_name(v.type));
+	}
+	return nth_array(ctx, v.value.p, index);
+}
+
+// clone on an array: a new array of the same elements. Shallow, as cloning a struct is: a
+// string or a struct an element refers to is shared, one reference more, not copied.
+int qd_clone_array(qd_context* ctx) {
+	void* p;
+	qd_args(ctx, "clone", "p", &p);
+	qd_array_t* src = array_arg(ctx, "clone", p, NULL);
+	qd_array_t* copy = qd_array_create(src->length, src->elemType);
+	if (!copy) {
+		qd_array_release(src);
+		QDRT_FATAL(ctx, "clone", "Out of memory");
+	}
+	switch (src->elemType) {
+	case QD_ARRAY_TYPE_INT:
+		memcpy(copy->data.i, src->data.i, src->length * sizeof(int64_t));
+		break;
+	case QD_ARRAY_TYPE_FLOAT:
+		memcpy(copy->data.f, src->data.f, src->length * sizeof(double));
+		break;
+	case QD_ARRAY_TYPE_D128:
+		memcpy(copy->data.d, src->data.d, src->length * sizeof(qd_d128_t));
+		break;
+	case QD_ARRAY_TYPE_STR:
+		for (size_t i = 0; i < src->length; i++) {
+			copy->data.p[i] = src->data.p[i] ? qd_string_retain((qd_string_t*)src->data.p[i]) : NULL;
+		}
+		break;
+	case QD_ARRAY_TYPE_PTR:
+		for (size_t i = 0; i < src->length; i++) {
+			void* elem = src->data.p[i];
+			if (elem) {
+				if (qd_array_is_valid(elem)) {
+					qd_array_retain((qd_array_t*)elem);
+				} else {
+					qd_struct_retain(elem);
+				}
+			}
+			copy->data.p[i] = elem;
+		}
+		break;
+	case QD_ARRAY_TYPE_ANY:
+		// Nothing written yet, so every slot is still zero
+		break;
+	}
+	copy->length = src->length;
+	qd_array_release(src);
+	return qd_push_p(ctx, copy);
 }
 
 // The `make` words: an array of `n` zero values of one type

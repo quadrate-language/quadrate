@@ -2,7 +2,7 @@
 type Score = i64
 type Scores = []Score
 
-fn total(xs:Scores -- t:i64) {
+def total(xs:Scores -- t:i64) {
 	0 -> t
 	0 xs len 1 for i {
 		t xs i nth + -> t
@@ -10,7 +10,7 @@ fn total(xs:Scores -- t:i64) {
 	t
 }
 
-fn first(xs:[]Score -- x:Score) {
+def first(xs:[]Score -- x:Score) {
 	xs 0 nth
 }
 

@@ -26,7 +26,7 @@ Needs `qemu-system-x86_64`.
 - `quadc --freestanding` compilation (no libc, no auto-main)
 - `sys::st8`/`sys::st16`/`sys::st32`/`sys::st64` for direct memory writes
 - `sys::ld8`/`sys::ld16`/`sys::ld64` for direct memory reads
-- `sys::port_out8`/`sys::port_in8` for I/O port access
+- `sys::outb`/`sys::inb` for I/O port access
 - `sys::cli`/`sys::sti`/`sys::hlt` for interrupt control
 - GDT and IDT setup from Quadrate (64-bit entries)
 - PIC remapping and interrupt dispatch

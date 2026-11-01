@@ -7,7 +7,7 @@
 #include <string.h>
 
 // Error codes matching net.qd
-#define NET_ERR_OK 1 // Success (matches builtin Ok)
+#define NET_ERR_OK 1 // Success (a native's success status; the call site reads it as Ok)
 #define NET_ERR_LISTEN 2
 #define NET_ERR_ACCEPT 3
 #define NET_ERR_CONNECT 4

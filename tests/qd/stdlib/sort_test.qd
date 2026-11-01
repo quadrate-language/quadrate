@@ -363,15 +363,15 @@ test "sort::strings_desc sorts a string array" {
 
 // --- comparator-ordered sort -----------------------------------------------------------
 
-fn cmp_desc(a:i64 b:i64 -- r:i64) {
+def cmp_desc(a:i64 b:i64 -- r:i64) {
 	b a -
 }
 
-fn cmp_by_last_digit(a:i64 b:i64 -- r:i64) {
+def cmp_by_last_digit(a:i64 b:i64 -- r:i64) {
 	a 10 % b 10 % -
 }
 
-fn cmp_asc(a:i64 b:i64 -- r:i64) {
+def cmp_asc(a:i64 b:i64 -- r:i64) {
 	a b -
 }
 

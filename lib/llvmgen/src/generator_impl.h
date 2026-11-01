@@ -198,7 +198,6 @@ namespace Qd {
 		llvm::Function* pushStrFn = nullptr;
 		llvm::Function* pushStrRefFn = nullptr;
 		llvm::Function* pushPtrFn = nullptr;
-		llvm::Function* printsFn = nullptr;
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
@@ -258,6 +257,9 @@ namespace Qd {
 		std::map<std::string, llvm::Function*> userFunctions;
 		std::map<std::string, bool> fallibleFunctions;
 		std::set<std::string> importedCFunctions;
+		// The declared result types of each imported C function, which a failed native call
+		// does not push: the caller pushes their zero values in its place
+		std::map<std::string, std::vector<std::string>> importedOutputTypes;
 		std::map<std::string, std::string> functionReturnStructType;
 		// For methods: maps register name to receiver position from top of stack
 		// (i.e., number of non-receiver args). Used for fallback method resolution
@@ -597,8 +599,12 @@ namespace Qd {
 		// The abort / propagate / push-status tail shared by fallible call sites. See its
 		// definition; `callNode` is the call, which is how the status is shaped for its consumer.
 		// : an imported C function, which pushes its own status.
-		void generateFallibleCallEpilogue(llvm::Value* ctx, const char* name, IAstNode* callNode, bool abortOnError,
-				bool propagateOnError, bool calleePushesStatus = false);
+		void generateFallibleCallEpilogue(llvm::Value* ctx, const char* name, bool abortOnError, bool propagateOnError,
+				const std::vector<std::string>* nativeOutputs = nullptr);
+		void generatePushZeroValues(const std::vector<std::string>& types, llvm::Value* ctx);
+		llvm::Value* generateFailTarget(size_t consumed, llvm::Value* ctx);
+		void generateFailureExit(
+				llvm::Value* failTarget, const std::vector<std::string>& outputTypes, llvm::Value* ctx);
 
 		// Control flow
 		void generateIf(AstNodeIfStatement* ifStmt, llvm::Value* ctx);
@@ -615,9 +621,7 @@ namespace Qd {
 		};
 
 		bool takeSwitchScrutinee(SwitchScrutinee& scrutinee, llvm::Value* ctx);
-		bool switchReadsFallibleStatus(AstNodeSwitchStatement* switchStmt);
-		llvm::Value* generateCaseMatch(
-				IAstNode* label, const SwitchScrutinee& scrutinee, bool fallibleStatus, llvm::Value* ctx);
+		llvm::Value* generateCaseMatch(IAstNode* label, const SwitchScrutinee& scrutinee);
 		llvm::Value* generateNamedConstantMatch(const std::string& name, const SwitchScrutinee& scrutinee);
 		llvm::Value* generateIntCaseMatch(int64_t label, const SwitchScrutinee& scrutinee);
 		llvm::Value* generateFloatCaseMatch(double label, const SwitchScrutinee& scrutinee);
@@ -741,6 +745,7 @@ namespace Qd {
 		void generateInlineLogicalAnd(llvm::Value* ctx);
 		void generateInlineLogicalOr(llvm::Value* ctx);
 		void generateInlineLogicalNot(llvm::Value* ctx);
+		void generateInlineIsNonZero(llvm::Value* ctx);
 		void generateInlineBitLshift(llvm::Value* ctx);
 		void generateInlineBitRshift(llvm::Value* ctx);
 		void generateInlineDup(llvm::Value* ctx);

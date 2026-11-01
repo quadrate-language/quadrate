@@ -16,19 +16,19 @@ struct Path {
 
 type Cloud = []math::Vec3
 
-fn count(ps:[]math::Vec3 -- n:i64) {
+def count(ps:[]math::Vec3 -- n:i64) {
 	ps len
 }
 
-fn count_via_alias(c:Cloud -- n:i64) {
+def count_via_alias(c:Cloud -- n:i64) {
 	c len
 }
 
-fn first_x(c:Cloud -- x:f64) {
+def first_x(c:Cloud -- x:f64) {
 	c 0 nth <<x
 }
 
-fn total(paths:[][]math::Vec3 -- n:i64) {
+def total(paths:[][]math::Vec3 -- n:i64) {
 	0 -> n
 	0 paths len 1 for i {
 		n paths i nth len + -> n

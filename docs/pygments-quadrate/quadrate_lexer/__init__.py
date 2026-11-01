@@ -18,7 +18,7 @@ class QuadrateLexer(RegexLexer):
 
     # Keywords
     keywords = (
-        'fn', 'pub', 'inline', 'stack', 'const', 'var', 'struct', 'packed', 'enum', 'type',
+        'fn', 'def', 'pub', 'inline', 'const', 'var', 'struct', 'packed', 'enum', 'type',
         'use', 'import', 'as', 'test',
         'if', 'else', 'for', 'loop', 'while', 'until', 'break', 'continue', 'return',
         'defer', 'switch', 'case',
@@ -28,24 +28,23 @@ class QuadrateLexer(RegexLexer):
     # Built-in stack operations
     builtins_stack = (
         'dup', 'dup2', 'drop',
-        'swap', 'over', 'rot', 'nip',
+        'swap', 'over', 'rot', 'rrot', 'tuck', 'drop2', 'nip',
         'pick',
     )
 
-    # Built-in arithmetic
+    # Built-in arithmetic: the operators are symbols, but negation has none
     builtins_arith = (
-        'add', 'sub', 'mul', 'div', 'mod',
-        'neg', 'inc', 'dec',
+        'neg',
     )
 
-    # Built-in comparison
+    # Built-in range test
     builtins_cmp = (
-        'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'within',
+        'within',
     )
 
-    # Built-in bitwise
+    # Built-in logic
     builtins_bit = (
-        'and', 'or', 'not', 'shl', 'shr',
+        'and', 'or', 'not',
     )
 
     # Built-in array operations
@@ -60,12 +59,13 @@ class QuadrateLexer(RegexLexer):
 
     # Built-in I/O
     builtins_io = (
-        'print', 'printv', 'prints', 'nl',
+        'print', 'dump', 'nl',
     )
 
     # Built-in misc
     builtins_misc = (
-        'err', 'panic', 'spawn', 'wait', 'detach', 'call', 'free',
+        'err', 'ok', 'fail', 'panic', 'call', 'free',
+        'dip', 'dip2', 'keep', 'keep2', 'bi', 'tri', 'both', 'times', 'each', 'map', 'filter', 'fold', 'find', 'index', 'scan', 'any', 'all',
     )
 
     # Math functions (from math library)

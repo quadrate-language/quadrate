@@ -2,22 +2,22 @@
 
 `and`, `or` and `not` are logical: every non-zero value counts as true, and the result is
 always `0` or `1`. The bitwise operations of the same names are in the
-[`bits`](../stdlib/bits.md) module, where `bits::` says which meaning is meant. The shifts
-have no logical counterpart and stay builtins.
+[`bits`](../stdlib/bits.md) module, where `bits::` says which meaning is meant, and the shifts
+are there with them.
 
 ## Overview
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `and` | `(a b -- result)` | Logical AND: 1 if both are non-zero |
-| `or` | `(a b -- result)` | Logical OR: 1 if either is non-zero |
-| `not` | `(a -- result)` | Logical NOT: 1 if the value is zero |
-| `shl` | `(a n -- result)` | Shift left |
-| `shr` | `(a n -- result)` | Shift right (logical) |
+| `and` | `(a b -- flag)` | Logical AND: 1 if both are non-zero |
+| `or` | `(a b -- flag)` | Logical OR: 1 if either is non-zero |
+| `not` | `(a -- flag)` | Logical NOT: 1 if the value is zero |
 | `bits::and` | `(a b -- result)` | Bitwise AND |
 | `bits::or` | `(a b -- result)` | Bitwise OR |
 | `bits::xor` | `(a b -- result)` | Bitwise XOR |
 | `bits::not` | `(a -- result)` | Bitwise NOT (ones' complement) |
+| `bits::shl` | `(a n -- result)` | Shift left |
+| `bits::shr` | `(a n -- result)` | Shift right (logical) |
 
 Both operands of `and` and `or` are always evaluated: they are ordinary stack words, not
 short-circuiting forms.
@@ -30,7 +30,7 @@ short-circuiting forms.
 
 1 if both values are non-zero, 0 otherwise.
 
-**Signature:** `(a b -- result)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 fn main() {
@@ -44,7 +44,7 @@ fn main() {
 
 1 if either value is non-zero, 0 otherwise.
 
-**Signature:** `(a b -- result)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 fn main() {
@@ -57,7 +57,7 @@ fn main() {
 
 1 if the value is zero, 0 otherwise.
 
-**Signature:** `(a -- result)`
+**Signature:** `(a -- flag)`
 
 ```qd
 fn main() {
@@ -70,19 +70,21 @@ fn main() {
 
 ## Shift operations
 
-### shl
+### bits::shl
 
 Shifts a left by n bits.
 
 **Signature:** `(a n -- result)`
 
 ```qd
+use bits
+
 fn main() {
-	1 4 shl print nl  // 16
+	1 4 bits::shl print nl  // 16
 }
 ```
 
-### shr
+### bits::shr
 
 Shifts a right by n bits. The shift is logical: the value is treated as unsigned and zeros
 are shifted in, so a negative number becomes a large positive one.
@@ -90,9 +92,11 @@ are shifted in, so a negative number becomes a large positive one.
 **Signature:** `(a n -- result)`
 
 ```qd
+use bits
+
 fn main() {
-	16 2 shr print nl  // 4
-	-16 2 shr print nl  // 4611686018427387900
+	16 2 bits::shr print nl  // 4
+	-16 2 bits::shr print nl  // 4611686018427387900
 }
 ```
 

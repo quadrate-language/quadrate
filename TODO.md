@@ -8,9 +8,10 @@ through them.
 ## Language design
 
 - [ ] **Sum types / tagged unions.** `enum` gives bare ints and `struct` gives records, but there
-      is no "one of these". That absence is why `Ok`/`Err` are conflated with `true`/`false` and
-      why `null` is `0` — four spellings each of 0 and 1 — and a `Result<T, E>`-shaped variant
-      type would let much of that be deleted rather than maintained.
+      is no "one of these". That absence is why `Ok`/`Err` share their values with `false`/`true`
+      and why `null` is `0` — four spellings each of 0 and 1 — and a `Result<T, E>`-shaped
+      variant type would let much of that be deleted rather than maintained. A draft is in
+      `design/sum-types.md`.
       **Both arguments filed for it have since been withdrawn, each by an implementation that
       turned out not to need the feature.** The first was `stdlib/json`, which had no `parse` at
       all: it has one as of 2026-09-19. A JSON value is a tagged union in the abstract, but a
@@ -40,39 +41,24 @@ through them.
       `while` design (R54, now `while`/`until` inside `loop`) and the branch depth-matching rules
       of §6.1.1. Either the stack words get good enough that locals become the exception, or the
       costs of pretending get paid down.
+      **Decided for the stack, 2026-11-01:** stack variables, `fn { }`, builtin combinators,
+      and inputs on the stack by default with `def` to bind them (`design/def.md`). What
+      is left is the code: the migration kept every binding function binding, so about 1,600
+      said `def`. `quadlint`'s `needless-binding` rule found the 85 that were plainly a `fn`;
+      which of the rest read better as stack code is a per-function judgement, best made
+      module by module.
 
-- [ ] **R56 -- an error is not a value, only a syntactic position.** A bare fallible call must
-      be *immediately* followed by `if`, `switch`, `!` or `?`:
+- [ ] **R58 -- still four spellings of 0 and of 1.** `Ok` no longer means two things: it is
+      the status `0` everywhere, as a value and as a case label, since a fallible call's status
+      became the error code. What is left is the overlap of the predefined constants:
 
-          0 f -> status    // error: must be immediately followed by 'if' or 'switch'
+          Ok false ==    // 1
+          Ok null ==     // 1
+          Err true ==    // 1
 
-      so a status cannot be bound, stored, returned, or handed to a helper that checks it, and
-      there is no way to write a function that wraps a fallible call and reports on it. `err`
-      compounds this: it clears on read, so the failure arm -- which per §10.3 is not given the
-      status either -- gets exactly one chance to capture a message it was never handed, and a
-      second `err` yields `0` and the empty string.
-
-- [ ] **R57 -- the value a fallible call leaves depends on the token that follows it.** Before
-      `if` the status is a boolean; before `switch` it carries the error code (§10.3). A call
-      whose stack effect is determined by lookahead of its consumer is hard to explain, hard to
-      keep consistent between the compiler and the interpreter, and is the reason `Ok` has to be
-      magic (R58) rather than a value.
-
-- [ ] **R58 -- four spellings of 0 and four of 1, and `Ok` means two different things.**
-      This is the concrete surface of the sum-type item above; filing it separately because the
-      `Ok` part is actionable without sum types.
-
-          Ok true ==     // 1
-          Err null ==    // 1
-          false Err ==   // 1
-
-          1 switch { Ok { ... } }               // matches: Ok is the literal 1
-          0 f switch { Ok { ... } 1 { ... } }   // panic code 1 hits the `1` arm, not Ok
-
-      `Ok` is the literal `1` everywhere except as a case label after a fallible call, where it
-      means "succeeded" -- same token, two meanings, nothing in the syntax marking which. And
-      `null == false == Err == 0` makes `p null ==` and `p false ==` indistinguishable, so a
-      null check and a boolean test are the same program.
+      `null == false == Ok == 0` keeps `p null ==` and `p false ==` indistinguishable, so a null
+      check and a boolean test are the same program, and `Ok false ==` reads as nonsense while
+      being true. This is the concrete surface of the sum-type item above.
 
 - [ ] **R60 -- `<` carries four jobs and explicit generic instantiation misparses into one of
       them.** Comparison, generic parameter lists, `cast<T>`/`sizeof<T>`, and the `<<`/`>>`
@@ -177,7 +163,7 @@ enough to be inlined here.
       they can read any line that touches it.
 
 - [ ] **R68 -- "length" is spelled three ways.** Built-in `len` (arrays only -- `"hi" len` is
-      a type error), `strings::len`, and `Vec::length`/`Map::length`. Related to the array-count
+      a type error), `len`, and `Vec::length`/`Map::length`. Related to the array-count
       item above, which is the same seam from the other side.
 
 - [ ] **R69 -- `sort` is monomorphic in a language that has generics.** `ints`, `ints_desc`,
@@ -189,7 +175,7 @@ enough to be inlined here.
 
 - [ ] **R70 -- generic methods use their type parameter before declaring it.**
 
-          pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)!
+          pub def (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)!
 
       The receiver mentions `T` to the left of the `<T>` that introduces it. Nothing else in
       the grammar reads right-to-left like this.

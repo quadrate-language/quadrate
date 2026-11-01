@@ -4,10 +4,10 @@ use bits
 fn main() {
 	// Create masks
 	"=== Create masks ===" print nl
-	1 1 shl 1 - print nl          // 1-bit mask: 1
-	1 4 shl 1 - print nl          // 4-bit mask: 15
-	1 8 shl 1 - print nl          // 8-bit mask: 255
-	1 16 shl 1 - print nl         // 16-bit mask: 65535
+	1 1 bits::shl 1 - print nl          // 1-bit mask: 1
+	1 4 bits::shl 1 - print nl          // 4-bit mask: 15
+	1 8 bits::shl 1 - print nl          // 8-bit mask: 255
+	1 16 bits::shl 1 - print nl         // 16-bit mask: 65535
 
 	// Apply masks
 	"=== Apply masks ===" print nl
@@ -18,12 +18,12 @@ fn main() {
 	// Mask and shift extract
 	"=== Extract fields ===" print nl
 	0b11010110 0b00001111 bits::and print nl     // Low nibble: 6
-	0b11010110 4 shr 0b00001111 bits::and print nl // High nibble: 13
+	0b11010110 4 bits::shr 0b00001111 bits::and print nl // High nibble: 13
 
 	// Combine values with masks
 	"=== Combine values ===" print nl
-	0xAB 8 shl 0xCD bits::or print nl   // 0xABCD = 43981
-	0x12 16 shl 0x34 8 shl bits::or 0x56 bits::or print nl  // 0x123456 = 1193046
+	0xAB 8 bits::shl 0xCD bits::or print nl   // 0xABCD = 43981
+	0x12 16 bits::shl 0x34 8 bits::shl bits::or 0x56 bits::or print nl  // 0x123456 = 1193046
 
 	// Clear and set field
 	"=== Clear and set ===" print nl

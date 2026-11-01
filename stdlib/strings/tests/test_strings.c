@@ -5,15 +5,15 @@
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <quadrate/strings/strings.h>
-#include <quadrate/rt/runtime.h>
-#include <quadrate/rt/context.h>
 #include <quadrate/rt/array.h>
-#include <quadrate/rt/stack.h>
+#include <quadrate/rt/context.h>
 #include <quadrate/rt/qd_string.h>
-#include <unit-check/uc.h>
+#include <quadrate/rt/runtime.h>
+#include <quadrate/rt/stack.h>
+#include <quadrate/strings/strings.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unit-check/uc.h>
 
 static qd_context* create_test_context(void) {
 	return qd_create_context(256);
@@ -23,12 +23,11 @@ static void destroy_test_context(qd_context* ctx) {
 	qd_free_context(ctx);
 }
 
-
 TEST(StrLenTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "hello");
-	usr_strings_len(ctx);
+	qd_len(ctx); // the builtin `len`, which replaced strings::len
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -42,7 +41,7 @@ TEST(StrLenEmptyTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "");
-	usr_strings_len(ctx);
+	qd_len(ctx);
 
 	qd_stack_element_t elem;
 	qd_stack_pop(ctx->st, &elem);
@@ -50,7 +49,6 @@ TEST(StrLenEmptyTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(StrConcatTest) {
 	qd_context* ctx = create_test_context();
@@ -83,7 +81,6 @@ TEST(StrConcatEmptyTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(StrContainsTest) {
 	qd_context* ctx = create_test_context();
 
@@ -111,7 +108,6 @@ TEST(StrContainsNotFoundTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 TEST(StrStartsWithTest) {
 	qd_context* ctx = create_test_context();
@@ -141,7 +137,6 @@ TEST(StrEndsWithTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(StrUpperTest) {
 	qd_context* ctx = create_test_context();
 
@@ -170,7 +165,6 @@ TEST(StrLowerTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(StrTrimTest) {
 	qd_context* ctx = create_test_context();
 
@@ -184,7 +178,6 @@ TEST(StrTrimTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 TEST(StrCompareEqualTest) {
 	qd_context* ctx = create_test_context();
@@ -228,13 +221,12 @@ TEST(StrCompareGreaterTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(StrSubstringTest) {
 	qd_context* ctx = create_test_context();
 
 	qd_push_s(ctx, "hello world");
-	qd_push_i(ctx, 6);  // start
-	qd_push_i(ctx, 5);  // length
+	qd_push_i(ctx, 6); // start
+	qd_push_i(ctx, 5); // length
 	usr_strings_substring(ctx);
 
 	// Pop status code first
@@ -461,7 +453,6 @@ int usr_strings_is_uppercase(qd_context* ctx);
 int usr_strings_char_count(qd_context* ctx);
 int usr_strings_slice(qd_context* ctx);
 
-
 /* ---------- repeat ---------- */
 
 TEST(StrRepeatTest) {
@@ -493,7 +484,6 @@ TEST(StrRepeatZeroTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- reverse ---------- */
 
@@ -539,7 +529,6 @@ TEST(StrReverseSingleCharTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- trim_left ---------- */
 
 TEST(StrTrimLeftTest) {
@@ -556,7 +545,6 @@ TEST(StrTrimLeftTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- trim_right ---------- */
 
 TEST(StrTrimRightTest) {
@@ -572,7 +560,6 @@ TEST(StrTrimRightTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- count ---------- */
 
@@ -604,7 +591,6 @@ TEST(StrCountNonOverlappingTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- last_index_of ---------- */
 
 TEST(StrLastIndexOfTest) {
@@ -635,7 +621,6 @@ TEST(StrLastIndexOfNotFoundTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- index_of_from ---------- */
 
 TEST(StrIndexOfFromTest) {
@@ -652,7 +637,6 @@ TEST(StrIndexOfFromTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- is_empty ---------- */
 
@@ -681,7 +665,6 @@ TEST(StrIsEmptyFalseTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- is_blank ---------- */
 
@@ -763,7 +746,6 @@ TEST(StrSplitNEmptyDelimiterTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- equals_ignore_case ---------- */
 
 TEST(StrEqualsIgnoreCaseTrueTest) {
@@ -794,7 +776,6 @@ TEST(StrEqualsIgnoreCaseFalseTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- pad_left ---------- */
 
 TEST(StrPadLeftTest) {
@@ -812,7 +793,6 @@ TEST(StrPadLeftTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- pad_right ---------- */
 
@@ -832,7 +812,6 @@ TEST(StrPadRightTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- center ---------- */
 
 TEST(StrCenterTest) {
@@ -851,7 +830,6 @@ TEST(StrCenterTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- capitalize ---------- */
 
 TEST(StrCapitalizeTest) {
@@ -868,7 +846,6 @@ TEST(StrCapitalizeTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- title ---------- */
 
 TEST(StrTitleTest) {
@@ -884,7 +861,6 @@ TEST(StrTitleTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- trim_prefix ---------- */
 
@@ -903,7 +879,6 @@ TEST(StrTrimPrefixTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- trim_suffix ---------- */
 
 TEST(StrTrimSuffixTest) {
@@ -920,7 +895,6 @@ TEST(StrTrimSuffixTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- replace_first ---------- */
 
@@ -940,7 +914,6 @@ TEST(StrReplaceFirstTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- insert ---------- */
 
 TEST(StrInsertTest) {
@@ -959,7 +932,6 @@ TEST(StrInsertTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- remove_range ---------- */
 
 TEST(StrRemoveRangeTest) {
@@ -977,7 +949,6 @@ TEST(StrRemoveRangeTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- is_numeric ---------- */
 
@@ -1020,7 +991,6 @@ TEST(StrIsNumericEmptyTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- is_alpha ---------- */
 
 TEST(StrIsAlphaTrueTest) {
@@ -1048,7 +1018,6 @@ TEST(StrIsAlphaFalseTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- is_alphanumeric ---------- */
 
@@ -1078,7 +1047,6 @@ TEST(StrIsAlphanumericFalseTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- is_ascii ---------- */
 
 TEST(StrIsAsciiTrueTest) {
@@ -1093,7 +1061,6 @@ TEST(StrIsAsciiTrueTest) {
 
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- is_lowercase ---------- */
 
@@ -1123,7 +1090,6 @@ TEST(StrIsLowercaseFalseTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- is_uppercase ---------- */
 
 TEST(StrIsUppercaseTrueTest) {
@@ -1152,7 +1118,6 @@ TEST(StrIsUppercaseFalseTest) {
 	destroy_test_context(ctx);
 }
 
-
 /* ---------- byte_len ---------- */
 
 TEST(StrByteLenTest) {
@@ -1172,13 +1137,12 @@ TEST(StrByteLenTest) {
 	ASSERT_EQ(6, (int)elem.value.i, "byte_len 'hello' with an e-acute");
 
 	qd_push_s(ctx, "h\xc3\xa9llo");
-	usr_strings_len(ctx);
+	qd_len(ctx);
 	qd_stack_pop(ctx->st, &elem);
 	ASSERT_EQ(5, (int)elem.value.i, "len of the same string");
 
 	destroy_test_context(ctx);
 }
-
 
 /* ---------- slice ---------- */
 
@@ -1197,7 +1161,6 @@ TEST(StrSliceTest) {
 	qd_string_release(elem.value.s);
 	destroy_test_context(ctx);
 }
-
 
 int main(void) {
 	return UC_PrintResults();

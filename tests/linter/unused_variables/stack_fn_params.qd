@@ -1,5 +1,5 @@
-// Test: stack fn parameters only document the stack effect, so they are never unused
-stack fn add_pair(a:i64 b:i64 -- sum:i64) {
+// Test: fn parameters only document the stack effect, so they are never unused
+fn add_pair(a:i64 b:i64 -- sum:i64) {
 	+
 }
 

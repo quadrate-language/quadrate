@@ -7,7 +7,7 @@ Quadrate is a stack-based programming language designed for explicit data flow a
 Quadrate makes data flow explicit through stack-based evaluation. Every function declares its stack effect - what values it consumes and produces. This enables the compiler to validate all operations before execution.
 
 ```qd
-fn double(x:i64 -- result:i64) {
+def double(x:i64 -- result:i64) {
 	x 2 *
 }
 ```
@@ -20,7 +20,7 @@ by name. A function that would rather work on what the caller left says so, and 
 is documentation only:
 
 ```qd
-stack fn double(value:i64 -- result:i64) {
+fn double(value:i64 -- result:i64) {
 	2 *
 }
 ```

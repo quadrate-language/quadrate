@@ -15,7 +15,7 @@ struct Total {
 	sum: i64
 }
 
-fn (n:Node) add_to(t:Total -- ) {
+def (n:Node) add_to(t:Total -- ) {
 	t t <<sum n <<v + >>sum drop
 }
 

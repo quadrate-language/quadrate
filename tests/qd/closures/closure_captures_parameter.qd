@@ -1,10 +1,10 @@
 // A closure that captures a parameter and outlives the call. The parameter lived on the
 // machine stack, so the closure read a dead frame once the call returned.
-fn adder(n:i64 -- f:ptr) {
-	fn (x:i64 -- r:i64) { x n + }
+def adder(n:i64 -- f:ptr) {
+	def (x:i64 -- r:i64) { x n + }
 }
 
-fn noise(a:i64 b:i64 c:i64 -- s:i64) {
+def noise(a:i64 b:i64 c:i64 -- s:i64) {
 	a b + c +
 }
 

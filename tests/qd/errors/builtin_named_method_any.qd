@@ -5,13 +5,13 @@ struct Slot {
 	v: i64
 }
 
-fn (s:Slot) set(n:i64 -- s2:Slot) {
+def (s:Slot) set(n:i64 -- s2:Slot) {
 	Slot {
 		v = n
 	}
 }
 
-fn relay(s:Slot a:any -- r:Slot) {
+def relay(s:Slot a:any -- r:Slot) {
 	s a set
 }
 

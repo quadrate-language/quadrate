@@ -12,7 +12,7 @@ fn main() {
 	// Float precision boundary
 	"=== Float precision ===" print nl
 	limits::F64Epsilon cast<i64> print nl  // 0 (very small)
-	1.0 limits::F64Epsilon add cast<i64> print nl  // 1
+	1.0 limits::F64Epsilon + cast<i64> print nl  // 1
 
 	// Large float to int
 	"=== Large floats ===" print nl
@@ -29,7 +29,7 @@ fn main() {
 	"=== String parsing ===" print nl
 	"0" strconv::atoi! print nl                  // 0
 	"-0" strconv::atoi! print nl                 // 0
-	"   42" strconv::atoi if { print } else { "not a number" print } nl  // the whole string must be the number
+	"   42" strconv::atoi ok if { print } else { drop "not a number" print } nl  // the whole string must be the number
 	"-123" strconv::atoi! print nl               // -123
 	"+456" strconv::atoi! print nl               // 456
 	"0.0" strconv::parse_float! print nl         // 0.0

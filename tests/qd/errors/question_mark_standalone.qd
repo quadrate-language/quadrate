@@ -1,10 +1,10 @@
 // Test: ? as standalone token (space before ?) - same as func?
-fn might_fail(x:i64 -- result:i64)! {
+def might_fail(x:i64 -- result:i64)! {
 	x 0 < if { "negative" 1 panic }
 	x 10 +
 }
 
-fn wrapper(x:i64 -- result:i64)! {
+def wrapper(x:i64 -- result:i64)! {
 	x might_fail ?
 	3 *
 }
@@ -12,10 +12,10 @@ fn wrapper(x:i64 -- result:i64)! {
 fn main() {
 	5 wrapper switch {
 		Ok { "5 -> " print print nl }
-		_ { "failed" print nl }
+		_ { drop "failed" print nl }
 	}
 	-1 wrapper switch {
 		Ok { "-1 -> " print print nl }
-		_ { "error propagated" print nl }
+		_ { drop "error propagated" print nl }
 	}
 }

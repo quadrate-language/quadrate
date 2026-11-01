@@ -2,5 +2,5 @@
 use badmodule
 
 fn main() {
-	42 prints nl
+	42 print nl
 }

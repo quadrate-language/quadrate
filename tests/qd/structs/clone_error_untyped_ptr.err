@@ -1,1 +1,1 @@
-Type error in 'clone': Expected a struct, got ptr
+Type error in 'clone': Expected a struct or an array, got ptr

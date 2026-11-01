@@ -8,17 +8,18 @@ use os
 fn main() {
 	"/nonexistent_qd_dir/file" -> missing
 
-	missing os::delete if { "delete succeeded (FAIL)" } else { "delete failed" } print nl
-	missing "/nonexistent_qd_dir/other" os::rename if { "rename succeeded (FAIL)" } else { "rename failed" } print nl
-	missing "/tmp/qd_failures_copy" os::copy if { "copy succeeded (FAIL)" } else { "copy failed" } print nl
-	"/proc/qd_cannot_create" os::mkdir if { "mkdir succeeded (FAIL)" } else { "mkdir failed" } print nl
-	missing os::rmdir if { "rmdir succeeded (FAIL)" } else { "rmdir failed" } print nl
-	missing fn (p:str d:i64 level:i64 -- ) { p print d print level print } os::walk if { "walk succeeded (FAIL)" } else { "walk failed" } print nl
+	missing os::delete ok if { "delete succeeded (FAIL)" } else { "delete failed" } print nl
+	missing "/nonexistent_qd_dir/other" os::rename ok if { "rename succeeded (FAIL)" } else { "rename failed" } print nl
+	missing "/tmp/qd_failures_copy" os::copy ok if { "copy succeeded (FAIL)" } else { "copy failed" } print nl
+	"/proc/qd_cannot_create" os::mkdir ok if { "mkdir succeeded (FAIL)" } else { "mkdir failed" } print nl
+	missing os::rmdir ok if { "rmdir succeeded (FAIL)" } else { "rmdir failed" } print nl
+	missing def (p:str d:i64 level:i64 -- ) { p print d print level print } os::walk ok if { "walk succeeded (FAIL)" } else { "walk failed" } print nl
 
 	missing os::list
-	if {
+	ok if {
 		drop drop "list succeeded (FAIL)" print nl
 	} else {
+		drop drop
 		"list failed" print nl
 	}
 
@@ -38,6 +39,7 @@ fn main() {
 			drop drop "list: Ok (FAIL)" print nl
 		}
 		_ {
+			drop drop
 			err -> code -> msg
 			code os::ErrNotDirectory == if { "list: ErrNotDirectory" } else { "list: wrong code (FAIL)" } print nl
 		}
@@ -46,5 +48,4 @@ fn main() {
 	"/nonexistent_qd_dir/*.zzz" os::glob! -> count -> entries
 	"glob: " print count print " " print entries len print nl
 
-	"stack: [" print prints "]" print nl
 }

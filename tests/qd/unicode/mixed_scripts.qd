@@ -5,17 +5,17 @@ fn main() {
 	// Latin + Cyrillic
 	"=== Latin + Cyrillic ===" print nl
 	"Hello Мир" print nl
-	"Hello Мир" strings::len print nl       // 9 characters (12 bytes)
+	"Hello Мир" len print nl       // 9 characters (12 bytes)
 
 	// Latin + CJK
 	"=== Latin + CJK ===" print nl
 	"Hello 世界" print nl
-	"Hello 世界" strings::len print nl      // 8 characters (12 bytes)
+	"Hello 世界" len print nl      // 8 characters (12 bytes)
 
 	// Latin + Arabic
 	"=== Latin + Arabic ===" print nl
 	"Hello مرحبا" print nl
-	"Hello مرحبا" strings::len print nl     // 11 characters (16 bytes)
+	"Hello مرحبا" len print nl     // 11 characters (16 bytes)
 
 	// Mixed script contains
 	"=== Mixed contains ===" print nl
@@ -25,14 +25,14 @@ fn main() {
 
 	// Mixed script comparison
 	"=== Mixed comparison ===" print nl
-	"Hello" "Hello" eq print nl         // 1
-	"Мир" "Мир" eq print nl             // 1
-	"Hello" "Мир" eq print nl           // 0
+	"Hello" "Hello" == print nl         // 1
+	"Мир" "Мир" == print nl             // 1
+	"Hello" "Мир" == print nl           // 0
 
 	// All scripts in one string
 	"=== All scripts ===" print nl
 	"ABC Мир 世界" print nl
-	"ABC Мир 世界" strings::len print nl         // 9 characters (17 bytes)
+	"ABC Мир 世界" len print nl         // 9 characters (17 bytes)
 
 	"done" print nl
 }

@@ -21,7 +21,7 @@ This module is a thin layer over the channel, not a replacement for it: raising 
 @example
 use error
 
-fn parse_port(s:str -- port:i64)! {
+def parse_port(s:str -- port:i64)! {
     s "" == if { "port is empty" 1 panic }
     8080
 }

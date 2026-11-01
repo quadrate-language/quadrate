@@ -96,7 +96,7 @@
       "name": "any",
       "description": "Wildcard type for a parameter or value of any type; the value carries its type at run time",
       "examples": [
-        "fn show(x:any -- ) { x print nl }"
+        "def show(x:any -- ) { x print nl }"
       ]
     },
     {
@@ -275,12 +275,12 @@
     {
       "name": "fn",
       "category": "Declaration",
-      "description": "Declares a function with a stack signature",
-      "syntax": "fn name(inputs -- outputs) { body }",
+      "description": "Declares a function with a stack signature. Its inputs stay on the stack for the body to work on; the names in the signature are documentation. `def` declares one that binds them instead",
+      "syntax": "[pub] [inline] fn name(inputs -- outputs) { body }",
       "examples": [
-        "fn add(a:i64 b:i64 -- sum:i64) { + }",
+        "fn square(x:i64 -- r:i64) { dup * }",
         "fn greet() { \"Hello\" print nl }",
-        "fn square(x:f64 -- result:f64) { dup * }"
+        "fn mask(value:i64 num_bits:i64 -- result:i64) { 1 swap shl 1 sub and }"
       ]
     },
     {
@@ -309,20 +309,20 @@
       "name": "inline",
       "category": "Declaration",
       "description": "Requests the compiler to inline a function at call sites, eliminating function call overhead. Can be combined with pub.",
-      "syntax": "inline fn name(inputs -- outputs) { body }",
+      "syntax": "[pub] inline fn|def name(inputs -- outputs) { body }",
       "examples": [
-        "inline fn double(x:i64 -- result:i64) { x 2 * }",
-        "pub inline fn inc(x:i64 -- result:i64) { x 1 + }"
+        "inline fn double(x:i64 -- result:i64) { 2 * }",
+        "pub inline def incr(x:i64 -- result:i64) { x 1 + }"
       ]
     },
     {
-      "name": "stack",
+      "name": "def",
       "category": "Declaration",
-      "description": "Function modifier: the input parameters are not bound as locals; they stay on the stack for the body to work on, and any names they carry are documentation that is not in scope. Without it every input must be named. Combines with pub and inline.",
-      "syntax": "[pub] [inline] stack fn name(inputs -- outputs) { body }",
+      "description": "Declares a function like fn, but each named input is bound as a local at entry instead of staying on the stack, so the body reads its arguments by name. Every input must be named. Written without a name it is an anonymous function.",
+      "syntax": "[pub] [inline] def name(inputs -- outputs) { body }",
       "examples": [
-        "stack fn double(i64 -- result:i64) { 2 * }",
-        "stack fn mask(value:i64 num_bits:i64 -- result:i64) { 1 swap shl 1 sub and }"
+        "def area(w:f64 h:f64 -- a:f64) { w h * }",
+        "def (x:i64 -- r:i64) { x 2 * }"
       ]
     },
     {
@@ -331,8 +331,8 @@
       "description": "Imports a C library, declaring its functions with Quadrate signatures",
       "syntax": "import \"library\" as \"namespace\" { function declarations }",
       "examples": [
-        "import \"libm.so\" as \"m\" { pub fn sin(x:f64 -- y:f64) }",
-        "import \"mylib.a\" as \"my\" { pub fn process(data:ptr len:i64 -- result:i64) }"
+        "import \"libm.so\" as \"m\" { pub def sin(x:f64 -- y:f64) }",
+        "import \"mylib.a\" as \"my\" { pub def process(data:ptr len:i64 -- result:i64) }"
       ]
     },
     {
@@ -373,7 +373,7 @@
       "syntax": "return",
       "examples": [
         "fn early() { true if { return } \"not reached\" print }",
-        "fn find(x:i64 -- found:bool) { check if { true return } false }"
+        "def find(x:i64 -- found:bool) { check if { true return } false }"
       ]
     },
     {
@@ -443,173 +443,122 @@
       "name": "+",
       "category": "Arithmetic",
       "signature": "( a b -- sum )",
-      "description": "Adds two numbers",
-      "alias": "add"
+      "description": "Adds two numbers"
     },
     {
       "name": "-",
       "category": "Arithmetic",
       "signature": "( a b -- diff )",
-      "description": "Subtracts b from a",
-      "alias": "sub"
+      "description": "Subtracts b from a"
     },
     {
       "name": "*",
       "category": "Arithmetic",
       "signature": "( a b -- product )",
-      "description": "Multiplies two numbers",
-      "alias": "mul"
+      "description": "Multiplies two numbers"
     },
     {
       "name": "/",
       "category": "Arithmetic",
       "signature": "( a b -- quotient )",
-      "description": "Divides a by b",
-      "alias": "div"
+      "description": "Divides a by b"
     },
     {
       "name": "%",
       "category": "Arithmetic",
       "signature": "( a b -- remainder )",
-      "description": "Computes a modulo b",
-      "alias": "mod"
+      "description": "Computes a modulo b; integers only"
+    },
+    {
+      "name": "++",
+      "category": "Arithmetic",
+      "signature": "( a -- a+1 )",
+      "description": "Adds 1"
+    },
+    {
+      "name": "--",
+      "category": "Arithmetic",
+      "signature": "( a -- a-1 )",
+      "description": "Subtracts 1"
     },
     {
       "name": "==",
       "category": "Comparison",
-      "signature": "( a b -- bool )",
-      "description": "Returns 1 if a equals b, 0 otherwise",
-      "alias": "eq"
+      "signature": "( a b -- flag )",
+      "description": "Returns 1 if a equals b, 0 otherwise"
     },
     {
       "name": "!=",
       "category": "Comparison",
-      "signature": "( a b -- bool )",
-      "description": "Returns 1 if a does not equal b",
-      "alias": "neq"
+      "signature": "( a b -- flag )",
+      "description": "Returns 1 if a does not equal b"
     },
     {
       "name": "<",
       "category": "Comparison",
-      "signature": "( a b -- bool )",
-      "description": "Returns 1 if a is less than b",
-      "alias": "lt"
+      "signature": "( a b -- flag )",
+      "description": "Returns 1 if a is less than b"
     },
     {
       "name": "<=",
       "category": "Comparison",
-      "signature": "( a b -- bool )",
-      "description": "Returns 1 if a is less than or equal to b",
-      "alias": "lte"
+      "signature": "( a b -- flag )",
+      "description": "Returns 1 if a is less than or equal to b"
     },
     {
       "name": ">",
       "category": "Comparison",
-      "signature": "( a b -- bool )",
-      "description": "Returns 1 if a is greater than b",
-      "alias": "gt"
+      "signature": "( a b -- flag )",
+      "description": "Returns 1 if a is greater than b"
     },
     {
       "name": ">=",
       "category": "Comparison",
-      "signature": "( a b -- bool )",
-      "description": "Returns 1 if a is greater than or equal to b",
-      "alias": "gte"
-    },
-    {
-      "name": "&&",
-      "category": "Logical",
-      "signature": "( a b -- bool )",
-      "description": "Logical AND",
-      "alias": "and"
-    },
-    {
-      "name": "||",
-      "category": "Logical",
-      "signature": "( a b -- bool )",
-      "description": "Logical OR",
-      "alias": "or"
-    },
-    {
-      "name": "!",
-      "category": "Logical",
-      "signature": "( a -- bool )",
-      "description": "Logical NOT",
-      "alias": "not"
-    },
-    {
-      "name": "&",
-      "category": "Bitwise",
-      "signature": "( a b -- result )",
-      "description": "Bitwise AND",
-      "alias": "band"
-    },
-    {
-      "name": "|",
-      "category": "Bitwise",
-      "signature": "( a b -- result )",
-      "description": "Bitwise OR",
-      "alias": "bor"
-    },
-    {
-      "name": "^",
-      "category": "Bitwise",
-      "signature": "( a b -- result )",
-      "description": "Bitwise XOR",
-      "alias": "bxor"
-    },
-    {
-      "name": "~",
-      "category": "Bitwise",
-      "signature": "( a -- result )",
-      "description": "Bitwise NOT",
-      "alias": "bnot"
+      "signature": "( a b -- flag )",
+      "description": "Returns 1 if a is greater than or equal to b"
     },
     {
       "name": "<<",
-      "category": "Bitwise",
-      "signature": "( a n -- result )",
-      "description": "Left shift a by n bits",
-      "alias": "shl"
+      "category": "Field Access",
+      "signature": "( s -- value )",
+      "description": "Reads a field: p <<x"
     },
     {
       "name": ">>",
-      "category": "Bitwise",
-      "signature": "( a n -- result )",
-      "description": "Right shift a by n bits",
-      "alias": "shr"
+      "category": "Field Access",
+      "signature": "( s value -- s )",
+      "description": "Writes a field and leaves the struct: p 5 >>x"
     },
     {
-      "name": "@",
-      "category": "Field Access",
-      "signature": "( struct -- value )",
-      "description": "Accesses a struct field (e.g., point@x)",
-      "alias": null
+      "name": "->",
+      "category": "Binding",
+      "signature": "( value -- )",
+      "description": "Binds the top value to a local: 5 -> x"
     }
   ],
   "syntax_patterns": [
     {
       "name": "Function Definition",
-      "pattern": "fn name(param:type ... -- result:type ...) { body }",
+      "pattern": "def name(param:type ... -- result:type ...) { body }",
       "description": "Parameters before -- are inputs (popped from stack), after -- are outputs (pushed to stack)",
       "examples": [
-        "fn add(a:i64 b:i64 -- sum:i64) { + }",
-        "fn greet(name:str --) { \"Hello, \" print name print nl }",
+        "def add(a:i64 b:i64 -- sum:i64) { + }",
+        "def greet(name:str --) { \"Hello, \" print name print nl }",
         "fn pi(-- value:f64) { 3.14159 }"
       ]
     },
     {
       "name": "Generic Function",
-      "pattern": "fn name<T>(param:T -- result:T) { body }",
+      "pattern": "def name<T>(param:T -- result:T) { body }",
       "description": "Generic functions work with multiple types",
       "examples": [
-        "fn identity<T>(x:T -- x:T) { }",
-        "fn swap_pair<T>(a:T b:T -- b:T a:T) { swap }"
+        "def identity<T>(x:T -- x:T) { }",
+        "def swap_pair<T>(a:T b:T -- b:T a:T) { swap }"
       ]
     },
     {
       "name": "Method Definition",
-      "pattern": "fn (self:Type) method(params -- results) { body }",
+      "pattern": "def (self:Type) method(params -- results) { body }",
       "description": "Methods operate on a struct instance",
       "examples": [
         "fn (self:Point) magnitude(-- m:f64) { self@x sq self@y sq + sqrt }",
@@ -660,7 +609,7 @@
       "description": "Calls a function from an imported module",
       "examples": [
         "3.14 math::sin",
-        "\"hello\" strings::len",
+        "\"hello\" len",
         "\"file.txt\" io::read_file"
       ]
     },

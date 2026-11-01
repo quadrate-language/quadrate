@@ -1,0 +1,4 @@
+// Test: a combinator names what it needs when the stack is short
+fn main() {
+	fn { 1 + } dip
+}

@@ -10,7 +10,7 @@ fn test_seed_determinism( -- result:i64) {
 	rng1 rand::next -> n1 -> rng1
 	rng2 rand::next -> n2 -> rng2
 
-	n1 n2 eq
+	n1 n2 ==
 }
 
 fn test_int_range( -- result:i64) {
@@ -35,7 +35,7 @@ fn test_different_values( -- result:i64) {
 	42 rand::with_seed -> rng
 	rng rand::next -> n1 -> rng
 	rng rand::next -> n2 -> rng
-	n1 n2 neq
+	n1 n2 !=
 }
 
 test "rand::with_seed produces deterministic results" {

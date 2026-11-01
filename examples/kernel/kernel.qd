@@ -49,7 +49,7 @@ const SC_ENTER = 0x1C
 // ---------------------------------------------------------------------------
 // VGA text mode
 // ---------------------------------------------------------------------------
-fn vga_put(row:i64 col:i64 ch:i64 -- ) {
+def vga_put(row:i64 col:i64 ch:i64 -- ) {
 	VGA_BASE row VGA_COLS * col + 2 * + 0 ch sys::st8
 	VGA_BASE row VGA_COLS * col + 2 * + 1 ATTR_WHITE sys::st8
 }
@@ -81,7 +81,7 @@ fn vga_scroll() {
 	}
 }
 
-fn vga_print_str(row:i64 col:i64 s_addr:i64 len:i64 -- ) {
+def vga_print_str(row:i64 col:i64 s_addr:i64 len:i64 -- ) {
 	0 -> i
 	loop {
 		i len >= if { break }
@@ -102,7 +102,7 @@ fn cursor_get_col( -- col:i64) {
 	hw::cursor_col_addr 0 sys::ld64
 }
 
-fn cursor_set(row:i64 col:i64 -- ) {
+def cursor_set(row:i64 col:i64 -- ) {
 	hw::cursor_row_addr 0 row sys::st64
 	hw::cursor_col_addr 0 col sys::st64
 }
@@ -134,16 +134,16 @@ fn cursor_newline() {
 // ---------------------------------------------------------------------------
 // GDT setup
 // ---------------------------------------------------------------------------
-fn gdt_set_entry(base:i64 idx:i64 seg_base:i64 seg_limit:i64 access:i64 flags:i64 -- ) {
+def gdt_set_entry(base:i64 idx:i64 seg_base:i64 seg_limit:i64 access:i64 flags:i64 -- ) {
 	base idx 8 * + -> off
 	off 0 + 0 seg_limit 0xFF bits::and sys::st8
-	off 1 + 0 seg_limit 8 shr 0xFF bits::and sys::st8
+	off 1 + 0 seg_limit 8 bits::shr 0xFF bits::and sys::st8
 	off 2 + 0 seg_base 0xFF bits::and sys::st8
-	off 3 + 0 seg_base 8 shr 0xFF bits::and sys::st8
-	off 4 + 0 seg_base 16 shr 0xFF bits::and sys::st8
+	off 3 + 0 seg_base 8 bits::shr 0xFF bits::and sys::st8
+	off 4 + 0 seg_base 16 bits::shr 0xFF bits::and sys::st8
 	off 5 + 0 access sys::st8
-	off 6 + 0 seg_limit 16 shr 0x0F bits::and flags 4 shl bits::or sys::st8
-	off 7 + 0 seg_base 24 shr 0xFF bits::and sys::st8
+	off 6 + 0 seg_limit 16 bits::shr 0x0F bits::and flags 4 bits::shl bits::or sys::st8
+	off 7 + 0 seg_base 24 bits::shr 0xFF bits::and sys::st8
 }
 
 fn setup_gdt() {
@@ -160,14 +160,14 @@ fn setup_gdt() {
 // ---------------------------------------------------------------------------
 // IDT setup (x86_64: 16-byte entries)
 // ---------------------------------------------------------------------------
-fn idt_set_entry(base:i64 idx:i64 handler:i64 selector:i64 type_attr:i64 -- ) {
+def idt_set_entry(base:i64 idx:i64 handler:i64 selector:i64 type_attr:i64 -- ) {
 	base idx 16 * + -> off
 	off 0 + 0 handler 0xFFFF bits::and sys::st16
 	off 2 + 0 selector sys::st16
 	off 4 + 0 0 sys::st8
 	off 5 + 0 type_attr sys::st8
-	off 6 + 0 handler 16 shr 0xFFFF bits::and sys::st16
-	off 8 + 0 handler 32 shr 0xFFFFFFFF bits::and sys::st32
+	off 6 + 0 handler 16 bits::shr 0xFFFF bits::and sys::st16
+	off 8 + 0 handler 32 bits::shr 0xFFFFFFFF bits::and sys::st32
 	off 12 + 0 0 sys::st32
 }
 
@@ -191,16 +191,16 @@ fn setup_idt() {
 // PIC remapping
 // ---------------------------------------------------------------------------
 fn remap_pic() {
-	PIC1_CMD ICW1_INIT sys::port_out8
-	PIC2_CMD ICW1_INIT sys::port_out8
-	PIC1_DATA 32 sys::port_out8
-	PIC2_DATA 40 sys::port_out8
-	PIC1_DATA 4 sys::port_out8
-	PIC2_DATA 2 sys::port_out8
-	PIC1_DATA ICW4_8086 sys::port_out8
-	PIC2_DATA ICW4_8086 sys::port_out8
-	PIC1_DATA 0xFC sys::port_out8
-	PIC2_DATA 0xFF sys::port_out8
+	PIC1_CMD ICW1_INIT sys::outb
+	PIC2_CMD ICW1_INIT sys::outb
+	PIC1_DATA 32 sys::outb
+	PIC2_DATA 40 sys::outb
+	PIC1_DATA 4 sys::outb
+	PIC2_DATA 2 sys::outb
+	PIC1_DATA ICW4_8086 sys::outb
+	PIC2_DATA ICW4_8086 sys::outb
+	PIC1_DATA 0xFC sys::outb
+	PIC2_DATA 0xFF sys::outb
 }
 
 // ---------------------------------------------------------------------------
@@ -210,8 +210,8 @@ pub fn handle_interrupt() {
 	hw::int_num_addr 0 sys::ld64 -> int_no
 	int_no 32 == if { handle_timer }
 	int_no 33 == if { handle_keyboard }
-	int_no 40 >= if { PIC2_CMD PIC_EOI sys::port_out8 }
-	int_no 32 >= if { PIC1_CMD PIC_EOI sys::port_out8 }
+	int_no 40 >= if { PIC2_CMD PIC_EOI sys::outb }
+	int_no 32 >= if { PIC1_CMD PIC_EOI sys::outb }
 }
 
 // ---------------------------------------------------------------------------
@@ -226,7 +226,7 @@ fn handle_timer() {
 // ---------------------------------------------------------------------------
 // Keyboard
 // ---------------------------------------------------------------------------
-fn scancode_to_ascii(sc:i64 -- ch:i64) {
+def scancode_to_ascii(sc:i64 -- ch:i64) {
 	sc 0x02 == if { 49 return }
 	sc 0x03 == if { 50 return }
 	sc 0x04 == if { 51 return }
@@ -274,7 +274,7 @@ fn scancode_to_ascii(sc:i64 -- ch:i64) {
 }
 
 fn handle_keyboard() {
-	0x60 sys::port_in8 -> scancode
+	0x60 sys::inb -> scancode
 	scancode 0x80 bits::and 0 != if { return }
 
 	// Backspace

@@ -1,0 +1,8 @@
+// Regression: a qualified name followed by a field read, `math::Vec3 <<z`, was parsed as the
+// start of type arguments, `math::Vec3<…>`, and failed with "Expected type argument or '>'"
+use math
+
+fn main() {
+	1.0 2.0 3.0 math::Vec3 <<z print nl
+	math::Vec3 { x = 4.0 y = 5.0 z = 6.0 } <<y print nl
+}

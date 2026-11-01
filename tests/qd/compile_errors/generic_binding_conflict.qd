@@ -1,5 +1,5 @@
 // Test: one type parameter cannot be bound to two different types in the same call.
-fn same<T>(a:T b:T -- r:T) {
+def same<T>(a:T b:T -- r:T) {
 	a
 }
 

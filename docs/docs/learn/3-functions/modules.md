@@ -26,7 +26,7 @@ use strings
 
 fn main() {
 	3.14159 math::sin print nl
-	"hello" strings::len print nl
+	"hello" len print nl
 }
 ```
 
@@ -48,7 +48,7 @@ struct Point {
 	y:f64
 }
 
-fn point_add(a:Point b:Point -- c:Point) {
+def point_add(a:Point b:Point -- c:Point) {
 	Point { x = a <<x b <<x + y = a <<y b <<y + }
 }
 ```
@@ -171,7 +171,7 @@ Create a folder `mymath/` with source files inside:
 // mymath/helpers.qd
 
 // Private helper (no pub keyword) - only visible within mymath/
-fn square_internal(x:i64 -- result:i64) {
+def square_internal(x:i64 -- result:i64) {
 	x dup *
 }
 ```
@@ -180,11 +180,11 @@ fn square_internal(x:i64 -- result:i64) {
 ```qd
 // mymath/api.qd
 
-pub fn square(x:i64 -- result:i64) {
+pub def square(x:i64 -- result:i64) {
 	square_internal  // Can call functions from helpers.qd
 }
 
-pub fn cube(x:i64 -- result:i64) {
+pub def cube(x:i64 -- result:i64) {
 	dup square_internal *
 }
 ```
@@ -208,7 +208,7 @@ Use `pub` to mark symbols that can be accessed from outside the module:
 ```qd
 // mymodule/mymodule.qd
 
-pub fn public_function(x:i64 -- result:i64) {
+pub def public_function(x:i64 -- result:i64) {
 	x helper 2 *
 }
 
@@ -219,7 +219,7 @@ pub struct PublicStruct {
 }
 
 // No pub - only accessible within this module's directory
-fn helper(x:i64 -- y:i64) {
+def helper(x:i64 -- y:i64) {
 	x 1 +
 }
 
@@ -256,16 +256,16 @@ pub struct Circle {
 	radius:f64
 }
 
-pub fn circle_area(r:f64 -- area:f64) {
+pub def circle_area(r:f64 -- area:f64) {
 	r square math::Pi *
 }
 
-pub fn circle_circumference(r:f64 -- c:f64) {
+pub def circle_circumference(r:f64 -- c:f64) {
 	r 2.0 * math::Pi *
 }
 
 // Private helper
-fn square(x:f64 -- result:f64) {
+def square(x:f64 -- result:f64) {
 	x dup *
 }
 ```
@@ -278,7 +278,7 @@ paths and `qd.json` dependencies, the packages quadpm installed, and the standar
 
 ## Conventions
 
-- Always use `module::function` for stdlib calls — e.g., `math::sqrt`, `strings::len`
+- Always use `module::function` for stdlib calls — e.g., `math::sqrt`, `len`
 - Functions you define in the same directory are called without a namespace
 - Use `pub fn` to export functions from a module; `fn` is private by default
 

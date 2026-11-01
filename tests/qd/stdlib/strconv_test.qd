@@ -81,9 +81,9 @@ test "strconv::format_float round-trips" {
 }
 
 test "strconv parse words take the whole string" {
-	"12abc" strconv::atoi if { drop "12abc read" testing::fail }
-	" 42" strconv::atoi if { drop "' 42' read" testing::fail }
-	"1.5x" strconv::parse_float if { drop "1.5x read" testing::fail }
+	"12abc" strconv::atoi ok if { "12abc read" testing::fail } drop
+	" 42" strconv::atoi ok if { "' 42' read" testing::fail } drop
+	"1.5x" strconv::parse_float ok if { "1.5x read" testing::fail } drop
 	"-9223372036854775808" strconv::atoi! -9223372036854775807 1 - testing::assert_eq
 }
 
@@ -146,7 +146,7 @@ test "strconv::parse_int! with plus sign" {
 
 // The whole string must be the number, as for parse_d128
 test "strconv::parse_int rejects whitespace" {
-	"  42" 10 strconv::parse_int if { drop "'  42' read" testing::fail }
+	"  42" 10 strconv::parse_int ok if { "'  42' read" testing::fail } drop
 }
 
 // Bug #13: INT64_MIN negation UB in format_int

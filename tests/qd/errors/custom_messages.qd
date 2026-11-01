@@ -1,6 +1,6 @@
 // Test: custom error messages and codes
-stack fn divide(i64 i64 -- i64)! {
-	dup 0 eq if {
+fn divide(i64 i64 -- i64)! {
+	dup 0 == if {
 		drop drop
 		0  // Return dummy value before error
 		"Division by zero" 100 panic
@@ -11,16 +11,18 @@ stack fn divide(i64 i64 -- i64)! {
 
 fn main() {
 	"Test 1: 10 / 2" print nl
-	10 2 divide if {
+	10 2 divide ok if {
 		"Result: " print print nl
 	} else {
+		drop
 		"Error" print nl
 	}
 
 	"Test 2: 10 / 0" print nl
-	10 0 divide if {
+	10 0 divide ok if {
 		"Result: " print print nl
 	} else {
+		drop
 		"Error (expected)" print nl
 	}
 }

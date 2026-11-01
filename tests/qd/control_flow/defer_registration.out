@@ -36,4 +36,3 @@ loop, break:
     body
     defer before break
     after loop
-stack: []

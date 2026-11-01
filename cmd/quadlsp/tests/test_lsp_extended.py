@@ -162,7 +162,7 @@ class ExtendedLSPTester:
                     "uri": "file:///tmp/test.qd",
                     "languageId": "quadrate",
                     "version": 1,
-                    "text": "fn main() { 5 10 add print }"
+                    "text": "fn main() { 5 10 + print }"
                 }
             }
         }
@@ -249,7 +249,7 @@ class ExtendedLSPTester:
                     "version": 2
                 },
                 "contentChanges": [
-                    {"text": "fn test() { 5 10 add }"}
+                    {"text": "fn test() { 5 10 + }"}
                 ]
             }
         }
@@ -342,7 +342,7 @@ class ExtendedLSPTester:
         print("\n=== Testing Diagnostics (Valid Code) ===")
 
         valid_code = """fn main() {
-    5 10 add
+    5 10 +
     print
 }"""
 

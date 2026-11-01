@@ -1,122 +1,103 @@
-/// Higher-Order Function Combinators Example
+/// Combinators
 ///
-/// This example demonstrates the hof module which provides
-/// functional programming combinators for Quadrate.
-use bits
+/// The builtin combinators -- dip, keep, bi, tri, both, times, each, map, filter, fold and the
+/// searching words any, all, find, index -- with their function values written in place as
+/// `fn { }`, and `when`/`unless` from the hof module.
 use hof
 
 fn main() {
-	"=== Higher-Order Function Combinators ===" print nl
+	"=== Combinators ===" print nl
 	nl
 
-	// bi: Apply two functions to the same value
-	"bi - Apply two functions to same value:" print nl
-	"  5 doubled and plus-3: " print
-	5 stack fn (i64 -- i64) {
-		2 *
-	}
-	stack fn (i64 -- i64) {
-		3 +
-	}
-	hof::bi
+	// bi: run two function values on the same value
+	"bi - two function values on one value:" print nl
+	"  5 doubled and plus 3: " print
+	5 fn { 2 * } fn { 3 + } bi
 	print " and " print print nl
-
-	// Practical: check if a number is both positive AND even
-	"  Is 6 positive AND even? " print
-	6 stack fn (i64 -- i64) {
-		0 >
-	}
-	stack fn (i64 -- i64) {
-		2 % 0 ==
-	}
-	hof::bi
-	bits::and if {
-		"yes"
-	} else {
-		"no"
-	}
-	print nl
+	"  Is 6 positive and even? " print
+	6 fn { 0 > } fn { 2 % 0 == } bi and if { "yes" } else { "no" } print nl
 	nl
 
-	// keep: Apply function but preserve original
-	"keep - Apply but preserve original:" print nl
-	"  5 doubled, keeping original: " print
-	5 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::keep
-	-> orig -> result
+	// keep: run a function value and keep the value
+	"keep - run it and keep the value:" print nl
+	"  5 doubled, keeping 5: " print
+	5 fn { 2 * } keep -> orig -> result
 	"result=" print result print ", original=" print orig print nl
 	nl
 
-	// dip: Apply to second element, preserve top
-	"dip - Apply to second, preserve top:" print nl
+	// dip: run a function value under the top value
+	"dip - run it under the top value:" print nl
 	"  Stack [10, 20], double the 10: " print
-	10 20 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::dip
+	10 20 fn { 2 * } dip
+	"top=" print print ", below=" print print nl
+	"  Stack [1, 2, 3], add the two under the 3: " print
+	1 2 3 fn { + } dip
 	"top=" print print ", below=" print print nl
 	nl
 
-	// both: Apply same function to two values
-	"both - Apply same function to two values:" print nl
-	"  Square both 3 and 4: " print
-	3 4 stack fn (i64 -- i64) {
-		dup *
-	}
-	hof::both
+	// both: run one function value on two values
+	"both - one function value on two values:" print nl
+	"  Square 3 and 4: " print
+	3 4 fn { dup * } both
 	print " and " print print nl
 	nl
 
-	// when/unless: Conditional application
-	"when/unless - Conditional application:" print nl
+	// when/unless: run it on a condition
+	"when/unless - run it on a condition:" print nl
 	"  Double 5 when true: " print
-	5 1 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::when print nl
+	5 1 fn { 2 * } hof::when print nl
 	"  Double 5 when false: " print
-	5 0 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::when print nl
-	"  Double 5 unless true: " print
-	5 1 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::unless print nl
+	5 0 fn { 2 * } hof::when print nl
 	"  Double 5 unless false: " print
-	5 0 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::unless print nl
+	5 0 fn { 2 * } hof::unless print nl
 	nl
 
-	// times: Apply function n times
-	"times - Apply function n times:" print nl
-	"  Double 1 five times (1*2*2*2*2*2 = 32): " print
-	1 5 stack fn (i64 -- i64) {
-		2 *
-	}
-	hof::times print nl
-	"  Square 2 three times (2^8 = 256): " print
-	2 3 stack fn (i64 -- i64) {
-		dup *
-	}
-	hof::times print nl
+	// times: run it n times
+	"times - run it n times:" print nl
+	"  Double 1 five times: " print
+	1 5 fn { 2 * } times print nl
+	"  Square 2 three times: " print
+	2 3 fn { dup * } times print nl
 	nl
 
-	// Practical example: Data validation
-	"Practical: Validate user age" print nl
+	// Over arrays
+	"each, map, filter, fold - over arrays:" print nl
+	[1 2 3 4 5 6] -> numbers
+	"  Each: " print
+	numbers fn { print " " print } each nl
+	"  Squares: " print
+	numbers fn { dup * } map fn { print " " print } each nl
+	"  Evens: " print
+	numbers fn { 2 % 0 == } filter fn { print " " print } each nl
+	"  Sum: " print
+	numbers 0 fn { + } fold print nl
+	"  Sum of the squares of the evens: " print
+	numbers fn { 2 % 0 == } filter fn { dup * } map 0 fn { + } fold print nl
+	nl
+
+	// Searching: stop at the first element that decides the answer
+	"any, all, find, index - searching:" print nl
+	"  Any above 5? " print
+	numbers fn { 5 > } any print nl
+	"  All positive? " print
+	numbers fn { 0 > } all print nl
+	"  First above 3: " print
+	numbers fn { 3 > } find if { print } else { drop "none" print } nl
+	"  Its position: " print
+	numbers fn { 3 > } index print nl
+	"  Position of one above 9: " print
+	numbers fn { 9 > } index print nl
+	// A string is searched one character (codepoint) at a time
+	"  Where '=' is in \"key=value\": " print
+	"key=value" fn { 61 == } index print nl
+	"  Does \"r2d2\" hold a digit? " print
+	"r2d2" fn { 48 57 within } any print nl
+	nl
+
+	// Practical: validate an age
+	"Practical: validate an age" print nl
 	25 -> age
-
-	age
-	stack fn (i64 -- i64) { 0 > }
-	stack fn (i64 -- i64) { 18 >= }
-	hof::bi bits::and
-	age 120 <=
-	bits::and if {
+	age fn { 18 >= } fn { 120 <= } bi and if {
 		"  Age " print age print " is valid!" print nl
 	} else {
 		"  Age " print age print " is invalid!" print nl

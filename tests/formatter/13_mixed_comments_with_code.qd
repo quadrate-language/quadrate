@@ -4,7 +4,7 @@ fn test_mixed() {
 	/*     if {
 	for i {
 	*/
-	5 10 add
+	5 10 +
 	// }
 	// }
 	/* nested { block { here { */ print
@@ -18,7 +18,7 @@ fn test_deep_nesting() {
 	switch {
 	case 1 {
 	*/
-	100 200 add
+	100 200 +
 	/*
 	}
 	}

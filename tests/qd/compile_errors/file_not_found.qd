@@ -2,5 +2,5 @@
 use "nonexistent.qd"
 
 fn main() {
-	42 prints nl
+	42 print nl
 }

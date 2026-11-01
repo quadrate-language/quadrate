@@ -3,8 +3,8 @@ use arithmetic.qd
 use constants.qd
 use trigonometry.qd
 
-pub stack fn calculate(f64 -- f64) {
-	1.0 add
-	2.0 mul
-	3.141592653589793 mul
+pub fn calculate(f64 -- f64) {
+	1.0 +
+	2.0 *
+	3.141592653589793 *
 }

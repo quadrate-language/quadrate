@@ -11,6 +11,7 @@ fn main() {
 			f io::close
 		}
 		_ {
+			drop
 			err -> code -> msg
 			code io::ErrNotFound == if {
 				"err_not_found_ok" print nl
@@ -36,6 +37,7 @@ fn main() {
 					"file_ops_ok" print nl
 				}
 				_ {
+					drop
 					"FAIL: could not open test file" print nl
 				}
 			}
@@ -53,6 +55,7 @@ fn main() {
 			"FAIL: should be out of bounds" print nl
 		}
 		_ {
+			drop
 			err -> code -> msg
 			code strings::ErrOutOfBounds == if {
 				"str_out_of_bounds_ok" print nl
@@ -69,9 +72,10 @@ fn main() {
 			f io::close
 		}
 		_ {
+			drop
 			err -> code -> msg
 			// Check that error message is non-empty
-			msg strings::len 0 > if {
+			msg len 0 > if {
 				"err_msg_ok" print nl
 			} else {
 				"FAIL: error message empty" print nl

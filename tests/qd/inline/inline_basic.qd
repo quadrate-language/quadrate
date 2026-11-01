@@ -1,5 +1,5 @@
 // Test: basic inline function
-inline fn double(x:i64 -- result:i64) {
+inline def double(x:i64 -- result:i64) {
 	x 2 *
 }
 

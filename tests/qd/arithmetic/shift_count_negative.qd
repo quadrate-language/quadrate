@@ -1,6 +1,8 @@
 // Test: a negative shift count is a fatal error
+use bits
+
 fn n( -- r:i64) { -1 }
 
 fn main() {
-	8 n shr print nl
+	8 n bits::shr print nl
 }

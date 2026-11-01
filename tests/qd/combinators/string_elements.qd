@@ -1,0 +1,13 @@
+// Test: a string is a sequence of characters to len, nth, each and fold, as to the searching
+// words: its length counts characters and an element is a character's codepoint, as
+// len and strings::char_at have them.
+fn main() {
+	"héllo" len print nl                          // 5
+	"" len print nl                               // 0
+	"héllo" 1 nth print nl                        // 233
+	"héllo" 4 nth print nl                        // 111
+	"abc" fn { print " " print } each nl          // 97 98 99
+	"abc" 0 fn { + } fold print nl                // 294
+	"" 0 fn { + } fold print nl                   // 0
+	"wörld" 0 fn { 127 > + } fold print nl        // 1
+}

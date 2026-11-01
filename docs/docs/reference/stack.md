@@ -9,14 +9,17 @@ Operations for manipulating values on the stack.
 | `dup` | `(a -- a a)` | Duplicate top |
 | `dup2` | `(a b -- a b a b)` | Duplicate top two |
 | `drop` | `(a --)` | Remove top |
+| `drop2` | `(a b --)` | Remove top two |
 | `swap` | `(a b -- b a)` | Exchange top two |
 | `over` | `(a b -- a b a)` | Copy second to top |
 | `rot` | `(a b c -- b c a)` | Rotate three |
+| `rrot` | `(a b c -- c a b)` | Rotate three the other way |
+| `tuck` | `(a b -- b a b)` | Copy top below second |
 | `nip` | `(a b -- b)` | Remove second |
 | `pick` | `(x y z -- x y z x)` | Copy the third value to the top |
 
 **Naming convention:** the base name operates on the top element (`dup`, `swap`,
-`drop`, `over`, `nip`); a `2` suffix operates on the top pair (`dup2`).
+`drop`, `over`, `nip`); a `2` suffix operates on the top pair (`dup2`, `drop2`).
 
 ---
 
@@ -56,6 +59,16 @@ Removes the top value from the stack.
 1 2 3 drop // Stack: [1, 2]
 ```
 
+
+### drop2
+
+Removes the top two values.
+
+**Signature:** `(a b --)`
+
+```qd
+1 2 3 drop2 // Stack: [1]
+```
 ---
 
 ## Swapping
@@ -96,6 +109,26 @@ Rotates the top three values, moving third to top.
 
 ```qd
 1 2 3 rot // Stack: [2, 3, 1]
+```
+
+### rrot
+
+Rotates the top three values the other way, moving the top to third: the inverse of `rot`.
+
+**Signature:** `(a b c -- c a b)`
+
+```qd
+1 2 3 rrot // Stack: [3, 1, 2]
+```
+
+### tuck
+
+Copies the top value below the second.
+
+**Signature:** `(a b -- b a b)`
+
+```qd
+1 2 tuck // Stack: [2, 1, 2]
 ```
 
 ---

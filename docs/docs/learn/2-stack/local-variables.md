@@ -20,7 +20,7 @@ Compare these two approaches for computing `(x - y) * (x + y)`:
 **Stack manipulation only:**
 
 ```qd
-stack fn diff_of_squares(x:i64 y:i64 -- result:i64) {
+fn diff_of_squares(x:i64 y:i64 -- result:i64) {
 	over over - rot rot + *
 }
 ```
@@ -28,7 +28,7 @@ stack fn diff_of_squares(x:i64 y:i64 -- result:i64) {
 **With local variables:**
 
 ```qd
-fn diff_of_squares(x:i64 y:i64 -- result:i64) {
+def diff_of_squares(x:i64 y:i64 -- result:i64) {
 	x y - x y + *
 }
 ```
@@ -146,7 +146,7 @@ fn main() {
 ### Computing intermediate results
 
 ```qd
-fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
+def quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
 	a x dup * * -> ax2   // ax^2
 	b x * -> bx         // bx
 	ax2 bx + c +        // ax^2 + bx + c

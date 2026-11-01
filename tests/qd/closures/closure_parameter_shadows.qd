@@ -2,6 +2,6 @@
 // was taken for a capture of that variable, and the body read the outer value.
 fn main() {
 	5 -> n
-	fn (n:i64 -- r:i64) { n } -> f
+	def (n:i64 -- r:i64) { n } -> f
 	9 f call print nl
 }

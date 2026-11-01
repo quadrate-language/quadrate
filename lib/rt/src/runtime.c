@@ -4,7 +4,6 @@
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
-#include "platform/thread_platform.h"
 #include "ptr_registry.h"
 #include "runtime_internal.h"
 #include <inttypes.h>
@@ -1004,146 +1003,6 @@ int qd_free(qd_context* ctx) {
 
 // max - maximum of top 2 elements: ( a b -- max(a,b) )
 
-// Threading support
-typedef struct {
-	qd_context* ctx;
-	void* func_ptr;
-} qd_thread_info_t;
-
-// Wrapper function for platform threads that calls the Quadrate function
-static int qd_thread_wrapper(void* arg) {
-	qd_thread_info_t* info = (qd_thread_info_t*)arg;
-
-	// Call the function
-	typedef int (*qd_function_ptr)(qd_context*);
-	qd_function_ptr func;
-	memcpy(&func, &info->func_ptr, sizeof(func));
-
-	if (func) {
-		func(info->ctx);
-	}
-
-	// Clean up context
-	qd_free_context(info->ctx);
-	free(info);
-
-	return 0;
-}
-
-// spawn - create a new thread ( fn:ptr -- thread_id:i )
-int qd_spawn(qd_context* ctx) {
-	// Pop function pointer
-	qd_stack_element_t val;
-	qd_stack_error err = qd_stack_pop(ctx->st, &val);
-
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "spawn", "Stack underflow");
-	}
-
-	// Verify it's a pointer type
-	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "spawn", "Expected pointer type, got %d", val.type);
-	}
-
-	// Create new context for the thread. These are transient runtime failures
-	// (out of memory, OS thread limit), not programming errors, so report them
-	// via the error convention and clean up rather than aborting the process.
-	//
-	// The thread's stack is as big as the spawning context's, which is what `-s`
-	// sets. It used to be a hardcoded 1,024 elements, so a thread that pushed more
-	// died advising a flag that could not reach it.
-	const size_t thread_stack_size = (ctx->st != NULL) ? (size_t)ctx->st->capacity : QD_DEFAULT_STACK_SIZE;
-	qd_context* thread_ctx = qd_create_context(thread_stack_size);
-	if (!thread_ctx) {
-		ctx->error_code = -1;
-		qd_set_error_msg(ctx, "spawn: failed to create thread context");
-		return (int){-2};
-	}
-
-	// Create thread info
-	qd_thread_info_t* info = malloc(sizeof(qd_thread_info_t));
-	if (!info) {
-		qd_free_context(thread_ctx);
-		ctx->error_code = -1;
-		qd_set_error_msg(ctx, "spawn: failed to allocate thread info");
-		return (int){-2};
-	}
-	info->ctx = thread_ctx;
-	info->func_ptr = val.value.p;
-
-	// Create thread using platform abstraction
-	thread_handle_t thread = thread_platform_create(qd_thread_wrapper, info);
-	if (!thread) {
-		free(info);
-		qd_free_context(thread_ctx);
-		ctx->error_code = -1;
-		qd_set_error_msg(ctx, "spawn: failed to create thread");
-		return (int){-2};
-	}
-
-	// Push thread handle (as pointer cast to int64_t)
-	err = qd_stack_push_int(ctx->st, (int64_t)(uintptr_t)thread);
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "spawn", "Stack overflow pushing thread handle");
-	}
-
-	return (int){0};
-}
-
-// detach - detach a thread ( thread_id:i -- )
-int qd_detach(qd_context* ctx) {
-	// Pop thread ID
-	qd_stack_element_t val;
-	qd_stack_error err = qd_stack_pop(ctx->st, &val);
-
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "detach", "Stack underflow");
-	}
-
-	// Verify it's an integer type
-	if (val.type != QD_STACK_TYPE_INT) {
-		QDRT_FATAL(ctx, "detach", "Expected integer type, got %d", val.type);
-	}
-
-	// Get thread handle
-	thread_handle_t thread = (thread_handle_t)(uintptr_t)val.value.i;
-
-	// Detach thread using platform abstraction
-	int result = thread_platform_detach(thread);
-	if (result != THREAD_SUCCESS) {
-		QDRT_FATAL(ctx, "detach", "thread_platform_detach failed");
-	}
-
-	return (int){0};
-}
-
-// wait - join/wait for a thread ( thread_id:i -- )
-int qd_wait(qd_context* ctx) {
-	// Pop thread ID
-	qd_stack_element_t val;
-	qd_stack_error err = qd_stack_pop(ctx->st, &val);
-
-	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "wait", "Stack underflow");
-	}
-
-	// Verify it's an integer type
-	if (val.type != QD_STACK_TYPE_INT) {
-		QDRT_FATAL(ctx, "wait", "Expected integer type, got %d", val.type);
-	}
-
-	// Get thread handle
-	thread_handle_t thread = (thread_handle_t)(uintptr_t)val.value.i;
-
-	// Join thread using platform abstraction
-	int result = thread_platform_join(thread);
-	if (result != THREAD_SUCCESS) {
-		QDRT_FATAL(ctx, "wait", "thread_platform_join failed");
-	}
-
-	return (int){0};
-}
-
 int qd_err(qd_context* ctx) {
 	// Retrieve error information from the last failed fallible function call
 	// Stack effect: ( -- msg code )
@@ -1199,10 +1058,15 @@ int qd_panic(qd_context* ctx) {
 		QDRT_FATAL(ctx, "panic", "Expected string error message, got type %d", error_msg_elem.type);
 	}
 
-	// Set error code and message.
-	// has_error is set unconditionally: the code is chosen by the program and may legitimately
-	// be 0 (`Err` is 0), so error_code alone cannot distinguish "failed with code 0" from
-	// "no error".
+	// A caller reads the code as the call's status, where 0 is `Ok`: a failure carrying it
+	// would read as a success. A literal 0 is rejected at compile time; this is the code that
+	// was computed.
+	if (error_code_elem.value.i == 0) {
+		release_if_string(&error_msg_elem);
+		QDRT_FATAL(ctx, "panic", "Error code 0 is Ok; a failure needs a non-zero code (Err is 1)");
+	}
+
+	// Set error code and message
 	ctx->error_code = error_code_elem.value.i;
 	ctx->has_error = 1;
 

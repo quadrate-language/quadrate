@@ -1,0 +1,17 @@
+// Test: a bare fallible call leaves a status that is 0 (Ok) on success, so an `if` straight
+// after it would take its first arm on failure. It is an error, not a meaning: the status is
+// tested with `ok` or `fail` first.
+def divide(a:i64 b:i64 -- result:i64)! {
+	b 0 == if {
+		"division by zero" -1 panic
+	}
+	a b /
+}
+
+fn main() {
+	10 2 divide if {
+		print nl
+	} else {
+		drop
+	}
+}

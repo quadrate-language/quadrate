@@ -11,8 +11,8 @@ fn mcp_resources_list(id:str -- response:str) {
 
 	r1 r2 json::join r3 json::join r4 json::join r5 json::join r6 json::join r7 json::join r8 json::join r9 json::join json::arr -> resources_arr
 
-	"resources" resources_arr json::kv_raw json::obj -> result
-	id result rpc_result
+	"resources" resources_arr json::kv_raw json::obj
+	rpc_result
 }
 
 fn get_common_mistakes_content( -- content:str) {
@@ -69,10 +69,10 @@ fn get_common_mistakes_content( -- content:str) {
 	s "-------------------\n" strings::concat -> s
 	s "Problem: Operations expect specific types.\n\n" strings::concat -> s
 	s "WRONG:\n" strings::concat -> s
-	s "  42 strings::len      // ERROR: strings::len expects str, got i64\n" strings::concat -> s
+	s "  42 len      // ERROR: len expects str, got i64\n" strings::concat -> s
 	s "  arr 0 nth        // ERROR: if arr is i64, not ptr\n\n" strings::concat -> s
 	s "RIGHT:\n" strings::concat -> s
-	s "  42 strconv::itoa strings::len  // Convert to string first\n" strings::concat -> s
+	s "  42 strconv::itoa len  // Convert to string first\n" strings::concat -> s
 	s "  arr 0 nth                  // arr must be ptr (array)\n\n" strings::concat -> s
 
 	s "6. FORGETTING IMPORTS\n" strings::concat -> s
@@ -282,7 +282,7 @@ fn get_cheatsheet_content( -- content:str) {
 
 	s "STRINGS (use strings)\n" strings::concat -> s
 	s "-----------------\n" strings::concat -> s
-	s "strings::len           s -- length            String length\n" strings::concat -> s
+	s "len           s -- length            String length\n" strings::concat -> s
 	s "strings::concat        a b -- ab              Concatenate strings\n" strings::concat -> s
 	s "strings::split         s delim -- arr         Split by delimiter\n" strings::concat -> s
 	s "strings::join          arr delim -- s         Join array with delimiter\n" strings::concat -> s
@@ -404,7 +404,7 @@ fn get_cheatsheet_content( -- content:str) {
 	s
 }
 
-fn resource_uri_to_index(uri:str -- idx:i64) {
+def resource_uri_to_index(uri:str -- idx:i64) {
 	0 -> idx
 	uri "quadrate://snippets/hello-world" strings::compare 0 == if { 1 -> idx }
 	idx 0 == uri "quadrate://snippets/file-io" strings::compare 0 == and if { 2 -> idx }
@@ -418,7 +418,7 @@ fn resource_uri_to_index(uri:str -- idx:i64) {
 	idx
 }
 
-stack fn get_snippet_content(uri:str -- content:str) {
+fn get_snippet_content(uri:str -- content:str) {
 	resource_uri_to_index switch {
 		1 { "// Hello World\nfn main() {\n\t42 print nl\n}" }
 		2 { "// File I/O\nuse io\n\nfn read_example() {\n\tpath io::read_file switch {\n\t\tOk { -> content content print nl }\n\t\t_ { 1 os::exit }\n\t}\n}\n\nfn write_example() {\n\tpath data io::write_file!\n}" }
@@ -433,7 +433,7 @@ stack fn get_snippet_content(uri:str -- content:str) {
 	}
 }
 
-fn mcp_resources_read(id:str body:str -- response:str) {
+def mcp_resources_read(id:str body:str -- response:str) {
 	body "params" json::get_object -> _ -> params
 	params "uri" json::get_string -> found -> uri
 

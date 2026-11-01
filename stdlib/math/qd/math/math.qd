@@ -249,24 +249,24 @@ import "libmath.a" as "math" {
 /// @param x f64 Value to square
 /// @return result f64 x * x
 /// @example 3.0 math::sq print  // 9.0
-pub stack fn sq(x:f64 -- f64) {
-	dup mul
+pub fn sq(x:f64 -- f64) {
+	dup *
 }
 
 /// Cube a number.
 /// @param x f64 Value to cube
 /// @return result f64 x * x * x
 /// @example 2.0 math::cb print  // 8.0
-pub stack fn cb(x:f64 -- f64) {
-	dup dup mul mul
+pub fn cb(x:f64 -- f64) {
+	dup dup * *
 }
 
 /// Absolute value.
 /// @param x f64 Any value
 /// @return result f64 |x|
 /// @example -5.0 math::abs print  // 5.0
-pub stack fn abs(x:f64 -- f64) {
-	dup 0.0 lt if {
+pub fn abs(x:f64 -- f64) {
+	dup 0.0 < if {
 		neg
 	}
 }
@@ -275,8 +275,8 @@ pub stack fn abs(x:f64 -- f64) {
 /// @param x f64 Non-zero value
 /// @return result f64 1/x
 /// @example 4.0 math::inv print  // 0.25
-pub stack fn inv(x:f64 -- f64) {
-	1.0 swap div
+pub fn inv(x:f64 -- f64) {
+	1.0 swap /
 }
 
 /// Minimum of two values.
@@ -284,8 +284,8 @@ pub stack fn inv(x:f64 -- f64) {
 /// @param b any Second value
 /// @return result any Smaller of a and b
 /// @example 3 7 math::min print  // 3
-pub stack fn min(a:any b:any -- any) {
-	over over lt if {
+pub fn min(a:any b:any -- any) {
+	over over < if {
 		drop
 	} else {
 		nip
@@ -297,8 +297,8 @@ pub stack fn min(a:any b:any -- any) {
 /// @param b any Second value
 /// @return result any Larger of a and b
 /// @example 3 7 math::max print  // 7
-pub stack fn max(a:any b:any -- any) {
-	over over gt if {
+pub fn max(a:any b:any -- any) {
+	over over > if {
 		drop
 	} else {
 		nip
@@ -311,7 +311,7 @@ pub stack fn max(a:any b:any -- any) {
 /// @return result f64 log_base(x)
 /// @example 8.0 2.0 math::log print  // 3.0
 pub fn log(x:f64 base:f64 -- result:f64) {
-	x math::ln base math::ln /
+	fn { math::ln } both /
 }
 
 /// Clamp value to range.
@@ -321,35 +321,7 @@ pub fn log(x:f64 base:f64 -- result:f64) {
 /// @return result f64 x clamped to [min_val, max_val]
 /// @example 15.0 0.0 10.0 math::clamp print  // 10.0
 pub fn clamp(x:f64 min_val:f64 max_val:f64 -- result:f64) {
-	x max_val < if {
-		x
-	} else {
-		max_val
-	}
-	-> temp
-	temp min_val > if {
-		temp
-	} else {
-		min_val
-	}
-}
-
-/// Check if value is within range (inclusive).
-/// @param x any Value to check
-/// @param min_val any Minimum bound
-/// @param max_val any Maximum bound
-/// @return result i64 1 if in range, 0 otherwise
-/// @example 5 0 10 math::within print  // 1
-pub fn within(x:any min_val:any max_val:any -- result:i64) {
-	x min_val gte if {
-		x max_val lte if {
-			1
-		} else {
-			0
-		}
-	} else {
-		0
-	}
+	swap fn { math::min } dip math::max
 }
 
 /// Linear interpolation between two values.
@@ -359,23 +331,23 @@ pub fn within(x:any min_val:any max_val:any -- result:i64) {
 /// @return result f64 a + (b - a) * t
 /// @example 0.0 10.0 0.5 math::lerp print  // 5.0
 pub fn lerp(a:f64 b:f64 t:f64 -- result:f64) {
-	b a - t * a +
+	fn { over - } dip * +
 }
 
 /// Convert degrees to radians.
 /// @param degrees f64 Angle in degrees
 /// @return radians f64 Angle in radians
 /// @example 180.0 math::deg_to_rad print  // ~3.14159
-pub stack fn deg_to_rad(degrees:f64 -- f64) {
-	3.141592653589793 180 div mul
+pub fn deg_to_rad(degrees:f64 -- f64) {
+	3.141592653589793 180 / *
 }
 
 /// Convert radians to degrees.
 /// @param radians f64 Angle in radians
 /// @return degrees f64 Angle in degrees
 /// @example 3.141592653589793 math::rad_to_deg print  // 180.0
-pub stack fn rad_to_deg(radians:f64 -- f64) {
-	180 mul 3.141592653589793 div
+pub fn rad_to_deg(radians:f64 -- f64) {
+	180 * 3.141592653589793 /
 }
 
 // ============================================================================
@@ -414,7 +386,7 @@ pub fn vec2_one( -- v:Vec2) {
 /// @param other Vec2 Vector to add
 /// @return result Vec2 Sum of vectors
 /// @example v2 other2 add -> sum
-pub fn (v:Vec2) add(other:Vec2 -- result:Vec2) {
+pub def (v:Vec2) add(other:Vec2 -- result:Vec2) {
 	Vec2 {
 		x = v <<x other <<x +
 		y = v <<y other <<y +
@@ -425,7 +397,7 @@ pub fn (v:Vec2) add(other:Vec2 -- result:Vec2) {
 /// @param other Vec2 Vector to subtract
 /// @return result Vec2 Difference of vectors
 /// @example v2 other2 subtract -> diff
-pub fn (v:Vec2) subtract(other:Vec2 -- result:Vec2) {
+pub def (v:Vec2) subtract(other:Vec2 -- result:Vec2) {
 	Vec2 {
 		x = v <<x other <<x -
 		y = v <<y other <<y -
@@ -436,7 +408,7 @@ pub fn (v:Vec2) subtract(other:Vec2 -- result:Vec2) {
 /// @param s f64 Scalar multiplier
 /// @return result Vec2 Scaled vector
 /// @example v2 2.0 scale -> scaled
-pub fn (v:Vec2) scale(s:f64 -- result:Vec2) {
+pub def (v:Vec2) scale(s:f64 -- result:Vec2) {
 	Vec2 {
 		x = v <<x s *
 		y = v <<y s *
@@ -447,7 +419,7 @@ pub fn (v:Vec2) scale(s:f64 -- result:Vec2) {
 /// @param other Vec2 Other vector
 /// @return result f64 Dot product
 /// @example v2 other2 dot -> d
-pub fn (v:Vec2) dot(other:Vec2 -- result:f64) {
+pub def (v:Vec2) dot(other:Vec2 -- result:f64) {
 	v <<x other <<x * v <<y other <<y * +
 }
 
@@ -470,7 +442,7 @@ pub fn (v:Vec2) length_sq( -- result:f64) {
 /// @example v2 normalize -> unit
 pub fn (v:Vec2) normalize( -- result:Vec2) {
 	v <<x v <<x * v <<y v <<y * + math::sqrt -> mag
-	mag 0.0 gt if {
+	mag 0.0 > if {
 		1.0 mag / -> inv_mag
 		Vec2 {
 			x = v <<x inv_mag *
@@ -496,7 +468,7 @@ pub fn (v:Vec2) neg( -- result:Vec2) {
 /// @param t f64 Interpolation factor (0.0 to 1.0)
 /// @return result Vec2 Interpolated vector
 /// @example v2 other2 0.5 lerp -> mid
-pub fn (v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2) {
+pub def (v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2) {
 	Vec2 {
 		x = v <<x other <<x v <<x - t * +
 		y = v <<y other <<y v <<y - t * +
@@ -507,7 +479,7 @@ pub fn (v:Vec2) lerp(other:Vec2 t:f64 -- result:Vec2) {
 /// @param other Vec2 Other point
 /// @return result f64 Distance between points
 /// @example v2 other2 distance -> d
-pub fn (v:Vec2) distance(other:Vec2 -- result:f64) {
+pub def (v:Vec2) distance(other:Vec2 -- result:f64) {
 	v <<x other <<x - dup * v <<y other <<y - dup * + math::sqrt
 }
 
@@ -522,7 +494,7 @@ pub fn (v:Vec2) angle( -- result:f64) {
 /// @param angle f64 Rotation angle in radians
 /// @return result Vec2 Rotated vector
 /// @example v2 1.57 rotate -> rotated
-pub fn (v:Vec2) rotate(angle:f64 -- result:Vec2) {
+pub def (v:Vec2) rotate(angle:f64 -- result:Vec2) {
 	angle math::cos -> c
 	angle math::sin -> s
 	Vec2 {
@@ -614,7 +586,7 @@ pub fn vec3_unit_z( -- v:Vec3) {
 /// @param other Vec3 Vector to add
 /// @return result Vec3 Sum of vectors
 /// @example v3 other3 add -> sum
-pub fn (v:Vec3) add(other:Vec3 -- result:Vec3) {
+pub def (v:Vec3) add(other:Vec3 -- result:Vec3) {
 	Vec3 {
 		x = v <<x other <<x +
 		y = v <<y other <<y +
@@ -626,7 +598,7 @@ pub fn (v:Vec3) add(other:Vec3 -- result:Vec3) {
 /// @param other Vec3 Vector to subtract
 /// @return result Vec3 Difference of vectors
 /// @example v3 other3 subtract -> diff
-pub fn (v:Vec3) subtract(other:Vec3 -- result:Vec3) {
+pub def (v:Vec3) subtract(other:Vec3 -- result:Vec3) {
 	Vec3 {
 		x = v <<x other <<x -
 		y = v <<y other <<y -
@@ -638,7 +610,7 @@ pub fn (v:Vec3) subtract(other:Vec3 -- result:Vec3) {
 /// @param s f64 Scalar multiplier
 /// @return result Vec3 Scaled vector
 /// @example v3 2.0 scale -> scaled
-pub fn (v:Vec3) scale(s:f64 -- result:Vec3) {
+pub def (v:Vec3) scale(s:f64 -- result:Vec3) {
 	Vec3 {
 		x = v <<x s *
 		y = v <<y s *
@@ -650,7 +622,7 @@ pub fn (v:Vec3) scale(s:f64 -- result:Vec3) {
 /// @param other Vec3 Other vector
 /// @return result f64 Dot product
 /// @example v3 other3 dot -> d
-pub fn (v:Vec3) dot(other:Vec3 -- result:f64) {
+pub def (v:Vec3) dot(other:Vec3 -- result:f64) {
 	v <<x other <<x * v <<y other <<y * + v <<z other <<z * +
 }
 
@@ -658,7 +630,7 @@ pub fn (v:Vec3) dot(other:Vec3 -- result:f64) {
 /// @param other Vec3 Other vector
 /// @return result Vec3 Cross product (v x other)
 /// @example v3 other3 cross -> c
-pub fn (v:Vec3) cross(other:Vec3 -- result:Vec3) {
+pub def (v:Vec3) cross(other:Vec3 -- result:Vec3) {
 	Vec3 {
 		x = v <<y other <<z * v <<z other <<y * -
 		y = v <<z other <<x * v <<x other <<z * -
@@ -685,7 +657,7 @@ pub fn (v:Vec3) length_sq( -- result:f64) {
 /// @example v3 normalize -> unit
 pub fn (v:Vec3) normalize( -- result:Vec3) {
 	v <<x v <<x * v <<y v <<y * + v <<z v <<z * + math::sqrt -> mag
-	mag 0.0 gt if {
+	mag 0.0 > if {
 		1.0 mag / -> inv_mag
 		Vec3 {
 			x = v <<x inv_mag *
@@ -713,7 +685,7 @@ pub fn (v:Vec3) neg( -- result:Vec3) {
 /// @param t f64 Interpolation factor (0.0 to 1.0)
 /// @return result Vec3 Interpolated vector
 /// @example v3 other3 0.5 lerp -> mid
-pub fn (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3) {
+pub def (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3) {
 	Vec3 {
 		x = v <<x other <<x v <<x - t * +
 		y = v <<y other <<y v <<y - t * +
@@ -725,7 +697,7 @@ pub fn (v:Vec3) lerp(other:Vec3 t:f64 -- result:Vec3) {
 /// @param n Vec3 Normal vector
 /// @return result Vec3 Reflected vector
 /// @example v3 normal reflect -> reflected
-pub fn (v:Vec3) reflect(n:Vec3 -- result:Vec3) {
+pub def (v:Vec3) reflect(n:Vec3 -- result:Vec3) {
 	v <<x n <<x * v <<y n <<y * + v <<z n <<z * + 2.0 * -> factor
 	Vec3 {
 		x = v <<x n <<x factor * -
@@ -738,7 +710,7 @@ pub fn (v:Vec3) reflect(n:Vec3 -- result:Vec3) {
 /// @param other Vec3 Other point
 /// @return result f64 Distance between points
 /// @example v3 other3 distance -> d
-pub fn (v:Vec3) distance(other:Vec3 -- result:f64) {
+pub def (v:Vec3) distance(other:Vec3 -- result:f64) {
 	v <<x other <<x - dup *
 	v <<y other <<y - dup * +
 	v <<z other <<z - dup * +
@@ -749,7 +721,7 @@ pub fn (v:Vec3) distance(other:Vec3 -- result:f64) {
 /// @param other Vec3 Other vector
 /// @return result f64 Angle in radians [0, π]
 /// @example v3 other3 angle_between -> a
-pub fn (v:Vec3) angle_between(other:Vec3 -- result:f64) {
+pub def (v:Vec3) angle_between(other:Vec3 -- result:f64) {
 	v <<x other <<x * v <<y other <<y * + v <<z other <<z * + -> dot_val
 	v <<x v <<x * v <<y v <<y * + v <<z v <<z * + math::sqrt -> v_len
 	other <<x other <<x * other <<y other <<y * + other <<z other <<z * + math::sqrt -> o_len
@@ -800,7 +772,7 @@ pub fn vec4_one( -- v:Vec4) {
 /// @param other Vec4 Vector to add
 /// @return result Vec4 Sum of vectors
 /// @example v4 other4 add -> sum
-pub fn (v:Vec4) add(other:Vec4 -- result:Vec4) {
+pub def (v:Vec4) add(other:Vec4 -- result:Vec4) {
 	Vec4 {
 		x = v <<x other <<x +
 		y = v <<y other <<y +
@@ -813,7 +785,7 @@ pub fn (v:Vec4) add(other:Vec4 -- result:Vec4) {
 /// @param other Vec4 Vector to subtract
 /// @return result Vec4 Difference of vectors
 /// @example v4 other4 subtract -> diff
-pub fn (v:Vec4) subtract(other:Vec4 -- result:Vec4) {
+pub def (v:Vec4) subtract(other:Vec4 -- result:Vec4) {
 	Vec4 {
 		x = v <<x other <<x -
 		y = v <<y other <<y -
@@ -826,7 +798,7 @@ pub fn (v:Vec4) subtract(other:Vec4 -- result:Vec4) {
 /// @param s f64 Scalar multiplier
 /// @return result Vec4 Scaled vector
 /// @example v4 2.0 scale -> scaled
-pub fn (v:Vec4) scale(s:f64 -- result:Vec4) {
+pub def (v:Vec4) scale(s:f64 -- result:Vec4) {
 	Vec4 {
 		x = v <<x s *
 		y = v <<y s *
@@ -839,7 +811,7 @@ pub fn (v:Vec4) scale(s:f64 -- result:Vec4) {
 /// @param other Vec4 Other vector
 /// @return result f64 Dot product
 /// @example v4 other4 dot -> d
-pub fn (v:Vec4) dot(other:Vec4 -- result:f64) {
+pub def (v:Vec4) dot(other:Vec4 -- result:f64) {
 	v <<x other <<x * v <<y other <<y * + v <<z other <<z * + v <<w other <<w * +
 }
 
@@ -855,7 +827,7 @@ pub fn (v:Vec4) length( -- result:f64) {
 /// @example v4 normalize -> unit
 pub fn (v:Vec4) normalize( -- result:Vec4) {
 	v <<x v <<x * v <<y v <<y * + v <<z v <<z * + v <<w v <<w * + math::sqrt -> mag
-	mag 0.0 gt if {
+	mag 0.0 > if {
 		1.0 mag / -> inv_mag
 		Vec4 {
 			x = v <<x inv_mag *
@@ -892,7 +864,7 @@ pub fn (v:Vec4) neg( -- result:Vec4) {
 /// @param t f64 Interpolation factor (0.0 to 1.0)
 /// @return result Vec4 Interpolated vector
 /// @example v4 other4 0.5 lerp -> mid
-pub fn (v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4) {
+pub def (v:Vec4) lerp(other:Vec4 t:f64 -- result:Vec4) {
 	Vec4 {
 		x = v <<x other <<x v <<x - t * +
 		y = v <<y other <<y v <<y - t * +
@@ -934,7 +906,7 @@ pub fn quat_identity( -- q:Quat) {
 /// @param other Quat Quaternion to multiply with
 /// @return result Quat Product of this and other
 /// @example q other_q mul -> product
-pub fn (q:Quat) mul(other:Quat -- result:Quat) {
+pub def (q:Quat) mul(other:Quat -- result:Quat) {
 	Quat {
 		w = q <<w other <<w * q <<x other <<x * - q <<y other <<y * - q <<z other <<z * -
 		x = q <<w other <<x * q <<x other <<w * + q <<y other <<z * + q <<z other <<y * -
@@ -967,7 +939,7 @@ pub fn (q:Quat) length( -- result:f64) {
 /// @example q normalize -> unit_q
 pub fn (q:Quat) normalize( -- result:Quat) {
 	q <<w q <<w * q <<x q <<x * + q <<y q <<y * + q <<z q <<z * + math::sqrt -> mag
-	mag 0.0 gt if {
+	mag 0.0 > if {
 		1.0 mag / -> inv_mag
 		Quat {
 			w = q <<w inv_mag *
@@ -984,7 +956,7 @@ pub fn (q:Quat) normalize( -- result:Quat) {
 /// @param other Quat Other quaternion
 /// @return result f64 Dot product
 /// @example q other_q dot -> d
-pub fn (q:Quat) dot(other:Quat -- result:f64) {
+pub def (q:Quat) dot(other:Quat -- result:f64) {
 	q <<w other <<w * q <<x other <<x * + q <<y other <<y * + q <<z other <<z * +
 }
 
@@ -993,7 +965,7 @@ pub fn (q:Quat) dot(other:Quat -- result:f64) {
 /// @example q inverse -> q_inv
 pub fn (q:Quat) inverse( -- result:Quat) {
 	q <<w q <<w * q <<x q <<x * + q <<y q <<y * + q <<z q <<z * + -> len_sq
-	len_sq 0.0 gt if {
+	len_sq 0.0 > if {
 		1.0 len_sq / -> inv_len_sq
 		Quat {
 			w = q <<w inv_len_sq *
@@ -1017,9 +989,9 @@ pub fn (q:Quat) length_sq( -- result:f64) {
 /// @param t f64 Interpolation factor (0.0 to 1.0)
 /// @return result Quat Interpolated quaternion
 /// @example q other_q 0.5 slerp -> mid
-pub fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
+pub def (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
 	q <<w other <<w * q <<x other <<x * + q <<y other <<y * + q <<z other <<z * + -> dot_val
-	dot_val 0.0 lt if {
+	dot_val 0.0 < if {
 		// Take the shortest path: negate `other` so the interpolation does not go the long
 		// way round. Build a negated copy rather than writing through `other`, which is the
 		// caller's quaternion. (`other .w` here was never valid syntax -- `.` is not an
@@ -1032,7 +1004,7 @@ pub fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
 		} -> other
 		dot_val neg -> dot_val
 	}
-	dot_val 0.9995 gt if {
+	dot_val 0.9995 > if {
 		Quat {
 			w = q <<w other <<w q <<w - t * +
 			x = q <<x other <<x q <<x - t * +
@@ -1061,7 +1033,7 @@ pub fn (q:Quat) slerp(other:Quat t:f64 -- result:Quat) {
 /// @param v Vec3 Vector to rotate
 /// @return result Vec3 Rotated vector
 /// @example q point rotate_vec3 -> rotated
-pub fn (q:Quat) rotate_vec3(v:Vec3 -- result:Vec3) {
+pub def (q:Quat) rotate_vec3(v:Vec3 -- result:Vec3) {
 	q <<x 2.0 * -> qx2
 	q <<y 2.0 * -> qy2
 	q <<z 2.0 * -> qz2
@@ -1086,7 +1058,7 @@ pub fn (q:Quat) rotate_vec3(v:Vec3 -- result:Vec3) {
 /// @param angle f64 Rotation angle in radians
 /// @return result Quat Rotation quaternion
 /// @example axis 1.57 math::quat_from_axis_angle -> q
-pub fn quat_from_axis_angle(axis:Vec3 angle:f64 -- result:Quat) {
+pub def quat_from_axis_angle(axis:Vec3 angle:f64 -- result:Quat) {
 	angle 0.5 * -> half_angle
 	half_angle math::sin -> s
 	Quat {
@@ -1103,7 +1075,7 @@ pub fn quat_from_axis_angle(axis:Vec3 angle:f64 -- result:Quat) {
 /// @param roll f64 Rotation around Z axis (radians)
 /// @return result Quat Rotation quaternion
 /// @example 0.0 1.57 0.0 math::quat_from_euler -> q
-pub fn quat_from_euler(pitch:f64 yaw:f64 roll:f64 -- result:Quat) {
+pub def quat_from_euler(pitch:f64 yaw:f64 roll:f64 -- result:Quat) {
 	pitch 0.5 * -> hp
 	yaw 0.5 * -> hy
 	roll 0.5 * -> hr
@@ -1239,7 +1211,7 @@ pub fn (m:Mat4) transpose( -- result:Mat4) {
 /// @param z f64 Z translation
 /// @return m Mat4 Translation matrix
 /// @example 1.0 1.0 1.0 math::mat4_translation -> m
-pub fn mat4_translation(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4) {
+pub def mat4_translation(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4) {
 	Mat4 {
 		m00 = 1.0
 		m01 = 0.0
@@ -1266,7 +1238,7 @@ pub fn mat4_translation(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4) {
 /// @param sz f64 Z scale factor
 /// @return m Mat4 Scale matrix
 /// @example 1.0 1.0 1.0 math::mat4_scaling -> m
-pub fn mat4_scaling(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4) {
+pub def mat4_scaling(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4) {
 	Mat4 {
 		m00 = sx_v
 		m01 = 0.0
@@ -1291,7 +1263,7 @@ pub fn mat4_scaling(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4) {
 /// @param angle f64 Rotation angle in radians
 /// @return m Mat4 Rotation matrix
 /// @example 1.57 math::mat4_rotation_x -> m
-pub fn mat4_rotation_x(angle:f64 -- m:Mat4) {
+pub def mat4_rotation_x(angle:f64 -- m:Mat4) {
 	angle math::cos -> c
 	angle math::sin -> s
 	Mat4 {
@@ -1318,7 +1290,7 @@ pub fn mat4_rotation_x(angle:f64 -- m:Mat4) {
 /// @param angle f64 Rotation angle in radians
 /// @return m Mat4 Rotation matrix
 /// @example 1.57 math::mat4_rotation_y -> m
-pub fn mat4_rotation_y(angle:f64 -- m:Mat4) {
+pub def mat4_rotation_y(angle:f64 -- m:Mat4) {
 	angle math::cos -> c
 	angle math::sin -> s
 	Mat4 {
@@ -1345,7 +1317,7 @@ pub fn mat4_rotation_y(angle:f64 -- m:Mat4) {
 /// @param angle f64 Rotation angle in radians
 /// @return m Mat4 Rotation matrix
 /// @example 1.57 math::mat4_rotation_z -> m
-pub fn mat4_rotation_z(angle:f64 -- m:Mat4) {
+pub def mat4_rotation_z(angle:f64 -- m:Mat4) {
 	angle math::cos -> c
 	angle math::sin -> s
 	Mat4 {
@@ -1372,7 +1344,7 @@ pub fn mat4_rotation_z(angle:f64 -- m:Mat4) {
 /// @param other Mat4 Matrix to multiply with
 /// @return result Mat4 Product of matrices (m * other)
 /// @example m other_m mul -> product
-pub fn (m:Mat4) mul(other:Mat4 -- result:Mat4) {
+pub def (m:Mat4) mul(other:Mat4 -- result:Mat4) {
 	Mat4 {
 		m00 = m <<m00 other <<m00 * m <<m10 other <<m01 * + m <<m20 other <<m02 * + m <<m30 other <<m03 * +
 		m01 = m <<m01 other <<m00 * m <<m11 other <<m01 * + m <<m21 other <<m02 * + m <<m31 other <<m03 * +
@@ -1459,7 +1431,7 @@ pub fn (m:Mat4) inverse( -- result:Mat4) {
 	// Compute determinant using first row of cofactor matrix
 	m <<m00 c00 * m <<m01 c01 * + m <<m02 c02 * + m <<m03 c03 * + -> det
 
-	det math::abs 0.000001 lt if {
+	det math::abs 0.000001 < if {
 		mat4_identity
 	} else {
 		1.0 det / -> inv_det
@@ -1488,12 +1460,12 @@ pub fn (m:Mat4) inverse( -- result:Mat4) {
 /// @param v Vec3 Point to transform
 /// @return result Vec3 Transformed point
 /// @example m point transform_point -> transformed
-pub fn (m:Mat4) transform_point(v:Vec3 -- result:Vec3) {
+pub def (m:Mat4) transform_point(v:Vec3 -- result:Vec3) {
 	m <<m00 v <<x * m <<m10 v <<y * + m <<m20 v <<z * + m <<m30 + -> rx
 	m <<m01 v <<x * m <<m11 v <<y * + m <<m21 v <<z * + m <<m31 + -> ry
 	m <<m02 v <<x * m <<m12 v <<y * + m <<m22 v <<z * + m <<m32 + -> rz
 	m <<m03 v <<x * m <<m13 v <<y * + m <<m23 v <<z * + m <<m33 + -> rw
-	rw math::abs 0.000001 gt if {
+	rw math::abs 0.000001 > if {
 		Vec3 {
 			x = rx rw /
 			y = ry rw /
@@ -1512,7 +1484,7 @@ pub fn (m:Mat4) transform_point(v:Vec3 -- result:Vec3) {
 /// @param v Vec4 Vector to transform
 /// @return result Vec4 Transformed vector
 /// @example m other4 transform_vec4 -> transformed
-pub fn (m:Mat4) transform_vec4(v:Vec4 -- result:Vec4) {
+pub def (m:Mat4) transform_vec4(v:Vec4 -- result:Vec4) {
 	Vec4 {
 		x = m <<m00 v <<x * m <<m10 v <<y * + m <<m20 v <<z * + m <<m30 v <<w * +
 		y = m <<m01 v <<x * m <<m11 v <<y * + m <<m21 v <<z * + m <<m31 v <<w * +
@@ -1527,17 +1499,17 @@ pub fn (m:Mat4) transform_vec4(v:Vec4 -- result:Vec4) {
 /// @param up Vec3 Up direction
 /// @return m Mat4 View matrix
 /// @example eye target up math::mat4_look_at -> view
-pub fn mat4_look_at(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4) {
+pub def mat4_look_at(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4) {
 	eye <<x target <<x - -> fx
 	eye <<y target <<y - -> fy
 	eye <<z target <<z - -> fz
 	fx fx * fy fy * + fz fz * + math::sqrt -> f_len
-	f_len 0.0 gt if { fx f_len / -> fx fy f_len / -> fy fz f_len / -> fz }
+	f_len 0.0 > if { fx f_len / -> fx fy f_len / -> fy fz f_len / -> fz }
 	up <<y fz * up <<z fy * - -> sx
 	up <<z fx * up <<x fz * - -> sy
 	up <<x fy * up <<y fx * - -> sz
 	sx sx * sy sy * + sz sz * + math::sqrt -> s_len
-	s_len 0.0 gt if { sx s_len / -> sx sy s_len / -> sy sz s_len / -> sz }
+	s_len 0.0 > if { sx s_len / -> sx sy s_len / -> sy sz s_len / -> sz }
 	fy sz * fz sy * - -> ux
 	fz sx * fx sz * - -> uy
 	fx sy * fy sx * - -> uz
@@ -1571,7 +1543,7 @@ pub fn mat4_look_at(eye:Vec3 target:Vec3 up:Vec3 -- m:Mat4) {
 /// @param far f64 Far clipping plane
 /// @return m Mat4 Perspective projection matrix
 /// @example 1.047 1.777 0.1 100.0 math::mat4_perspective -> proj
-pub fn mat4_perspective(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4) {
+pub def mat4_perspective(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4) {
 	fov 0.5 * math::tan -> tan_half_fov
 	1.0 tan_half_fov / -> f
 	Mat4 {
@@ -1603,7 +1575,7 @@ pub fn mat4_perspective(fov:f64 aspect:f64 near:f64 far:f64 -- m:Mat4) {
 /// @param far f64 Far clipping plane
 /// @return m Mat4 Orthographic projection matrix
 /// @example -1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> proj
-pub fn mat4_orthographic(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 -- m:Mat4) {
+pub def mat4_orthographic(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 -- m:Mat4) {
 	Mat4 {
 		m00 = 2.0 right left - /
 		m01 = 0.0
@@ -1628,7 +1600,7 @@ pub fn mat4_orthographic(left:f64 right:f64 bottom:f64 top:f64 near:f64 far:f64 
 /// @param q Quat Rotation quaternion
 /// @return m Mat4 Rotation matrix
 /// @example other_q math::mat4_from_quat -> rot_mat
-pub fn mat4_from_quat(q:Quat -- m:Mat4) {
+pub def mat4_from_quat(q:Quat -- m:Mat4) {
 	q <<x 2.0 * -> x2
 	q <<y 2.0 * -> y2
 	q <<z 2.0 * -> z2
@@ -1665,11 +1637,11 @@ pub fn mat4_from_quat(q:Quat -- m:Mat4) {
 /// @param x f64 Input value
 /// @return result f64 -1 if x < 0, 0 if x == 0, 1 if x > 0
 /// @example -5.0 math::sign print  // -1.0
-pub fn sign(x:f64 -- result:f64) {
-	x 0.0 lt if {
+pub def sign(x:f64 -- result:f64) {
+	x 0.0 < if {
 		1.0 neg
 	} else {
-		x 0.0 gt if {
+		x 0.0 > if {
 			1.0
 		} else {
 			0.0
@@ -1687,11 +1659,11 @@ pub fn sign(x:f64 -- result:f64) {
 /// @param x f64 Value to interpolate
 /// @return result f64 Smoothly interpolated value [0, 1]
 /// @example 0.0 1.0 0.5 math::smoothstep print  // 0.5
-pub fn smoothstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
+pub def smoothstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
 	// Clamp t to [0, 1]
 	x_v edge0 - edge1 edge0 - / -> t
-	t 0.0 lt if { 0.0 -> t }
-	t 1.0 gt if { 1.0 -> t }
+	t 0.0 < if { 0.0 -> t }
+	t 1.0 > if { 1.0 -> t }
 	// Hermite polynomial: 3t² - 2t³
 	t t * 3.0 2.0 t * - *
 }
@@ -1702,11 +1674,11 @@ pub fn smoothstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
 /// @param x f64 Value to interpolate
 /// @return result f64 Smoothly interpolated value [0, 1]
 /// @example 0.0 1.0 0.5 math::smootherstep print  // 0.5
-pub fn smootherstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
+pub def smootherstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
 	// Clamp t to [0, 1]
 	x_v edge0 - edge1 edge0 - / -> t
-	t 0.0 lt if { 0.0 -> t }
-	t 1.0 gt if { 1.0 -> t }
+	t 0.0 < if { 0.0 -> t }
+	t 1.0 > if { 1.0 -> t }
 	// Quintic polynomial: 6t⁵ - 15t⁴ + 10t³
 	t t * t * t 6.0 * 15.0 - t * 10.0 + *
 }
@@ -1720,7 +1692,7 @@ pub fn smootherstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
 /// @param t f64 Interpolation factor [0, 1]
 /// @return result f64 Interpolated value
 /// @example 0.0 1.0 4.0 5.0 0.5 math::cubic_hermite print
-pub fn cubic_hermite(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
+pub def cubic_hermite(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
 	// Catmull-Rom tangents
 	p2 p0 - 0.5 * -> m1
 	p3 p1 - 0.5 * -> m2
@@ -1742,7 +1714,7 @@ pub fn cubic_hermite(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
 /// @param t f64 Parameter [0, 1]
 /// @return result f64 Point on curve
 /// @example 0.0 1.0 2.0 0.5 math::bezier2 print  // 1.0
-pub fn bezier2(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64) {
+pub def bezier2(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64) {
 	1.0 t - -> u
 	// B(t) = (1-t)²p0 + 2(1-t)tp1 + t²p2
 	u u * p0 * 2.0 u * t * p1 * + t t * p2 * +
@@ -1756,7 +1728,7 @@ pub fn bezier2(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64) {
 /// @param t f64 Parameter [0, 1]
 /// @return result f64 Point on curve
 /// @example 0.0 0.5 0.5 1.0 0.5 math::bezier3 print
-pub fn bezier3(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
+pub def bezier3(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
 	1.0 t - -> u
 	u u * -> u2
 	t t * -> t2
@@ -1770,7 +1742,7 @@ pub fn bezier3(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
 /// @param p2 Vec2 End point
 /// @param t f64 Parameter [0, 1]
 /// @return result Vec2 Point on curve
-pub fn bezier2_vec2(p0:Vec2 p1:Vec2 p2:Vec2 t:f64 -- result:Vec2) {
+pub def bezier2_vec2(p0:Vec2 p1:Vec2 p2:Vec2 t:f64 -- result:Vec2) {
 	1.0 t - -> u
 	u u * -> u2
 	t t * -> t2
@@ -1787,7 +1759,7 @@ pub fn bezier2_vec2(p0:Vec2 p1:Vec2 p2:Vec2 t:f64 -- result:Vec2) {
 /// @param p3 Vec2 End point
 /// @param t f64 Parameter [0, 1]
 /// @return result Vec2 Point on curve
-pub fn bezier3_vec2(p0:Vec2 p1:Vec2 p2:Vec2 p3:Vec2 t:f64 -- result:Vec2) {
+pub def bezier3_vec2(p0:Vec2 p1:Vec2 p2:Vec2 p3:Vec2 t:f64 -- result:Vec2) {
 	1.0 t - -> u
 	u u * -> u2
 	t t * -> t2
@@ -1806,7 +1778,7 @@ pub fn bezier3_vec2(p0:Vec2 p1:Vec2 p2:Vec2 p3:Vec2 t:f64 -- result:Vec2) {
 /// @param p3 Vec3 End point
 /// @param t f64 Parameter [0, 1]
 /// @return result Vec3 Point on curve
-pub fn bezier3_vec3(p0:Vec3 p1:Vec3 p2:Vec3 p3:Vec3 t:f64 -- result:Vec3) {
+pub def bezier3_vec3(p0:Vec3 p1:Vec3 p2:Vec3 p3:Vec3 t:f64 -- result:Vec3) {
 	1.0 t - -> u
 	u u * -> u2
 	t t * -> t2
@@ -1825,9 +1797,9 @@ pub fn bezier3_vec3(p0:Vec3 p1:Vec3 p2:Vec3 p3:Vec3 t:f64 -- result:Vec3) {
 /// @param v f64 Value to find t for
 /// @return result f64 Interpolation factor t where lerp(a, b, t) = v
 /// @example 0.0 10.0 5.0 math::inverse_lerp print  // 0.5
-pub fn inverse_lerp(a:f64 b:f64 v:f64 -- result:f64) {
+pub def inverse_lerp(a:f64 b:f64 v:f64 -- result:f64) {
 	b a - -> diff
-	diff math::abs 0.000001 lt if {
+	diff math::abs 0.000001 < if {
 		0.0
 	} else {
 		v a - diff /
@@ -1842,7 +1814,7 @@ pub fn inverse_lerp(a:f64 b:f64 v:f64 -- result:f64) {
 /// @param v f64 Value to remap
 /// @return result f64 Remapped value
 /// @example 0.0 10.0 0.0 100.0 5.0 math::remap print  // 50.0
-pub fn remap(in_min:f64 in_max:f64 out_min:f64 out_max:f64 v:f64 -- result:f64) {
+pub def remap(in_min:f64 in_max:f64 out_min:f64 out_max:f64 v:f64 -- result:f64) {
 	v in_min - in_max in_min - / -> t
 	out_min out_max out_min - t * +
 }

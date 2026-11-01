@@ -21,13 +21,13 @@ fn main() {
 	"=== Range ===" print nl
 	Tiny print nl
 	Avogadro print nl
-	1e308 0.0 gt print nl
+	1e308 0.0 > print nl
 
 	// An exponent literal is an f64, so it takes float arithmetic
 	"=== Arithmetic ===" print nl
 	1e3 2.0 * print nl
 	1e3 1e3 + print nl
-	2.5e-1 0.25 eq print nl
+	2.5e-1 0.25 == print nl
 
 	// The `e` of a hex literal is a digit, not an exponent
 	"=== Hex is not an exponent ===" print nl

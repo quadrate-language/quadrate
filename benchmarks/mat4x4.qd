@@ -3,7 +3,7 @@ use time
 
 // Inline mat4x4 multiply in a loop, returning checksum.
 // Single f64 return qualifies for native calling convention.
-fn mat4_bench(
+def mat4_bench(
 	n:i64
 	b00:f64 b01:f64 b02:f64 b03:f64
 	b10:f64 b11:f64 b12:f64 b13:f64
@@ -71,7 +71,7 @@ fn main() {
 		time::now -> start
 		n b00 b01 b02 b03 b10 b11 b12 b13 b20 b21 b22 b23 b30 b31 b32 b33 mat4_bench -> cs
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			cs -> checksum
 		}

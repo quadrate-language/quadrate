@@ -411,6 +411,16 @@ int qd_lnot(qd_context* ctx) {
 	return push_i_inline(ctx, a == 0 ? 1 : 0);
 }
 
+int qd_status_ok(qd_context* ctx) {
+	int64_t a = pop_i_inline(ctx);
+	return push_i_inline(ctx, a == 0 ? 1 : 0);
+}
+
+int qd_status_fail(qd_context* ctx) {
+	int64_t a = pop_i_inline(ctx);
+	return push_i_inline(ctx, a != 0 ? 1 : 0);
+}
+
 int qd_neg(qd_context* ctx) {
 	int64_t a = pop_i_inline(ctx);
 	return push_i_inline(ctx, -a);

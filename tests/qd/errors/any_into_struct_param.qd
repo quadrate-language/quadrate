@@ -3,11 +3,11 @@ struct Box {
 	w: f64
 }
 
-fn width(b:Box -- r:f64) {
+def width(b:Box -- r:f64) {
 	b <<w
 }
 
-fn relay(a:any -- r:f64) {
+def relay(a:any -- r:f64) {
 	a width
 }
 

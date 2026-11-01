@@ -3,7 +3,7 @@ struct Counter {
 	value:i64
 }
 
-fn (c:Counter) plus(n_val:i64 -- result:i64) {
+def (c:Counter) plus(n_val:i64 -- result:i64) {
 	c <<value n_val +
 }
 

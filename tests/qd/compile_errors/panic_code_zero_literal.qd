@@ -1,0 +1,14 @@
+// Test: a status of 0 is Ok, so a failure carrying code 0 would read as a success to every
+// caller that tests it. Written as a literal it is rejected; `Ok` is 0 too.
+fn zero( -- )! {
+	"failed" 0 panic
+}
+
+fn ok_code( -- )! {
+	"failed" Ok panic
+}
+
+fn main() {
+	zero!
+	ok_code!
+}

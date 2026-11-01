@@ -1,0 +1,13 @@
+// Test: drop2, tuck and rrot, and the combinators dip2 and keep2
+fn main() {
+	1 2 3 drop2 print nl                                 // 1
+	1 2 tuck print print print nl                        // 212
+	1 2 3 rrot print print print nl                      // 213
+	"a" "b" tuck print print print nl                    // bab
+	1 2 3 rot rrot print print print nl                  // 321
+	1 2 3 fn { 10 * } dip2 print print print nl          // 3210
+	1 2 3 fn { + } keep2 print print print print nl      // 3251
+	fn { 100 + } -> add100
+	1 2 3 add100 dip2 print print print nl               // 32101
+	2 3 fn { * } keep2 print print print nl              // 326
+}

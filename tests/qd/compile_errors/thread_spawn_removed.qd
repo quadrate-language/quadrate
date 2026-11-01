@@ -1,0 +1,7 @@
+// Test: threads are the thread module's; the builtin spawn says so.
+fn worker() {
+}
+
+fn main() {
+	&worker spawn -> t
+}

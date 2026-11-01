@@ -19,7 +19,7 @@ fn main() {
 	0 -> count0
 	0 -> count1
 	0 -> count2
-	"/tmp/qd_walk_test" fn (path:str isdir:i64 depth:i64 -- ) {
+	"/tmp/qd_walk_test" def (path:str isdir:i64 depth:i64 -- ) {
 		depth 0 == if { count0 1 + -> count0 }
 		depth 1 == if { count1 1 + -> count1 }
 		depth 2 == if { count2 1 + -> count2 }

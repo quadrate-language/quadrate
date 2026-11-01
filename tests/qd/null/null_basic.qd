@@ -13,7 +13,7 @@ fn main() {
 
 	// null neq non-zero
 	42 -> x
-	x null neq if {
+	x null != if {
 		"42 is not null" print nl
 	}
 

@@ -1,6 +1,6 @@
 {
   "name": "hof",
-  "description": "Higher-Order Function combinators.  Every combinator is generic: `T` is the value's type and `U` the result's, so the same `apply`, `map` or `fold` works over integers, floats, strings and structs. They were fixed to `fn(i64 -- i64)` until generic function-pointer parameters started unifying. Combinators are functions that combine or apply other functions in useful patterns. They enable functional programming without explicit temporary variables.  Three of them are `stack fn` and the rest bind their parameters, which is not an accident of who wrote what. A combinator that passes one value through one function -- `apply`, `when`, `unless` -- says what it means with no names at all: `apply` is the single word `call`, and `when` is \"test it, then call it or throw it away\". A combinator that uses a value twice or takes two functions does not: `bi` stack-direct is `pick rot call rot rot call`, which is correct, passes its tests, and tells the reader nothing. Both forms were written and run before choosing (see R47 in TODO.md).",
+  "description": "Higher-Order Function combinators.  The combinators every program uses -- `dip`, `keep`, `bi`, `tri`, `both`, `times`, `each`, `map`, `filter`, `fold`, `find`, `any` and `all` -- are builtins, and need no `use`. This module has the rest: `when` and `unless`, which run a function value on a condition; `bi_star`, which runs two function values on two values; and `fold_right`.  Every one is generic, and `when` and `unless` take their function value with a stack variable, `..a`, so it may have any arity.",
   "constants": [
 
   ],
@@ -9,174 +9,44 @@
   ],
   "functions": [
     {
-      "name": "all",
-      "signature": "(arr:[]T pred:fn(T -- i64) -- result:i64)",
-      "failable": false,
-      "description": "Check if all elements satisfy a predicate.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
-      "returns": [{"name": "result", "type": "i64", "description": "1 if all elements satisfy pred, 0 otherwise"}],
-      "errors": [],
-      "examples": ["arr fn (x:i64 -- r:i64) { x 0 > } hof::all  // all positive?"]
-    },
-    {
-      "name": "any",
-      "signature": "(arr:[]T pred:fn(T -- i64) -- result:i64)",
-      "failable": false,
-      "description": "Check if any element satisfies a predicate.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
-      "returns": [{"name": "result", "type": "i64", "description": "1 if any element satisfies pred, 0 otherwise"}],
-      "errors": [],
-      "examples": ["arr fn (x:i64 -- r:i64) { x 0 > } hof::any  // any positive?"]
-    },
-    {
-      "name": "apply",
-      "signature": "(x:T f:fn(T -- T) -- r:T)",
-      "failable": false,
-      "description": "Apply a function to a value.",
-      "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "r", "type": "i64", "description": "Result of f(x)"}],
-      "errors": [],
-      "examples": ["5 fn (x:i64 -- r:i64) { x 2 * } hof::apply print nl  // 10"]
-    },
-    {
       "name": "bi_star",
       "signature": "(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)",
       "failable": false,
-      "description": "Apply two functions to two values (first to first, second to second).",
-      "params": [{"name": "x", "type": "T", "description": "First value"}, {"name": "y", "type": "i64", "description": "Second value"}, {"name": "f", "type": "fn", "description": "Function for first value (i64 -- i64)"}, {"name": "g", "type": "fn", "description": "Function for second value (i64 -- i64)"}],
-      "returns": [{"name": "a", "type": "i64", "description": "Result of f(x)"}, {"name": "b", "type": "i64", "description": "Result of g(y)"}],
+      "description": "Run two function values on two values, the first on the first and the second on the second. Factor's `bi*`: `f` runs under `y`, then `g` on `y`.",
+      "params": [{"name": "x", "type": "T", "description": "First value"}, {"name": "y", "type": "T", "description": "Second value"}, {"name": "f", "type": "fn(T -- U)", "description": "Function value for `x`"}, {"name": "g", "type": "fn(T -- U)", "description": "Function value for `y`"}],
+      "returns": [{"name": "a", "type": "U", "description": "What `f` leaves for `x`"}, {"name": "b", "type": "U", "description": "What `g` leaves for `y`"}],
       "errors": [],
-      "examples": ["3 4 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } hof::bi_star  // Stack: 4 8"]
-    },
-    {
-      "name": "bi",
-      "signature": "(x:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)",
-      "failable": false,
-      "description": "Apply two functions to the same value.",
-      "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "First function"}, {"name": "g", "type": "fn", "description": "Second function"}],
-      "returns": [{"name": "a", "type": "i64", "description": "Result of f(x)"}, {"name": "b", "type": "i64", "description": "Result of g(x)"}],
-      "errors": [],
-      "examples": ["5 fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x 3 + } hof::bi  // Stack: 10 8"]
-    },
-    {
-      "name": "both",
-      "signature": "(x:T y:T f:fn(T -- U) -- a:U b:U)",
-      "failable": false,
-      "description": "Apply a function to two values separately.",
-      "params": [{"name": "x", "type": "T", "description": "First value"}, {"name": "y", "type": "i64", "description": "Second value"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "a", "type": "i64", "description": "Result of f(x)"}, {"name": "b", "type": "i64", "description": "Result of f(y)"}],
-      "errors": [],
-      "examples": ["3 4 fn (x:i64 -- r:i64) { x dup * } hof::both  // Stack: 9 16"]
-    },
-    {
-      "name": "dip",
-      "signature": "(x:T y:U f:fn(T -- T) -- r:T top:U)",
-      "failable": false,
-      "description": "Apply a function to the second stack element, preserving the top.",
-      "params": [{"name": "x", "type": "T", "description": "Second element (will have f applied)"}, {"name": "y", "type": "i64", "description": "Top element (preserved)"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "r", "type": "i64", "description": "Result of f(x)"}, {"name": "y", "type": "i64", "description": "Original top value (preserved)"}],
-      "errors": [],
-      "examples": ["10 20 fn (x:i64 -- r:i64) { x 2 * } hof::dip  // Stack: 20 20"]
-    },
-    {
-      "name": "filter",
-      "signature": "(arr:[]T pred:fn(T -- i64) -- result:[]T)",
-      "failable": false,
-      "description": "Filter an array, keeping only elements that satisfy a predicate.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Input array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
-      "returns": [{"name": "result", "type": "[]i64", "description": "New array with filtered values"}],
-      "errors": [],
-      "examples": ["arr fn (x:i64 -- r:i64) { x 2 mod 0 == } hof::filter  // keep evens"]
-    },
-    {
-      "name": "find",
-      "signature": "(arr:[]T pred:fn(T -- i64) -- elem:T found:i64)",
-      "failable": false,
-      "description": "Find the first element satisfying a predicate.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "pred", "type": "fn", "description": "Predicate function (i64 -- bool:i64)"}],
-      "returns": [{"name": "elem", "type": "i64", "description": "The found element (or 0 if not found)"}, {"name": "found", "type": "i64", "description": "1 if found, 0 otherwise"}],
-      "errors": [],
-      "examples": ["arr fn (x:i64 -- r:i64) { x 10 > } hof::find  // first > 10"]
-    },
-    {
-      "name": "fold",
-      "signature": "(arr:[]T acc:A f:fn(A T -- A) -- result:A)",
-      "failable": false,
-      "description": "Fold/reduce an array left-to-right with a binary function.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn(i64 i64 -- i64)", "description": "Binary function (acc:i64 elem:i64 -- acc:i64)"}],
-      "returns": [{"name": "result", "type": "i64", "description": "Final accumulated value"}],
-      "errors": [],
-      "examples": ["arr 0 fn (acc:i64 x:i64 -- r:i64) { acc x + } hof::fold  // sum of array"]
+      "examples": ["3 4 fn { 1 + } fn { 2 * } hof::bi_star  // Stack: 4 8"]
     },
     {
       "name": "fold_right",
       "signature": "(arr:[]T acc:A f:fn(T A -- A) -- result:A)",
       "failable": false,
-      "description": "Fold/reduce an array right-to-left with a binary function.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "init", "type": "i64", "description": "Initial accumulator value"}, {"name": "f", "type": "fn(i64 i64 -- i64)", "description": "Binary function (elem:i64 acc:i64 -- acc:i64)"}],
-      "returns": [{"name": "result", "type": "i64", "description": "Final accumulated value"}],
+      "description": "Fold an array right to left: `f` runs on each element and the accumulator, last element first, as `fold` runs on the accumulator and each element first to last.",
+      "params": [{"name": "arr", "type": "[]T", "description": "Array"}, {"name": "acc", "type": "A", "description": "Initial accumulator"}, {"name": "f", "type": "fn(T A -- A)", "description": "Function value (elem acc -- acc)"}],
+      "returns": [{"name": "result", "type": "A", "description": "Final accumulator"}],
       "errors": [],
-      "examples": ["arr 0 fn (x:i64 acc:i64 -- r:i64) { x acc + } hof::fold_right  // sum of array"]
-    },
-    {
-      "name": "keep",
-      "signature": "(x:T f:fn(T -- U) -- r:U orig:T)",
-      "failable": false,
-      "description": "Apply a function but keep the original value.",
-      "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "r", "type": "i64", "description": "Result of f(x)"}, {"name": "x", "type": "i64", "description": "Original value (preserved)"}],
-      "errors": [],
-      "examples": ["5 fn (x:i64 -- r:i64) { x 2 * } hof::keep  // Stack: 10 5"]
-    },
-    {
-      "name": "map",
-      "signature": "(arr:[]T f:fn(T -- U) -- result:[]U)",
-      "failable": false,
-      "description": "Map a function over an array, returning a new array.",
-      "params": [{"name": "arr", "type": "[]T", "description": "Input array"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "result", "type": "[]i64", "description": "New array with mapped values"}],
-      "errors": [],
-      "examples": ["arr fn (x:i64 -- r:i64) { x 2 * } hof::map  // double each element"]
-    },
-    {
-      "name": "times",
-      "signature": "(x:T n:i64 f:fn(T -- T) -- r:T)",
-      "failable": false,
-      "description": "Apply function n times to an initial value.",
-      "params": [{"name": "x", "type": "T", "description": "Initial value"}, {"name": "n", "type": "i64", "description": "Number of times to apply"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "r", "type": "i64", "description": "Result after n applications"}],
-      "errors": [],
-      "examples": ["2 4 fn (x:i64 -- r:i64) { x dup * } hof::times print nl  // 65536 (2^16)"]
-    },
-    {
-      "name": "tri",
-      "signature": "(x:T f:fn(T -- U) g:fn(T -- U) h:fn(T -- U) -- a:U b:U c:U)",
-      "failable": false,
-      "description": "Apply three functions to the same value.",
-      "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "f", "type": "fn", "description": "First function"}, {"name": "g", "type": "fn", "description": "Second function"}, {"name": "h", "type": "fn", "description": "Third function"}],
-      "returns": [{"name": "a", "type": "i64", "description": "Result of f(x)"}, {"name": "b", "type": "i64", "description": "Result of g(x)"}, {"name": "c", "type": "i64", "description": "Result of h(x)"}],
-      "errors": [],
-      "examples": ["5 fn (x:i64 -- r:i64) { x 1 + } fn (x:i64 -- r:i64) { x 2 * } fn (x:i64 -- r:i64) { x dup * } hof::tri  // Stack: 6 10 25"]
+      "examples": ["arr 0 fn { + } hof::fold_right  // sum of array"]
     },
     {
       "name": "unless",
-      "signature": "(x:T cond:i64 f:fn(T -- T) -- r:T)",
+      "signature": "(..a cond:i64 q:fn(..a -- ..a) -- ..a)",
       "failable": false,
-      "description": "Apply function only if condition is false, otherwise return value unchanged.",
-      "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "r", "type": "i64", "description": "Result of f(x) if cond is false, otherwise x"}],
+      "description": "Run a function value only if the condition is false, as `when` runs it when it is true.",
+      "params": [{"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "q", "type": "fn", "description": "Function value, run when the condition is false"}],
+      "returns": [],
       "errors": [],
-      "examples": ["5 0 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 10", "5 1 fn (x:i64 -- r:i64) { x 2 * } hof::unless print nl  // 5"]
+      "examples": ["5 0 fn { 2 * } hof::unless print nl  // 10", "5 1 fn { 2 * } hof::unless print nl  // 5"]
     },
     {
       "name": "when",
-      "signature": "(x:T cond:i64 f:fn(T -- T) -- r:T)",
+      "signature": "(..a cond:i64 q:fn(..a -- ..a) -- ..a)",
       "failable": false,
-      "description": "Apply function only if condition is true, otherwise return value unchanged.",
-      "params": [{"name": "x", "type": "T", "description": "The input value"}, {"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "f", "type": "fn", "description": "Function applied to the value"}],
-      "returns": [{"name": "r", "type": "i64", "description": "Result of f(x) if cond is true, otherwise x"}],
+      "description": "Run a function value only if the condition is true. It must leave the stack the shape it found it, since when the condition is false nothing runs.",
+      "params": [{"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "q", "type": "fn", "description": "Function value, run when the condition is true"}],
+      "returns": [],
       "errors": [],
-      "examples": ["5 1 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 10", "5 0 fn (x:i64 -- r:i64) { x 2 * } hof::when print nl  // 5"]
+      "examples": ["5 1 fn { 2 * } hof::when print nl  // 10", "5 0 fn { 2 * } hof::when print nl  // 5"]
     }
   ]
 }

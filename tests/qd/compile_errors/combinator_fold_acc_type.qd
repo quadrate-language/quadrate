@@ -1,0 +1,4 @@
+// Test: `fold`'s function value leaves the next accumulator, so it must keep its type
+fn main() {
+	[1 2] 0 fn { drop drop "x" } fold drop
+}

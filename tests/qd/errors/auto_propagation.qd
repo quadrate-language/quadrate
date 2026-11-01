@@ -1,14 +1,14 @@
 // Test: error propagation patterns
 // Shows the difference between ! (abort) and if/else (catch and propagate)
 
-fn validate(x:i64 -- result:i64)! {
+def validate(x:i64 -- result:i64)! {
 	x 0 < if {
 		"negative input" 1 panic
 	}
 	x 10 +
 }
 
-fn transform(x:i64 -- result:i64)! {
+def transform(x:i64 -- result:i64)! {
 	x 100 > if {
 		"too large" 2 panic
 	}
@@ -16,9 +16,9 @@ fn transform(x:i64 -- result:i64)! {
 }
 
 // Chain with if/else - catches and re-panics to propagate errors
-fn pipeline(x:i64 -- result:i64)! {
-	x validate if {
-		transform if {
+def pipeline(x:i64 -- result:i64)! {
+	x validate ok if {
+		transform ok if {
 			// success - result on stack
 		} else {
 			"transform failed" 2 panic
@@ -32,26 +32,29 @@ fn main() {
 	"=== Error propagation ===" print nl
 
 	// Success: 5 -> 15 -> 30
-	5 pipeline if {
+	5 pipeline ok if {
 		-> r
 		"5 -> " print r print nl
 	} else {
+		drop
 		"5 failed" print nl
 	}
 
 	// Fail in validate (negative)
-	-5 pipeline if {
+	-5 pipeline ok if {
 		drop
 		"unexpected" print nl
 	} else {
+		drop
 		"-5 caught (validate)" print nl
 	}
 
 	// Fail in transform (95 + 10 = 105 > 100)
-	95 pipeline if {
+	95 pipeline ok if {
 		drop
 		"unexpected" print nl
 	} else {
+		drop
 		"95 caught (transform)" print nl
 	}
 

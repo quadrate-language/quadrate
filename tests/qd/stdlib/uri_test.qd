@@ -12,6 +12,22 @@ test "uri::parse full URL" {
 	u <<fragment "top" testing::assert_eq
 }
 
+test "uri::parse with userinfo" {
+	"https://user:pw@example.com:8443/x" uri::parse -> u
+	u <<host "example.com" testing::assert_eq
+	u <<port 8443 testing::assert_eq
+	u <<path "/x" testing::assert_eq
+}
+
+test "uri::parse counts characters, not bytes" {
+	"http://bjö:rk@kö.se:81/å?k=v" uri::parse -> u
+	u <<host "kö.se" testing::assert_eq
+	u <<port 81 testing::assert_eq
+	u <<path "/å" testing::assert_eq
+	u <<query "k=v" testing::assert_eq
+	"å=1&ö=2" "ö" uri::query_get "2" testing::assert_eq
+}
+
 test "uri::parse simple URL" {
 	"http://test.org/page" uri::parse -> u
 	u <<scheme "http" testing::assert_eq

@@ -1,0 +1,5 @@
+// Test: an inferred effect is checked like a written one -- `map` runs its function value on
+// one value at a time, and `+` needs two
+fn main() {
+	[1 2 3] fn { + } map drop
+}

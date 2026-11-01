@@ -695,11 +695,8 @@ namespace Qd {
 			if (node->isInline()) {
 				mOutput << "inline ";
 			}
-			// Canonical modifier order is pub, inline, stack; the parser accepts any order
-			if (node->isStack()) {
-				mOutput << "stack ";
-			}
-			mOutput << "fn ";
+			// A `def` binds its inputs; a `fn` leaves them on the stack
+			mOutput << (node->isStack() ? "fn " : "def ");
 			if (node->hasReceiver()) {
 				mOutput << "(" << node->receiverName() << ":" << node->receiverType();
 				if (node->hasReceiverTypeParams()) {
@@ -716,62 +713,60 @@ namespace Qd {
 				mOutput << ") ";
 			}
 			mOutput << node->name();
-			if (node->isGeneric()) {
+			// Stack variables are declared with the type parameters, written before them
+			std::vector<std::string> declared = node->stackVariables();
+			declared.insert(declared.end(), node->typeParams().begin(), node->typeParams().end());
+			if (!declared.empty()) {
 				mOutput << "<";
-				const auto& tp = node->typeParams();
-				for (size_t i = 0; i < tp.size(); i++) {
+				for (size_t i = 0; i < declared.size(); i++) {
 					if (i > 0) {
 						mOutput << ", ";
 					}
-					mOutput << tp[i];
+					mOutput << declared[i];
 				}
 				mOutput << ">";
 			}
-			emitParamSignature(node->inputParameters(), node->outputParameters());
+			emitParamSignature(node->inputParameters(), node->outputParameters(), node->inputStackVariable(),
+					node->outputStackVariable());
 			if (node->throws()) {
 				mOutput << "!";
 			}
 		}
 
+		// A stack variable, `..a`, comes first in its list
 		void emitParamSignature(const std::vector<std::unique_ptr<IAstNode>>& inputs,
-				const std::vector<std::unique_ptr<IAstNode>>& outputs) {
-			bool hasInputs = !inputs.empty();
-			bool hasOutputs = !outputs.empty();
+				const std::vector<std::unique_ptr<IAstNode>>& outputs, const std::string& inputVariable = "",
+				const std::string& outputVariable = "") {
+			auto items = [](const std::vector<std::unique_ptr<IAstNode>>& params, const std::string& variable) {
+				std::vector<std::string> out;
+				if (!variable.empty()) {
+					out.push_back(variable);
+				}
+				for (const auto& param : params) {
+					out.push_back(static_cast<AstNodeParameter*>(param.get())->displayString());
+				}
+				return out;
+			};
+			auto join = [](const std::vector<std::string>& list) {
+				std::string out;
+				for (size_t i = 0; i < list.size(); i++) {
+					out += (i > 0 ? " " : "") + list[i];
+				}
+				return out;
+			};
+			const std::vector<std::string> ins = items(inputs, inputVariable);
+			const std::vector<std::string> outs = items(outputs, outputVariable);
 			mOutput << "(";
-			if (!hasInputs && !hasOutputs) {
+			if (ins.empty() && outs.empty()) {
 				// fn foo()
-			} else if (!hasInputs && hasOutputs) {
+			} else if (ins.empty()) {
 				// fn foo( -- result:i64)
-				mOutput << " -- ";
-				for (size_t i = 0; i < outputs.size(); i++) {
-					if (i > 0) {
-						mOutput << " ";
-					}
-					mOutput << static_cast<AstNodeParameter*>(outputs[i].get())->displayString();
-				}
-			} else if (hasInputs && !hasOutputs) {
-				// fn foo(x:i64 b:i64 -- )
-				for (size_t i = 0; i < inputs.size(); i++) {
-					if (i > 0) {
-						mOutput << " ";
-					}
-					mOutput << static_cast<AstNodeParameter*>(inputs[i].get())->displayString();
-				}
-				mOutput << " -- ";
+				mOutput << " -- " << join(outs);
+			} else if (outs.empty()) {
+				// def foo(x:i64 b:i64 -- )
+				mOutput << join(ins) << " -- ";
 			} else {
-				for (size_t i = 0; i < inputs.size(); i++) {
-					if (i > 0) {
-						mOutput << " ";
-					}
-					mOutput << static_cast<AstNodeParameter*>(inputs[i].get())->displayString();
-				}
-				mOutput << " -- ";
-				for (size_t i = 0; i < outputs.size(); i++) {
-					if (i > 0) {
-						mOutput << " ";
-					}
-					mOutput << static_cast<AstNodeParameter*>(outputs[i].get())->displayString();
-				}
+				mOutput << join(ins) << " -- " << join(outs);
 			}
 			mOutput << ")";
 		}
@@ -1041,15 +1036,22 @@ namespace Qd {
 			return result;
 		}
 
-		// Normalize anonymous function signatures: fn(sig){body}->var → fn (sig) { body } -> var
+		// Normalize anonymous function signatures: fn(sig){body}->var → fn (sig) { body } -> var, and
+		// fn{body} → fn { body }
 		static std::string normalizeAnonymousFunction(const std::string& line) {
 			// Look for fn( or fn ( patterns that indicate anonymous functions
 			std::string result = line;
 			{
 				size_t pos = 0;
 				while (pos < result.length()) {
-					// Find "fn" followed by optional space then "("
+					// Find "fn" or "def" followed by optional space then "("
 					size_t fnPos = result.find("fn", pos);
+					const size_t defPos = result.find("def", pos);
+					const bool isDef = defPos != std::string::npos && (fnPos == std::string::npos || defPos < fnPos);
+					if (isDef) {
+						fnPos = defPos;
+					}
+					const size_t kwLen = isDef ? 3 : 2;
 					if (fnPos == std::string::npos) {
 						break;
 					}
@@ -1057,7 +1059,7 @@ namespace Qd {
 					// Make sure it's a word boundary
 					if (fnPos > 0 &&
 							(std::isalnum(static_cast<unsigned char>(result[fnPos - 1])) || result[fnPos - 1] == '_')) {
-						pos = fnPos + 2;
+						pos = fnPos + kwLen;
 						continue;
 					}
 
@@ -1067,91 +1069,96 @@ namespace Qd {
 					// reads `fn` as a type when the `(` is glued to it, so `g:fn (i64 -- i64)`
 					// no longer parses. Leave type annotations alone.
 					if (fnPos > 0 && result[fnPos - 1] == ':') {
-						pos = fnPos + 2;
+						pos = fnPos + kwLen;
 						continue;
 					}
 
-					size_t afterFn = fnPos + 2;
+					size_t afterFn = fnPos + kwLen;
 					// Skip spaces
 					while (afterFn < result.length() && result[afterFn] == ' ') {
 						afterFn++;
 					}
 
-					// Must be followed by '(' or '[' (captures)
-					if (afterFn >= result.length() || (result[afterFn] != '(' && result[afterFn] != '[')) {
-						pos = fnPos + 2;
+					// Must be followed by '(', '[' (captures), or '{' (`fn { }`, no signature)
+					if (afterFn >= result.length() ||
+							(result[afterFn] != '(' && result[afterFn] != '[' && result[afterFn] != '{')) {
+						pos = fnPos + kwLen;
 						continue;
 					}
-
-					// Check for captures [...]
+					const bool hasSig = result[afterFn] != '{';
 					std::string captures;
-					if (result[afterFn] == '[') {
-						size_t closeB = result.find(']', afterFn);
-						if (closeB == std::string::npos) {
-							pos = fnPos + 2;
-							continue;
-						}
-						captures = result.substr(afterFn, closeB - afterFn + 1);
-						afterFn = closeB + 1;
-						while (afterFn < result.length() && result[afterFn] == ' ') {
-							afterFn++;
-						}
-						if (afterFn >= result.length() || result[afterFn] != '(') {
-							pos = fnPos + 2;
-							continue;
-						}
-					}
-
-					// Find matching )
-					size_t parenStart = afterFn;
+					std::string normSig;
+					size_t afterParen = afterFn;
 					int depth = 0;
-					size_t parenEnd = std::string::npos;
-					for (size_t j = parenStart; j < result.length(); j++) {
-						if (result[j] == '(') {
-							depth++;
-						} else if (result[j] == ')') {
-							depth--;
-							if (depth == 0) {
-								parenEnd = j;
-								break;
+					if (hasSig) {
+						// Check for captures [...]
+						if (result[afterFn] == '[') {
+							size_t closeB = result.find(']', afterFn);
+							if (closeB == std::string::npos) {
+								pos = fnPos + kwLen;
+								continue;
+							}
+							captures = result.substr(afterFn, closeB - afterFn + 1);
+							afterFn = closeB + 1;
+							while (afterFn < result.length() && result[afterFn] == ' ') {
+								afterFn++;
+							}
+							if (afterFn >= result.length() || result[afterFn] != '(') {
+								pos = fnPos + kwLen;
+								continue;
 							}
 						}
-					}
-					if (parenEnd == std::string::npos) {
-						pos = fnPos + 2;
-						continue;
-					}
 
-					// Extract signature content
-					std::string sig = result.substr(parenStart + 1, parenEnd - parenStart - 1);
-
-					// Normalize -- separator in signature
-					std::string normSig;
-					size_t dashPos = sig.find("--");
-					if (dashPos != std::string::npos) {
-						std::string before = trim(sig.substr(0, dashPos));
-						std::string after = trim(sig.substr(dashPos + 2));
-						if (before.empty() && after.empty()) {
-							normSig = "";
-						} else if (before.empty()) {
-							normSig = " -- " + after;
-						} else if (after.empty()) {
-							normSig = before + " -- ";
-						} else {
-							normSig = before + " -- " + after;
+						// Find matching )
+						size_t parenStart = afterFn;
+						depth = 0;
+						size_t parenEnd = std::string::npos;
+						for (size_t j = parenStart; j < result.length(); j++) {
+							if (result[j] == '(') {
+								depth++;
+							} else if (result[j] == ')') {
+								depth--;
+								if (depth == 0) {
+									parenEnd = j;
+									break;
+								}
+							}
 						}
-					} else {
-						normSig = trim(sig);
-					}
+						if (parenEnd == std::string::npos) {
+							pos = fnPos + kwLen;
+							continue;
+						}
 
-					// Look for { body } after )
-					size_t afterParen = parenEnd + 1;
-					while (afterParen < result.length() && result[afterParen] == ' ') {
-						afterParen++;
-					}
-					if (afterParen >= result.length() || result[afterParen] != '{') {
-						pos = fnPos + 2;
-						continue;
+						// Extract signature content
+						std::string sig = result.substr(parenStart + 1, parenEnd - parenStart - 1);
+
+						// Normalize -- separator in signature
+						size_t dashPos = sig.find("--");
+						if (dashPos != std::string::npos) {
+							std::string before = trim(sig.substr(0, dashPos));
+							std::string after = trim(sig.substr(dashPos + 2));
+							if (before.empty() && after.empty()) {
+								normSig = "";
+							} else if (before.empty()) {
+								normSig = " -- " + after;
+							} else if (after.empty()) {
+								normSig = before + " -- ";
+							} else {
+								normSig = before + " -- " + after;
+							}
+						} else {
+							normSig = trim(sig);
+						}
+
+						// Look for { body } after )
+						afterParen = parenEnd + 1;
+						while (afterParen < result.length() && result[afterParen] == ' ') {
+							afterParen++;
+						}
+						if (afterParen >= result.length() || result[afterParen] != '{') {
+							pos = fnPos + kwLen;
+							continue;
+						}
 					}
 
 					// Find matching }
@@ -1177,7 +1184,7 @@ namespace Qd {
 						}
 					}
 					if (braceEnd == std::string::npos) {
-						pos = fnPos + 2;
+						pos = fnPos + kwLen;
 						continue;
 					}
 
@@ -1187,7 +1194,7 @@ namespace Qd {
 					std::string after = result.substr(braceEnd + 1);
 
 					// Rebuild: fn [captures] (sig) { body } + after
-					std::string rebuilt = result.substr(0, fnPos) + "fn ";
+					std::string rebuilt = result.substr(0, fnPos) + (isDef ? "def " : "fn ");
 					if (!captures.empty()) {
 						rebuilt += captures + " ";
 					}
@@ -1219,14 +1226,17 @@ namespace Qd {
 					if (hasArrow) {
 						normAfter = varName.empty() ? " ->" : " -> " + varName;
 					}
-					rebuilt += "(" + normSig + ") { " + trim(normBody) + " }" + normAfter;
+					if (hasSig) {
+						rebuilt += "(" + normSig + ") ";
+					}
+					const std::string trimmedBody = trim(normBody);
+					rebuilt += trimmedBody.empty() ? "{ }" + normAfter : "{ " + trimmedBody + " }" + normAfter;
 
 					result = rebuilt;
-					// Resume just past what was rebuilt. `rebuilt` is the whole line, so its
-					// length minus the tail's is already that index -- adding `fnPos` skipped
-					// the rest of the line, and a second `fn(){}` on it was only normalised on
-					// the pass after. The tail may have been rewritten, so measure `normAfter`.
-					pos = rebuilt.length() - normAfter.length();
+					// Resume just past this `fn`, so a lambda inside the body is normalised on this
+					// pass too, as is a second `fn(){}` later on the line -- resuming past what
+					// was rebuilt left both for the pass after.
+					pos = fnPos + kwLen;
 					continue;
 				}
 			}

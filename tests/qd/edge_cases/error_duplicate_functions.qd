@@ -1,10 +1,10 @@
 // Test: error duplicate functions
 fn foo() {
-	"First foo" prints nl
+	"First foo" print nl
 }
 
 fn foo() {
-	"Second foo" prints nl
+	"Second foo" print nl
 }
 
 fn main() {

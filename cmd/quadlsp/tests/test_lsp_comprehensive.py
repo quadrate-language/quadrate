@@ -225,7 +225,7 @@ class LSPComprehensiveTester:
         )
 
         uri = "file:///tmp/range_format_test.qd"
-        content = 'fn   add(a:i64   b:i64  --  result:i64)  {\na   b  +\n}\n\nfn main() {\n5 3 add print nl\n}'
+        content = 'def   add(a:i64   b:i64  --  result:i64)  {\na   b  +\n}\n\nfn main() {\n5 3 add print nl\n}'
         self.session.open_document(uri, content)
 
         # Request range formatting for first function
@@ -265,7 +265,7 @@ class LSPComprehensiveTester:
 
         uri = "file:///tmp/semantic_test.qd"
         content = '''// Comment
-fn factorial(n:i64 -- result:i64) {
+def factorial(n:i64 -- result:i64) {
     1 -> acc
     n 1 <= if { 1 } else { n n -- factorial * }
 }
@@ -356,15 +356,15 @@ fn main() {
         )
 
         uri = "file:///tmp/callhier_test.qd"
-        content = '''fn add(a:i64 b:i64 -- result:i64) {
+        content = '''def add(a:i64 b:i64 -- result:i64) {
     a b +
 }
 
-fn double(x:i64 -- result:i64) {
+def double(x:i64 -- result:i64) {
     x x add
 }
 
-fn quadruple(x:i64 -- result:i64) {
+def quadruple(x:i64 -- result:i64) {
     x double double
 }
 
@@ -377,7 +377,7 @@ fn main() {
         # Prepare call hierarchy on "double"
         resp = self.session.send_request("textDocument/prepareCallHierarchy", {
             "textDocument": {"uri": uri},
-            "position": {"line": 4, "character": 5}
+            "position": {"line": 4, "character": 9}
         })
 
         self.assert_test(resp is not None, "Prepare call hierarchy returns response")
@@ -473,11 +473,11 @@ fn main() {
         )
 
         uri = "file:///tmp/codelens_test.qd"
-        content = '''fn add(a:i64 b:i64 -- result:i64) {
+        content = '''def add(a:i64 b:i64 -- result:i64) {
     a b +
 }
 
-fn double(x:i64 -- result:i64) {
+def double(x:i64 -- result:i64) {
     x x add
 }
 
@@ -486,7 +486,7 @@ fn main() {
 }
 
 fn test_add() {
-    2 3 add 5 eq assert
+    2 3 add 5 == assert
 }
 '''
         self.session.open_document(uri, content)
@@ -768,7 +768,7 @@ fn main() {
 
         # Test 1: Basic rename in single file
         uri = "file:///tmp/rename_test.qd"
-        content = '''fn helper(x:i64 -- result:i64) {
+        content = '''def helper(x:i64 -- result:i64) {
     x 2 *
 }
 
@@ -782,7 +782,7 @@ fn main() {
         # Test prepareRename first (this is what editors call before rename)
         resp = self.session.send_request("textDocument/prepareRename", {
             "textDocument": {"uri": uri},
-            "position": {"line": 0, "character": 3}  # On 'helper'
+            "position": {"line": 0, "character": 7}  # On 'helper'
         })
         self.assert_test(resp is not None, "prepareRename returns response")
         self.assert_test('result' in resp and resp['result'] is not None, "prepareRename has result")
@@ -796,7 +796,7 @@ fn main() {
         # Rename 'helper' to 'double'
         resp = self.session.send_request("textDocument/rename", {
             "textDocument": {"uri": uri},
-            "position": {"line": 0, "character": 3},  # On 'helper'
+            "position": {"line": 0, "character": 7},  # On 'helper'
             "newName": "double"
         })
 
@@ -828,7 +828,7 @@ fn main() {
             # Create helper.qd with shared function
             helper_path = os.path.join(tmpdir, "helper.qd")
             with open(helper_path, 'w') as f:
-                f.write('''fn compute(x:i64 -- result:i64) {
+                f.write('''def compute(x:i64 -- result:i64) {
     x 10 *
 }
 ''')

@@ -1,0 +1,5 @@
+// Test: `each` runs its function value with each element on top, and checks the body against
+// the element's real type
+fn main() {
+	0 ["a" "b"] fn { + } each drop
+}

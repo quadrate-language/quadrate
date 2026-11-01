@@ -238,7 +238,7 @@ class CompletionTester:
         self.assert_test("pub" in labels, "Top-level has 'pub' keyword")
 
         # Should NOT have built-in instructions at top level
-        self.assert_test("add" not in labels, "Top-level excludes 'add' instruction")
+        self.assert_test("within" not in labels, "Top-level excludes 'within' instruction")
         self.assert_test("dup" not in labels, "Top-level excludes 'dup' instruction")
         self.assert_test("swap" not in labels, "Top-level excludes 'swap' instruction")
 
@@ -255,7 +255,7 @@ class CompletionTester:
 
         self.assert_test("fn" in labels, "After use: has 'fn' keyword")
         self.assert_test("struct" in labels, "After use: has 'struct' keyword")
-        self.assert_test("add" not in labels, "After use: excludes instructions")
+        self.assert_test("within" not in labels, "After use: excludes instructions")
 
     # ============================================================================
     # Inside function body completion tests
@@ -276,8 +276,8 @@ class CompletionTester:
         labels = self.get_completion_labels(items)
 
         # Should have built-in instructions
-        self.assert_test("add" in labels, "Inside function has 'add' instruction")
-        self.assert_test("sub" in labels, "Inside function has 'sub' instruction")
+        self.assert_test("within" in labels, "Inside function has 'within' instruction")
+        self.assert_test("neg" in labels, "Inside function has 'neg' instruction")
         self.assert_test("dup" in labels, "Inside function has 'dup' instruction")
         self.assert_test("swap" in labels, "Inside function has 'swap' instruction")
         self.assert_test("drop" in labels, "Inside function has 'drop' instruction")
@@ -330,7 +330,7 @@ fn main() {
         self.assert_test("any" in labels, "Type position has 'any'")
 
         # Should NOT have instructions
-        self.assert_test("add" not in labels, "Type position excludes 'add'")
+        self.assert_test("within" not in labels, "Type position excludes 'within'")
         self.assert_test("dup" not in labels, "Type position excludes 'dup'")
 
     def test_type_with_partial_input(self):
@@ -351,11 +351,11 @@ fn main() {
         """Test type completions in output parameter position"""
         print("\n=== Testing Type in Output Position ===")
 
-        content = "fn foo(x:i64 -- result:"
+        content = "def foo(x:i64 -- result:"
         uri = "file:///tmp/test_type_output.qd"
         self.open_document(uri, content)
 
-        items = self.get_completions(uri, 0, 23)  # After the colon in output
+        items = self.get_completions(uri, 0, 24)  # After the colon in output
         labels = self.get_completion_labels(items)
 
         self.assert_test("i64" in labels, "Output type position has 'i64'")
@@ -386,16 +386,16 @@ fn main() {
     y:f64
 }
 
-fn foo(p:i64 -- ) {
+def foo(p:i64 -- ) {
 }
 
-fn bar(q:i64 -- ) {
+def bar(q:i64 -- ) {
 }"""
         uri = "file:///tmp/test_type_local_struct.qd"
         self.open_document(uri, content)
 
         # Request completion in the complete document, then check for Point
-        items = self.get_completions(uri, 8, 9)  # After colon in bar
+        items = self.get_completions(uri, 8, 10)  # After colon in bar
         labels = self.get_completion_labels(items)
 
         # Note: Local structs may not show if code parsing fails
@@ -452,7 +452,7 @@ pub fn create( -- result:Foo) {
     name:str
 }
 
-pub fn helper(x:i64 -- result:i64) {
+pub def helper(x:i64 -- result:i64) {
     x 2 *
 }
 """)
@@ -495,7 +495,7 @@ fn main() {{
     y:f64
 }
 
-fn test(p:Point -- ) {
+def test(p:Point -- ) {
     p <<
 }"""
         uri = "file:///tmp/test_field_access.qd"
@@ -512,7 +512,7 @@ fn test(p:Point -- ) {
     a:i64
 }
 
-fn helper(x:i64 -- y:i64) {
+def helper(x:i64 -- y:i64) {
     x
 }
 

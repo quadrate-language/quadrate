@@ -14,10 +14,11 @@ fn main() {
 	"localhost" 44444 net::connect switch {
 		Ok { -> sock  sock net::close  "FAIL: nothing should be listening" print nl }
 		net::ErrConnect {
+			drop
 			err -> code -> msg
 			"code=" print code print nl
 			"msg=" print msg print nl
 		}
-		_ { err -> code -> _  "FAIL: unexpected code " print code print nl }
+		_ { drop err -> code -> _  "FAIL: unexpected code " print code print nl }
 	}
 }

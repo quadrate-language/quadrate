@@ -12,8 +12,8 @@ fn main() {
 	test_constants::AppName print nl
 
 	// Test constant in arithmetic
-	test_constants::MaxValue 10 add print nl
+	test_constants::MaxValue 10 + print nl
 
 	// Test multiple constant uses
-	test_constants::Pi test_constants::Pi mul print nl
+	test_constants::Pi test_constants::Pi * print nl
 }

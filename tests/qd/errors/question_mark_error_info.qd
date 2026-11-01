@@ -16,6 +16,7 @@ fn main() {
 	outer switch {
 		Ok { "unexpected success: " print print nl }
 		_ {
+			drop
 			err -> code -> msg
 			"msg: " print msg print nl
 			"code: " print code print nl

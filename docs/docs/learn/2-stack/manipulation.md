@@ -155,8 +155,11 @@ fn main() {
 | `swap` | [a, b] | [b, a] | Swap top two |
 | `over` | [a, b] | [a, b, a] | Copy second |
 | `rot` | [a, b, c] | [b, c, a] | Rotate three |
+| `rrot` | [a, b, c] | [c, a, b] | Rotate three back |
+| `tuck` | [a, b] | [b, a, b] | Copy top below second |
 | `nip` | [a, b] | [b] | Remove second |
 | `dup2` | [a, b] | [a, b, a, b] | Duplicate pair |
+| `drop2` | [a, b] | [] | Remove pair |
 
 ## What's next?
 

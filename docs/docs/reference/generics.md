@@ -7,7 +7,7 @@ Generic functions allow you to write type-flexible code that works with multiple
 Use angle brackets `<T>` to define type parameters:
 
 ```qd
-fn identity<T>(x:T -- y:T) {
+def identity<T>(x:T -- y:T) {
     x
 }
 ```
@@ -17,7 +17,7 @@ fn identity<T>(x:T -- y:T) {
 The compiler automatically infers types based on the arguments:
 
 ```qd
-fn identity<T>(x:T -- y:T) {
+def identity<T>(x:T -- y:T) {
     x
 }
 
@@ -33,7 +33,7 @@ fn main() {
 Functions can have multiple type parameters:
 
 ```qd
-fn pair<A B>(a:A b:B -- a:A b:B) {
+def pair<A B>(a:A b:B -- a:A b:B) {
     a b
 }
 
@@ -47,15 +47,15 @@ fn main() {
 
 ## Common patterns
 
-### Swap
+### Exchange
 
 ```qd
-fn swap<T>(a:T b:T -- b:T a:T) {
+def exchange<T>(a:T b:T -- b:T a:T) {
     b a
 }
 
 fn main() {
-    10 20 swap
+    10 20 exchange
     -> a -> b
     a print " " print b print nl  // 10 20
 }
@@ -64,12 +64,12 @@ fn main() {
 ### Apply
 
 ```qd
-fn apply<T>(x:T f:ptr -- result:T) {
+def apply<T>(x:T f:ptr -- result:T) {
     x f call
 }
 
 fn main() {
-    5 fn (n:i64 -- r:i64) { n 2 * } apply print nl  // 10
+    5 def (n:i64 -- r:i64) { n 2 * } apply print nl  // 10
 }
 ```
 
@@ -91,7 +91,7 @@ fn main() {
 The compiler infers types at the call site. Each call can use different types:
 
 ```qd
-fn identity<T>(x:T -- y:T) { x }
+def identity<T>(x:T -- y:T) { x }
 
 fn main() {
     42 identity print nl     // T = i64

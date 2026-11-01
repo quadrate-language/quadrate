@@ -46,7 +46,10 @@ PROSE_SOURCES = [
 # nothing. See the note at the prose scan below. "make" and "makes" joined the list when
 # array creation became a literal: the playground's commentary is full of "named params make
 # the swap explicit", and no scan can tell that from the instruction that used to exist.
-PROSE_EXEMPT = {"read", "make", "makes"}
+# The operators' old word spellings went with them: "add" and "div" are JavaScript and HTML, and
+# `&lt;` is "lt" to a word-boundary scan.
+PROSE_EXEMPT = {"read", "make", "makes", "add", "sub", "mul", "div", "mod", "inc", "dec", "eq", "neq", "lt",
+                "lte", "gt", "gte"}
 
 
 def read(rel):
@@ -181,7 +184,7 @@ def main():
 
     for rel, text, banned in prose:
         for name in sorted(banned):
-            for m in re.finditer(r"\b%s\b" % re.escape(name), text):
+            for m in re.finditer(r"(?<!::)\b%s\b" % re.escape(name), text):
                 line = text.count("\n", 0, m.start()) + 1
                 problems.append(f"{rel}:{line}: mentions removed name '{name}'")
 

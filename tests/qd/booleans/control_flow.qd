@@ -13,8 +13,8 @@ fn main() {
 
 	// Comparison results in if
 	"=== Comparison in if ===" print nl
-	5 3 gt if { "5 > 3" print nl }
-	3 5 gt if { "3 > 5" print nl }
+	5 3 > if { "5 > 3" print nl }
+	3 5 > if { "3 > 5" print nl }
 	"done" print nl
 
 	// Boolean in loop with condition check

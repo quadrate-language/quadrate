@@ -56,7 +56,7 @@ pub struct Queue<T> {
 ///     q 42 enqueue! -> q
 ///
 /// Stack: (q val -- q2)
-pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
+pub def (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 	q <<data -> data
 	q <<head -> head
 	q <<tail -> tail
@@ -74,7 +74,7 @@ pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 			0 -> i
 			loop {
 				i len >= if { break }
-				head i + cap mod -> src_idx
+				head i + cap % -> src_idx
 				data src_idx mem::AnySize * mem::get_any -> v
 				v new_data i mem::AnySize * mem::set_any
 				data src_idx mem::AnySize * mem::clear_any
@@ -91,7 +91,7 @@ pub fn (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 
 	val data tail mem::AnySize * mem::set_any
 
-	tail 1 + cap mod -> new_tail
+	tail 1 + cap % -> new_tail
 
 	// Written through the receiver, and the receiver is what comes back: a container is a
 	// reference (3.2.1), and a fresh struct over the same buffer leaves every earlier copy
@@ -123,7 +123,7 @@ pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 	data head mem::AnySize * mem::get_any -> val
 	data head mem::AnySize * mem::clear_any
 
-	head 1 + cap mod -> new_head
+	head 1 + cap % -> new_head
 
 	val
 	q new_head >>head len 1 - >>len
@@ -169,13 +169,13 @@ pub fn (q:Queue<T>) is_empty<T>( -- b:i64) {
 /// Stack: (q --)
 pub fn (q:Queue<T>) release<T>() {
 	q <<data -> data
-	data 0 neq if {
+	data 0 != if {
 		// Let go of every element still queued: a string or a struct in one is ours to release.
 		q <<head -> head
 		q <<len -> len
 		q <<cap -> cap
 		0 len 1 for i {
-			data head i + cap mod mem::AnySize * mem::clear_any
+			data head i + cap % mem::AnySize * mem::clear_any
 		}
 		data mem::free
 	}

@@ -1,10 +1,10 @@
 // Test: chaining generic function calls
 
-fn identity<T>(val:T -- y:T) {
+def identity<T>(val:T -- y:T) {
 	val
 }
 
-fn wrap<T>(val:T -- y:T) {
+def wrap<T>(val:T -- y:T) {
 	val identity
 }
 

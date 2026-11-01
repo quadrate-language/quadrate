@@ -9,7 +9,7 @@ struct Config {
 	active: bool
 }
 
-fn process(cfg:Config -- result:i64) {
+def process(cfg:Config -- result:i64) {
 	cfg <<active if { cfg <<value 2 * } else { 0 }
 }
 

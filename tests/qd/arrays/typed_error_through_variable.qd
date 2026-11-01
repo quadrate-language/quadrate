@@ -1,5 +1,5 @@
 // Test: []str assigned to variable, then passed to []i64 param should fail
-fn accept_ints(arr:[]i64 -- ) {
+def accept_ints(arr:[]i64 -- ) {
 }
 
 fn main() {

@@ -1,10 +1,12 @@
 // Test: Bug #12: Signed left-shift of negative value
 // Should produce defined results, not UB
+use bits
+
 fn main() {
 	// -1 << 2 should be -4 (arithmetic shift)
-	-1 2 shl print nl
+	-1 2 bits::shl print nl
 	// -2 << 1 should be -4
-	-2 1 shl print nl
+	-2 1 bits::shl print nl
 	// 1 << 2 should be 4 (positive case, sanity check)
-	1 2 shl print nl
+	1 2 bits::shl print nl
 }

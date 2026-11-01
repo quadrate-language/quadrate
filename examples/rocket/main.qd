@@ -19,7 +19,7 @@ const MsPerSimSec = 50
 const PrintInterval = 10
 const PrintIntervalF = 10.0
 
-fn progress_bar(pct:f64 width:f64 -- bar:str) {
+def progress_bar(pct:f64 width:f64 -- bar:str) {
 	pct width * 100.0 / math::floor -> filled
 	filled 0.0 < if {
 		0.0 -> filled
@@ -48,7 +48,7 @@ fn progress_bar(pct:f64 width:f64 -- bar:str) {
 	bar
 }
 
-fn print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pitch:f64 first:i64 -- ) {
+def print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pitch:f64 first:i64 -- ) {
 	alt 1000.0 / -> alt_km
 	fuel max_fuel / 100.0 * -> fuel_pct
 	fuel 1000.0 / -> fuel_t
@@ -105,7 +105,7 @@ fn print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pi
 	io::flush
 }
 
-fn print_header(msg:str -- ) {
+def print_header(msg:str -- ) {
 	nl
 	term::Bold print term::BrightYellow print
 	"=== " print msg print " ===" print

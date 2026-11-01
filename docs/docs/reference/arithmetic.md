@@ -6,20 +6,20 @@ Mathematical operations on numbers.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `+` / `add` | `(a b -- sum)` | Addition |
-| `-` / `sub` | `(a b -- diff)` | Subtraction |
-| `*` / `mul` | `(a b -- product)` | Multiplication |
-| `/` / `div` | `(a b -- quotient)` | Division |
-| `%` / `mod` | `(a b -- remainder)` | Modulo |
+| `+` | `(a b -- sum)` | Addition |
+| `-` | `(a b -- diff)` | Subtraction |
+| `*` | `(a b -- product)` | Multiplication |
+| `/` | `(a b -- quotient)` | Division |
+| `%` | `(a b -- remainder)` | Modulo |
 | `neg` | `(a -- -a)` | Negation |
-| `++` / `inc` | `(a -- a+1)` | Increment |
-| `--` / `dec` | `(a -- a-1)` | Decrement |
+| `++` | `(a -- a+1)` | Increment |
+| `--` | `(a -- a-1)` | Decrement |
 
 ---
 
 ## Basic operations
 
-### + (add)
+### +
 
 Adds two numbers.
 
@@ -29,7 +29,7 @@ Adds two numbers.
 3 4 + // 7
 ```
 
-### - (sub)
+### -
 
 Subtracts b from a.
 
@@ -39,7 +39,7 @@ Subtracts b from a.
 10 3 - // 7
 ```
 
-### * (mul)
+### *
 
 Multiplies two numbers.
 
@@ -49,7 +49,7 @@ Multiplies two numbers.
 6 7 * // 42
 ```
 
-### / (div)
+### /
 
 Divides a by b.
 
@@ -59,9 +59,9 @@ Divides a by b.
 20 4 / // 5
 ```
 
-### % (mod)
+### %
 
-Computes a modulo b.
+Computes a modulo b. Integers only.
 
 **Signature:** `(a b -- remainder)`
 
@@ -83,7 +83,7 @@ Negates a number.
 5 neg // -5
 ```
 
-### ++ (inc)
+### ++
 
 Adds 1 to a number.
 
@@ -91,10 +91,9 @@ Adds 1 to a number.
 
 ```qd
 5 ++ // 6
-5 inc // 6 (same as ++)
 ```
 
-### -- (dec)
+### --
 
 Subtracts 1 from a number.
 
@@ -102,28 +101,4 @@ Subtracts 1 from a number.
 
 ```qd
 5 -- // 4
-5 dec // 4 (same as --)
-```
-
----
-
-## Word forms
-
-Both symbol and word forms are available:
-
-| Symbol | Word |
-|--------|------|
-| `+` | `add` |
-| `-` | `sub` |
-| `*` | `mul` |
-| `/` | `div` |
-| `%` | `mod` |
-| `++` | `inc` |
-| `--` | `dec` |
-
-```qd
-3 4 add // Same as 3 4 +
-10 3 sub // Same as 10 3 -
-5 inc   // Same as 5 ++
-5 dec   // Same as 5 --
 ```

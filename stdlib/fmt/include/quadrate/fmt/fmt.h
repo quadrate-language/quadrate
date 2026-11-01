@@ -76,9 +76,6 @@ int usr_fmt_printf(qd_context* ctx);
  */
 int usr_fmt_sprintf(qd_context* ctx);
 
-/** Print a string to stdout (no newline). */
-int usr_fmt_print(qd_context* ctx);
-
 /** Print a string to stdout followed by a newline. */
 int usr_fmt_println(qd_context* ctx);
 

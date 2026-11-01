@@ -3,7 +3,7 @@ use math
 use time
 
 // Basel problem: sum of 1/i^2 for i=1..n
-fn sum_inv_squares(n:i64 -- result:f64) {
+def sum_inv_squares(n:i64 -- result:f64) {
 	0.0 -> sum
 	1 n 1 for i {
 		i cast<f64> -> fi
@@ -13,7 +13,7 @@ fn sum_inv_squares(n:i64 -- result:f64) {
 }
 
 // Leibniz formula for pi: pi/4 = 1 - 1/3 + 1/5 - 1/7 + ...
-fn leibniz_pi(n:i64 -- result:f64) {
+def leibniz_pi(n:i64 -- result:f64) {
 	0.0 -> sum
 	1.0 -> sign
 	1 n 1 for i {
@@ -25,7 +25,7 @@ fn leibniz_pi(n:i64 -- result:f64) {
 }
 
 // Mandelbrot escape iteration
-fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
+def mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
 	0.0 -> zr
 	0.0 -> zi
 	max_iter -> result
@@ -33,7 +33,7 @@ fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
 		zr zr * zi zi * - cr + -> tr
 		2.0 zr * zi * ci + -> zi
 		tr -> zr
-		zr zr * zi zi * + 4.0 gt if {
+		zr zr * zi zi * + 4.0 > if {
 			i -> result
 			break
 		}
@@ -42,14 +42,14 @@ fn mandelbrot_iter(cr:f64 ci:f64 max_iter:i64 -- iters:i64) {
 }
 
 // Euclidean distance using math::sqrt
-fn distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
+def distance(x1:f64 y1:f64 x2:f64 y2:f64 -- d:f64) {
 	x2 x1 - -> dx
 	y2 y1 - -> dy
 	dx dx * dy dy * + math::sqrt
 }
 
 // Sum of distances over n iterations
-fn distance_sum(n:i64 -- result:f64) {
+def distance_sum(n:i64 -- result:f64) {
 	0.0 -> sum
 	0 n 1 for i {
 		i cast<f64> 0.001 * -> x
@@ -59,7 +59,7 @@ fn distance_sum(n:i64 -- result:f64) {
 }
 
 // Sum of sin(x) + cos(x) for x = 0..n*0.001
-fn trig_sum(n:i64 -- result:f64) {
+def trig_sum(n:i64 -- result:f64) {
 	0.0 -> sum
 	0 n 1 for i {
 		i cast<f64> 0.001 * -> x
@@ -80,7 +80,7 @@ fn main() {
 		time::now -> start
 		n sum_inv_squares -> r
 		time::now start - -> elapsed
-		elapsed best lt if { elapsed -> best  r -> result_f }
+		elapsed best < if { elapsed -> best  r -> result_f }
 	}
 	n "Basel sum(1/i^2, 1..%d):\n" fmt::printf
 	best 1000000 / "  Time: %d ms\n" fmt::printf
@@ -94,7 +94,7 @@ fn main() {
 		time::now -> start
 		n leibniz_pi -> r
 		time::now start - -> elapsed
-		elapsed best lt if { elapsed -> best  r -> result_f }
+		elapsed best < if { elapsed -> best  r -> result_f }
 	}
 	n "Leibniz pi(%d terms):\n" fmt::printf
 	best 1000000 / "  Time: %d ms\n" fmt::printf
@@ -121,7 +121,7 @@ fn main() {
 			cr ci 100 mandelbrot_iter t + -> t
 		} }
 		time::now start - -> elapsed
-		elapsed best lt if { elapsed -> best  t -> total }
+		elapsed best < if { elapsed -> best  t -> total }
 	}
 	size size "Mandelbrot %dx%d:\n" fmt::printf
 	best 1000000 / "  Time: %d ms\n" fmt::printf
@@ -135,7 +135,7 @@ fn main() {
 		time::now -> start
 		n distance_sum -> r
 		time::now start - -> elapsed
-		elapsed best lt if { elapsed -> best  r -> result_f }
+		elapsed best < if { elapsed -> best  r -> result_f }
 	}
 	n "Distance (%d iterations):\n" fmt::printf
 	best 1000000 / "  Time: %d ms\n" fmt::printf
@@ -149,7 +149,7 @@ fn main() {
 		time::now -> start
 		n trig_sum -> r
 		time::now start - -> elapsed
-		elapsed best lt if { elapsed -> best  r -> result_f }
+		elapsed best < if { elapsed -> best  r -> result_f }
 	}
 	n "Trig sum(%d):\n" fmt::printf
 	best 1000000 / "  Time: %d ms\n" fmt::printf

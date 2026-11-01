@@ -16,11 +16,11 @@ fn (b:Box<T>) unwrap<T>( -- v:T) {
 	b <<value
 }
 
-fn double_box(b:Box<i64> -- n:i64) {
+def double_box(b:Box<i64> -- n:i64) {
 	b unwrap 2 *
 }
 
-fn sum_vec(v:Vec<i64> -- total:i64)! {
+def sum_vec(v:Vec<i64> -- total:i64)! {
 	0 -> sum
 	0 v length 1 for i {
 		v i get! sum + -> sum
@@ -28,7 +28,7 @@ fn sum_vec(v:Vec<i64> -- total:i64)! {
 	sum
 }
 
-fn fill(v:Vec<str> n:i64 -- v2:Vec<str>)! {
+def fill(v:Vec<str> n:i64 -- v2:Vec<str>)! {
 	0 n 1 for i {
 		v "s" push! -> v
 	}

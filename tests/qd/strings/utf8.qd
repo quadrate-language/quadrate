@@ -10,7 +10,7 @@ fn main() {
 	"héllo wörld" -> s
 
 	// Lengths and indices are characters
-	s strings::len print nl
+	s len print nl
 	s 1 strings::char_at print nl
 	s "ö" strings::index_of print nl
 	s 0 5 strings::substring! print nl
@@ -44,7 +44,7 @@ fn main() {
 	"日本語テキスト" 4 "…" strings::truncate print nl
 
 	// Scripts without case are returned unchanged, which is the correct mapping
-	"日本語" strings::len print nl
+	"日本語" len print nl
 	"日本語" strings::reverse print nl
 	"日本語" strings::upper print nl
 

@@ -1167,29 +1167,6 @@ Truncate toward zero.
 ```qd
 -2.7 math::trunc print  // -2.0
 ```
----
-
-### `fn` within
-
-Check if value is within range (inclusive).
-
-**Signature:** `(x:any min_val:any max_val:any -- result:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `any` | Value to check |
-| `min_val` | `any` | Minimum bound |
-| `max_val` | `any` | Maximum bound |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `result` | `i64` | 1 if in range, 0 otherwise |
-
-**Example:**
-
-```qd
-5 0 10 math::within print  // 1
-```
 ## Mat4
 
 4x4 matrix in column-major order (OpenGL compatible).

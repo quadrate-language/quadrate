@@ -1,5 +1,5 @@
 // Test: append preserves array type through typed parameter
-fn sum(arr:[]i64 -- total:i64) {
+def sum(arr:[]i64 -- total:i64) {
 	0 -> total
 	0 arr len 1 for i {
 		total arr i nth + -> total

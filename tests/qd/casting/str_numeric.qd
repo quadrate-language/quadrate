@@ -23,16 +23,18 @@ fn main() {
 
 	// Failure is reportable, which is the entire point
 	"=== Failure is visible ===" print nl
-	"notanumber" strconv::atoi if {
+	"notanumber" strconv::atoi ok if {
 		-> n
 		"parsed " print n print nl
 	} else {
+		drop
 		"not a number" print nl
 	}
-	"0" strconv::atoi if {
+	"0" strconv::atoi ok if {
 		-> n
 		"parsed " print n print nl
 	} else {
+		drop
 		"not a number" print nl
 	}
 

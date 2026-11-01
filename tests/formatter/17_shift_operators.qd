@@ -1,7 +1,9 @@
 // Test shl and shr operator formatting
+use bits
+
 fn main() {
-	1 4 shl print nl
-	16 2 shr print nl
+	1 4 bits::shl print nl
+	16 2 bits::shr print nl
 	// Don't touch shl in comments
 	/* Block comment with shr */
 }

@@ -12,7 +12,7 @@ struct Node {
 	next: *Node
 }
 
-fn (n:Node) is_last(head:Node -- b:i64) {
+def (n:Node) is_last(head:Node -- b:i64) {
 	head -> walk
 	loop {
 		walk <<next null == if {

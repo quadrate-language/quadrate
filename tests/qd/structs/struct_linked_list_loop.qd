@@ -4,20 +4,20 @@ struct Item {
 	next:*Item
 }
 
-fn list_sum(cur:ptr -- total:i64) {
+def list_sum(cur:ptr -- total:i64) {
 	0 -> sum
 	loop {
-		cur null eq if { break }
+		cur null == if { break }
 		sum cur <<value + -> sum
 		cur <<next -> cur
 	}
 	sum
 }
 
-fn list_len(cur:ptr -- n:i64) {
+def list_len(cur:ptr -- n:i64) {
 	0 -> count
 	loop {
-		cur null eq if { break }
+		cur null == if { break }
 		count ++ -> count
 		cur <<next -> cur
 	}

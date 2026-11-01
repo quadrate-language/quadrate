@@ -63,8 +63,8 @@ qd_module* game = qd_get_module(ctx, "game");
 Add Quadrate source code to a module:
 
 ```c
-qd_add_script(mod, "fn square(x:i64 -- result:i64) { x x * }");
-qd_add_script(mod, "fn cube(x:i64 -- result:i64) { x x * x * }");
+qd_add_script(mod, "def square(x:i64 -- result:i64) { x x * }");
+qd_add_script(mod, "def cube(x:i64 -- result:i64) { x x * x * }");
 ```
 
 You can call `qd_add_script` multiple times before building.
@@ -273,7 +273,7 @@ free it:
 ```c
 qd_context* ctx = qd_create_context(1024);
 qd_module* mod = qd_get_module(ctx, "game");
-qd_add_script(mod, "fn double(x:i64 -- r:i64) { x 2 * }");
+qd_add_script(mod, "def double(x:i64 -- r:i64) { x 2 * }");
 qd_build(mod);
 
 qd_interp* interp = qd_interp_attach(ctx);   // borrows ctx
@@ -601,7 +601,7 @@ fn update() {
     "Player position: " print x print ", " print y print nl
 }
 
-fn take_damage(amount:i64 -- ) {
+def take_damage(amount:i64 -- ) {
     engine::self -> id
     id amount engine::damage
 
@@ -844,9 +844,9 @@ int get_vector(qd_context* ctx, void* userdata) {
 <!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
 ```quadrate
 // Quadrate side
-fn my_callback(x:i64 -- result:i64) { x 2 * }
+def my_callback(x:i64 -- result:i64) { x 2 * }
 fn process() {
-    10 fn(x:i64 -- r:i64) { x 2 * } engine::with_callback
+    10 def(x:i64 -- r:i64) { x 2 * } engine::with_callback
 }
 ```
 

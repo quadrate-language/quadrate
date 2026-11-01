@@ -1,5 +1,5 @@
 // Test: inline recursive function (LLVM handles this gracefully)
-inline fn fib(n:i64 -- result:i64) {
+inline def fib(n:i64 -- result:i64) {
 	n 2 < if {
 		n
 	} else {

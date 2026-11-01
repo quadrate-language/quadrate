@@ -8,7 +8,7 @@ A fallible function is one that might fail. Mark it with `!` after the signature
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	// This function can fail
 }
 ```
@@ -20,7 +20,7 @@ The `!` tells the compiler this function can return an error.
 Use the `panic` instruction to signal an error:
 
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if {
 		"division by zero" -1 panic
 	}
@@ -35,10 +35,11 @@ The `panic` instruction takes (in push order):
 
 ## Handling errors
 
-When you call a fallible function, you **must** handle the error with `if`:
+A fallible call leaves its outputs and then a **status**: `Ok` (0) when it succeeded, the error
+code when it failed. `ok` turns the status into a flag for `if`, and `fail` into the opposite one:
 
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if {
 		"division by zero" -1 panic
 	}
@@ -46,29 +47,49 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 }
 
 fn main() {
-	10 2 divide if {
-		// Success: result is on stack
+	10 2 divide ok if {
+		// Success: the result is on the stack
 		"Result: " print print nl
 	} else {
-		// Error: stack is unchanged from before the call
+		// Failure: the result is a placeholder 0, which nothing wants
+		drop
 		"Division failed!" print nl
 	}
 }
 ```
 
-The compiler enforces this - you must either handle the error with `if`/`else`, or use `!` to abort on error (see below).
+An `if` straight after the call, without `ok` or `fail`, is a compile error: the status is 0 on
+success, so it would take its first arm when the call failed. You can also handle the error with
+`switch` (below), use `!` to abort, or `?` to propagate.
 
 ## How it works
 
-After calling a fallible function:
+A fallible call leaves the same shape whichever way it went:
 
-- **Success (if branch)**: The function's outputs are on the stack
-- **Error (else branch)**: The function's outputs are NOT on the stack (the stack is as it was before the call)
+- **Success**: the function's outputs, then `Ok` (0)
+- **Failure**: a zero value in place of each output (`0`, `0.0`, `""`, `null`), then the error code
+
+The arm that does not use the outputs drops them. Because the status is an ordinary value, it can
+also be kept and tested later:
+
+```qd
+def divide(a:i64 b:i64 -- result:i64)! {
+	b 0 == if {
+		"division by zero" -1 panic
+	}
+	a b /
+}
+
+fn main() {
+	10 0 divide -> status -> q
+	status ok if { q print nl } else { "failed with code " print status print nl }
+}
+```
 
 ## Complete example
 
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if {
 		"division by zero" -1 panic
 	}
@@ -77,16 +98,18 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 
 fn main() {
 	// This will fail
-	1 0 divide if {
+	1 0 divide ok if {
 		"1 / 0 = " print print nl
 	} else {
+		drop
 		"Error: Cannot divide by zero!" print nl
 	}
 
 	// This will succeed
-	10 2 divide if {
+	10 2 divide ok if {
 		"10 / 2 = " print print nl
 	} else {
+		drop
 		"Unexpected error" print nl
 	}
 }
@@ -104,7 +127,7 @@ Call a fallible function with `!` to abort the program on error:
 
 <!-- doccheck: continues -->
 ```qd
-fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+def divide_and_double(a:i64 b:i64 -- result:i64)! {
 	a b divide!  // Aborts if divide fails
 	2 *
 }
@@ -118,7 +141,7 @@ Call a fallible function with `?` to automatically propagate errors to the calle
 
 <!-- doccheck: continues -->
 ```qd
-fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+def divide_and_double(a:i64 b:i64 -- result:i64)! {
 	a b divide?  // If divide fails, return the error to our caller
 	2 *
 }
@@ -128,10 +151,10 @@ This is equivalent to the more verbose:
 
 <!-- doccheck: continues -->
 ```qd
-fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+def divide_and_double(a:i64 b:i64 -- result:i64)! {
 	a b divide switch {
 		Ok { }
-		_ { err panic }
+		_ { drop err panic }
 	}
 	2 *
 }
@@ -141,7 +164,7 @@ The `?` operator is useful when you want to let the caller handle the error inst
 
 <!-- doccheck: skip pattern sketch: step1, step2 and step3 stand for a program's own fallible words -->
 ```qd
-fn pipeline(x:i64 -- result:i64)! {
+def pipeline(x:i64 -- result:i64)! {
 	x step1?   // propagates step1 errors
 	step2?     // propagates step2 errors
 	step3?     // propagates step3 errors
@@ -152,9 +175,8 @@ fn pipeline(x:i64 -- result:i64)! {
 
 ## Stack behavior
 
-When a fallible function succeeds, the `if` branch has the function's outputs on the stack.
-
-When a fallible function fails (via `panic`), the `else` branch does NOT have the function's outputs - the stack is as it was before the call.
+Both arms start with the function's outputs on the stack. On failure they are zero values, one
+per output, so a failure arm drops as many values as the function has outputs.
 
 ```qd
 fn get_two( -- a:i64 b:i64)! {
@@ -162,13 +184,14 @@ fn get_two( -- a:i64 b:i64)! {
 }
 
 fn main() {
-	get_two if {
-		// Success: outputs are on stack
+	get_two ok if {
+		// Success: the outputs are on the stack
 		-> b -> a
 		a print nl
 		b print nl
 	} else {
-		// Error: outputs are NOT on stack
+		// Failure: two zero placeholders, one per output
+		drop drop
 		"Function failed" print nl
 	}
 }
@@ -189,6 +212,7 @@ fn main() {
 			file io::close
 		}
 		_ {
+			drop
 			"Could not open file" print nl
 		}
 	}
@@ -200,7 +224,7 @@ fn main() {
 Use the `err` instruction to retrieve the error message and code:
 
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if {
 		"division by zero" 42 panic
 	}
@@ -208,9 +232,10 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 }
 
 fn main() {
-	10 0 divide if {
+	10 0 divide ok if {
 		print nl
 	} else {
+		drop
 		err -> code -> msg
 		"Error: " print msg print " (code " print code print ")" print nl
 	}
@@ -234,10 +259,11 @@ fn some_operation( -- result:i64)! {
 }
 
 fn main() {
-	some_operation if {
+	some_operation ok if {
 		// Success
 		drop
 	} else {
+		drop
 		err switch {
 			1 {
 				drop "File not found" print nl
@@ -268,13 +294,16 @@ fn main() {
 			file io::close
 		}
 		_ {
+			drop
 			"Could not open file" print nl
 		}
 	}
 }
 ```
 
-`Ok` is a literal `1` (success). After a fallible call, the top of stack is `1` on success. Use `_` as the default case to catch all error values.
+`switch` reads the status directly: `Ok` (0) is the success arm, and a specific error code, or
+`_` for any of them, is a failure arm. Every arm starts with the call's outputs, so the failure
+arms drop them.
 
 To inspect the error details, use `err` in the error branch:
 
@@ -285,13 +314,15 @@ To inspect the error details, use `err` in the error branch:
 		content print nl
 	}
 	_ {
+		drop
 		err -> code -> msg
 		"Error: " print msg print " (code " print code print ")" print nl
 	}
 }
 ```
 
-For standard library functions, prefer `switch { Ok { } _ { } }` over `if`/`else`.
+`switch` is the natural choice when different error codes need different handling; `ok if` when
+only success or failure matters.
 
 ## Keeping an error: the `error` module
 
@@ -304,15 +335,16 @@ store one, return one, collect several, or say where a failure happened on the w
 ```qd
 use error
 
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if { "division by zero" 42 panic }
 	a b /
 }
 
 fn main() {
-	10 0 divide if {
+	10 0 divide ok if {
 		print nl
 	} else {
+		drop
 		error::last -> e
 		"Error: " print e <<message print " (code " print e <<code print ")" print nl
 	}
@@ -333,7 +365,7 @@ never do. Several failures can be collected while a loop carries on:
 ```qd
 use error
 
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if { "division by zero" 42 panic }
 	a b /
 }
@@ -342,9 +374,10 @@ fn main() {
 	[] -> failures
 	[0 2 0] -> divisors
 	0 divisors len 1 for i {
-		100 divisors i nth divide if {
+		100 divisors i nth divide ok if {
 			drop
 		} else {
+			drop
 			failures error::last append -> failures
 		}
 	}
@@ -384,10 +417,9 @@ reads `panic` as diverging, so the arm needs nothing after it:
 
 <!-- doccheck: skip pattern sketch: 'load' stands for a program's own fallible word -->
 ```qd
-fn read_config(path:str -- text:str)! {
-	path load if {
-		// success: the text is on the stack
-	} else {
+def read_config(path:str -- text:str)! {
+	path load fail if {
+		drop
 		error::last "cannot read the config" wrap -> e
 		e <<message e <<code panic
 	}
@@ -402,12 +434,14 @@ back to the error that actually failed.
 
 1. Mark fallible functions with `!` after the signature
 2. Use `"message" code panic` to signal panics
-3. Handle errors with `if { success } else { error }` for your own functions, or `switch { Ok { } _ { } }` for standard library calls
+3. A bare call leaves its outputs and a status, `Ok` (0) on success and the error code on
+   failure: test it with `ok if`/`fail if`, or match it with `switch`; the arm that does not use
+   the outputs drops them
 4. Use `err` in the error branch to retrieve error details, or `error::last` to read the same
    thing as one value you can keep, pass on, or wrap
 5. Use `!` to abort on error (`func!`)
 6. Use `?` to propagate errors to the caller (`func?`) — the enclosing function must be fallible
-7. The compiler enforces error handling
+7. An `if` straight after a bare call is a compile error, since the status is 0 on success
 
 ## What's next?
 

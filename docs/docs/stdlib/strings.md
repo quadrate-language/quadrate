@@ -20,7 +20,7 @@ Error codes: Ok=1 (success), specific errors start at 2
 
 ### `fn` byte_len
 
-Size of the string's UTF-8 encoding, in bytes. strings::len counts characters; this is what you want when sizing a buffer or writing to something that counts octets.
+Size of the string's UTF-8 encoding, in bytes. The builtin `len` counts characters; this is what you want when sizing a buffer or writing to something that counts octets.
 
 **Signature:** `(s:str -- bytes:i64)`
 
@@ -85,7 +85,7 @@ Center string with padding on both sides.
 
 ### `fn` char_at
 
-Get character code at index, or NotAChar when the index is outside the string. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character. An index past the end, or a negative one, gives NotAChar (-1) rather than an error: scanners read "the character here, if there is one", and -1 matches nothing they test for, so the loop ends on its own. Use strings::len to tell "past the end" from a character the string really holds.
+Get character code at index, or NotAChar when the index is outside the string. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character. An index past the end, or a negative one, gives NotAChar (-1) rather than an error: scanners read "the character here, if there is one", and -1 matches nothing they test for, so the loop ends on its own. Use `len` to tell "past the end" from a character the string really holds.
 
 **Signature:** `(str:str index:i64 -- char_code:i64)`
 
@@ -593,27 +593,6 @@ Find last occurrence of substring.
 
 ```qd
 "hello hello" "hello" strings::last_index_of print  // 6
-```
----
-
-### `fn` len
-
-Get string length in characters. Counts UTF-8 codepoints, so "héllo" is 5 even though it occupies 6 bytes. Use strings::data for the byte buffer when byte extent is what you need.
-
-**Signature:** `(str:str -- len:i64)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `str` | `str` | Input string |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `len` | `i64` | Length in characters |
-
-**Example:**
-
-```qd
-"héllo" strings::len print  // 5
 ```
 ---
 

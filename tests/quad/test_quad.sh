@@ -153,7 +153,7 @@ fi
 # ---- Format command ----
 
 cat > "$TEST_DIR/unformatted.qd" <<'EOF'
-fn   add_two( x:i64  --  r:i64 )  {
+def   add_two( x:i64  --  r:i64 )  {
     x    2   +
 }
 EOF

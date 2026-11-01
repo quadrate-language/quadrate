@@ -124,7 +124,7 @@ use fmt
 /// @return s str ANSI escape sequence
 /// @example 196 term::fg256 print "Red" print term::Reset print nl
 pub fn fg256(n:i64 -- s:str) {
-	n "\x1b[38;5;%dm" fmt::sprintf
+	"\x1b[38;5;%dm" fmt::sprintf
 }
 
 /// Set background to 256-color palette value (0-255).
@@ -132,7 +132,7 @@ pub fn fg256(n:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 21 term::bg256 print "Blue BG" print term::Reset print nl
 pub fn bg256(n:i64 -- s:str) {
-	n "\x1b[48;5;%dm" fmt::sprintf
+	"\x1b[48;5;%dm" fmt::sprintf
 }
 
 // ============================================================================
@@ -146,7 +146,7 @@ pub fn bg256(n:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 255 128 0 term::rgb print "Orange" print term::Reset print nl
 pub fn rgb(r:i64 g:i64 b:i64 -- s:str) {
-	r g b "\x1b[38;2;%d;%d;%dm" fmt::sprintf
+	"\x1b[38;2;%d;%d;%dm" fmt::sprintf
 }
 
 /// Set background to RGB color.
@@ -156,7 +156,7 @@ pub fn rgb(r:i64 g:i64 b:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 0 0 128 term::bg_rgb print "Navy BG" print term::Reset print nl
 pub fn bg_rgb(r:i64 g:i64 b:i64 -- s:str) {
-	r g b "\x1b[48;2;%d;%d;%dm" fmt::sprintf
+	"\x1b[48;2;%d;%d;%dm" fmt::sprintf
 }
 
 // ============================================================================
@@ -169,7 +169,7 @@ pub fn bg_rgb(r:i64 g:i64 b:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 10 5 term::goto print
 pub fn goto(row:i64 col:i64 -- s:str) {
-	row col "\x1b[%d;%dH" fmt::sprintf
+	"\x1b[%d;%dH" fmt::sprintf
 }
 
 /// Move cursor up by n lines.
@@ -177,7 +177,7 @@ pub fn goto(row:i64 col:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 5 term::up print
 pub fn up(n:i64 -- s:str) {
-	n "\x1b[%dA" fmt::sprintf
+	"\x1b[%dA" fmt::sprintf
 }
 
 /// Move cursor down by n lines.
@@ -185,7 +185,7 @@ pub fn up(n:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 5 term::down print
 pub fn down(n:i64 -- s:str) {
-	n "\x1b[%dB" fmt::sprintf
+	"\x1b[%dB" fmt::sprintf
 }
 
 /// Move cursor right by n columns.
@@ -193,7 +193,7 @@ pub fn down(n:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 10 term::right print
 pub fn right(n:i64 -- s:str) {
-	n "\x1b[%dC" fmt::sprintf
+	"\x1b[%dC" fmt::sprintf
 }
 
 /// Move cursor left by n columns.
@@ -201,5 +201,5 @@ pub fn right(n:i64 -- s:str) {
 /// @return s str ANSI escape sequence
 /// @example 10 term::left print
 pub fn left(n:i64 -- s:str) {
-	n "\x1b[%dD" fmt::sprintf
+	"\x1b[%dD" fmt::sprintf
 }

@@ -186,76 +186,8 @@ namespace Qd {
 		return false;
 	}
 
-	// The signature of the bare fallible call at `node->child(i - 1)`, or nullptr. "Bare" means
-	// no `!` or `?`: the call leaves a status value for the `if`/`switch` at child(i) to consume.
-	// Methods are keyed by their mangled name, which is why this cannot be a plain name lookup.
-	const FunctionSignature* SemanticValidator::bareFallibleCallBefore(IAstNode* node, size_t i) const {
-		if (i == 0) {
-			return nullptr;
-		}
-		IAstNode* prev = node->child(i - 1);
-		if (!prev) {
-			return nullptr;
-		}
-		std::string key;
-		if (prev->type() == IAstNode::Type::INSTRUCTION) {
-			// `call` on a fallible function pointer. There is no name to look up, so the
-			// signature the call site resolved is what says what the success arm receives.
-			auto* callInst = static_cast<AstNodeInstruction*>(prev);
-			if (callInst->name() != "call" || !callInst->calleeFallible() || callInst->abortOnError() ||
-					callInst->propagateOnError()) {
-				return nullptr;
-			}
-			auto sigIt = mCallSiteSignatures.find(prev);
-			return (sigIt != mCallSiteSignatures.end()) ? &sigIt->second : nullptr;
-		}
-		if (prev->type() == IAstNode::Type::IDENTIFIER) {
-			auto* id = static_cast<AstNodeIdentifier*>(prev);
-			if (id->abortOnError() || id->propagateOnError()) {
-				return nullptr;
-			}
-			key = id->isMethodCall() ? id->receiverType() + "::" + id->name() : id->name();
-		} else if (prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-			auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
-			if (sc->abortOnError() || sc->propagateOnError()) {
-				return nullptr;
-			}
-			if (sc->isMethodCall()) {
-				auto it = mFunctionSignatures.find(sc->scope() + "::" + sc->receiverType() + "::" + sc->name());
-				if (it != mFunctionSignatures.end() && it->second.throws) {
-					return &it->second;
-				}
-				key = sc->receiverType() + "::" + sc->name();
-			} else {
-				key = sc->scope() + "::" + sc->name();
-			}
-		} else {
-			return nullptr;
-		}
-		auto it = mFunctionSignatures.find(key);
-		if (it == mFunctionSignatures.end() || !it->second.throws) {
-			return nullptr;
-		}
-		return &it->second;
-	}
-
-	// Drops the values a failed fallible call never produced. On failure the callee returns
-	// before pushing its results, so the failure arm of the `if`/`switch` that consumed the
-	// status sees the stack as it was before the call. Modelling the arm from the success
-	// stack instead is what let a `drop` in a failure arm type-check while underflowing --
-	// or eating the caller's value -- at runtime.
-	static void removeProducedValues(const FunctionSignature& sig, std::vector<StackValueType>& typeStack,
-			std::vector<std::string>& structTypeStack) {
-		for (size_t k = 0; k < sig.produces.size() && !typeStack.empty(); k++) {
-			typeStack.pop_back();
-			if (!structTypeStack.empty()) {
-				structTypeStack.pop_back();
-			}
-		}
-	}
-
 	// The struct type a pointer result inherits from a pointer argument in the same position
-	// when the signature declares none: `fn f(p:ptr -- q:ptr)` passing a `Point` through.
+	// when the signature declares none: `def f(p:ptr -- q:ptr)` passing a `Point` through.
 	static std::string passThroughStructType(
 			const FunctionSignature& sig, size_t produceIdx, const std::vector<std::string>& consumedStructTypes) {
 		size_t producedPtrBefore = 0;
@@ -325,6 +257,9 @@ namespace Qd {
 				}
 				continue; // nothing known about the argument
 			}
+			// The callee's stack variables are renamed for the call, so a caller that spells its own
+			// the same does not have them mistaken for each other
+			expected = renameCalleeStackVariables(expected, sig.stackVariables);
 			std::string why;
 			if (!unifyTypeName(expected, actual, sig.typeParams, bindings, mMergedModules, canon, why)) {
 				std::string msg = "Type error in function '" + displayName + "': Parameter " + std::to_string(idx + 1) +
@@ -624,6 +559,15 @@ namespace Qd {
 			return std::nullopt;
 		}
 		FunctionSignature sig;
+		// A stack variable at the bottom of a list is not a value; it is kept aside
+		if (!ins.empty() && isStackVariableName(ins.front())) {
+			sig.inputStackVariable = ins.front();
+			ins.erase(ins.begin());
+		}
+		if (!outs.empty() && isStackVariableName(outs.front())) {
+			sig.outputStackVariable = outs.front();
+			outs.erase(outs.begin());
+		}
 		auto add = [&](const std::vector<std::string>& names, std::vector<StackValueType>& types,
 						   std::unordered_map<size_t, std::string>& structTypes,
 						   std::unordered_map<size_t, std::string>& typeNames) {
@@ -740,12 +684,19 @@ namespace Qd {
 			// Set current type parameters for generic functions
 			mCurrentTypeParams = func->typeParams();
 
+			// The function's stack variables. The modelled stack stands on the input one: the
+			// values below the named inputs, which the body may not look into.
+			mCurrentStackVariables = func->stackVariables();
+			mFloorStackVariable = func->inputStackVariable();
+			mCurrentFunctionBody = func->body();
+			checkStackVariableDeclarations(func);
+
 			// Clear local variable struct types for this function
 			mLocalVariableStructTypes.clear();
 
-			// Initialize type stack with input parameters. They are auto-bound as local
-			// variables at function entry unless the function is `stack fn`, where they
-			// stay on the stack and any names they carry are documentation only.
+			// Initialize type stack with input parameters. They stay on the stack, and any
+			// names they carry are documentation only, unless the function is `def`, which
+			// binds them as local variables at entry.
 			const bool bindParams = !func->isStack();
 			for (size_t i = 0; i < func->inputParameters().size(); i++) {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(func->inputParameters()[i].get());
@@ -775,13 +726,13 @@ namespace Qd {
 				}
 
 				if (bindParams && param->hasName()) {
-					// Named parameter: auto-bound as a local variable
+					// Named parameter of a `def`: bound as a local variable
 					localVariables[param->name()] = paramType;
 					if (!structType.empty()) {
 						mLocalVariableStructTypes[param->name()] = structType;
 					}
 				} else {
-					// `stack fn` parameter: stays on the stack
+					// `fn` parameter: stays on the stack
 					typeStack.push_back(paramType);
 					structTypeStack.push_back(structType);
 				}
@@ -813,7 +764,7 @@ namespace Qd {
 			mFinalStackTypes = typeStack;
 			mFinalStackStructTypes = structTypeStack;
 
-			// Warn about unused named parameters. A `stack fn` name is documentation and
+			// Warn about unused named parameters. A `fn` name is documentation and
 			// is never referenced by definition, so there is nothing to warn about.
 			if (func->body() && bindParams) {
 				// Collect named param names
@@ -839,6 +790,14 @@ namespace Qd {
 			// Validate that the type stack matches declared output parameters
 			// Skip if the function body diverges (e.g., ends with panic or return)
 			// Skip if stack effects are unpredictable (e.g., 'read' instruction or unhandled instructions)
+			if (func->body() && !blockEndsDiverging(func->body()) && !mHasUnpredictableStack &&
+					mFloorStackVariable != func->outputStackVariable()) {
+				const auto describe = [](const std::string& v) { return v.empty() ? std::string("its inputs") : v; };
+				std::string msg = "Function '" + func->name() + "' leaves the stack on " +
+								  describe(mFloorStackVariable) + ", but declares its outputs on " +
+								  describe(func->outputStackVariable());
+				reportError(func, msg.c_str());
+			}
 			if (func->body() && !blockEndsDiverging(func->body()) && !mHasUnpredictableStack) {
 				size_t expectedOutputs = func->outputParameters().size();
 				size_t actualOutputs = typeStack.size();
@@ -1138,11 +1097,11 @@ namespace Qd {
 		}
 	}
 
-	// An anonymous function's body is a function body: it starts on an empty stack, its named
-	// parameters are bound as locals the way a named function's are, and what it leaves has to
+	// An anonymous function's body is a function body: it starts on its inputs, which a `def`
+	// binds as locals the way it does a named function's, and what it leaves has to
 	// match what its own signature declares. Nothing checked it before -- the case in
 	// typeCheckBlock pushed a PTR and moved on, under a comment saying code generation would
-	// validate the body, which it does not -- so `fn (x:i64 -- r:i64) { 2 * }` compiled and
+	// validate the body, which it does not -- so `def (x:i64 -- r:i64) { 2 * }` compiled and
 	// underflowed at run time where the identical body in a named function is a compile error.
 	void SemanticValidator::typeCheckAnonymousFunction(AstNodeAnonymousFunction* anonFunc,
 			const std::unordered_map<std::string, StackValueType>& enclosingLocals) {
@@ -1170,8 +1129,13 @@ namespace Qd {
 		const bool savedInLoopBody = mInLoopBody;
 		auto savedLoopJumps = mLoopJumps;
 		auto savedPendingSig = mPendingFnSignature;
+		const std::string savedFloor = mFloorStackVariable;
+		const IAstNode* savedFunctionBody = mCurrentFunctionBody;
 
 		mCurrentFunctionOutputCount = anonFunc->outputParameters().size();
+		// A lambda has no stack variables: its stack starts at its own inputs
+		mFloorStackVariable.clear();
+		mCurrentFunctionBody = anonFunc->body();
 		// A lambda's own `!` is what makes its body fallible. Inheriting the enclosing function's
 		// would let a `panic` inside a plain lambda pass validation and then be compiled by a
 		// generator that knows the lambda cannot throw.
@@ -1196,20 +1160,38 @@ namespace Qd {
 					(capturedIt != enclosingLocals.end()) ? capturedIt->second : StackValueType::UNKNOWN;
 		}
 
-		// Whether inputs are bound is carried by `stack`, exactly as it is for a named function:
-		// without it every input must be named and is bound as a local; with it they stay on the
+		auto restore = [&]() {
+			mLocalVariableStructTypes = savedStructTypes;
+			mCurrentFunctionFallible = savedFallible;
+			mCurrentFunctionOutputCount = savedOutputCount;
+			mHasUnpredictableStack = savedUnpredictable;
+			mInLoopBody = savedInLoopBody;
+			mLoopJumps = savedLoopJumps;
+			mPendingFnSignature = savedPendingSig;
+			mFloorStackVariable = savedFloor;
+			mCurrentFunctionBody = savedFunctionBody;
+		};
+
+		if (!anonFunc->hasSignature()) {
+			anonFunc->setInferredType(inferAnonymousFunctionType(anonFunc, localVariables));
+			restore();
+			return;
+		}
+
+		// Whether inputs are bound is carried by `def`, exactly as it is for a named function:
+		// with it every input must be named and is bound as a local; without it they stay on the
 		// stack and any names are documentation.
 		const bool bindParams = !anonFunc->isStack();
-		if (anonFunc->isStack() && anonFunc->inputParameters().empty()) {
-			reportError(anonFunc, "'stack fn' takes no input parameters, so there is nothing to leave on the stack");
+		if (bindParams && anonFunc->inputParameters().empty()) {
+			reportError(anonFunc, "'def' has no inputs to bind; write 'fn'");
 		}
 		for (const auto& paramNode : anonFunc->inputParameters()) {
 			AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 			if (bindParams && !param->hasName()) {
 				std::string errorMsg = "Unnamed input parameter '" + param->typeString() +
-									   "' in an anonymous function. Name it ('value:" + param->typeString() +
-									   "'), or write 'stack fn' to leave the arguments on the stack for the "
-									   "body to work on";
+									   "' in a 'def', which binds every input: name it ('value:" + param->typeString() +
+									   "'), or write 'fn' to leave the arguments on the stack for the body to "
+									   "work on";
 				reportError(param, errorMsg.c_str());
 			}
 			if (param->hasName() && isReservedKeyword(param->name())) {
@@ -1323,7 +1305,7 @@ namespace Qd {
 			}
 		}
 
-		// Unused named parameters, warned about the way a named function's are. Under `stack` the
+		// Unused named parameters, warned about the way a named function's are. In a `fn` the
 		// names are documentation and are never referenced, so there is nothing to warn about.
 		if (bindParams) {
 			std::unordered_set<std::string> paramNames;
@@ -1345,13 +1327,92 @@ namespace Qd {
 			}
 		}
 
-		mLocalVariableStructTypes = savedStructTypes;
-		mCurrentFunctionFallible = savedFallible;
-		mCurrentFunctionOutputCount = savedOutputCount;
-		mHasUnpredictableStack = savedUnpredictable;
-		mInLoopBody = savedInLoopBody;
-		mLoopJumps = savedLoopJumps;
-		mPendingFnSignature = savedPendingSig;
+		restore();
+	}
+
+	// A `fn { }` has no signature: its effect is what its body does. The body is walked on k
+	// inputs of unknown type, from k = 0 up, with its diagnostics held back, until it no longer
+	// underflows. That k is how many inputs it takes -- the fewest that let it run, so the rest of
+	// the stack is left to the implicit row of its type -- and a last walk on k inputs, reporting
+	// as usual, gives what it leaves. An input's type is `_`, as is a result whose type the body
+	// does not fix: a value passed through untouched, or one from arithmetic on an input.
+	// Returns the `fn(...)` type, or "" when the effect cannot be known -- a body that calls a
+	// function value of unknown type, as for any such call.
+	std::string SemanticValidator::inferAnonymousFunctionType(
+			AstNodeAnonymousFunction* anonFunc, const std::unordered_map<std::string, StackValueType>& locals) {
+		// More than any body written by hand reaches; past it, the underflow is reported
+		constexpr size_t maxInputs = 16;
+		const auto checked = mCheckedAnonFunctions;
+		const auto structTypes = mLocalVariableStructTypes;
+		const bool enclosingUnderflow = mInferenceUnderflow;
+		std::vector<StackValueType> typeStack;
+		std::vector<std::string> structTypeStack;
+		auto walk = [&](size_t inputs) {
+			// Every walk starts from what the enclosing walk had. Lambdas inside are checked
+			// again, so the reporting walk reports them.
+			mCheckedAnonFunctions = checked;
+			mLocalVariableStructTypes = structTypes;
+			mHasUnpredictableStack = false;
+			mLoopJumps.clear();
+			mPendingFnSignature.reset();
+			mInferenceUnderflow = false;
+			typeStack.assign(inputs, StackValueType::UNKNOWN);
+			structTypeStack.assign(inputs, "_");
+			auto bodyLocals = locals;
+			typeCheckBlock(anonFunc->body(), typeStack, bodyLocals, structTypeStack);
+		};
+
+		size_t inputs = 0;
+		mInferringEffect++;
+		for (walk(inputs); mInferenceUnderflow && inputs < maxInputs; walk(inputs)) {
+			inputs++;
+		}
+		mInferringEffect--;
+		const bool settled = !mInferenceUnderflow;
+		walk(settled ? inputs : 0);
+		mInferenceUnderflow = enclosingUnderflow;
+		if (!settled || mHasUnpredictableStack) {
+			return "";
+		}
+
+		auto typeName = [](StackValueType type, const std::string& structType) -> std::string {
+			if (!structType.empty() && structType != "_" &&
+					(type == StackValueType::PTR || type == StackValueType::TYPEVAR)) {
+				return structType;
+			}
+			switch (type) {
+			case StackValueType::INT:
+				return "i64";
+			case StackValueType::FLOAT:
+				return "f64";
+			case StackValueType::D128:
+				return "d128";
+			case StackValueType::STRING:
+				return "str";
+			case StackValueType::PTR:
+				return "ptr";
+			default:
+				return "_";
+			}
+		};
+		std::string type = "fn(";
+		for (size_t i = 0; i < inputs; i++) {
+			type += "_ ";
+		}
+		type += "--";
+		for (size_t i = 0; i < typeStack.size(); i++) {
+			type += " " + typeName(typeStack[i], i < structTypeStack.size() ? structTypeStack[i] : "");
+		}
+		return type + ")";
+	}
+
+	std::string SemanticValidator::fallibleRemedy() const {
+		const IAstNode* owner = mCurrentFunctionBody ? mCurrentFunctionBody->parent() : nullptr;
+		if (owner && owner->type() == IAstNode::Type::ANONYMOUS_FUNCTION &&
+				!static_cast<const AstNodeAnonymousFunction*>(owner)->hasSignature()) {
+			return "(a 'fn { }' cannot be fallible: give it a signature, 'fn (...)! { }')";
+		}
+		return "(add '!' to function signature)";
 	}
 
 	void SemanticValidator::checkAnonymousFunctionsWithin(
@@ -1516,7 +1577,7 @@ namespace Qd {
 			}
 
 			case IAstNode::Type::IF_STATEMENT:
-				typeCheckIf(child, node, i, typeStack, localVariables, structTypeStack);
+				typeCheckIf(child, typeStack, localVariables, structTypeStack);
 				break;
 
 			case IAstNode::Type::DEFER_STATEMENT:
@@ -1524,7 +1585,7 @@ namespace Qd {
 				break;
 
 			case IAstNode::Type::SWITCH_STATEMENT:
-				typeCheckSwitch(child, node, i, typeStack, localVariables, structTypeStack);
+				typeCheckSwitch(child, typeStack, localVariables, structTypeStack);
 				break;
 
 			case IAstNode::Type::FOR_STATEMENT:
@@ -1593,6 +1654,20 @@ namespace Qd {
 			case IAstNode::Type::ANONYMOUS_FUNCTION: {
 				// Anonymous functions push a function pointer onto the stack
 				AstNodeAnonymousFunction* anonFunc = static_cast<AstNodeAnonymousFunction*>(child);
+
+				if (!anonFunc->hasSignature()) {
+					// `fn { }`: the type is what its body turns out to do, so the body comes first
+					typeCheckAnonymousFunction(anonFunc, localVariables);
+					const std::string& inferred = anonFunc->inferredType();
+					if (inferred.empty()) {
+						mPendingFnSignature.reset();
+					} else {
+						mPendingFnSignature = parseFnTypeString(inferred);
+					}
+					typeStack.push_back(StackValueType::PTR);
+					structTypeStack.push_back(inferred);
+					break;
+				}
 
 				// Extract the function signature from input/output parameters
 				FunctionSignature sig;
@@ -1684,8 +1759,8 @@ namespace Qd {
 		}
 	}
 
-	// `!` and `?` only on a fallible callee, `?` only in a fallible caller, and a bare
-	// fallible call tested by the `if` or `switch` right after it
+	// `!` and `?` only on a fallible callee, `?` only in a fallible caller, and no `if` straight
+	// after a bare fallible call, whose status is 0 on success
 	template <typename Call>
 	void SemanticValidator::checkFallibleCall(Call* call, const FunctionSignature& sig, bool isMethod,
 			const std::string& name, IAstNode* node, size_t i) {
@@ -1699,20 +1774,28 @@ namespace Qd {
 			reportError(call, errorMsg.c_str());
 		}
 		if (call->propagateOnError() && !mCurrentFunctionFallible) {
-			std::string errorMsg = "Cannot use '?' operator on " + what +
-								   ": enclosing function must be fallible (add '!' to function signature)";
+			std::string errorMsg =
+					"Cannot use '?' operator on " + what + ": enclosing function must be fallible " + fallibleRemedy();
 			reportError(call, errorMsg.c_str());
 		}
 		if (sig.throws && !call->abortOnError() && !call->propagateOnError()) {
 			IAstNode* nextNode = (i + 1 < node->childCount()) ? node->child(i + 1) : nullptr;
-			if (!nextNode || (nextNode->type() != IAstNode::Type::IF_STATEMENT &&
-									 nextNode->type() != IAstNode::Type::SWITCH_STATEMENT)) {
-				std::string errorMsg = std::string("Fallible ") + what +
-									   " must be immediately followed by 'if' or 'switch' to check for "
-									   "errors, or use '!' to abort on error, or '?' to propagate";
-				reportError(call, errorMsg.c_str());
+			if (nextNode && nextNode->type() == IAstNode::Type::IF_STATEMENT) {
+				reportStatusTestedByIf(call, name);
 			}
 		}
+	}
+
+	// A bare fallible call leaves a status that is `Ok` (0) on success and the error code on
+	// failure, so an `if` straight after it would run its first arm when the call failed --
+	// the opposite of what the same code meant when the status was a success flag. It is an
+	// error rather than a meaning: the status is tested with `ok` or `fail` first.
+	void SemanticValidator::reportStatusTestedByIf(IAstNode* call, const std::string& name) {
+		std::string msg = "'" + name +
+						  "' leaves a status that is 0 on success, so 'if' straight after it would take its "
+						  "first arm when the call failed";
+		std::string hint = "test the status first: '" + name + " ok if { ... }' or '" + name + " fail if { ... }'";
+		reportErrorWithHint(call, msg.c_str(), hint.c_str());
 	}
 
 	// A call's effect on the stack: its arguments off, its results on, and for a bare
@@ -1863,6 +1946,152 @@ namespace Qd {
 		}
 	}
 
+	// The rules for a function's stack variables: each one used is declared and each one declared
+	// is used, and a fallible function has none -- its failure exit truncates the stack to a depth
+	// it computes from its parameters, and a stack variable has no depth until the call.
+	void SemanticValidator::checkStackVariableDeclarations(AstNodeFunctionDeclaration* func) {
+		std::vector<std::string> used;
+		auto note = [&](const std::string& v) {
+			if (!v.empty() && std::find(used.begin(), used.end(), v) == used.end()) {
+				used.push_back(v);
+			}
+		};
+		note(func->inputStackVariable());
+		note(func->outputStackVariable());
+		auto scan = [&](const std::vector<std::unique_ptr<IAstNode>>& params) {
+			for (const auto& paramNode : params) {
+				const std::string& t = static_cast<AstNodeParameter*>(paramNode.get())->typeString();
+				for (size_t i = t.find(".."); i != std::string::npos; i = t.find("..", i + 2)) {
+					size_t j = i + 2;
+					while (j < t.size() && (std::isalnum(static_cast<unsigned char>(t[j])) || t[j] == '_')) {
+						j++;
+					}
+					note(t.substr(i, j - i));
+				}
+			}
+		};
+		scan(func->inputParameters());
+		scan(func->outputParameters());
+
+		const auto& declared = func->stackVariables();
+		for (const auto& v : used) {
+			if (std::find(declared.begin(), declared.end(), v) == declared.end()) {
+				reportErrorWithHint(func, ("Stack variable '" + v + "' is not declared").c_str(),
+						("declare it with the type parameters: '" + func->name() + "<" + v + ">'").c_str());
+			}
+		}
+		for (const auto& v : declared) {
+			if (std::find(used.begin(), used.end(), v) == used.end()) {
+				reportError(func, ("Stack variable '" + v + "' is declared but not used").c_str());
+			}
+		}
+		if (func->throws() && (!func->inputStackVariable().empty() || !func->outputStackVariable().empty())) {
+			reportError(func, ("Function '" + func->name() +
+									  "' is fallible and reaches into its caller's stack; a fallible function "
+									  "cannot have stack variables")
+									  .c_str());
+		}
+	}
+
+	// A call on the stack variable the function stands on -- the caller's own `..a` -- takes
+	// everything above it and moves the floor to the call's output variable
+	bool SemanticValidator::applyFloorCall(IAstNode* site, const std::string& name, const std::string& in,
+			const std::string& out, size_t fixedInputs, const std::vector<StackValueType>& typeStack) {
+		if (in != mFloorStackVariable) {
+			const std::string here = mFloorStackVariable.empty() ? "no stack variable" : mFloorStackVariable;
+			reportError(
+					site, ("'" + name + "' works on the stack under " + in + ", but the stack here stands on " + here)
+								  .c_str());
+			mHasUnpredictableStack = true;
+			return false;
+		}
+		if (typeStack.size() != fixedInputs) {
+			reportError(site, ("'" + name + "' takes everything above " + in + ", but " +
+									  std::to_string(typeStack.size() - std::min(typeStack.size(), fixedInputs)) +
+									  " more value(s) are on the stack above it")
+									  .c_str());
+			mHasUnpredictableStack = true;
+			return false;
+		}
+		if (in != out && site->parent() != mCurrentFunctionBody) {
+			reportError(site, ("'" + name + "' changes the stack from " + in + " to " + out +
+									  ", which can only happen at the top level of the function's body")
+									  .c_str());
+			mHasUnpredictableStack = true;
+			return false;
+		}
+		mFloorStackVariable = out;
+		return true;
+	}
+
+	// How far below its own arguments a call with stack variables reaches. After the arguments
+	// bound the stack variables, the call's input and output variables either come out the same
+	// implicit one -- the part of the stack it does not touch, so they cancel and what is left
+	// are some values taken and left below the arguments -- or the caller's own, on which the
+	// call stands.
+	bool SemanticValidator::applyStackReach(IAstNode* site, IAstNode* block, const std::string& name,
+			const FunctionSignature& sig, const std::map<std::string, std::string>& bindings,
+			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack, bool& reachesBelow,
+			size_t& belowCount, std::vector<std::string>& belowOutputs) {
+		(void)block;
+		auto renamed = [&](const std::string& v) {
+			return v.empty() ? v : renameCalleeStackVariables(v, sig.stackVariables);
+		};
+		StackList in = resolveStackList(StackList{renamed(sig.inputStackVariable), {}}, bindings);
+		StackList out = resolveStackList(StackList{renamed(sig.outputStackVariable), {}}, bindings);
+		auto unbound = [&](const StackList& l) { return l.variable.compare(0, 3, "..^") == 0; };
+		if (unbound(in) || unbound(out)) {
+			const std::string v = ".." + (unbound(in) ? in.variable : out.variable).substr(3);
+			reportError(
+					site, ("'" + name + "' needs to know how many values " + v + " is, and no function argument says")
+								  .c_str());
+			mHasUnpredictableStack = true;
+			return false;
+		}
+		const size_t fixedInputs = sig.consumes.size();
+		if (in.variable == out.variable && isBindableStackVariable(in.variable)) {
+			// Cancelled: some values taken from below the arguments and some left there
+			if (typeStack.size() < fixedInputs + in.types.size()) {
+				reportError(site, ("Type error in function call '" + name + "': Stack underflow (requires " +
+										  std::to_string(fixedInputs + in.types.size()) + " values, have " +
+										  std::to_string(typeStack.size()) + ")")
+										  .c_str());
+				mHasUnpredictableStack = true;
+				return false;
+			}
+			const size_t at = typeStack.size() - fixedInputs - in.types.size();
+			auto canon = [this](const std::string& n) { return canonicalStructName(n); };
+			for (size_t k = 0; k < in.types.size(); k++) {
+				std::string actual = structTypeStack.size() > at + k ? structTypeStack[at + k] : std::string();
+				if (actual.empty()) {
+					actual = qdTypeNameOf(typeStack[at + k]);
+				}
+				std::map<std::string, std::string> scratch = bindings;
+				std::string why;
+				if (!unifyTypeName(in.types[k], actual, sig.typeParams, scratch, mMergedModules, canon, why)) {
+					reportError(
+							site, ("Type error in function call '" + name + "': below its arguments " + why).c_str());
+					mHasUnpredictableStack = true;
+					return false;
+				}
+			}
+			reachesBelow = true;
+			belowCount = in.types.size();
+			belowOutputs = out.types;
+			return true;
+		}
+		if (!in.types.empty() || !out.types.empty() || isBindableStackVariable(in.variable) ||
+				isBindableStackVariable(out.variable)) {
+			reportError(site, ("The reach of '" + name + "' into the stack cannot be known here: it takes " +
+									  stackListText(in) + " and leaves " + stackListText(out))
+									  .c_str());
+			mHasUnpredictableStack = true;
+			return false;
+		}
+		// The caller's own stack variable: the call stands on it
+		return applyFloorCall(site, name, in.variable, out.variable, fixedInputs, typeStack);
+	}
+
 	// A call of a function, by bare or qualified name: its arguments against its
 	// parameters, then its effect on the stack
 	template <typename Call>
@@ -1894,8 +2123,37 @@ namespace Qd {
 
 		const bool consumesPtrParam =
 				std::find(sig.consumes.begin(), sig.consumes.end(), StackValueType::PTR) != sig.consumes.end();
+
+		// Stack variables: how far below its arguments the call reaches, fixed by its
+		// function-value arguments
+		bool reachesBelow = false;
+		size_t belowCount = 0;
+		std::vector<std::string> belowOutputs;
+		if (!sig.inputStackVariable.empty() || !sig.outputStackVariable.empty()) {
+			if (!applyStackReach(call, node, name, sig, typeBindings, typeStack, structTypeStack, reachesBelow,
+						belowCount, belowOutputs)) {
+				return;
+			}
+		}
+
 		applyCallEffect(call, sig, typeBindings, topStructTypes(structTypeStack, sig.consumes.size()), typeStack,
 				structTypeStack);
+
+		// What the call left below its own results replaces what it took from there
+		if (reachesBelow) {
+			const size_t at = typeStack.size() - sig.produces.size() - belowCount;
+			typeStack.erase(typeStack.begin() + static_cast<std::ptrdiff_t>(at),
+					typeStack.begin() + static_cast<std::ptrdiff_t>(at + belowCount));
+			structTypeStack.erase(structTypeStack.begin() + static_cast<std::ptrdiff_t>(at),
+					structTypeStack.begin() + static_cast<std::ptrdiff_t>(at + belowCount));
+			for (size_t k = 0; k < belowOutputs.size(); k++) {
+				const std::string type = substituteTypeParams(belowOutputs[k], typeBindings);
+				const StackValueType kind = stringToStackValueType(type);
+				typeStack.insert(typeStack.begin() + static_cast<std::ptrdiff_t>(at + k), kind);
+				structTypeStack.insert(structTypeStack.begin() + static_cast<std::ptrdiff_t>(at + k),
+						kind == StackValueType::PTR || kind == StackValueType::TYPEVAR ? type : std::string());
+			}
+		}
 
 		// A pending function signature belongs to a function pointer argument, so it goes
 		// with one: kept, it would be taken for the signature of a returned function pointer.
@@ -2031,7 +2289,7 @@ namespace Qd {
 		// float path emits a bare fdiv and produces `inf`, so `1.0 0.0 d` through a
 		// typed function already returned infinity while `1.0 z /` on a local killed the
 		// process.
-		if ((instrName == "div" || instrName == "/" || instrName == "mod" || instrName == "%") && i > 0) {
+		if ((instrName == "/" || instrName == "%") && i > 0) {
 			IAstNode* prev = node->child(i - 1);
 			if (prev != nullptr && prev->type() == IAstNode::Type::LITERAL) {
 				auto* lit = static_cast<AstNodeLiteral*>(prev);
@@ -2047,12 +2305,17 @@ namespace Qd {
 			}
 		}
 
+		if (findCombinator(instrName)) {
+			typeCheckCombinator(instr, node, i, typeStack, localVariables, structTypeStack);
+			return;
+		}
+
 		// Fall back to builtin instruction handling
 		typeCheckInstruction(child, instrName.c_str(), typeStack, structTypeStack);
 	}
 
-	void SemanticValidator::typeCheckIf(IAstNode* child, IAstNode* node, size_t i,
-			std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+	void SemanticValidator::typeCheckIf(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
 			std::vector<std::string>& structTypeStack) {
 		// Check that stack has a condition value
 		if (typeStack.empty()) {
@@ -2072,10 +2335,6 @@ namespace Qd {
 		IAstNode* elseBody = ifStmt->elseBody();
 
 		if (thenBody && elseBody) {
-			// A bare fallible call before this `if` leaves its results for the success arm
-			// only; the failure arm starts from the stack as it was before the call.
-			const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
-
 			// Analyze then branch
 			std::vector<StackValueType> thenStack = typeStack;
 			std::unordered_map<std::string, StackValueType> thenVars = localVariables;
@@ -2086,9 +2345,6 @@ namespace Qd {
 			std::vector<StackValueType> elseStack = typeStack;
 			std::unordered_map<std::string, StackValueType> elseVars = localVariables;
 			std::vector<std::string> elseStructStack = structTypeStack;
-			if (fallible) {
-				removeProducedValues(*fallible, elseStack, elseStructStack);
-			}
 			typeCheckBlock(elseBody, elseStack, elseVars, elseStructStack);
 
 			// A diverging arm never reaches the merge point and contributes no stack effect.
@@ -2116,13 +2372,7 @@ namespace Qd {
 									  " value(s), else: " + std::to_string(elseStack.size()) +
 									  "); both arms must leave the same depth, since whatever follows "
 									  "reads a value whose identity would otherwise depend on which arm ran";
-					if (fallible) {
-						reportErrorWithHint(child, msg.c_str(),
-								"the failure arm never receives the call's result(s); consume or drop them "
-								"in the success arm so both arms leave the same depth");
-					} else {
-						reportError(child, msg.c_str());
-					}
+					reportError(child, msg.c_str());
 				}
 				// Use the then (success) arm as authoritative.
 				typeStack = thenStack;
@@ -2136,27 +2386,12 @@ namespace Qd {
 				structTypeStack = thenStructStack;
 			}
 		} else if (thenBody) {
-			const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
 			std::vector<StackValueType> thenStack = typeStack;
 			std::unordered_map<std::string, StackValueType> thenVars = localVariables;
 			std::vector<std::string> thenStructStack = structTypeStack;
 			typeCheckBlock(thenBody, thenStack, thenVars, thenStructStack);
 
-			if (fallible) {
-				// `call if { ... }` with no else: on failure nothing was produced and nothing
-				// runs, so what follows sees the stack as it was before the call. The success
-				// arm must therefore consume the results (or diverge) to leave that same depth.
-				removeProducedValues(*fallible, typeStack, structTypeStack);
-				if (!blockEndsDiverging(thenBody) && thenStack.size() != typeStack.size() && !mHasUnpredictableStack) {
-					std::string msg = "success arm of a fallible call leaves the stack at a different depth (" +
-									  std::to_string(thenStack.size()) +
-									  " value(s)) than the not-taken failure path (" +
-									  std::to_string(typeStack.size()) + " value(s))";
-					reportErrorWithHint(child, msg.c_str(),
-							"consume or drop the call's result(s) inside the arm, or add an else arm");
-				}
-			} else if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack &&
-					   thenStack.size() != typeStack.size()) {
+			if (!blockEndsDiverging(thenBody) && !mHasUnpredictableStack && thenStack.size() != typeStack.size()) {
 				// An `if` with no `else` is an `if` whose other arm is empty, so the same rule
 				// applies: the arm has to leave the stack as it found it. This used to be
 				// unconstrained, on the reasoning that the enclosing function's declared effect
@@ -2210,8 +2445,8 @@ namespace Qd {
 		}
 	}
 
-	void SemanticValidator::typeCheckSwitch(IAstNode* child, IAstNode* node, size_t i,
-			std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+	void SemanticValidator::typeCheckSwitch(IAstNode* child, std::vector<StackValueType>& typeStack,
+			std::unordered_map<std::string, StackValueType>& localVariables,
 			std::vector<std::string>& structTypeStack) {
 		// Check that stack has a value to switch on
 		if (typeStack.empty()) {
@@ -2265,19 +2500,7 @@ namespace Qd {
 
 		checkEnumSwitchExhaustive(child, cases);
 
-		// After a bare fallible call the status carries the error code: the `Ok` arm sees the
-		// call's results, every other arm sees the stack as it was before the call.
-		const FunctionSignature* fallible = bareFallibleCallBefore(node, i);
-		std::vector<StackValueType> failureStack = typeStack;
-		std::vector<std::string> failureStructStack = structTypeStack;
-		if (fallible) {
-			removeProducedValues(*fallible, failureStack, failureStructStack);
-		}
-
 		bool hasDefault = false;
-		bool hasOkCase = false;
-		std::vector<StackValueType> okCaseStack;
-		std::vector<std::string> okCaseStructStack;
 		// The first non-diverging arm fixes the depth the others must match.
 		bool haveReference = false;
 		int referenceEffect = 0;
@@ -2296,40 +2519,18 @@ namespace Qd {
 				continue;
 			}
 
-			bool isOk = false;
-			if (!caseNode->isDefault() && caseNode->value() && caseNode->value()->type() == IAstNode::Type::LITERAL) {
-				AstNodeLiteral* caseLit = static_cast<AstNodeLiteral*>(caseNode->value());
-				// `Ok`/`true` keep their keyword text as BOOL literals. A literal `1` is an error
-				// *code* arm, not the success arm (spec 10.3: a panic carrying code 1 does not
-				// match Ok), so it must be seeded from the failure stack like any other code.
-				isOk = caseLit->literalType() == AstNodeLiteral::LiteralType::BOOL &&
-					   (caseLit->value() == "Ok" || caseLit->value() == "true");
-			}
-			bool seedFromSuccess = !fallible || isOk;
-
-			std::vector<StackValueType> caseStack = seedFromSuccess ? typeStack : failureStack;
+			std::vector<StackValueType> caseStack = typeStack;
 			std::unordered_map<std::string, StackValueType> caseVars = localVariables;
-			std::vector<std::string> caseStructStack = seedFromSuccess ? structTypeStack : failureStructStack;
+			std::vector<std::string> caseStructStack = structTypeStack;
 			size_t base = caseStack.size();
 			typeCheckBlock(caseBody, caseStack, caseVars, caseStructStack);
 			int caseEffect = static_cast<int>(caseStack.size()) - static_cast<int>(base);
-
-			if (isOk && fallible) {
-				okCaseStack = caseStack;
-				okCaseStructStack = caseStructStack;
-				hasOkCase = true;
-			}
 
 			if (blockEndsDiverging(caseBody)) {
 				continue;
 			}
 			allDiverge = false;
 
-			if (fallible) {
-				// Arms of a fallible switch legitimately differ (Ok has the results); the Ok arm,
-				// when present, is authoritative for what follows.
-				continue;
-			}
 			if (!haveReference) {
 				haveReference = true;
 				referenceEffect = caseEffect;
@@ -2339,18 +2540,6 @@ namespace Qd {
 				armsDisagree = true;
 				disagreeingEffect = caseEffect;
 			}
-		}
-
-		if (fallible) {
-			if (hasOkCase) {
-				typeStack = okCaseStack;
-				structTypeStack = okCaseStructStack;
-			} else {
-				// No Ok arm: the results were never handled, so nothing of them survives.
-				typeStack = failureStack;
-				structTypeStack = failureStructStack;
-			}
-			return;
 		}
 
 		// The same rule as for `if`/`else`: every arm that reaches the merge point must leave
@@ -2798,7 +2987,8 @@ namespace Qd {
 			const size_t fieldCount = fieldOrder->size();
 			if (typeStack.size() < fieldCount) {
 				std::string errorMsg = "Type error in struct construction '" + writtenName +
-									   "': Stack underflow (requires " + std::to_string(fieldCount) + " values, have " +
+									   "': Stack underflow (requires " + std::to_string(fieldCount) +
+									   (fieldCount == 1 ? " value, have " : " values, have ") +
 									   std::to_string(typeStack.size()) + ")";
 				reportError(site, errorMsg.c_str());
 			} else if (const auto* fieldTypes = lookupStructFieldTypes(structKey)) {
@@ -2883,6 +3073,10 @@ namespace Qd {
 		structTypeStack.push_back(structTypeIt != mLocalVariableStructTypes.end() ? structTypeIt->second : "");
 		if (auto fnSigIt = mLocalVariableFnSignatures.find(name); fnSigIt != mLocalVariableFnSignatures.end()) {
 			mPendingFnSignature = fnSigIt->second;
+		} else {
+			// Whatever an earlier function value left pending is not this one's: `fn { 2 + } f
+			// call` used to call `f` with the lambda's signature.
+			mPendingFnSignature.reset();
 		}
 	}
 

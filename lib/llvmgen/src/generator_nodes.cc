@@ -6,57 +6,6 @@
 
 namespace Qd {
 
-	namespace {
-		// What consumes the status value a fallible call leaves on the stack. The semantic
-		// validator already guarantees a bare fallible call is immediately followed by `if` or
-		// `switch`, so these are the only cases; None covers `!`/`?`, which consume nothing.
-		enum class FallibleConsumer {
-			None,
-			If,
-			Switch
-		};
-
-		// A fallible call has to push a different status depending on who reads it:
-		//
-		//   `if`     tests the value for truthiness, so it needs a boolean -- 1 success, 0 failure.
-		//            Pushing the raw error code here is what made `io::open ... if {} else {}`
-		//            take the *success* branch on a missing file and then underflow, because any
-		//            code >= 2 is truthy.
-		//   `switch` matches against Ok and specific error codes, so it needs the code itself --
-		//            1 on success, error_code on failure. Pushing a bare 0/1 here is what made
-		//            `switch { Ok {} SomeErr {} }` never match a specific code for user-defined
-		//            functions.
-		//
-		// Determined by looking at the call's next sibling in the AST, which is exactly what the
-		// validator inspects when it enforces the rule.
-		FallibleConsumer fallibleConsumerOf(IAstNode* callNode) {
-			if (!callNode) {
-				return FallibleConsumer::None;
-			}
-			IAstNode* parent = callNode->parent();
-			if (!parent) {
-				return FallibleConsumer::None;
-			}
-			for (size_t i = 0; i + 1 < parent->childCount(); i++) {
-				if (parent->child(i) != callNode) {
-					continue;
-				}
-				IAstNode* next = parent->child(i + 1);
-				if (!next) {
-					return FallibleConsumer::None;
-				}
-				if (next->type() == IAstNode::Type::IF_STATEMENT) {
-					return FallibleConsumer::If;
-				}
-				if (next->type() == IAstNode::Type::SWITCH_STATEMENT) {
-					return FallibleConsumer::Switch;
-				}
-				return FallibleConsumer::None;
-			}
-			return FallibleConsumer::None;
-		}
-	}
-
 	void LlvmGenerator::Impl::generateClearErrorState(llvm::Value* ctx) {
 		auto errorCodePtr =
 				builder->CreateStructGEP(contextStructTy, ctx, CTX_FIELD_ERROR_CODE, "pre_call_error_code_ptr");
@@ -82,10 +31,60 @@ namespace Qd {
 		return ErrorState{builder->CreateOr(flagSet, codeSet, name), errorCode};
 	}
 
-	// The tail of a fallible call: `!` aborts, `?` returns to the caller, and a bare call pushes
-	// a status for the `if` or `switch` that reads it.
-	void LlvmGenerator::Impl::generateFallibleCallEpilogue(llvm::Value* ctx, const char* name, IAstNode* callNode,
-			bool abortOnError, bool propagateOnError, bool calleePushesStatus) {
+	// A zero value of each type, in order: what a failed call leaves where its results would be
+	void LlvmGenerator::Impl::generatePushZeroValues(const std::vector<std::string>& types, llvm::Value* ctx) {
+		for (const std::string& type : types) {
+			switch (valueKind(type)) {
+			case ValueKind::Float:
+				builder->CreateCall(pushFloatFn, {ctx, llvm::ConstantFP::get(builder->getDoubleTy(), 0.0)});
+				break;
+			case ValueKind::D128:
+				generateD128Literal("0d", ctx);
+				break;
+			case ValueKind::Str:
+				builder->CreateCall(pushStrFn, {ctx, builder->CreateGlobalString("", "empty_result")});
+				break;
+			case ValueKind::Ptr:
+				builder->CreateCall(pushPtrFn, {ctx, llvm::ConstantPointerNull::get(ptrTy)});
+				break;
+			case ValueKind::Int:
+			case ValueKind::Any:
+				builder->CreateCall(pushIntFn, {ctx, builder->getInt64(0)});
+				break;
+			}
+		}
+	}
+
+	// The depth a fallible function's caller expects back on failure: the stack at entry less
+	// the `consumed` arguments. Read before any argument is popped.
+	llvm::Value* LlvmGenerator::Impl::generateFailTarget(size_t consumed, llvm::Value* ctx) {
+		llvm::Value* entryStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "entry_stack_ptr");
+		llvm::Value* entryStackPtr = builder->CreateLoad(ptrTy, entryStackPtrPtr, "entry_stack");
+		llvm::Value* entryDepth = builder->CreateCall(stackSizeFn, {entryStackPtr}, "entry_depth");
+		return builder->CreateSub(entryDepth, builder->getInt64(consumed), "fail_target");
+	}
+
+	// The failure exit of a fallible function: back to the depth the caller expects, then a zero
+	// value of each declared result, so a failed call leaves the shape a successful one does
+	void LlvmGenerator::Impl::generateFailureExit(
+			llvm::Value* failTarget, const std::vector<std::string>& outputTypes, llvm::Value* ctx) {
+		ErrorState exitState = generateReadErrorState(ctx, "fail_exit");
+		llvm::Function* thisFn = builder->GetInsertBlock()->getParent();
+		auto failBB = llvm::BasicBlock::Create(*context, "fail_exit", thisFn);
+		auto afterBB = llvm::BasicBlock::Create(*context, "fail_done", thisFn);
+		builder->CreateCondBr(exitState.failed, failBB, afterBB);
+		builder->SetInsertPoint(failBB);
+		builder->CreateCall(stackTruncateFn, {ctx, failTarget});
+		generatePushZeroValues(outputTypes, ctx);
+		builder->CreateBr(afterBB);
+		builder->SetInsertPoint(afterBB);
+	}
+
+	// The tail of a fallible call: `!` aborts, `?` returns to the caller, and a bare call leaves
+	// its results and a status.
+	void LlvmGenerator::Impl::generateFallibleCallEpilogue(llvm::Value* ctx, const char* name, bool abortOnError,
+			bool propagateOnError, const std::vector<std::string>* nativeOutputs) {
+		const bool calleePushesStatus = nativeOutputs != nullptr;
 		auto errorState = generateReadErrorState(ctx);
 		auto hasError = errorState.failed;
 		auto errorCode = errorState.code;
@@ -135,23 +134,34 @@ namespace Qd {
 			return;
 		}
 
-		// Bare call: the status is shaped for whoever consumes it -- 1/0 for an `if`, the error
-		// code itself for a `switch`, which matches against specific codes.
-		const bool wantsCode = fallibleConsumerOf(callNode) == FallibleConsumer::Switch;
+		// Bare call. What it leaves is the same whichever way it went: its results, then a
+		// status that is `Ok` (0) on success and the error code on failure. A Quadrate callee's
+		// failure exit has already put zero values where its results would be. A native pushes
+		// its results and then 1 on success, and only its code on failure, so its status is
+		// read back here and the zero results pushed for it.
+		llvm::Value* failed = hasError;
+		llvm::Value* code = errorCode;
 		if (calleePushesStatus) {
-			// An imported C function pushes its raw error code, which is what a `switch` wants.
-			// For an `if` any code >= 2 is truthy, which selected the success branch on failure,
-			// so it becomes a boolean.
-			if (fallibleConsumerOf(callNode) == FallibleConsumer::If) {
-				generateInlineDrop(ctx);
-				builder->CreateCall(pushIntFn, {ctx, builder->CreateSelect(hasError, builder->getInt64(0),
-															 builder->getInt64(1), "success_status")});
-			}
-			return;
+			llvm::Value* nativeStatus = generateInlinePopInt(ctx);
+			llvm::Value* nativeFailed = builder->CreateICmpNE(nativeStatus, builder->getInt64(1), "native_failed");
+			code = builder->CreateSelect(nativeFailed, nativeStatus, errorCode, "native_code");
+			failed = builder->CreateOr(hasError, nativeFailed, "call_failed");
+
+			llvm::Function* thisFn = builder->GetInsertBlock()->getParent();
+			auto zeroBB = llvm::BasicBlock::Create(*context, "native_zero_results", thisFn);
+			auto joinBB = llvm::BasicBlock::Create(*context, "native_status", thisFn);
+			builder->CreateCondBr(failed, zeroBB, joinBB);
+			builder->SetInsertPoint(zeroBB);
+			generatePushZeroValues(*nativeOutputs, ctx);
+			builder->CreateBr(joinBB);
+			builder->SetInsertPoint(joinBB);
 		}
-		llvm::Value* onFailure = wantsCode ? static_cast<llvm::Value*>(errorCode) : builder->getInt64(0);
-		auto successStatus = builder->CreateSelect(hasError, onFailure, builder->getInt64(1), "success_status");
-		builder->CreateCall(pushIntFn, {ctx, successStatus});
+
+		// A failure is never `Ok`, whatever code it carried
+		llvm::Value* codeIsOk = builder->CreateICmpEQ(code, builder->getInt64(0), "code_is_ok");
+		llvm::Value* failCode = builder->CreateSelect(codeIsOk, builder->getInt64(1), code, "fail_code");
+		llvm::Value* status = builder->CreateSelect(failed, failCode, builder->getInt64(0), "status");
+		builder->CreateCall(pushIntFn, {ctx, status});
 	}
 
 	// A d128 literal is read here, by the runtime's own reader, so it rounds exactly as
@@ -224,7 +234,7 @@ namespace Qd {
 		}
 		case AstNodeLiteral::LiteralType::BOOL: {
 			// true/Ok → 1, false/Err → 0
-			int64_t val = (value == "true" || value == "Ok") ? 1 : 0;
+			int64_t val = predefinedConstantValue(value);
 			if (useCompileTimeStack) {
 				compileTimeStack.push_back(builder->getInt64(static_cast<uint64_t>(val)));
 			} else if (debugInfoEnabled) {
@@ -310,6 +320,15 @@ namespace Qd {
 			}
 
 			pushStackElement(storagePtr, ctx, name, localArrayVariables.count(name) > 0);
+			// An array an earlier literal pushed is no longer the last value pushed, so it must
+			// not mark what a following `-> name` binds: `[1 2] f -> q -> a` marked the function
+			// value `q` an array. Only cleared: calls do not clear it, so setting it here for an
+			// array local would mark whatever a call on that array returned.
+			lastPushedWasArray = false;
+			// Likewise the type a field access left: `a <<pos … -> p  a <<mass` resolved
+			// `<<mass` against `pos`'s type, since `-> p` took its type from the call
+			// in between and never cleared the field's.
+			lastFieldAccessResultType.clear();
 
 			// If this local variable has a known struct type, track it for the next pop
 			auto structTypeIt = localVariableStructTypes.find(name);
@@ -734,8 +753,7 @@ namespace Qd {
 		}
 
 		if (fallible) {
-			generateFallibleCallEpilogue(
-					ctx, ident->name().c_str(), ident, ident->abortOnError(), ident->propagateOnError());
+			generateFallibleCallEpilogue(ctx, ident->name().c_str(), ident->abortOnError(), ident->propagateOnError());
 		}
 	}
 
@@ -875,8 +893,11 @@ namespace Qd {
 
 		currentFunctionReturnBlock = returnBB;
 		// A lambda marked `!` is fallible, exactly as a named function marked `!` is: `panic` in
-		// its body returns from it, and a call site handles or propagates the error.
+		// its body returns from it, and a call site handles or propagates the error. Its failure
+		// exit leaves the same shape a named function's does.
 		currentFunctionIsFallible = anonFunc->throws();
+		llvm::Value* failTarget =
+				anonFunc->throws() ? generateFailTarget(anonFunc->inputParameters().size(), anonCtx) : nullptr;
 
 		// The lambda's own variables that lambdas inside it capture
 		collectAllCapturesFromAST(anonFunc->body(), heapAllocatedCaptures);
@@ -891,11 +912,19 @@ namespace Qd {
 			builder->CreateBr(returnBB);
 		}
 		builder->SetInsertPoint(returnBB);
+		if (failTarget) {
+			std::vector<std::string> outputTypes;
+			for (const auto& output : anonFunc->outputParameters()) {
+				const auto* param = static_cast<const AstNodeParameter*>(output.get());
+				outputTypes.push_back(param->typeString());
+			}
+			generateFailureExit(failTarget, outputTypes, anonCtx);
+		}
 		builder->CreateRet(builder->getInt32(0));
 		return fn;
 	}
 
-	// Named parameters become locals, popped last first. `stack fn` leaves them on the stack
+	// Named parameters become locals, popped last first. `fn` leaves them on the stack
 	// instead, which is the rule a named function uses.
 	void LlvmGenerator::Impl::bindLambdaParameters(AstNodeAnonymousFunction* anonFunc, llvm::Value* anonCtx) {
 		if (anonFunc->isStack()) {
@@ -1057,7 +1086,7 @@ namespace Qd {
 
 		if (fallible) {
 			generateFallibleCallEpilogue(
-					ctx, name.c_str(), scopedIdent, scopedIdent->abortOnError(), scopedIdent->propagateOnError());
+					ctx, name.c_str(), scopedIdent->abortOnError(), scopedIdent->propagateOnError());
 		}
 		return true;
 	}
@@ -1101,8 +1130,10 @@ namespace Qd {
 		}
 
 		if (fallible) {
-			generateFallibleCallEpilogue(ctx, scopedIdent->name().c_str(), scopedIdent, scopedIdent->abortOnError(),
-					scopedIdent->propagateOnError(), importedCFunctions.count(fullName) > 0);
+			auto nativeIt = importedOutputTypes.find(fullName);
+			generateFallibleCallEpilogue(ctx, scopedIdent->name().c_str(), scopedIdent->abortOnError(),
+					scopedIdent->propagateOnError(),
+					nativeIt != importedOutputTypes.end() ? &nativeIt->second : nullptr);
 		}
 	}
 
@@ -1113,7 +1144,6 @@ namespace Qd {
 		if (!takeSwitchScrutinee(scrutinee, ctx)) {
 			return;
 		}
-		const bool fallibleStatus = switchReadsFallibleStatus(switchStmt);
 
 		std::vector<AstNodeCase*> labelled;
 		AstNodeCase* wildcard = nullptr;
@@ -1163,7 +1193,7 @@ namespace Qd {
 						static_cast<unsigned>(label->column()), debugScopeStack.back()));
 			}
 
-			llvm::Value* matches = generateCaseMatch(label, scrutinee, fallibleStatus, ctx);
+			llvm::Value* matches = generateCaseMatch(label, scrutinee);
 			if (!matches) {
 				// A label that resolves to nothing would leave this block without a branch
 				std::cerr << "quadc: error: Unsupported or unresolved switch case label";
@@ -1224,48 +1254,10 @@ namespace Qd {
 		return true;
 	}
 
-	// Is this switch reading the status left by a *user-defined* fallible call? If so, `Ok`
-	// must mean "no error" rather than "the value equals 1". Error codes are user-chosen and
-	// `Ok` is 1, so comparing by value makes a `panic` with code 1 indistinguishable from
-	// success.
-	//
-	// Deliberately excludes imported C functions: they are inconsistent about setting
-	// ctx->error_code (io::open sets it, net::connect only pushes the code), so testing the
-	// error state there would report success on a genuine failure. They keep the by-value
-	// comparison, which is sound because their codes start at 2 by convention.
-	bool LlvmGenerator::Impl::switchReadsFallibleStatus(AstNodeSwitchStatement* switchStmt) {
-		IAstNode* parent = switchStmt->parent();
-		if (!parent) {
-			return false;
-		}
-		for (size_t i = 1; i < parent->childCount(); i++) {
-			if (parent->child(i) != switchStmt) {
-				continue;
-			}
-			IAstNode* prev = parent->child(i - 1);
-			std::string callee;
-			if (prev && prev->type() == IAstNode::Type::IDENTIFIER) {
-				callee = static_cast<AstNodeIdentifier*>(prev)->name();
-			} else if (prev && prev->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
-				auto* sc = static_cast<AstNodeScopedIdentifier*>(prev);
-				callee = sc->scope() + "::" + sc->name();
-			} else {
-				return false;
-			}
-			if (importedCFunctions.count(callee)) {
-				return false;
-			}
-			auto it = fallibleFunctions.find(callee);
-			return it != fallibleFunctions.end() && it->second;
-		}
-		return false;
-	}
-
 	// Whether the scrutinee matches one case label, or null when the label means nothing
 	// here: it names nothing, or asks for a float, string or d128 on the native path,
 	// which is integer-only
-	llvm::Value* LlvmGenerator::Impl::generateCaseMatch(
-			IAstNode* label, const SwitchScrutinee& scrutinee, bool fallibleStatus, llvm::Value* ctx) {
+	llvm::Value* LlvmGenerator::Impl::generateCaseMatch(IAstNode* label, const SwitchScrutinee& scrutinee) {
 		if (!label) {
 			return nullptr;
 		}
@@ -1284,14 +1276,7 @@ namespace Qd {
 		const std::string& text = lit->value();
 		switch (lit->literalType()) {
 		case AstNodeLiteral::LiteralType::BOOL: {
-			const bool truthy = text == "true" || text == "Ok";
-			if (fallibleStatus && truthy) {
-				// `Ok` on a fallible status means "the call succeeded". Test the error state
-				// directly so that a panic carrying code 1 is not mistaken for success --
-				// and via has_error, so that a panic carrying code 0 is not either.
-				return builder->CreateNot(generateReadErrorState(ctx, "sw_has_error").failed, "case_ok");
-			}
-			return generateIntCaseMatch(truthy ? 1 : 0, scrutinee);
+			return generateIntCaseMatch(predefinedConstantValue(text), scrutinee);
 		}
 		case AstNodeLiteral::LiteralType::INTEGER: {
 			int64_t value = 0;

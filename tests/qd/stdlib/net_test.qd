@@ -35,7 +35,7 @@ test "net::listen on port 0 and close" {
 		Ok { -> server
 			server net::close
 		}
-		_ { "listen on port 0 should succeed" testing::fail }
+		_ { drop "listen on port 0 should succeed" testing::fail }
 	}
 }
 
@@ -43,7 +43,7 @@ test "net::send to invalid fd fails" {
 	// Sending to fd -1 should fail with ErrSend
 	-1 "hello" net::send switch {
 		Ok { -> _ "send to invalid fd should fail" testing::fail }
-		_ { }
+		_ { drop }
 	}
 }
 
@@ -51,7 +51,7 @@ test "net::receive from invalid fd fails" {
 	// Receiving from fd -1 should fail with ErrReceive
 	-1 1024 net::receive switch {
 		Ok { -> _ -> _ "receive from invalid fd should fail" testing::fail }
-		_ { }
+		_ { drop drop }
 	}
 }
 
@@ -62,6 +62,6 @@ test "net::connect to refused port fails" {
 			sock net::close
 			"connect to refused port should fail" testing::fail
 		}
-		_ { }
+		_ { drop }
 	}
 }

@@ -2,7 +2,7 @@ use fmt
 use time
 
 // Benchmark: tight arithmetic loop
-fn benchmark_arithmetic(iterations:i64 -- result:i64) {
+def benchmark_arithmetic(iterations:i64 -- result:i64) {
 	0 -> sum
 	0 iterations 1 for it {
 		sum it + it * 3 + 7 % -> sum
@@ -11,8 +11,8 @@ fn benchmark_arithmetic(iterations:i64 -- result:i64) {
 }
 
 // Benchmark: recursive fibonacci
-fn fib(n:i64 -- result:i64) {
-	n 2 lt if {
+def fib(n:i64 -- result:i64) {
+	n 2 < if {
 		n
 	} else {
 		n 1 - fib
@@ -33,7 +33,7 @@ fn main() {
 		time::now -> start
 		iterations benchmark_arithmetic -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}
@@ -50,7 +50,7 @@ fn main() {
 		time::now -> start
 		n fib -> r
 		time::now start - -> elapsed
-		elapsed best lt if {
+		elapsed best < if {
 			elapsed -> best
 			r -> result
 		}

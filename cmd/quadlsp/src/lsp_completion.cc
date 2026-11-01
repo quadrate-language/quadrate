@@ -473,7 +473,7 @@ void QuadrateLSP::addBodyCompletions(
 			{"packed", "Modifier for packed struct layout (packed struct ...)"}, {"enum", "Declare an enum type"},
 			{"type", "Declare a type alias"}, {"const", "Declare a constant"}, {"var", "Declare a mutable global"},
 			{"pub", "Make declaration public"}, {"inline", "Inline the function at call sites (inline fn ...)"},
-			{"stack", "Leave the arguments on the stack instead of binding them (stack fn ...)"}};
+			{"def", "Declare a function that binds its arguments to their names (def name(a:T -- r:U) ...)"}};
 
 	if (topLevel) {
 		for (const auto& declaration : declarations) {
@@ -686,11 +686,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 			FunctionInfo info;
 			info.name = funcNode->name();
 
-			// Extract generic type parameters
-			info.isGeneric = funcNode->isGeneric();
-			if (info.isGeneric) {
-				info.typeParams = funcNode->typeParams();
-			}
+			// Extract generic type parameters, stack variables first
+			info.typeParams = funcNode->declaredParameters();
+			info.isGeneric = !info.typeParams.empty();
 
 			// Extract method receiver information
 			info.isMethod = funcNode->hasReceiver();
@@ -707,7 +705,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 
 			// Include receiver in signature for methods
 			if (info.isMethod) {
-				sigStream << "fn (" << info.receiverName << ":" << info.receiverType;
+				sigStream << (info.binds ? "def (" : "fn (") << info.receiverName << ":" << info.receiverType;
 				if (!info.receiverTypeParams.empty()) {
 					sigStream << "<";
 					for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
@@ -720,7 +718,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				}
 				sigStream << ") " << info.name;
 			} else {
-				sigStream << "fn " << info.name;
+				sigStream << (info.binds ? "def " : "fn ") << info.name;
 			}
 
 			// Add type parameters to signature
@@ -737,34 +735,24 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 
 			sigStream << "(";
 
-			// Extract input parameters
-			const auto& inputs = funcNode->inputParameters();
-			for (size_t j = 0; j < inputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-				std::string paramStr = param->displayString();
-				info.inputParams.push_back(paramStr);
-
-				if (j > 0) {
-					sigStream << " ";
-				}
-				sigStream << paramStr;
+			// The signature shows a stack variable first in its list. The parameter lists do not:
+			// they feed the call snippet and the inlay hints, where a stack variable is no argument.
+			const auto inputItems = funcNode->inputItems();
+			const auto outputItems = funcNode->outputItems();
+			for (size_t j = 0; j < inputItems.size(); j++) {
+				sigStream << (j > 0 ? " " : "") << inputItems[j];
 			}
-
-			if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+			if (!inputItems.empty() || !outputItems.empty()) {
 				sigStream << " -- ";
 			}
-
-			// Extract output parameters
-			const auto& outputs = funcNode->outputParameters();
-			for (size_t j = 0; j < outputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-				std::string paramStr = param->displayString();
-				info.outputParams.push_back(paramStr);
-
-				if (j > 0) {
-					sigStream << " ";
-				}
-				sigStream << paramStr;
+			for (size_t j = 0; j < outputItems.size(); j++) {
+				sigStream << (j > 0 ? " " : "") << outputItems[j];
+			}
+			for (const auto& param : funcNode->inputParameters()) {
+				info.inputParams.push_back(static_cast<Qd::AstNodeParameter*>(param.get())->displayString());
+			}
+			for (const auto& param : funcNode->outputParameters()) {
+				info.outputParams.push_back(static_cast<Qd::AstNodeParameter*>(param.get())->displayString());
 			}
 
 			sigStream << ")";

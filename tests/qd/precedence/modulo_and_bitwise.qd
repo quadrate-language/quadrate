@@ -34,15 +34,15 @@ fn main() {
 
 	// Shift operations
 	"=== Shifts ===" print nl
-	1 4 shl print nl           // 16
-	16 2 shr print nl          // 4
-	255 4 shl 4 shr print nl   // 255
+	1 4 bits::shl print nl           // 16
+	16 2 bits::shr print nl          // 4
+	255 4 bits::shl 4 bits::shr print nl   // 255
 
 	// Combined operations
 	"=== Combined ===" print nl
 	10 3 + 2 * 5 % print nl   // ((10+3)*2)%5 = 1
-	1 3 shl 1 - print nl      // (1<<3)-1 = 7
-	255 240 bits::and 4 shr print nl // (255&240)>>4 = 15
+	1 3 bits::shl 1 - print nl      // (1<<3)-1 = 7
+	255 240 bits::and 4 bits::shr print nl // (255&240)>>4 = 15
 
 	"done" print nl
 }

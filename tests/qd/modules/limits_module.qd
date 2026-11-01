@@ -24,13 +24,13 @@ fn main() {
 	limits::U32Max print nl
 
 	"=== using limits in comparisons ===" print nl
-	100 limits::I8Max lt print nl
-	200 limits::I8Max gt print nl
-	0 limits::U8Max lt print nl
+	100 limits::I8Max < print nl
+	200 limits::I8Max > print nl
+	0 limits::U8Max < print nl
 
 	"=== float limits exist ===" print nl
-	limits::F64Max 0.0 gt print nl
-	limits::F64Epsilon 0.0 gt print nl
+	limits::F64Max 0.0 > print nl
+	limits::F64Epsilon 0.0 > print nl
 
 	"done" print nl
 }

@@ -39,7 +39,7 @@ EXEMPT = (
 # `fn f(`, `pub fn f(`, `fn (self:T) m(`, `const C =`, `var v:`, `struct S {`,
 # `packed struct S {`, `enum E {`. The name is what another file would call.
 DEFINITION = re.compile(
-    r'^\s*(?:pub\s+)?(?:fn\s*(?:\([^)]*\)\s*)?|const\s+|var\s+|(?:packed\s+)?struct\s+|enum\s+)'
+    r'^\s*(?:pub\s+)?(?:(?:inline\s+)*(?:fn|def)\s*(?:\([^)]*\)\s*)?|const\s+|var\s+|(?:packed\s+)?struct\s+|enum\s+)'
     r'([A-Za-z_][A-Za-z0-9_]*)')
 
 

@@ -510,7 +510,7 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 **Example:**
 
 ```qd
-"ls -la" fn (line:str -- ) { print nl } os::popen!  // code
+"ls -la" def (line:str -- ) { print nl } os::popen!  // code
 ```
 ---
 
@@ -721,5 +721,5 @@ Walk a directory tree recursively. Calls callback for each file and directory.
 **Example:**
 
 ```qd
-"/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
+"/tmp" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
 ```

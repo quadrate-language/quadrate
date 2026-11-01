@@ -1,4 +1,4 @@
-fn tak(x:i64 y:i64 z:i64 -- result:i64) {
+def tak(x:i64 y:i64 z:i64 -- result:i64) {
 	y x < if {
 		x -- y z tak
 		y -- z x tak

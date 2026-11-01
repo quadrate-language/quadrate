@@ -17,6 +17,17 @@
 namespace Qd {
 
 	/**
+	 * @brief The value of a predefined constant: `true` 1, `false` 0, `Ok` 0, `Err` 1.
+	 *
+	 * `Ok` is the status a fallible call leaves on success and `Err` the generic failure code,
+	 * so they are not `true` and `false` under other names: a status is an error code, and no
+	 * error is 0.
+	 */
+	inline int64_t predefinedConstantValue(std::string_view text) {
+		return (text == "true" || text == "Err") ? 1 : 0;
+	}
+
+	/**
 	 * @brief Whether a literal carries a `0x` or `0b` prefix, sign and all.
 	 * @see readIntegerLiteral
 	 */

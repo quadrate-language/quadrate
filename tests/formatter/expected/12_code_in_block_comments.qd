@@ -5,7 +5,7 @@ fn test_block() {
 	5 10 add
 	}
 	} */
-	5 10 add
+	5 10 +
 	/* Another fake function
 	fn broken() {
 	for i {
@@ -21,7 +21,7 @@ fn main() {
 	}
 	}
 	*/
-	1 2 add
+	1 2 +
 	/* fn inline() { */
 	test_block
 }

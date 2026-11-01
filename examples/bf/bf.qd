@@ -19,7 +19,7 @@ fn main() {
 	args free
 
 	filename io::read_file! -> code
-	code strings::len -> code_len
+	code len -> code_len
 
 	TapeSize mem::alloc! -> tape
 	defer {
@@ -52,8 +52,8 @@ fn main() {
 				tape dp mem::get_byte strings::from_char print
 			}
 			unicode::comma {
-				io::readline! -> ok -> line
-				ok 0 != line strings::len 0 > and if {
+				io::readline! -> more -> line
+				more 0 != line len 0 > and if {
 					line 0 strings::char_at
 				} else {
 					0

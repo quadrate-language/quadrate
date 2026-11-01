@@ -1,0 +1,8 @@
+// Test: a fallible function's failure exit truncates the stack to a depth it works out from its
+// parameters, and a stack variable has no depth until the call, so the two do not mix.
+fn run<..a, ..b>(..a q:fn(..a -- ..b) -- ..b)! {
+	call
+}
+
+fn main() {
+}

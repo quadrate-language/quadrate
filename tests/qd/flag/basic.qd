@@ -6,13 +6,13 @@ fn args0( -- args:[]str) {
 	[]str
 }
 
-fn args1(a:str -- args:[]str) {
+def args1(a:str -- args:[]str) {
 	[1]str -> r
 	r 0 a set
 	r
 }
 
-fn args2(a:str b:str -- args:[]str) {
+def args2(a:str b:str -- args:[]str) {
 	[2]str -> r
 	r 0 a set
 	r 1 b set
@@ -32,54 +32,60 @@ fn main() {
 
 	// Test string - flag not present
 	args0 -> a3  a3 flag::parse -> f3  a3 free
-	f3 "--name" flag::string if {
+	f3 "--name" flag::string ok if {
 		print nl
 	} else {
+		drop
 		"default" print nl
 	}
 	f3 flag::destroy
 
 	// Test string - flag present
 	"--name" "Alice" args2 -> a4  a4 flag::parse -> f4  a4 free
-	f4 "--name" flag::string if {
+	f4 "--name" flag::string ok if {
 		print nl
 	} else {
+		drop
 		"default" print nl
 	}
 	f4 flag::destroy
 
 	// Test int - flag not present (use default)
 	args0 -> a5  a5 flag::parse -> f5  a5 free
-	f5 "--count" flag::int if {
+	f5 "--count" flag::int ok if {
 		print nl
 	} else {
+		drop
 		10 print nl
 	}
 	f5 flag::destroy
 
 	// Test int - flag present
 	"--count" "42" args2 -> a6  a6 flag::parse -> f6  a6 free
-	f6 "--count" flag::int if {
+	f6 "--count" flag::int ok if {
 		print nl
 	} else {
+		drop
 		10 print nl
 	}
 	f6 flag::destroy
 
 	// Test float - flag present
 	"--pi" "3.14" args2 -> a7  a7 flag::parse -> f7  a7 free
-	f7 "--pi" flag::float if {
+	f7 "--pi" flag::float ok if {
 		print nl
 	} else {
+		drop
 		0.0 print nl
 	}
 	f7 flag::destroy
 
 	// Test positional arguments
 	"file.txt" args1 -> a8  a8 flag::parse -> f8  a8 free
-	f8 0 flag::positional if {
+	f8 0 flag::positional ok if {
 		print nl
 	} else {
+		drop
 		"no file" print nl
 	}
 	f8 flag::destroy

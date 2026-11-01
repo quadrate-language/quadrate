@@ -14,6 +14,7 @@ struct FmtOptions {
 	bool check = false;
 	bool inPlace = false;
 	bool noSortImports = false;
+	bool migrate = false;
 };
 
 void printHelp() {
@@ -26,6 +27,8 @@ void printHelp() {
 			.option('c', "--check", "Report whether files are formatted (exit 1 if not)")
 			.option('w', "--write", "Format files in place")
 			.option("--no-sort-imports", "Leave use statements in their original order")
+			.option("--migrate", "Rewrite old code: a function reading its inputs by name becomes `def`, `stack fn` "
+								 "becomes `fn`, renamed builtins and the operators' word forms get their new spelling")
 			.section("Configuration")
 			.text("Options can be set in .quadfmt.json (searched for in the current")
 			.text("directory and its parents):")
@@ -45,7 +48,7 @@ void printHelp() {
 // Editors format-on-save by piping the buffer through the formatter rather than
 // writing to disk first (gofmt, rustfmt, black and prettier all support this),
 // so without it the editor plugins have to round-trip through a temp file.
-static bool formatStdin(const FormatOptions& fmtOpts) {
+static bool formatStdin(const FmtOptions& opts, const FormatOptions& fmtOpts) {
 	std::string source((std::istreambuf_iterator<char>(std::cin)), std::istreambuf_iterator<char>());
 
 	if (!qdcli::isValidUtf8(source)) {
@@ -53,7 +56,7 @@ static bool formatStdin(const FormatOptions& fmtOpts) {
 		return false;
 	}
 
-	std::string formatted = formatSource(source, fmtOpts);
+	std::string formatted = opts.migrate ? migrateSource(source) : formatSource(source, fmtOpts);
 
 	Ast validationAst;
 	IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, "<stdin>");
@@ -88,13 +91,17 @@ bool formatFile(const std::string& filename, const FmtOptions& opts, const Forma
 
 		// Format using AST-based formatter
 		// Returns original unchanged if file has parse errors
-		std::string formatted = formatSource(source, fmtOpts);
+		std::string formatted = opts.migrate ? migrateSource(source) : formatSource(source, fmtOpts);
 
 		// Validate formatted output by parsing it
 		Ast validationAst;
 		IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, filename.c_str());
 
-		if (!validationRoot || validationAst.hasErrors()) {
+		if (opts.migrate && (!validationRoot || validationAst.hasErrors())) {
+			// The old source never parses now, so there is nothing to tell a migration bug from a
+			// file that was meant not to parse -- a compile-error test. Migrate it all the same.
+			std::cerr << "quadfmt: " << filename << ": warning: does not parse after migrating\n";
+		} else if (!validationRoot || validationAst.hasErrors()) {
 			// Distinguish parse errors in source vs formatter bugs
 			Ast sourceAst;
 			sourceAst.generate(source.c_str(), false, filename.c_str());
@@ -146,6 +153,10 @@ int main(int argc, char* argv[]) {
 			opts.noSortImports = true;
 			return true;
 		}
+		if (strcmp(arg, "--migrate") == 0) {
+			opts.migrate = true;
+			return true;
+		}
 		return false;
 	};
 
@@ -191,7 +202,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (useStdin) {
-		return formatStdin(fmtOpts) ? 0 : 1;
+		return formatStdin(opts, fmtOpts) ? 0 : 1;
 	}
 
 	bool allSuccess = true;

@@ -1,6 +1,6 @@
 // Test: Long function detection
 fn short_func() {
-	1 2 add
+	1 2 +
 }
 
 fn long_func() {

@@ -564,6 +564,20 @@ namespace Qd {
 	// Reads the `(...)` of an `fn(i64 -- i64)` type; the caller has scanned the identifier `fn`.
 	// Returns "" with nothing consumed when no '(' follows, which is what lets a struct or a
 	// parameter be called `fn` as an ordinary name.
+	// Reads the rest of a stack variable, `..name`, the first '.' having been scanned. Returns
+	// it with its dots, or "" when what follows is not one.
+	inline std::string scanStackVariableTail(u8t_scanner* scanner) {
+		if (u8t_scanner_peek(scanner) != '.') {
+			return "";
+		}
+		u8t_scanner_scan(scanner); // the second '.'
+		if (u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+			return "";
+		}
+		size_t n;
+		return std::string("..") + u8t_scanner_token_text(scanner, &n);
+	}
+
 	inline std::string tryParseFnType(u8t_scanner* scanner) {
 		if (u8t_scanner_peek(scanner) != '(') {
 			return "";
@@ -593,6 +607,28 @@ namespace Qd {
 				}
 				typeStr += text;
 				needSpace = true;
+				// A name, `x:T`, documents the parameter; it is kept for display and dropped where
+				// the type is read (splitFnType). A qualified type, `mod::T`, stays one word.
+				if (u8t_scanner_peek(scanner) == ':') {
+					u8t_scanner_scan(scanner);
+					if (u8t_scanner_peek(scanner) == ':') {
+						u8t_scanner_scan(scanner);
+						typeStr += "::";
+					} else {
+						typeStr += ":";
+					}
+					needSpace = false;
+				}
+			} else if (tok == '.') {
+				// A stack variable, `..a`, kept in the type string as written
+				const std::string variable = scanStackVariableTail(scanner);
+				if (!variable.empty()) {
+					if (needSpace) {
+						typeStr += " ";
+					}
+					typeStr += variable;
+					needSpace = true;
+				}
 			}
 		}
 		if (!typeStr.empty() && typeStr.back() == ' ') {
@@ -1064,25 +1100,30 @@ namespace Qd {
 	IAstNode* parseFunctionDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic = false);
 	IAstNode* parseAnonymousFunction(
-			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isStack = false);
+			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isStack = true);
 
-	// Recognises a lambda at the identifier just scanned: `fn (` or `stack fn (`, consuming the
-	// `fn` in the second form. Returns nullptr when this identifier does not start one, so the
-	// caller can carry on with its own dispatch. `stack` is a modifier here for the same reason
-	// it is one before a named function: it is what says the inputs stay on the stack.
+	// Recognises a lambda at the identifier just scanned: `fn (` or `def (`. Returns nullptr
+	// when this identifier does not start one, so the caller can carry on with its own
+	// dispatch. A `fn` lambda leaves its inputs on the stack and a `def` one binds them, as
+	// for named functions. `fn {` is a lambda with no signature, whose effect the validator
+	// infers from its body.
 	inline IAstNode* tryParseAnonymousFunction(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, const char* text) {
-		if (strcmp(text, "fn") == 0 && peekNextNonWhitespace(scanner, src) == '(') {
-			return parseAnonymousFunction(scanner, errorReporter, src, false);
+		if (strcmp(text, "fn") == 0 &&
+				(peekNextNonWhitespace(scanner, src) == '(' || peekNextNonWhitespace(scanner, src) == '{')) {
+			return parseAnonymousFunction(scanner, errorReporter, src, true);
 		}
-		if (strcmp(text, "stack") == 0 && peekNextWord(scanner, src) == "fn") {
-			u8t_scanner_scan(scanner); // the 'fn'
+		if (strcmp(text, "def") == 0) {
+			if (peekNextNonWhitespace(scanner, src) == '{') {
+				errorReporter->reportError(scanner, "'def { }' has no inputs to bind; write 'fn { }'");
+				return parseAnonymousFunction(scanner, errorReporter, src, true);
+			}
 			if (peekNextNonWhitespace(scanner, src) != '(') {
 				errorReporter->reportError(scanner, "Function declarations not allowed inside blocks. Did you mean "
-													"'stack fn (...) { }' for an anonymous function?");
+													"'def (...) { }' for an anonymous function?");
 				return nullptr;
 			}
-			return parseAnonymousFunction(scanner, errorReporter, src, true);
+			return parseAnonymousFunction(scanner, errorReporter, src, false);
 		}
 		return nullptr;
 	}

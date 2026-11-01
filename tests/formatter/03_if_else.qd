@@ -1,5 +1,5 @@
 fn main() {
-	1.0 2.0 eq if {
+	1.0 2.0 == if {
 		10.0 print
 	} else {
 		20.0 print

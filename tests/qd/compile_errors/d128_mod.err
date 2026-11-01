@@ -1,2 +1,2 @@
-mod is integer-only and does not take d128
+'%': it is integer-only and does not take d128
 decimal::fmod

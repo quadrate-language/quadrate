@@ -2,11 +2,11 @@
 use fmt
 use strings
 
-fn compute(x:i64 -- result:i64) {
+def compute(x:i64 -- result:i64) {
 	x MULTIPLIER *
 }
 
-fn format_value(x:i64 -- result:str) {
+def format_value(x:i64 -- result:str) {
 	x "%d" fmt::sprintf -> num_str
 	PREFIX num_str strings::concat
 }

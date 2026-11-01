@@ -36,6 +36,32 @@ fn main() {
 }
 ```
 
+### From the stack
+
+A struct's name used as a word builds one from values already on the stack, one per field in
+the order the struct declares them. It is the stack-style constructor: a function whose inputs
+are the fields needs no body but the name.
+
+```qd
+struct Point {
+	x:f64
+	y:f64
+}
+
+fn new_point(x:f64 y:f64 -- p:Point) {
+	Point
+}
+
+fn main() {
+	3.0 4.0 Point -> p
+	p <<y print nl  // 4
+	1.0 2.0 new_point <<x print nl  // 1
+}
+```
+
+Every field has to be given, defaults included; use the named form when only some are, or when
+the values are not already on the stack in field order.
+
 ## Reading fields
 
 Use `<<fieldname` to read:
@@ -46,7 +72,7 @@ struct Rectangle {
 	height:f64
 }
 
-fn area(rect:Rectangle -- a:f64) {
+def area(rect:Rectangle -- a:f64) {
 	rect <<width rect <<height *
 }
 
@@ -68,7 +94,7 @@ struct Config {
 	debug:i64
 }
 
-fn handler(data:ptr -- ) {
+def handler(data:ptr -- ) {
 	data as Config <<debug print nl
 }
 ```
@@ -136,7 +162,7 @@ fn main() {
 	c <<value print nl  // 10
 
 	// >>field with rebind
-	c c <<value inc >>value -> c
+	c c <<value ++ >>value -> c
 	c <<value print nl  // 11
 }
 ```
@@ -247,12 +273,12 @@ struct Point {
 	y:f64
 }
 
-// Method with receiver syntax: fn (receiver:Type) name(params -- returns)
+// Method with receiver syntax: def (receiver:Type) name(params -- returns)
 fn (p:Point) magnitude( -- m:f64) {
 	p <<x dup * p <<y dup * + math::sqrt
 }
 
-fn (p:Point) move(dx:f64 dy:f64 -- ) {
+def (p:Point) move(dx:f64 dy:f64 -- ) {
 	p p <<x dx + >>x -> p
 	p p <<y dy + >>y -> p
 }
@@ -308,7 +334,7 @@ struct Point {
 	y:f64
 }
 
-fn point_distance(p1:Point p2:Point -- d:f64) {
+def point_distance(p1:Point p2:Point -- d:f64) {
 	p2 <<x p1 <<x - dup *
 	p2 <<y p1 <<y - dup *
 	+ math::sqrt
@@ -341,7 +367,7 @@ fn config_new( -- cfg:Config) {
 	}
 }
 
-fn config_set_debug(cfg:Config value:i64 -- cfg:Config) {
+def config_set_debug(cfg:Config value:i64 -- cfg:Config) {
 	cfg value >>debug -> cfg
 	cfg
 }
@@ -360,7 +386,7 @@ struct Node {
 	next:ptr
 }
 
-fn node_new(value:i64 -- node:ptr) {
+def node_new(value:i64 -- node:ptr) {
 	Node {
 		value = value
 		next = 0
@@ -395,7 +421,7 @@ struct Stack {
 	capacity:i64
 }
 
-fn stack_new(capacity:i64 -- s:Stack) {
+def stack_new(capacity:i64 -- s:Stack) {
 	[capacity]i64 -> data
 	Stack {
 		data = data
@@ -404,12 +430,12 @@ fn stack_new(capacity:i64 -- s:Stack) {
 	}
 }
 
-fn stack_push(s:Stack value:i64 -- ) {
+def stack_push(s:Stack value:i64 -- ) {
 	s <<data s <<top value set
 	s s <<top 1 + >>top -> s
 }
 
-fn stack_pop(s:Stack -- value:i64) {
+def stack_pop(s:Stack -- value:i64) {
 	s s <<top 1 - >>top -> s
 	s <<data s <<top nth
 }
@@ -436,7 +462,7 @@ struct Point {
 	y:f64
 }
 
-fn points_equal(a:Point b:Point -- equal:i64) {
+def points_equal(a:Point b:Point -- equal:i64) {
 	a <<x b <<x == a <<y b <<y == and
 }
 
@@ -489,10 +515,10 @@ struct Node {
 	next:*Node
 }
 
-fn print_list(start:ptr -- ) {
+def print_list(start:ptr -- ) {
 	start -> cur
 	loop {
-		cur null eq if { break }
+		cur null == if { break }
 		cur as Node <<value print nl
 		cur as Node <<next -> cur
 	}
@@ -508,8 +534,8 @@ struct TreeNode {
 	right:*TreeNode
 }
 
-fn inorder(n:ptr -- ) {
-	n null neq if {
+def inorder(n:ptr -- ) {
+	n null != if {
 		n <<left inorder
 		n <<value print nl
 		n <<right inorder

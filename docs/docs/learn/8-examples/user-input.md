@@ -30,6 +30,7 @@ fn main() {
 			"Hello, " print name print "!" print nl
 		}
 		_ {
+			drop drop
 			"Could not read input" print nl
 		}
 	}
@@ -49,10 +50,11 @@ use strconv
 fn main() {
 	"Enter a number: " print
 	io::readline! -> _ -> line
-	line strconv::atoi if {
+	line strconv::atoi ok if {
 		-> n
 		"Double: " print n 2 * print nl
 	} else {
+		drop
 		"That is not a number." print nl
 	}
 }
@@ -73,14 +75,15 @@ fn main() {
 		"> " print
 		io::readline switch {
 			Ok {
-				-> ok -> line
-				ok 0 == if {
+				-> more -> line
+				more 0 == if {
 					nl
 					break
 				}
 				"You said: " print line print nl
 			}
 			_ {
+				drop drop
 				nl
 				break
 			}
@@ -132,21 +135,23 @@ fn main() {
 		"calc> " print
 		io::readline switch {
 			Ok {
-				-> ok -> line
-				ok 0 == if {
+				-> got -> line
+				got 0 == if {
 					nl break
 				}
-				line strings::len 0 == if {
+				line len 0 == if {
 					continue
 				}
-				line strconv::parse_float if {
+				line strconv::parse_float ok if {
 					-> num
 					"= " print num print nl
 				} else {
+					drop
 					"not a number" print nl
 				}
 			}
 			_ {
+				drop drop
 				nl break
 			}
 		}

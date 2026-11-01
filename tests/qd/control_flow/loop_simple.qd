@@ -3,10 +3,10 @@ fn main() {
 	// Test simple infinite loop with break
 	0
 	loop {
-		dup 5 lt
+		dup 5 <
 		if {
 			dup print nl
-			1 add
+			1 +
 		} else {
 			break
 		}

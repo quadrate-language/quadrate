@@ -2,6 +2,6 @@ pub struct P {
 	x:f64
 }
 
-pub fn (p:P) scale(k:f64 -- r:f64) {
+pub def (p:P) scale(k:f64 -- r:f64) {
 	p <<x k *
 }

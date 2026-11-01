@@ -229,9 +229,9 @@ int qd_array_push_d128(qd_array_t* arr, qd_d128_t value);
  */
 
 /**
- * @brief Get array length and push onto stack
+ * @brief Length of an array, or of a string in characters
  *
- * Stack: ( array:ptr -- length:i64 )
+ * Stack: ( array:ptr -- length:i64 ) or ( s:str -- length:i64 )
  *
  * @param ctx Execution context
  * @return Execution result (0 on success)
@@ -239,14 +239,21 @@ int qd_array_push_d128(qd_array_t* arr, qd_d128_t value);
 int qd_len(qd_context* ctx);
 
 /**
- * @brief Get element at index from array
+ * @brief Element at index of an array, or a string's character there as its codepoint
  *
- * Stack: ( array:ptr index:i64 -- value )
+ * Stack: ( array:ptr index:i64 -- value ) or ( s:str index:i64 -- codepoint:i64 )
  *
  * @param ctx Execution context
  * @return Execution result (0 on success)
  */
 int qd_nth(qd_context* ctx);
+
+/**
+ * @brief A shallow copy of an array ( arr -- arr2 ): `clone` on an array
+ *
+ * The elements are copied; a string or struct an element refers to is shared.
+ */
+int qd_clone_array(qd_context* ctx);
 
 /**
  * @brief Create a new integer array

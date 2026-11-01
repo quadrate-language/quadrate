@@ -119,57 +119,57 @@ fn sha256_make_k( -- k:ptr) {
 	k
 }
 
-fn sha256_rotr32(x:i64 n:i64 -- result:i64) {
+def sha256_rotr32(x:i64 n:i64 -- result:i64) {
 	x 32 bits::mask -> x
-	x n shr x 32 n - shl bits::or 32 bits::mask
+	x n bits::shr x 32 n - bits::shl bits::or 32 bits::mask
 }
 
-fn sha256_ch(x:i64 y:i64 z:i64 -- result:i64) {
+def sha256_ch(x:i64 y:i64 z:i64 -- result:i64) {
 	x y bits::and x bits::not z bits::and bits::xor 32 bits::mask
 }
 
-fn sha256_maj(x:i64 y:i64 z:i64 -- result:i64) {
+def sha256_maj(x:i64 y:i64 z:i64 -- result:i64) {
 	x y bits::and x z bits::and bits::xor y z bits::and bits::xor 32 bits::mask
 }
 
 fn sha256_sigma0(x:i64 -- result:i64) {
-	x 2 sha256_rotr32 x 13 sha256_rotr32 bits::xor x 22 sha256_rotr32 bits::xor
+	fn { 2 sha256_rotr32 } fn { 13 sha256_rotr32 } fn { 22 sha256_rotr32 } tri bits::xor bits::xor
 }
 
 fn sha256_sigma1(x:i64 -- result:i64) {
-	x 6 sha256_rotr32 x 11 sha256_rotr32 bits::xor x 25 sha256_rotr32 bits::xor
+	fn { 6 sha256_rotr32 } fn { 11 sha256_rotr32 } fn { 25 sha256_rotr32 } tri bits::xor bits::xor
 }
 
 fn sha256_gamma0(x:i64 -- result:i64) {
-	x 7 sha256_rotr32 x 18 sha256_rotr32 bits::xor x 3 shr bits::xor 32 bits::mask
+	fn { 7 sha256_rotr32 } fn { 18 sha256_rotr32 } fn { 3 bits::shr } tri bits::xor bits::xor 32 bits::mask
 }
 
 fn sha256_gamma1(x:i64 -- result:i64) {
-	x 17 sha256_rotr32 x 19 sha256_rotr32 bits::xor x 10 shr bits::xor 32 bits::mask
+	fn { 17 sha256_rotr32 } fn { 19 sha256_rotr32 } fn { 10 bits::shr } tri bits::xor bits::xor 32 bits::mask
 }
 
-stack fn sha256_add32(a:i64 b:i64 -- i64) {
+fn sha256_add32(a:i64 b:i64 -- i64) {
 	+ 32 bits::mask
 }
 
 // Read 32-bit big-endian from buffer
-fn sha256_read_u32_be(buf:ptr offset:i64 -- val:i64) {
-	buf offset mem::get_byte 24 shl
-	buf offset 1 + mem::get_byte 16 shl bits::or
-	buf offset 2 + mem::get_byte 8 shl bits::or
+def sha256_read_u32_be(buf:ptr offset:i64 -- val:i64) {
+	buf offset mem::get_byte 24 bits::shl
+	buf offset 1 + mem::get_byte 16 bits::shl bits::or
+	buf offset 2 + mem::get_byte 8 bits::shl bits::or
 	buf offset 3 + mem::get_byte bits::or
 }
 
 // Write 32-bit big-endian to buffer
-fn sha256_write_u32_be(buf:ptr offset:i64 val:i64 -- ) {
-	val 24 shr 255 bits::and buf offset mem::set_byte
-	val 16 shr 255 bits::and buf offset 1 + mem::set_byte
-	val 8 shr 255 bits::and buf offset 2 + mem::set_byte
+def sha256_write_u32_be(buf:ptr offset:i64 val:i64 -- ) {
+	val 24 bits::shr 255 bits::and buf offset mem::set_byte
+	val 16 bits::shr 255 bits::and buf offset 1 + mem::set_byte
+	val 8 bits::shr 255 bits::and buf offset 2 + mem::set_byte
 	val 255 bits::and buf offset 3 + mem::set_byte
 }
 
 // Process a single 64-byte block (returns updated h values)
-fn sha256_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
+def sha256_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
 	sha256_make_k -> k
 	512 mem::alloc! -> w
 
@@ -231,7 +231,7 @@ fn sha256_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 
 /// @param h Sha256 The hasher state
 /// @param data str Data to hash
 /// @return h2 Sha256 Updated hasher state
-pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
+pub def (h:Sha256) update(data:str -- h2:Sha256)! {
 	h <<h0 -> hh0
 	h <<h1 -> hh1
 	h <<h2 -> hh2
@@ -249,7 +249,7 @@ pub fn (h:Sha256) update(data:str -- h2:Sha256)! {
 		64 mem::alloc? -> buf
 	}
 
-	data strings::len -> dlen
+	data len -> dlen
 	total dlen + -> total
 
 	0 -> i
@@ -346,49 +346,49 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 
 	// Write 8 hex chars for each word
 	0 8 1 for j {
-		hh0 28 j 4 * - shr 15 bits::and -> nibble
+		hh0 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh1 28 j 4 * - shr 15 bits::and -> nibble
+		hh1 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh2 28 j 4 * - shr 15 bits::and -> nibble
+		hh2 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh3 28 j 4 * - shr 15 bits::and -> nibble
+		hh3 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh4 28 j 4 * - shr 15 bits::and -> nibble
+		hh4 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh5 28 j 4 * - shr 15 bits::and -> nibble
+		hh5 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh6 28 j 4 * - shr 15 bits::and -> nibble
+		hh6 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh7 28 j 4 * - shr 15 bits::and -> nibble
+		hh7 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
@@ -414,8 +414,7 @@ pub fn (h:Sha256) release() {
 /// @return hash str 64-character hex string
 /// @example "Hello" crypto::sha256! -> hash
 pub fn sha256(s:str -- hash:str)! {
-	Sha256 {} -> h
-	h s update? -> h
+	Sha256 {} swap update? -> h
 	h finish? -> result
 	h release
 	result
@@ -425,7 +424,7 @@ pub fn sha256(s:str -- hash:str)! {
 /// @param buf ptr Input buffer
 /// @param length i64 Length of buffer in bytes
 /// @return hash str 64-character hex string (lowercase)
-pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
+pub def sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 	// Initialize hash state
 	SHA256_H0 -> hh0
 	SHA256_H1 -> hh1
@@ -495,49 +494,49 @@ pub fn sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 	0 -> pos
 
 	0 8 1 for j {
-		hh0 28 j 4 * - shr 15 bits::and -> nibble
+		hh0 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh1 28 j 4 * - shr 15 bits::and -> nibble
+		hh1 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh2 28 j 4 * - shr 15 bits::and -> nibble
+		hh2 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh3 28 j 4 * - shr 15 bits::and -> nibble
+		hh3 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh4 28 j 4 * - shr 15 bits::and -> nibble
+		hh4 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh5 28 j 4 * - shr 15 bits::and -> nibble
+		hh5 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh6 28 j 4 * - shr 15 bits::and -> nibble
+		hh6 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos
 	}
 	0 8 1 for j {
-		hh7 28 j 4 * - shr 15 bits::and -> nibble
+		hh7 28 j 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if { 48 nibble + } else { 87 nibble + }
 		out pos mem::set_byte
 		pos 1 + -> pos

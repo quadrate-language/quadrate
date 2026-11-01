@@ -5,17 +5,17 @@ use mem
 use strings
 
 /// Minimum of two integers.
-stack fn min2(a:i64 b:i64 -- i64) {
+fn min2(a:i64 b:i64 -- i64) {
 	dup2 < if { drop } else { nip }
 }
 
 /// Minimum of three integers.
-stack fn min3(a:i64 b:i64 c:i64 -- i64) {
+fn min3(a:i64 b:i64 c:i64 -- i64) {
 	min2 min2
 }
 
 /// Maximum of two integers.
-stack fn max2(a:i64 b:i64 -- i64) {
+fn max2(a:i64 b:i64 -- i64) {
 	dup2 > if { drop } else { nip }
 }
 
@@ -28,9 +28,9 @@ stack fn max2(a:i64 b:i64 -- i64) {
 /// @example "kitten" "sitting" fuzzy::distance -> 3
 /// @example "hello" "hello" fuzzy::distance -> 0
 /// @example "" "abc" fuzzy::distance -> 3
-pub fn distance(a:str b:str -- dist:i64) {
-	a strings::len -> len_a
-	b strings::len -> len_b
+pub def distance(a:str b:str -- dist:i64) {
+	a len -> len_a
+	b len -> len_b
 
 	// Handle empty strings
 	len_a 0 == if {
@@ -106,9 +106,9 @@ pub fn distance(a:str b:str -- dist:i64) {
 /// @example "hello" "hello" fuzzy::similarity -> 1.0
 /// @example "hello" "hallo" fuzzy::similarity -> 0.8
 /// @example "abc" "xyz" fuzzy::similarity -> 0.0
-pub fn similarity(a:str b:str -- sim:f64) {
-	a strings::len -> len_a
-	b strings::len -> len_b
+pub def similarity(a:str b:str -- sim:f64) {
+	a len -> len_a
+	b len -> len_b
 
 	// Handle empty strings - both empty means identical
 	len_a 0 == len_b 0 == and if {
@@ -125,8 +125,8 @@ pub fn similarity(a:str b:str -- sim:f64) {
 /// @return matches i64 1 if similarity >= threshold, 0 otherwise
 /// @example "helo" "hello" 0.7 fuzzy::matches -> 1
 /// @example "xyz" "hello" 0.7 fuzzy::matches -> 0
-pub stack fn matches(query:str target:str threshold:f64 -- i64) {
-	rot rot similarity swap >= if { 1 } else { 0 }
+pub fn matches(query:str target:str threshold:f64 -- i64) {
+	rrot similarity swap >=
 }
 
 /// Compute a fuzzy match score combining multiple matching strategies.
@@ -143,9 +143,9 @@ pub stack fn matches(query:str target:str threshold:f64 -- i64) {
 /// @example "sin" "sin" fuzzy::score -> 1000
 /// @example "sin" "asin" fuzzy::score  // ~350 (substring)
 /// @example "rf" "read_file" fuzzy::score  // 200 (word boundary)
-pub fn score(query:str target:str -- score:i64) {
-	query strings::len -> qlen
-	target strings::len -> tlen
+pub def score(query:str target:str -- score:i64) {
+	query len -> qlen
+	target len -> tlen
 
 	// Empty query matches nothing
 	qlen 0 == if {
@@ -190,9 +190,9 @@ pub fn score(query:str target:str -- score:i64) {
 /// @param query str Query characters to match
 /// @param target str Target string with potential word boundaries
 /// @return matches i64 1 if all query chars match at boundaries, 0 otherwise
-fn word_boundary_match(query:str target:str -- matches:i64) {
-	query strings::len -> qlen
-	target strings::len -> tlen
+def word_boundary_match(query:str target:str -- matches:i64) {
+	query len -> qlen
+	target len -> tlen
 
 	qlen 0 == if {
 		0
@@ -234,7 +234,7 @@ fn word_boundary_match(query:str target:str -- matches:i64) {
 /// @param max_results i64 Maximum number of results to return
 /// @return results []str Array of matching strings
 /// @return count i64 Number of results
-pub fn best(query:str items:[]str max_results:i64 -- results:[]str count:i64) {
+pub def best(query:str items:[]str max_results:i64 -- results:[]str count:i64) {
 	items len -> num_items
 
 	// Create arrays for (score, index) pairs using raw memory
@@ -314,7 +314,7 @@ pub fn best(query:str items:[]str max_results:i64 -- results:[]str count:i64) {
 /// @param s str String to check
 /// @param prefix str Prefix to look for
 /// @return starts i64 1 if s starts with prefix, 0 otherwise
-pub stack fn starts_with_ci(s:str prefix:str -- i64) {
+pub fn starts_with_ci(s:str prefix:str -- i64) {
 	swap strings::lower swap strings::lower strings::starts_with
 }
 
@@ -322,6 +322,6 @@ pub stack fn starts_with_ci(s:str prefix:str -- i64) {
 /// @param s str String to search in
 /// @param substr str Substring to look for
 /// @return contains i64 1 if s contains substr, 0 otherwise
-pub stack fn contains_ci(s:str substr:str -- i64) {
+pub fn contains_ci(s:str substr:str -- i64) {
 	swap strings::lower swap strings::lower strings::contains
 }

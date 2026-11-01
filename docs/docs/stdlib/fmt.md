@@ -79,23 +79,6 @@ Print a string to stdout followed by a newline.
 ```
 ---
 
-### `fn` print
-
-Print a string to stdout (no newline appended).
-
-**Signature:** `(s:str -- )`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `s` | `str` | String to print |
-
-**Example:**
-
-```qd
-"hello" fmt::print
-```
----
-
 ### `fn` sprintf
 
 Format a string with printf-style specifiers.

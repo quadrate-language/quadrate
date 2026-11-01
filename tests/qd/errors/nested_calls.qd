@@ -1,14 +1,14 @@
 // Test: nested calls
-stack fn validate(i64 -- i64)! {
+fn validate(i64 -- i64)! {
 	dup 0 < if {
 		0
 		"Error occurred" 1 panic
 	}
 }
 
-stack fn process(i64 -- i64)! {
-	validate if {
-		2 mul
+fn process(i64 -- i64)! {
+	validate ok if {
+		2 *
 	} else {
 		-1
 		"Error occurred" 1 panic
@@ -17,23 +17,26 @@ stack fn process(i64 -- i64)! {
 
 fn main() {
 	"Processing 5: " print
-	5 process if {
+	5 process ok if {
 		print nl
 	} else {
+		drop
 		"Failed" print nl
 	}
 
 	"Processing -3: " print
-	-3 process if {
+	-3 process ok if {
 		print nl
 	} else {
+		drop
 		"Failed" print nl
 	}
 
 	"Processing 10: " print
-	10 process if {
+	10 process ok if {
 		print nl
 	} else {
+		drop
 		"Failed" print nl
 	}
 }

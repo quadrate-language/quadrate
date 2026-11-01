@@ -28,7 +28,7 @@ fn test_defer_with_return( -- x:i64) {
 fn test_nested_defer() {
 	defer { "outer defer" print nl }
 	"outer start" print nl
-	1 1 eq if {
+	1 1 == if {
 		defer { "inner defer" print nl }
 		"inner body" print nl
 	}

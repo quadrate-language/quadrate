@@ -3,7 +3,7 @@ fn helper( -- r:i64) {
 	1
 }
 
-fn f(c:i64 -- r:i64) {
+def f(c:i64 -- r:i64) {
 	helper drop
 	c if {
 		1

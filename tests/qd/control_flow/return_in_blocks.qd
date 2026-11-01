@@ -1,7 +1,7 @@
 // Test: return inside control flow blocks
 
 // Return from if body
-fn find_first_gt(t:i64 -- result:i64) {
+def find_first_gt(t:i64 -- result:i64) {
 	0 10 1 for i {
 		i t > if {
 			i return
@@ -11,7 +11,7 @@ fn find_first_gt(t:i64 -- result:i64) {
 }
 
 // Return from multiple if blocks (early return pattern)
-fn classify(n:i64 -- label:str) {
+def classify(n:i64 -- label:str) {
 	n 0 > if {
 		"positive" return
 	}
@@ -22,7 +22,7 @@ fn classify(n:i64 -- label:str) {
 }
 
 // Return from else branch
-fn abs(n:i64 -- result:i64) {
+def abs(n:i64 -- result:i64) {
 	n 0 >= if {
 		n return
 	} else {
@@ -32,7 +32,7 @@ fn abs(n:i64 -- result:i64) {
 }
 
 // Return from nested if blocks
-fn clamp(n:i64 min:i64 max:i64 -- result:i64) {
+def clamp(n:i64 min:i64 max:i64 -- result:i64) {
 	n min < if {
 		min return
 	}
@@ -66,7 +66,7 @@ fn loop_return2( -- val:i64) {
 }
 
 // Return from switch/case
-stack fn day_type(i64 -- str) {
+fn day_type(i64 -- str) {
 	switch {
 		6 { "saturday" return }
 		7 { "sunday" return }
@@ -76,7 +76,7 @@ stack fn day_type(i64 -- str) {
 }
 
 // Void return from block (no return value)
-fn print_if_positive(n:i64 -- ) {
+def print_if_positive(n:i64 -- ) {
 	n 0 <= if {
 		return
 	}
@@ -95,7 +95,7 @@ fn with_defer( -- val:i64) {
 }
 
 // Fallthrough: return not taken, normal exit
-fn fallthrough(n:i64 -- result:i64) {
+def fallthrough(n:i64 -- result:i64) {
 	n 100 > if {
 		999 return
 	}
@@ -103,7 +103,7 @@ fn fallthrough(n:i64 -- result:i64) {
 }
 
 // Multiple returns in same function
-fn multi_return(x:i64 y:i64 -- result:i64) {
+def multi_return(x:i64 y:i64 -- result:i64) {
 	x 0 == if {
 		y return
 	}

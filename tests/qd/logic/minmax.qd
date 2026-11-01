@@ -24,9 +24,9 @@ fn main() {
 	3.14 neg print nl
 	// Should print nl = -3.14
 	// Test mod - modulo operation
-	17 5 mod print nl
+	17 5 % print nl
 	// Should print nl = 2
-	10 3 mod print nl
+	10 3 % print nl
 	// Should print nl = 1
 	// Test combining operations
 	100 50 math::min

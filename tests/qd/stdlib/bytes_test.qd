@@ -27,7 +27,7 @@ fn test_read_write_u16_be( -- result:i64) {
 	buf 0 0x1234 bytes::write_u16_be
 	buf 0 bytes::read_u16_be -> val
 	buf mem::free
-	val 0x1234 eq
+	val 0x1234 ==
 }
 
 fn test_read_write_u16_le( -- result:i64) {
@@ -35,7 +35,7 @@ fn test_read_write_u16_le( -- result:i64) {
 	buf 0 0x1234 bytes::write_u16_le
 	buf 0 bytes::read_u16_le -> val
 	buf mem::free
-	val 0x1234 eq
+	val 0x1234 ==
 }
 
 fn test_read_write_u32_be( -- result:i64) {
@@ -43,7 +43,7 @@ fn test_read_write_u32_be( -- result:i64) {
 	buf 0 0x12345678 bytes::write_u32_be
 	buf 0 bytes::read_u32_be -> val
 	buf mem::free
-	val 0x12345678 eq
+	val 0x12345678 ==
 }
 
 fn test_read_write_u32_le( -- result:i64) {
@@ -51,7 +51,7 @@ fn test_read_write_u32_le( -- result:i64) {
 	buf 0 0x12345678 bytes::write_u32_le
 	buf 0 bytes::read_u32_le -> val
 	buf mem::free
-	val 0x12345678 eq
+	val 0x12345678 ==
 }
 
 test "bytes::read_write_u16_be roundtrip" {
@@ -76,7 +76,7 @@ fn test_bytes_fill( -- result:i64) {
 	buf 0 mem::get_byte -> b1
 	buf 15 mem::get_byte -> b2
 	buf mem::free
-	b1 0xAB eq b2 0xAB eq bits::and
+	b1 0xAB == b2 0xAB == bits::and
 }
 
 fn test_bytes_compare_equal( -- result:i64) {
@@ -87,7 +87,7 @@ fn test_bytes_compare_equal( -- result:i64) {
 	buf1 0 buf2 0 16 bytes::compare -> cmp
 	buf1 mem::free
 	buf2 mem::free
-	cmp 0 eq
+	cmp 0 ==
 }
 
 fn test_bytes_compare_different( -- result:i64) {
@@ -98,7 +98,7 @@ fn test_bytes_compare_different( -- result:i64) {
 	buf1 0 buf2 0 16 bytes::compare -> cmp
 	buf1 mem::free
 	buf2 mem::free
-	cmp 0 neq
+	cmp 0 !=
 }
 
 test "bytes::fill" {
@@ -147,7 +147,7 @@ fn test_bytes_find_found( -- result:i64) {
 	16 mem::alloc! -> buf
 	0x00 buf 0 16 bytes::fill
 	0x42 buf 5 mem::set_byte
-	buf 0 16 0x42 bytes::find -> idx
+	buf 0 16 0x42 bytes::index_of -> idx
 	buf mem::free
 	idx 5 ==
 }
@@ -155,16 +155,16 @@ fn test_bytes_find_found( -- result:i64) {
 fn test_bytes_find_not_found( -- result:i64) {
 	16 mem::alloc! -> buf
 	0x00 buf 0 16 bytes::fill
-	buf 0 16 0x42 bytes::find -> idx
+	buf 0 16 0x42 bytes::index_of -> idx
 	buf mem::free
 	idx -1 ==
 }
 
-test "bytes::find found" {
+test "bytes::index_of found" {
 	test_bytes_find_found testing::assert_true
 }
 
-test "bytes::find not found" {
+test "bytes::index_of not found" {
 	test_bytes_find_not_found testing::assert_true
 }
 

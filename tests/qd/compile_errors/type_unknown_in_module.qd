@@ -1,7 +1,7 @@
 // Test: a type the imported module does not have says that, rather than listing the primitives.
 use sb
 
-fn f(b:sb::Nope -- ) {
+def f(b:sb::Nope -- ) {
 }
 
 fn main() {

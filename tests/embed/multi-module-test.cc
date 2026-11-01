@@ -6,8 +6,8 @@ int main(void) {
 
 	// Module 1: math operations
 	qd_module* math_mod = qd_get_module(ctx, "math");
-	qd_add_script(math_mod, "fn square(x:i64 -- result:i64) { dup mul }");
-	qd_add_script(math_mod, "fn double(x:i64 -- result:i64) { 2 * }");
+	qd_add_script(math_mod, "def square(x:i64 -- result:i64) { dup mul }");
+	qd_add_script(math_mod, "def double(x:i64 -- result:i64) { 2 * }");
 	qd_build(math_mod);
 
 	// Module 2: string operations
@@ -18,7 +18,7 @@ int main(void) {
 
 	// Module 3: calculator
 	qd_module* calc_mod = qd_get_module(ctx, "calc");
-	qd_add_script(calc_mod, "fn add_and_print(a:i64 b:i64 -- ) { + dup \"Result: \" print print nl }");
+	qd_add_script(calc_mod, "def add_and_print(a:i64 b:i64 -- ) { + dup \"Result: \" print print nl }");
 	qd_build(calc_mod);
 
 	printf("=== Testing Multiple Modules ===\n\n");

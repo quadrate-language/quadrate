@@ -57,7 +57,7 @@ pub struct Deque<T> {
 ///     d 42 push_back! -> d
 ///
 /// Stack: (d val -- d2)
-pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
+pub def (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 	d <<data -> data
 	d <<head -> head
 	d <<tail -> tail
@@ -75,7 +75,7 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 			0 -> i
 			loop {
 				i len >= if { break }
-				head i + cap mod -> src_idx
+				head i + cap % -> src_idx
 				data src_idx mem::AnySize * mem::get_any -> v
 				v new_data i mem::AnySize * mem::set_any
 				data src_idx mem::AnySize * mem::clear_any
@@ -92,7 +92,7 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 
 	val data tail mem::AnySize * mem::set_any
 
-	tail 1 + cap mod -> new_tail
+	tail 1 + cap % -> new_tail
 
 	// Written through the receiver, and the receiver is what comes back: a container is a
 	// reference (3.2.1), and a fresh struct over the same buffer leaves every earlier copy
@@ -106,7 +106,7 @@ pub fn (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 ///     d 42 push_front! -> d
 ///
 /// Stack: (d val -- d2)
-pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
+pub def (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 	d <<data -> data
 	d <<head -> head
 	d <<tail -> tail
@@ -124,7 +124,7 @@ pub fn (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 			0 -> i
 			loop {
 				i len >= if { break }
-				head i + cap mod -> src_idx
+				head i + cap % -> src_idx
 				data src_idx mem::AnySize * mem::get_any -> v
 				v new_data i mem::AnySize * mem::set_any
 				data src_idx mem::AnySize * mem::clear_any
@@ -171,7 +171,7 @@ pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	data head mem::AnySize * mem::get_any -> val
 	data head mem::AnySize * mem::clear_any
 
-	head 1 + cap mod -> new_head
+	head 1 + cap % -> new_head
 
 	val
 	d new_head >>head len 1 - >>len
@@ -265,13 +265,13 @@ pub fn (d:Deque<T>) is_empty<T>( -- b:i64) {
 /// Stack: (d --)
 pub fn (d:Deque<T>) release<T>() {
 	d <<data -> data
-	data 0 neq if {
+	data 0 != if {
 		// Let go of every element still held: a string or a struct in one is ours to release.
 		d <<head -> head
 		d <<len -> len
 		d <<cap -> cap
 		0 len 1 for i {
-			data head i + cap mod mem::AnySize * mem::clear_any
+			data head i + cap % mem::AnySize * mem::clear_any
 		}
 		data mem::free
 	}

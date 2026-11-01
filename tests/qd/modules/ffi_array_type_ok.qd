@@ -3,7 +3,7 @@
 use os
 use strings
 
-fn count_of(a:[]str -- n:i64) {
+def count_of(a:[]str -- n:i64) {
 	a len
 }
 

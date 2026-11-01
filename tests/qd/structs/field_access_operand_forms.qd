@@ -16,7 +16,7 @@ struct Point {
 	y:i64
 }
 
-fn mkb(n:i64 -- b:B) {
+def mkb(n:i64 -- b:B) {
 	B { x = "hello" inner = A { x = n } }
 }
 
@@ -37,5 +37,4 @@ fn main() {
 	get call print nl
 	g <<x print nl
 	1 2 Point <<y print nl
-	"stack: [" print prints "]" print nl
 }

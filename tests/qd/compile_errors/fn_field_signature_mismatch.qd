@@ -5,7 +5,7 @@ struct H {
 	f:fn(i64 -- i64)
 }
 
-fn shout(s:str -- r:str) {
+def shout(s:str -- r:str) {
 	s
 }
 

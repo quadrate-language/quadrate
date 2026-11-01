@@ -6,27 +6,27 @@ fn no_params() {
 }
 
 // All named inputs, no outputs
-fn named_no_output(a:i64 b:i64 -- ) {
+def named_no_output(a:i64 b:i64 -- ) {
 	a b + print nl
 }
 
 // All unnamed inputs, no outputs
-stack fn unnamed_no_output(i64 i64 -- ) {
+fn unnamed_no_output(i64 i64 -- ) {
 	+ print nl
 }
 
 // All named inputs, named output
-fn named_with_output(a:i64 b:i64 -- result:i64) {
+def named_with_output(a:i64 b:i64 -- result:i64) {
 	a b +
 }
 
 // All unnamed inputs, unnamed output
-stack fn unnamed_with_output(i64 i64 -- i64) {
+fn unnamed_with_output(i64 i64 -- i64) {
 	+
 }
 
 // Named inputs, unnamed output (mixing OK on output side)
-fn named_in_unnamed_out(a:i64 b:i64 -- i64) {
+def named_in_unnamed_out(a:i64 b:i64 -- i64) {
 	a b +
 }
 
@@ -36,12 +36,12 @@ fn outputs_only( -- x:i64 y:i64) {
 }
 
 // Single named param
-fn single_named(x:i64 -- i64) {
+def single_named(x:i64 -- i64) {
 	x 2 *
 }
 
 // Single unnamed param
-stack fn single_unnamed(i64 -- i64) {
+fn single_unnamed(i64 -- i64) {
 	2 *
 }
 

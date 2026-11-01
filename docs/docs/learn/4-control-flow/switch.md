@@ -5,7 +5,7 @@ Handle multiple conditions cleanly with `switch`.
 ## Basic switch
 
 ```qd
-fn day_name(day:i64 -- name:str) {
+def day_name(day:i64 -- name:str) {
 	day switch {
 		1 {
 			"Monday"
@@ -44,7 +44,7 @@ fn main() {
 Use `_` for the default (fallback) case:
 
 ```qd
-fn describe(n:i64 -- desc:str) {
+def describe(n:i64 -- desc:str) {
 	n switch {
 		0 {
 			"zero"
@@ -82,7 +82,7 @@ Use **if-else** when:
 ### Switch (cleaner)
 
 ```qd
-fn get_color(code:i64 -- name:str) {
+def get_color(code:i64 -- name:str) {
 	code switch {
 		0 {
 			"black"
@@ -106,7 +106,7 @@ fn get_color(code:i64 -- name:str) {
 ### Equivalent if-else (more verbose)
 
 ```qd
-fn get_color_if(code:i64 -- name:str) {
+def get_color_if(code:i64 -- name:str) {
 	code 0 == if {
 		"black"
 	} else {
@@ -132,7 +132,7 @@ fn get_color_if(code:i64 -- name:str) {
 ### Menu handler
 
 ```qd
-fn handle_menu(choice:i64 -- ) {
+def handle_menu(choice:i64 -- ) {
 	choice switch {
 		1 {
 			"Creating new file..." print nl
@@ -156,7 +156,7 @@ fn handle_menu(choice:i64 -- ) {
 ### State machine
 
 ```qd
-fn next_state(current:i64 input:i64 -- next:i64) {
+def next_state(current:i64 input:i64 -- next:i64) {
 	current switch {
 		0 {
 			input 97 == if { 1 } else { 0 }  // 'a'

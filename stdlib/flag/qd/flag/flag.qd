@@ -27,7 +27,7 @@ pub struct Flag {
 /// @param args []str Argument array, as os::args returns
 /// @return f Flag Parsed flags
 /// @example os::args flag::parse -> f
-pub fn parse(args:[]str -- f:Flag) {
+pub def parse(args:[]str -- f:Flag) {
 	args len -> argc
 	"" -> argv
 	"" -> arg
@@ -75,9 +75,7 @@ pub fn (f:Flag) destroy() {
 /// @return present i64 1 if found, 0 otherwise
 /// @example f "--verbose" flag::boolean if { "verbose" print nl }
 pub fn (f:Flag) boolean(name:str -- present:i64) {
-	"\n" name strings::concat -> pattern
-	pattern "\n" strings::concat -> pattern
-
+	"\n" swap strings::concat "\n" strings::concat -> pattern
 	f <<argv pattern strings::contains
 }
 
@@ -88,25 +86,15 @@ pub fn (f:Flag) boolean(name:str -- present:i64) {
 /// @error ErrNotFound Flag not found
 /// @error ErrNoValue Flag exists but has no value
 /// @example f "--name" flag::string! -> name
-pub fn (f:Flag) string(name:str -- value:str)! {
-	"" -> value
-	"" -> pattern
-	"" -> argv
-	"" -> tmp
-	0 -> idx
-	0 -> start
-	0 -> end_idx
-
-	"\n" name strings::concat -> pattern
-	pattern "\n" strings::concat -> tmp
-	tmp -> pattern
+pub def (f:Flag) string(name:str -- value:str)! {
+	"\n" name strings::concat "\n" strings::concat -> pattern
 
 	f <<argv pattern strings::index_of -> idx
 	idx 0 < if {
 		"flag not found: " name strings::concat ErrNotFound panic
 	}
 
-	idx 1 + name strings::len + 1 + -> start
+	idx 1 + name len + 1 + -> start
 	f <<argv -> argv
 
 	argv "\n" start strings::index_of_from -> end_idx
@@ -114,8 +102,7 @@ pub fn (f:Flag) string(name:str -- value:str)! {
 		"flag has no value: " name strings::concat ErrNoValue panic
 	}
 
-	argv start end_idx start - strings::substring? -> value
-	value
+	argv start end_idx start - strings::substring?
 }
 
 /// Get integer value of a flag.
@@ -124,12 +111,9 @@ pub fn (f:Flag) string(name:str -- value:str)! {
 /// @return value i64 Flag value as integer
 /// @error ErrNotFound Flag not found
 /// @example f "--count" flag::int! -> count
-pub fn (f:Flag) int(name:str -- value:i64)! {
-	"" -> s
-
-	f name string if {
-		-> s
-		s parse_int
+pub def (f:Flag) int(name:str -- value:i64)! {
+	f name string ok if {
+		parse_int
 	} else {
 		"flag not found: " name strings::concat ErrNotFound panic
 	}
@@ -141,10 +125,9 @@ pub fn (f:Flag) int(name:str -- value:i64)! {
 /// @return value f64 Flag value as float
 /// @error ErrNotFound Flag not found
 /// @example f "--rate" flag::float! -> rate
-pub fn (f:Flag) float(name:str -- value:f64)! {
-	f name string if {
-		-> s
-		s parse_float
+pub def (f:Flag) float(name:str -- value:f64)! {
+	f name string ok if {
+		parse_float
 	} else {
 		"flag not found: " name strings::concat ErrNotFound panic
 	}
@@ -155,14 +138,14 @@ pub fn (f:Flag) float(name:str -- value:f64)! {
 /// @param index i64 Position (0-based, skips flags starting with -)
 /// @return value str Positional argument
 /// @error ErrNotFound Index out of bounds
-pub fn (f:Flag) positional(index:i64 -- value:str)! {
+pub def (f:Flag) positional(index:i64 -- value:str)! {
 	"" -> result
 	0 -> pos_idx
 	0 -> start
 	0 -> end_idx
 	0 -> found
 	f <<argv -> argv
-	argv strings::len -> len
+	argv len -> len
 
 	// Skip initial newline
 	1 -> start
@@ -223,11 +206,11 @@ pub fn (f:Flag) positional(index:i64 -- value:str)! {
 	result
 }
 
-fn parse_int(s:str -- value:i64) {
+def parse_int(s:str -- value:i64) {
 	0 -> value
 	0 -> i
 	1 -> sign
-	s strings::len -> len
+	s len -> len
 
 	len 0 > if {
 		s 0 strings::char_at unicode::minus == if {
@@ -253,11 +236,11 @@ fn parse_int(s:str -- value:i64) {
 	value sign *
 }
 
-fn parse_float(s:str -- value:f64) {
+def parse_float(s:str -- value:f64) {
 	0.0 -> value
 	0 -> i
 	1.0 -> sign
-	s strings::len -> len
+	s len -> len
 	0 -> seen_dot
 	1.0 -> decimal_place
 

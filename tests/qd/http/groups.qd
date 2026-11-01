@@ -1,11 +1,11 @@
 // Test: Test HTTP route groups
 use http
 
-fn handle_api_users(c:ptr -- ) {
+def handle_api_users(c:ptr -- ) {
 	c 200 "API Users" http::string
 }
 
-fn handle_api_posts(c:ptr -- ) {
+def handle_api_posts(c:ptr -- ) {
 	c 200 "API Posts" http::string
 }
 

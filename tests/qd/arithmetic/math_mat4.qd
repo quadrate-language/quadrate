@@ -1,7 +1,7 @@
 // Test: Mat4 math functions
 use math
 
-fn approx_eq(a:f64 b:f64 -- result:i64) {
+def approx_eq(a:f64 b:f64 -- result:i64) {
 	a b - math::abs 0.001 <
 }
 
@@ -93,12 +93,12 @@ fn main() {
 	math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> target
 	math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> up
 	eye target up math::mat4_look_at -> view
-	view determinant math::abs 0.001 gt print nl   // 1 (non-zero determinant)
+	view determinant math::abs 0.001 > print nl   // 1 (non-zero determinant)
 
 	// Perspective
 	"=== Mat4 Perspective ===" print nl
 	1.047 1.777 0.1 100.0 math::mat4_perspective -> proj
-	proj <<m00 0.0 gt print nl                      // 1 (positive focal length)
+	proj <<m00 0.0 > print nl                      // 1 (positive focal length)
 	proj <<m23 -1.0 approx_eq print nl              // 1 (perspective divide)
 
 	// Orthographic

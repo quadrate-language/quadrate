@@ -1568,7 +1568,7 @@ EOFSRC
         local out_file="$test_temp/debug_native"
 
         cat > "$src_file" << 'EOFSRC'
-fn twice(n:i64 -- r:i64) {
+def twice(n:i64 -- r:i64) {
     n 2 *
 }
 

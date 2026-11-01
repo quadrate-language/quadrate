@@ -5,7 +5,7 @@
 // generateSwitchStatement has no compileTimeStack path and pops the scrutinee off
 // the runtime stack, where native-path operands never appear. See TODO.md,
 // "switch has no native-path codegen".
-fn classify(d:i64 -- r:i64) {
+def classify(d:i64 -- r:i64) {
 	d switch {
 		0 {
 			100

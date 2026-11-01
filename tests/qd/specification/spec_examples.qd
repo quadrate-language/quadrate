@@ -15,7 +15,7 @@ struct Person {
 }
 
 // Section 3.3 - Generic Types
-fn identity<T>(val:T -- y:T) {
+def identity<T>(val:T -- y:T) {
     val
 }
 
@@ -29,24 +29,24 @@ struct Pair<A, B> {
 }
 
 // Section 3.4 - Function Types
-stack fn double(i64 -- i64) {
+fn double(i64 -- i64) {
     2 *
 }
 
-fn apply(val:i64 func:ptr -- result:i64) {
+def apply(val:i64 func:ptr -- result:i64) {
     val func call
 }
 
 // Section 4.3 - Stack Effect Signatures
-stack fn add(i64 i64 -- i64) {
+fn sum(i64 i64 -- i64) {
     +
 }
 
-stack fn swap_pair(i64 i64 -- i64 i64) {
+fn swap_pair(i64 i64 -- i64 i64) {
     swap
 }
 
-stack fn print_value(i64 -- ) {
+fn print_value(i64 -- ) {
     print nl
 }
 
@@ -55,19 +55,19 @@ fn get_constant( -- c:i64) {
 }
 
 // Section 4.4 - Local Variables
-fn example_locals(a:i64 b:i64 -- result:i64) {
+def example_locals(a:i64 b:i64 -- result:i64) {
     a b +
 }
 
 // Section 7.4 - Methods (struct with method)
 struct Vec2 { x:f64 y:f64 }
 
-fn length(v:Vec2 -- len:f64) {
+def length(v:Vec2 -- len:f64) {
     v <<x v <<x * v <<y v <<y * + math::sqrt
 }
 
 // Section 10.1 - Fallible Functions
-stack fn divide(i64 i64 -- i64)! {
+fn divide(i64 i64 -- i64)! {
     dup 0 == if {
         drop drop
         "division by zero" -1 panic
@@ -149,7 +149,7 @@ fn main() {
 
     // Section 7.2 - Function Calls
     "Testing function calls..." print nl
-    10 20 add print nl          // 30
+    10 20 sum print nl          // 30
     3.14 math::sin print nl     // ~0
 
     // Section 7.5 - Closures
@@ -163,7 +163,7 @@ fn main() {
     fn ( -- r:i64) { a b + } -> sum_fn
     sum_fn call print nl        // 30
 
-    fn (aa:i64 bb:i64 -- r:i64) { aa bb + } -> add_fn
+    def (aa:i64 bb:i64 -- r:i64) { aa bb + } -> add_fn
     3 4 add_fn call print nl    // 7
 
     // Section 7.6 - Function Pointers
@@ -185,15 +185,15 @@ fn main() {
 
     // Section 10.3 - Error handling
     "Testing error handling..." print nl
-    10 2 divide if {
+    10 2 divide ok if {
         print nl                // 5
-    } else {
+    } else { drop
         "Division failed" print nl
     }
 
-    10 0 divide if {
+    10 0 divide ok if {
         print nl
-    } else {
+    } else { drop
         "Division by zero caught" print nl
     }
 

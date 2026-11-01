@@ -124,7 +124,7 @@ import "libos.a" as "os" {
 	/// @param callback ptr Callback function (line:str -- )
 	/// @return exitcode i64 Command exit status
 	/// @error ErrIo Failed to execute command
-	/// @example "ls -la" fn (line:str -- ) { print nl } os::popen! -> code
+	/// @example "ls -la" def (line:str -- ) { print nl } os::popen! -> code
 	pub fn popen(cmd:str callback:ptr -- exitcode:i64)!
 
 	/// Execute a command and capture all output.
@@ -167,7 +167,7 @@ import "libos.a" as "os" {
 	/// @param callback ptr Callback function (path:str is_dir:i64 depth:i64 -- )
 	/// @error ErrNotFound Path not found
 	/// @error ErrNotDirectory Path is not a directory
-	/// @example "/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
+	/// @example "/tmp" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
 	pub fn walk(path:str callback:ptr -- )!
 
 	/// Match files using glob pattern.

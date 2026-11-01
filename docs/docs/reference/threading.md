@@ -1,62 +1,54 @@
 # Threading
 
-Built-in operations for concurrent execution.
+Threads come from the [thread](../stdlib/thread.md) module. A thread runs a function with no
+inputs and no outputs, on a stack of its own.
 
 ## Overview
 
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| `spawn` | `(fn:ptr -- thread:i64)` | Spawn a new thread |
-| `wait` | `(thread:i64 --)` | Wait for thread completion |
-| `detach` | `(thread:i64 --)` | Detach a thread |
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `thread::spawn` | `(func:ptr -- t:Thread)!` | Start a thread running `func` |
+| `join` | `(t:Thread)!` | Wait for the thread to finish |
+| `detach` | `(t:Thread)!` | Let the thread run on its own; it cannot be joined after |
+| `is_alive` | `(t:Thread -- alive:i64)` | 1 while the thread is running |
 
-The handle `spawn` returns is an `i64`, not the `ptr` that `&worker` pushed — so thread handles
-go in an `[]i64` (see [Multiple workers](#multiple-workers)), and `wait`/`detach` take that
-`i64` back.
+`spawn`, `join` and `detach` are fallible: a thread that cannot be created or joined is an
+error, handled like any other.
 
 ---
 
 ## Thread management
 
-### spawn
-
-Spawns a new thread to execute a function.
-
-**Signature:** `(fn -- thread)`
+### spawn and join
 
 ```qd
+use thread
+
 fn worker() {
 	"Working..." print nl
 }
 
 fn main() {
-	&worker spawn -> t
-	t wait
+	&worker thread::spawn! -> t
+	// Do other work...
+	t join!  // Block until worker finishes
 }
-```
-
-### wait
-
-Waits for a thread to complete.
-
-**Signature:** `(thread --)`
-
-```qd
-&worker spawn -> t
-// Do other work...
-t wait  // Block until worker finishes
 ```
 
 ### detach
 
-Detaches a thread, allowing it to run independently.
-
-**Signature:** `(thread --)`
-
 ```qd
-&worker spawn -> t
-t detach  // Thread runs on its own
-// Main program continues
+use thread
+
+fn worker() {
+	"Working..." print nl
+}
+
+fn main() {
+	&worker thread::spawn! -> t
+	t detach!  // The thread runs on its own; main does not wait for it
+	10 thread::sleep
+}
 ```
 
 ---
@@ -66,41 +58,21 @@ t detach  // Thread runs on its own
 ### Multiple workers
 
 ```qd
+use thread
+
 fn worker() {
 	"Working" print nl
 }
 
 fn main() {
-	[3]i64 -> threads
-
-	0 3 1 for i {
-		threads i &worker spawn set
-	}
-
-	// Wait for all
-	0 3 1 for i {
-		threads i nth wait
-	}
-
+	[]thread::Thread -> threads
+	3 fn { threads &worker thread::spawn! append -> threads } times
+	threads fn { join! } each
 	"All done" print nl
 }
 ```
 
-> **Note:** Spawned threads start with their own empty stack. Use channels (`thread::chan_buffered!`) to pass data between threads. See [thread](../stdlib/thread.md) for details.
-
-### Fire and forget
-
-```qd
-fn background_task() {
-	// Long running work...
-}
-
-fn main() {
-	&background_task spawn detach
-	"Started background task" print nl
-	// Main continues without waiting
-}
-```
+> **Note:** Spawned threads start with their own empty stack. Use channels (`thread::chan_buffered!`) to pass data between threads, and `thread::WaitGroup` to wait for a group. See [thread](../stdlib/thread.md) for details.
 
 ---
 
@@ -109,12 +81,12 @@ fn main() {
 ### Thread safety
 
 - Each thread has its own stack
-- Shared data requires synchronization
+- Shared data requires synchronization (`thread::mutex_new!`, `lock!`, `unlock!`)
 - Be careful with mutable state
 
 ### Best practices
 
-1. **Join threads** - Use `wait` to ensure completion
+1. **Join threads** - Use `join!` to ensure completion
 2. **Handle errors** - Threads can fail independently
-3. **Limit concurrency** - Too many threads hurts performance
-4. **Avoid shared mutable state** - Pass data to threads at creation
+3. **Limit concurrency** - Too many threads hurts performance (`thread::cpu_count`)
+4. **Avoid shared mutable state** - Pass data to threads through channels

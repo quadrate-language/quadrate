@@ -4,11 +4,11 @@ struct Switch {
 	on: bool
 }
 
-fn flip(x:bool -- y:bool) {
+def flip(x:bool -- y:bool) {
 	x not
 }
 
-fn count_on(flags:[]bool -- n:i64) {
+def count_on(flags:[]bool -- n:i64) {
 	0 -> n
 	0 flags len 1 for i {
 		flags i nth if {

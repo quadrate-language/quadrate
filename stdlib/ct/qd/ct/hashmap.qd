@@ -56,14 +56,14 @@ pub struct Map<V> {
 }
 
 // Internal: DJB2 hash a string key to an index
-fn hash_key(key:str cap:i64 -- idx:i64) {
+def hash_key(key:str cap:i64 -- idx:i64) {
 	key mem::from_string -> klen -> buf
 	5381 -> hash
 	0 klen 1 for i {
 		hash 33 * buf i mem::get_byte + -> hash
 	}
 	buf mem::free
-	hash cap mod -> idx
+	hash cap % -> idx
 	// Ensure positive index
 	idx 0 < if {
 		idx cap + -> idx
@@ -73,7 +73,7 @@ fn hash_key(key:str cap:i64 -- idx:i64) {
 
 // Internal: Find slot for key (for insertion or lookup)
 // Returns: slot index, and whether key was found (1) or empty slot (0)
-fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
+def find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 	key cap hash_key -> start
 	start -> idx
 	-1 -> first_deleted
@@ -99,7 +99,7 @@ fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 		} else {
 			// Occupied slot - check key
 			keys idx 8 * mem::get_ptr strings::from_ptr -> existing_key
-			existing_key key eq if {
+			existing_key key == if {
 				// Found the key
 				idx 1
 				break
@@ -107,7 +107,7 @@ fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 		}
 
 		// Linear probing
-		idx 1 + cap mod -> idx
+		idx 1 + cap % -> idx
 		idx start == if {
 			// Wrapped around - table full or key not found
 			first_deleted 0 >= if {
@@ -122,7 +122,7 @@ fn find_slot(keys:ptr states:ptr cap:i64 key:str -- slot:i64 found:i64) {
 
 // Internal: Rehash all entries into new arrays of given capacity.
 // Returns new_keys, new_values, new_states pointers.
-fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:ptr new_values:ptr new_states:ptr)! {
+def rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- new_keys:ptr new_values:ptr new_states:ptr)! {
 	new_cap 8 * mem::alloc? -> new_keys
 	new_cap mem::AnySize * mem::alloc? -> new_values
 	new_cap 8 * mem::alloc? -> new_states
@@ -173,7 +173,7 @@ fn rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 -- 
 ///     m "alice" 42 insert! -> m
 ///
 /// Stack: (m key value -- m2)
-pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
+pub def (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 	m <<keys -> keys
 	m <<values -> values
 	m <<states -> states
@@ -199,7 +199,7 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 
 	found 0 == if {
 		// New key - allocate null-terminated copy and store
-		// Bytes, not characters: strings::len counts codepoints, so a key with any non-ASCII
+		// Bytes, not characters: len counts codepoints, so a key with any non-ASCII
 		// character in it was copied short and truncated mid-character.
 		key strings::byte_len -> klen
 		klen 1 + mem::alloc? -> key_buf
@@ -229,7 +229,7 @@ pub fn (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 ///     m "alice" get! -> age
 ///
 /// Stack: (m key -- value)
-pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
+pub def (m:Map<V>) get<V>(key:str -- value:V)! {
 	m <<values -> values
 	m <<keys -> keys
 	m <<states -> states
@@ -254,7 +254,7 @@ pub fn (m:Map<V>) get<V>(key:str -- value:V)! {
 ///     m "alice" has if { "found!" print nl }
 ///
 /// Stack: (m key -- exists)
-pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
+pub def (m:Map<V>) has<V>(key:str -- exists:i64) {
 	m <<cap -> cap
 
 	cap 0 == if {
@@ -277,7 +277,7 @@ pub fn (m:Map<V>) has<V>(key:str -- exists:i64) {
 ///     m "alice" remove! -> m
 ///
 /// Stack: (m key -- m2)
-pub fn (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
+pub def (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 	m <<keys -> keys
 	m <<values -> values
 	m <<states -> states
@@ -356,9 +356,9 @@ pub fn (m:Map<V>) release<V>() {
 	}
 
 	// Free arrays
-	keys 0 neq if { keys mem::free }
-	values 0 neq if { values mem::free }
-	states 0 neq if { states mem::free }
+	keys 0 != if { keys mem::free }
+	values 0 != if { values mem::free }
+	states 0 != if { states mem::free }
 
 	// Cleared so a second `release` is a no-op rather than a double free: nothing stops a
 	// caller holding two names for one container, and the freed buffer is what both hold.

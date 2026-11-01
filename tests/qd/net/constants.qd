@@ -13,10 +13,10 @@ fn main() {
 
 	// Constants should have expected values
 	"=== Verify values ===" print nl
-	net::ErrListen 2 eq print nl
-	net::ErrAccept 3 eq print nl
-	net::ErrConnect 4 eq print nl
-	net::ErrSend 5 eq print nl
-	net::ErrReceive 6 eq print nl
-	net::ErrInvalidArg 7 eq print nl
+	net::ErrListen 2 == print nl
+	net::ErrAccept 3 == print nl
+	net::ErrConnect 4 == print nl
+	net::ErrSend 5 == print nl
+	net::ErrReceive 6 == print nl
+	net::ErrInvalidArg 7 == print nl
 }

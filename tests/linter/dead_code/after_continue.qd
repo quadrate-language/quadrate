@@ -1,8 +1,8 @@
 // Test: Dead code after continue statement
 fn main() {
 	loop {
-		1 2 add
+		1 2 +
 		continue
-		3 4 add
+		3 4 +
 	}
 }

@@ -24,28 +24,28 @@ fn (b:Beta) get_x( -- r:f64) {
 	b <<x
 }
 
-fn (b:Beta) scaled(k:f64 -- r:f64) {
+def (b:Beta) scaled(k:f64 -- r:f64) {
 	b <<x k *
 }
 
-fn first_x(bs:[]Beta -- r:f64) {
+def first_x(bs:[]Beta -- r:f64) {
 	bs 0 nth <<x
 }
 
-fn second_x(bs:[]Beta -- r:f64) {
+def second_x(bs:[]Beta -- r:f64) {
 	bs 1 nth -> e
 	e <<x
 }
 
-fn method_on_element(bs:[]Beta -- r:f64) {
+def method_on_element(bs:[]Beta -- r:f64) {
 	bs 0 nth 2.0 scaled
 }
 
-fn nested_x(rows:[][]Beta -- r:f64) {
+def nested_x(rows:[][]Beta -- r:f64) {
 	rows 0 nth 1 nth <<x
 }
 
-fn set_on_element(bs:[]Beta -- r:f64) {
+def set_on_element(bs:[]Beta -- r:f64) {
 	bs 0 nth -> e
 	e 9.25 >>x drop
 	bs 0 nth <<x

@@ -1,0 +1,1 @@
+Type error in 'fold': the function value must leave the accumulator's type, i64, but it leaves a str

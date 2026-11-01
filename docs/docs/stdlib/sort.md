@@ -2,9 +2,9 @@
 
 <!-- doccheck: page-context use sort -->
 
-<!-- doccheck: page-context fn by_length(a:i64 b:i64 -- order:i64) { a b - } -->
+<!-- doccheck: page-context def by_length(a:i64 b:i64 -- order:i64) { a b - } -->
 
-<!-- doccheck: page-context fn ascending(a:i64 b:i64 -- order:i64) { a b - } -->
+<!-- doccheck: page-context def ascending(a:i64 b:i64 -- order:i64) { a b - } -->
 
 <!-- doccheck: page-setup [5 2 8 1] -> arr -->
 

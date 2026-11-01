@@ -6,19 +6,19 @@ use testing
 
 // Helper to build JSON strings (since Quadrate doesn't support \" escape)
 // q = 34 (double quote character)
-fn make_json_string(key:str val:str -- json:str) {
+def make_json_string(key:str val:str -- json:str) {
 	34 -> q
 	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
 		q strings::from_char strings::concat val strings::concat q strings::from_char strings::concat "}" strings::concat
 }
 
-fn make_json_int(key:str val:i64 -- json:str) {
+def make_json_int(key:str val:i64 -- json:str) {
 	34 -> q
 	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
 		val strconv::itoa strings::concat "}" strings::concat
 }
 
-fn make_json_bool(key:str val:i64 -- json:str) {
+def make_json_bool(key:str val:i64 -- json:str) {
 	34 -> q
 	"{" q strings::from_char strings::concat key strings::concat q strings::from_char strings::concat ": " strings::concat
 		val if { "true" } else { "false" } strings::concat "}" strings::concat
@@ -428,7 +428,7 @@ test "json::parse nests" {
 
 test "json::parse decodes escapes" {
 	"\"a\\nb\\tc\\\"d\\\\e\\/f\"" json::parse! json::as_str! -> s
-	s strings::len 11 testing::assert_eq
+	s len 11 testing::assert_eq
 	s 1 strings::char_at 10 testing::assert_eq
 	s 3 strings::char_at 9 testing::assert_eq
 	s 5 strings::char_at 34 testing::assert_eq
@@ -442,15 +442,15 @@ test "json::parse decodes escapes" {
 
 test "json::parse decodes unicode escapes" {
 	// One codepoint each: Latin-1, CJK, and an astral character written as a
-	// surrogate pair. strings::len counts codepoints, so each of these is 1.
+	// surrogate pair. len counts codepoints, so each of these is 1.
 	"\"\\u00e9\"" json::parse! json::as_str! -> a
-	a strings::len 1 testing::assert_eq
+	a len 1 testing::assert_eq
 	a 0 strings::char_at 233 testing::assert_eq
 
 	"\"\\u4e2d\"" json::parse! json::as_str! 0 strings::char_at 20013 testing::assert_eq
 
 	"\"\\ud83d\\ude00\"" json::parse! json::as_str! -> e
-	e strings::len 1 testing::assert_eq
+	e len 1 testing::assert_eq
 	e 0 strings::char_at 128512 testing::assert_eq
 
 	// A surrogate with no partner stands for no character: U+FFFD.
@@ -468,20 +468,20 @@ test "json::parse keeps the last of two members with the same name" {
 }
 
 test "json::parse rejects malformed documents" {
-	"" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"1 2" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"01" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"[1,]" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"{\"a\" 1}" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"\"abc" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"\"\\q\"" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"tru" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	".5" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
-	"-" json::parse if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"1 2" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"01" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"[1,]" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"{\"a\" 1}" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"\"abc" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"\"\\q\"" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"tru" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	".5" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
+	"-" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrSyntax testing::assert_eq }
 }
 
 test "json::parse reports the offset of the error" {
-	"[1, x]" json::parse if { drop "expected a failure" testing::fail } else { err -> _ -> msg msg "offset 4" testing::assert_contains }
+	"[1, x]" json::parse ok if { drop "expected a failure" testing::fail } else { drop err -> _ -> msg msg "offset 4" testing::assert_contains }
 }
 
 test "json::parse stops at MaxDepth" {
@@ -489,19 +489,20 @@ test "json::parse stops at MaxDepth" {
 	0 json::MaxDepth 1 + 1 for i {
 		deep "[" strings::concat -> deep
 	}
-	deep json::parse if {
+	deep json::parse ok if {
 		drop "expected a failure" testing::fail
 	} else {
+		drop
 		err -> code -> _ code json::ErrDepth testing::assert_eq
 	}
 }
 
 test "json accessors report the wrong type rather than guessing" {
 	"{\"a\":1}" json::parse! -> v
-	v json::as_int if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
-	v json::as_str if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
-	v "nope" json::get if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrKey testing::assert_eq }
-	"[1]" json::parse! 3 json::at if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrIndex testing::assert_eq }
+	v json::as_int ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrType testing::assert_eq }
+	v json::as_str ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrType testing::assert_eq }
+	v "nope" json::get ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrKey testing::assert_eq }
+	"[1]" json::parse! 3 json::at ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrIndex testing::assert_eq }
 }
 
 test "json::first and json::next walk children in order" {
@@ -576,7 +577,7 @@ test "json::put replaces a member in place" {
 
 test "json::push and json::put refuse the wrong container" {
 	json::new_object -> o
-	o 1 json::new_int json::push if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
+	o 1 json::new_int json::push ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrType testing::assert_eq }
 	json::new_array -> a
-	a "k" 1 json::new_int json::put if { drop "expected a failure" testing::fail } else { err -> code -> _ code json::ErrType testing::assert_eq }
+	a "k" 1 json::new_int json::put ok if { drop "expected a failure" testing::fail } else { drop err -> code -> _ code json::ErrType testing::assert_eq }
 }

@@ -6,17 +6,18 @@ use strings
 const ErrEmpty = 1
 const ErrRange = 2
 
-fn parse_port(s:str -- port:i64)! {
-	s strings::len 0 == if { "port is empty" ErrEmpty panic }
-	s strings::len 5 > if { "port out of range" ErrRange panic }
+def parse_port(s:str -- port:i64)! {
+	s len 0 == if { "port is empty" ErrEmpty panic }
+	s len 5 > if { "port out of range" ErrRange panic }
 	8080
 }
 
 test "error::last carries the message and the code" {
-	"" parse_port if {
+	"" parse_port ok if {
 		drop
 		"an empty port should fail" testing::fail
 	} else {
+		drop
 		error::last -> e
 		e <<message "port is empty" testing::assert_eq
 		e <<code ErrEmpty testing::assert_eq
@@ -41,7 +42,7 @@ test "wrap composes the message and keeps the code" {
 	cause "cannot connect to localhost" wrap -> e
 	e <<message "cannot connect to localhost: port is empty" testing::assert_eq
 	e <<code ErrEmpty testing::assert_eq
-	e <<cause null neq testing::assert_true
+	e <<cause null != testing::assert_true
 }
 
 test "root walks to the error that actually failed" {
@@ -58,9 +59,10 @@ test "an error survives the arm that caught it" {
 	[] -> failures
 	["" "123456"] -> inputs
 	0 inputs len 1 for i {
-		inputs i nth parse_port if {
+		inputs i nth parse_port ok if {
 			drop
 		} else {
+			drop
 			failures error::last append -> failures
 		}
 	}
@@ -71,8 +73,8 @@ test "an error survives the arm that caught it" {
 }
 
 // Wrapping across a frame: the caller sees where it happened and can still match the code.
-fn connect(host:str port_text:str -- desc:str)! {
-	port_text parse_port if {
+def connect(host:str port_text:str -- desc:str)! {
+	port_text parse_port ok if {
 		drop
 		host
 	} else {
@@ -82,10 +84,11 @@ fn connect(host:str port_text:str -- desc:str)! {
 }
 
 test "a wrapped error crosses a frame with its code intact" {
-	"localhost" "" connect if {
+	"localhost" "" connect ok if {
 		drop
 		"connect with an empty port should fail" testing::fail
 	} else {
+		drop
 		error::last -> e
 		e <<message "cannot connect to localhost: port is empty" testing::assert_eq
 		e <<code ErrEmpty testing::assert_eq
@@ -95,11 +98,12 @@ test "a wrapped error crosses a frame with its code intact" {
 test "a switch arm reads the error as one value" {
 	"123456" parse_port switch {
 		Ok       { drop  "should not succeed" testing::fail }
-		ErrEmpty { "wrong arm" testing::fail }
+		ErrEmpty { drop "wrong arm" testing::fail }
 		ErrRange {
+			drop
 			error::last -> e
 			e <<message "port out of range" testing::assert_eq
 		}
-		_ { "wrong arm" testing::fail }
+		_ { drop "wrong arm" testing::fail }
 	}
 }

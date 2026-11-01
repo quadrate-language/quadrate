@@ -11,11 +11,11 @@ fn mcp_prompts_list(id:str -- response:str) {
 
 	p1 p2 json::join p3 json::join json::arr -> prompts_arr
 
-	"prompts" prompts_arr json::kv_raw json::obj -> result
-	id result rpc_result
+	"prompts" prompts_arr json::kv_raw json::obj
+	rpc_result
 }
 
-fn mcp_prompts_get(id:str body:str -- response:str) {
+def mcp_prompts_get(id:str body:str -- response:str) {
 	body "params" json::get_object -> _ -> params
 	params "name" json::get_string -> found -> name
 	params "arguments" json::get_object -> _ -> args
@@ -59,18 +59,18 @@ fn mcp_prompts_get(id:str body:str -- response:str) {
 }
 
 fn mcp_ping(id:str -- response:str) {
-	id "{}" rpc_result
+	"{}" rpc_result
 }
 
 fn is_notification(method:str -- is_notif:i64) {
-	method strings::len 14 >= if {
-		method 0 14 strings::substring! "notifications/" strings::compare 0 ==
+	dup len 14 >= if {
+		0 14 strings::substring! "notifications/" strings::compare 0 ==
 	} else {
-		0
+		drop 0
 	}
 }
 
-fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
+def dispatch(ds:ptr method:str id:str body:str -- response:str) {
 	method is_notification if {
 		""
 	} else {
@@ -89,7 +89,7 @@ fn dispatch(ds:ptr method:str id:str body:str -- response:str) {
 }
 
 fn request_id(doc:json::Value -- id:str valid:i64) {
-	doc "id" json::get switch {
+	"id" json::get switch {
 		Ok {
 			-> v
 			v json::is_string v json::is_number + v json::is_null + 0 > if {
@@ -98,12 +98,12 @@ fn request_id(doc:json::Value -- id:str valid:i64) {
 				"null" 0
 			}
 		}
-		_ { "null" 1 }
+		_ { drop "null" 1 }
 	}
 }
 
 fn request_method(doc:json::Value -- method:str valid:i64) {
-	doc "method" json::get switch {
+	"method" json::get switch {
 		Ok {
 			-> v
 			v json::is_string if {
@@ -112,11 +112,11 @@ fn request_method(doc:json::Value -- method:str valid:i64) {
 				"" 0
 			}
 		}
-		_ { "" 0 }
+		_ { drop "" 0 }
 	}
 }
 
-fn handle_message(ds:ptr body:str -- response:str valid:i64) {
+def handle_message(ds:ptr body:str -- response:str valid:i64) {
 	body json::parse switch {
 		Ok {
 			-> doc
@@ -132,31 +132,31 @@ fn handle_message(ds:ptr body:str -- response:str valid:i64) {
 				id "-32600" "Invalid request" rpc_error 0
 			}
 		}
-		_ { "null" "-32700" "Parse error" rpc_error 0 }
+		_ { drop "null" "-32700" "Parse error" rpc_error 0 }
 	}
 }
 
-fn run_stdio(ds:ptr -- ) {
+def run_stdio(ds:ptr -- ) {
 	loop {
 		io::readline switch {
 			Ok {
-				-> ok -> line
-				ok 0 == if {
+				-> more -> line
+				more 0 == if {
 					break
 				}
-				line strings::len 0 > if {
+				line len 0 > if {
 					ds line handle_message -> _ -> response
-					response strings::len 0 > if {
+					response len 0 > if {
 						response print nl io::flush
 					}
 				}
 			}
-			_ { break }
+			_ { drop drop break }
 		}
 	}
 }
 
-fn handle_mcp(c:ptr -- ) {
+def handle_mcp(c:ptr -- ) {
 	load_docs -> ds
 	defer {
 		ds free
@@ -165,7 +165,7 @@ fn handle_mcp(c:ptr -- ) {
 	c as http::Ctx <<body -> body
 	ds body handle_message -> valid -> response
 
-	response strings::len 0 == if {
+	response len 0 == if {
 		c 204 "" http::string
 	} else {
 		valid if { http::StatusOK } else { http::StatusBadRequest } -> status
@@ -173,21 +173,21 @@ fn handle_mcp(c:ptr -- ) {
 	}
 }
 
-fn handle_sse(c:ptr -- ) {
+def handle_sse(c:ptr -- ) {
 	c http::sse_start
 	c "endpoint" "/mcp" http::sse_event
 	c http::sse_end
 }
 
 fn handle_root(c:ptr -- ) {
-	c http::StatusOK
+	http::StatusOK
 	"name" SERVER_NAME json::kv
 	"version" SERVER_VERSION json::kv json::join
 	"protocol" PROTOCOL_VERSION json::kv json::join
 	json::obj http::json
 }
 
-fn run_http(ds:ptr addr:str -- ) {
+def run_http(ds:ptr addr:str -- ) {
 	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
 	"Protocol: " print PROTOCOL_VERSION print nl
 	"Docs: " print ds <<docs_dir print nl
@@ -230,7 +230,7 @@ fn print_usage() {
 // used to ignore an unrecognised flag and drop into the stdio server, which to
 // whoever mistyped it looked like a hang -- the process just sat there waiting
 // for JSON-RPC that was never coming.
-fn reject_unknown_options(f:flag::Flag -- ) {
+def reject_unknown_options(f:flag::Flag -- ) {
 	f <<argv "\n" strings::split! -> parts
 	0 parts len 1 for it {
 		parts it nth -> tok
@@ -284,7 +284,7 @@ fn main() {
 	use_http if {
 		f "--host" flag::string switch {
 			Ok { }
-			_ { "127.0.0.1" }
+			_ { drop "127.0.0.1" }
 		} -> host
 		ds host ":3000" strings::concat run_http
 	} else {

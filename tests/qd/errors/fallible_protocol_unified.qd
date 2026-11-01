@@ -8,11 +8,12 @@
 //   - switch-on-code always hit `_` for user-defined functions, because their failure pushed
 //     a bare 0 and discarded the panic code.
 //
-// Also pins the Ok/code-1 collision: `Ok` is 1, so a panic carrying code 1 must still be
-// recognised as a failure rather than mistaken for success.
+// A call now leaves its result and a status that is `Ok` (0) on success and the code on
+// failure, the same shape for both idioms; `ok` turns the status into the flag `if` tests.
+// A panic carrying code 1, which is `Err`, reads as that failure.
 use io
 
-fn fails_with(code:i64 -- v:i64)! {
+def fails_with(code:i64 -- v:i64)! {
 	code 0 != if {
 		"boom" code panic
 	}
@@ -21,40 +22,41 @@ fn fails_with(code:i64 -- v:i64)! {
 
 fn main() {
 	// user-defined + if/else
-	1 fails_with if { "WRONG: success" print nl drop } else { "user if: else" print nl }
-	0 fails_with if { "user if: then " print print nl } else { "WRONG: else" print nl }
+	1 fails_with ok if { "WRONG: success" print nl drop } else { drop "user if: else" print nl }
+	0 fails_with ok if { "user if: then " print print nl } else { drop "WRONG: else" print nl }
 
 	// user-defined + switch on a specific code
 	7 fails_with switch {
 		Ok { "WRONG: ok" print nl drop }
-		7 { "user switch: matched 7" print nl }
-		_ { "WRONG: wildcard" print nl }
+		7 { drop "user switch: matched 7" print nl }
+		_ { drop "WRONG: wildcard" print nl }
 	}
 
 	// panic code 1 collides with Ok's value; it must still read as a failure
 	1 fails_with switch {
 		Ok { "WRONG: code 1 seen as ok" print nl drop }
-		1 { "user switch: matched 1" print nl }
-		_ { "WRONG: wildcard" print nl }
+		1 { drop "user switch: matched 1" print nl }
+		_ { drop "WRONG: wildcard" print nl }
 	}
 
 	// user-defined success through switch
 	0 fails_with switch {
 		Ok { "user switch: ok " print print nl }
-		_ { "WRONG: error" print nl }
+		_ { drop "WRONG: error" print nl }
 	}
 
 	// imported + if/else on failure -- used to abort
-	"/nonexistent/nope.txt" io::Read io::open if {
+	"/nonexistent/nope.txt" io::Read io::open ok if {
 		"WRONG: success" print nl io::close
 	} else {
+		drop
 		"ffi if: else" print nl
 	}
 
 	// imported + switch on a specific code still works
 	"/nonexistent/nope.txt" io::Read io::open switch {
 		Ok { "WRONG: ok" print nl io::close }
-		io::ErrNotFound { "ffi switch: not found" print nl }
-		_ { "WRONG: wildcard" print nl }
+		io::ErrNotFound { drop "ffi switch: not found" print nl }
+		_ { drop "WRONG: wildcard" print nl }
 	}
 }

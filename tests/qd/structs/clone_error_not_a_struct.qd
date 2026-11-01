@@ -1,5 +1,4 @@
-// Test: clone needs a struct. The struct type is what decides the size to
-// allocate and the fields to retain, so an array is not one.
+// Test: clone copies a struct or an array; there is nothing to copy in a number.
 fn main() {
-	[1 2 3] clone drop
+	5 clone drop
 }

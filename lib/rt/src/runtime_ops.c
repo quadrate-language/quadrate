@@ -804,10 +804,36 @@ int qd_lnot(qd_context* ctx) {
 	return (int){0};
 }
 
+// A fallible call's status is 0 on success and the error code on failure. `ok` and `fail`
+// turn it into a flag for `if`, `while` and `until`.
+static int qdrt_status_test(qd_context* ctx, const char* name, bool want_ok) {
+	qd_stack* st = ctx->st;
+	if (st->size < 1) {
+		qdrt_fatal_raise(ctx, name, "Stack underflow (required 1 element, have %zu)", (size_t)st->size);
+	}
+
+	qd_stack_element_t* top = &st->data[st->size - 1];
+
+	if (top->type != QD_STACK_TYPE_INT) {
+		qdrt_fatal_raise(ctx, name, "Type error (expected an int status)");
+	}
+
+	top->value.i = ((top->value.i == 0) == want_ok) ? 1 : 0;
+	return (int){0};
+}
+
+int qd_status_ok(qd_context* ctx) {
+	return qdrt_status_test(ctx, "ok", true);
+}
+
+int qd_status_fail(qd_context* ctx) {
+	return qdrt_status_test(ctx, "fail", false);
+}
+
 int qd_shl(qd_context* ctx) {
-	return qdrt_shift_op(ctx, "shl", true);
+	return qdrt_shift_op(ctx, "bits::shl", true);
 }
 
 int qd_shr(qd_context* ctx) {
-	return qdrt_shift_op(ctx, "shr", false);
+	return qdrt_shift_op(ctx, "bits::shr", false);
 }

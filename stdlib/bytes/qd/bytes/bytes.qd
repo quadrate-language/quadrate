@@ -16,8 +16,8 @@ use mem
 /// @param offset i64 Byte offset in buffer
 /// @return value i64 16-bit value
 /// @example buf 0 bytes::read_u16_be -> val
-pub fn read_u16_be(buf:ptr offset:i64 -- value:i64) {
-	buf offset mem::get_byte 8 shl
+pub def read_u16_be(buf:ptr offset:i64 -- value:i64) {
+	buf offset mem::get_byte 8 bits::shl
 	buf offset 1 + mem::get_byte bits::or
 }
 
@@ -26,8 +26,8 @@ pub fn read_u16_be(buf:ptr offset:i64 -- value:i64) {
 /// @param offset i64 Byte offset in buffer
 /// @return value i64 16-bit value
 /// @example buf 0 bytes::read_u16_le -> val
-pub fn read_u16_le(buf:ptr offset:i64 -- value:i64) {
-	buf offset 1 + mem::get_byte 8 shl
+pub def read_u16_le(buf:ptr offset:i64 -- value:i64) {
+	buf offset 1 + mem::get_byte 8 bits::shl
 	buf offset mem::get_byte bits::or
 }
 
@@ -36,10 +36,10 @@ pub fn read_u16_le(buf:ptr offset:i64 -- value:i64) {
 /// @param offset i64 Byte offset in buffer
 /// @return value i64 32-bit value
 /// @example buf 0 bytes::read_u32_be -> val
-pub fn read_u32_be(buf:ptr offset:i64 -- value:i64) {
-	buf offset mem::get_byte 24 shl
-	buf offset 1 + mem::get_byte 16 shl bits::or
-	buf offset 2 + mem::get_byte 8 shl bits::or
+pub def read_u32_be(buf:ptr offset:i64 -- value:i64) {
+	buf offset mem::get_byte 24 bits::shl
+	buf offset 1 + mem::get_byte 16 bits::shl bits::or
+	buf offset 2 + mem::get_byte 8 bits::shl bits::or
 	buf offset 3 + mem::get_byte bits::or
 }
 
@@ -48,10 +48,10 @@ pub fn read_u32_be(buf:ptr offset:i64 -- value:i64) {
 /// @param offset i64 Byte offset in buffer
 /// @return value i64 32-bit value
 /// @example buf 0 bytes::read_u32_le -> val
-pub fn read_u32_le(buf:ptr offset:i64 -- value:i64) {
-	buf offset 3 + mem::get_byte 24 shl
-	buf offset 2 + mem::get_byte 16 shl bits::or
-	buf offset 1 + mem::get_byte 8 shl bits::or
+pub def read_u32_le(buf:ptr offset:i64 -- value:i64) {
+	buf offset 3 + mem::get_byte 24 bits::shl
+	buf offset 2 + mem::get_byte 16 bits::shl bits::or
+	buf offset 1 + mem::get_byte 8 bits::shl bits::or
 	buf offset mem::get_byte bits::or
 }
 
@@ -60,14 +60,14 @@ pub fn read_u32_le(buf:ptr offset:i64 -- value:i64) {
 /// @param offset i64 Byte offset in buffer
 /// @return value i64 64-bit value
 /// @example buf 0 bytes::read_u64_be -> val
-pub fn read_u64_be(buf:ptr offset:i64 -- value:i64) {
-	buf offset mem::get_byte 56 shl
-	buf offset 1 + mem::get_byte 48 shl bits::or
-	buf offset 2 + mem::get_byte 40 shl bits::or
-	buf offset 3 + mem::get_byte 32 shl bits::or
-	buf offset 4 + mem::get_byte 24 shl bits::or
-	buf offset 5 + mem::get_byte 16 shl bits::or
-	buf offset 6 + mem::get_byte 8 shl bits::or
+pub def read_u64_be(buf:ptr offset:i64 -- value:i64) {
+	buf offset mem::get_byte 56 bits::shl
+	buf offset 1 + mem::get_byte 48 bits::shl bits::or
+	buf offset 2 + mem::get_byte 40 bits::shl bits::or
+	buf offset 3 + mem::get_byte 32 bits::shl bits::or
+	buf offset 4 + mem::get_byte 24 bits::shl bits::or
+	buf offset 5 + mem::get_byte 16 bits::shl bits::or
+	buf offset 6 + mem::get_byte 8 bits::shl bits::or
 	buf offset 7 + mem::get_byte bits::or
 }
 
@@ -76,14 +76,14 @@ pub fn read_u64_be(buf:ptr offset:i64 -- value:i64) {
 /// @param offset i64 Byte offset in buffer
 /// @return value i64 64-bit value
 /// @example buf 0 bytes::read_u64_le -> val
-pub fn read_u64_le(buf:ptr offset:i64 -- value:i64) {
-	buf offset 7 + mem::get_byte 56 shl
-	buf offset 6 + mem::get_byte 48 shl bits::or
-	buf offset 5 + mem::get_byte 40 shl bits::or
-	buf offset 4 + mem::get_byte 32 shl bits::or
-	buf offset 3 + mem::get_byte 24 shl bits::or
-	buf offset 2 + mem::get_byte 16 shl bits::or
-	buf offset 1 + mem::get_byte 8 shl bits::or
+pub def read_u64_le(buf:ptr offset:i64 -- value:i64) {
+	buf offset 7 + mem::get_byte 56 bits::shl
+	buf offset 6 + mem::get_byte 48 bits::shl bits::or
+	buf offset 5 + mem::get_byte 40 bits::shl bits::or
+	buf offset 4 + mem::get_byte 32 bits::shl bits::or
+	buf offset 3 + mem::get_byte 24 bits::shl bits::or
+	buf offset 2 + mem::get_byte 16 bits::shl bits::or
+	buf offset 1 + mem::get_byte 8 bits::shl bits::or
 	buf offset mem::get_byte bits::or
 }
 
@@ -92,8 +92,8 @@ pub fn read_u64_le(buf:ptr offset:i64 -- value:i64) {
 /// @param offset i64 Byte offset in buffer
 /// @param value i64 16-bit value to write
 /// @example buf 0 0x1234 bytes::write_u16_be
-pub fn write_u16_be(buf:ptr offset:i64 value:i64 -- ) {
-	value 8 shr 255 bits::and -> b0
+pub def write_u16_be(buf:ptr offset:i64 value:i64 -- ) {
+	value 8 bits::shr 255 bits::and -> b0
 	value 255 bits::and -> b1
 	b0 buf offset mem::set_byte
 	b1 buf offset 1 + mem::set_byte
@@ -104,9 +104,9 @@ pub fn write_u16_be(buf:ptr offset:i64 value:i64 -- ) {
 /// @param offset i64 Byte offset in buffer
 /// @param value i64 16-bit value to write
 /// @example buf 0 0x1234 bytes::write_u16_le
-pub fn write_u16_le(buf:ptr offset:i64 value:i64 -- ) {
+pub def write_u16_le(buf:ptr offset:i64 value:i64 -- ) {
 	value 255 bits::and -> b0
-	value 8 shr 255 bits::and -> b1
+	value 8 bits::shr 255 bits::and -> b1
 	b0 buf offset mem::set_byte
 	b1 buf offset 1 + mem::set_byte
 }
@@ -116,10 +116,10 @@ pub fn write_u16_le(buf:ptr offset:i64 value:i64 -- ) {
 /// @param offset i64 Byte offset in buffer
 /// @param value i64 32-bit value to write
 /// @example buf 0 0x12345678 bytes::write_u32_be
-pub fn write_u32_be(buf:ptr offset:i64 value:i64 -- ) {
-	value 24 shr 255 bits::and -> b0
-	value 16 shr 255 bits::and -> b1
-	value 8 shr 255 bits::and -> b2
+pub def write_u32_be(buf:ptr offset:i64 value:i64 -- ) {
+	value 24 bits::shr 255 bits::and -> b0
+	value 16 bits::shr 255 bits::and -> b1
+	value 8 bits::shr 255 bits::and -> b2
 	value 255 bits::and -> b3
 	b0 buf offset mem::set_byte
 	b1 buf offset 1 + mem::set_byte
@@ -132,11 +132,11 @@ pub fn write_u32_be(buf:ptr offset:i64 value:i64 -- ) {
 /// @param offset i64 Byte offset in buffer
 /// @param value i64 32-bit value to write
 /// @example buf 0 0x12345678 bytes::write_u32_le
-pub fn write_u32_le(buf:ptr offset:i64 value:i64 -- ) {
+pub def write_u32_le(buf:ptr offset:i64 value:i64 -- ) {
 	value 255 bits::and -> b0
-	value 8 shr 255 bits::and -> b1
-	value 16 shr 255 bits::and -> b2
-	value 24 shr 255 bits::and -> b3
+	value 8 bits::shr 255 bits::and -> b1
+	value 16 bits::shr 255 bits::and -> b2
+	value 24 bits::shr 255 bits::and -> b3
 	b0 buf offset mem::set_byte
 	b1 buf offset 1 + mem::set_byte
 	b2 buf offset 2 + mem::set_byte
@@ -148,14 +148,14 @@ pub fn write_u32_le(buf:ptr offset:i64 value:i64 -- ) {
 /// @param offset i64 Byte offset in buffer
 /// @param value i64 64-bit value to write
 /// @example buf 0 0x123456789ABCDEF0 bytes::write_u64_be
-pub fn write_u64_be(buf:ptr offset:i64 value:i64 -- ) {
-	value 56 shr 255 bits::and -> b0
-	value 48 shr 255 bits::and -> b1
-	value 40 shr 255 bits::and -> b2
-	value 32 shr 255 bits::and -> b3
-	value 24 shr 255 bits::and -> b4
-	value 16 shr 255 bits::and -> b5
-	value 8 shr 255 bits::and -> b6
+pub def write_u64_be(buf:ptr offset:i64 value:i64 -- ) {
+	value 56 bits::shr 255 bits::and -> b0
+	value 48 bits::shr 255 bits::and -> b1
+	value 40 bits::shr 255 bits::and -> b2
+	value 32 bits::shr 255 bits::and -> b3
+	value 24 bits::shr 255 bits::and -> b4
+	value 16 bits::shr 255 bits::and -> b5
+	value 8 bits::shr 255 bits::and -> b6
 	value 255 bits::and -> b7
 	b0 buf offset mem::set_byte
 	b1 buf offset 1 + mem::set_byte
@@ -172,15 +172,15 @@ pub fn write_u64_be(buf:ptr offset:i64 value:i64 -- ) {
 /// @param offset i64 Byte offset in buffer
 /// @param value i64 64-bit value to write
 /// @example buf 0 0x123456789ABCDEF0 bytes::write_u64_le
-pub fn write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
+pub def write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
 	value 255 bits::and -> b0
-	value 8 shr 255 bits::and -> b1
-	value 16 shr 255 bits::and -> b2
-	value 24 shr 255 bits::and -> b3
-	value 32 shr 255 bits::and -> b4
-	value 40 shr 255 bits::and -> b5
-	value 48 shr 255 bits::and -> b6
-	value 56 shr 255 bits::and -> b7
+	value 8 bits::shr 255 bits::and -> b1
+	value 16 bits::shr 255 bits::and -> b2
+	value 24 bits::shr 255 bits::and -> b3
+	value 32 bits::shr 255 bits::and -> b4
+	value 40 bits::shr 255 bits::and -> b5
+	value 48 bits::shr 255 bits::and -> b6
+	value 56 bits::shr 255 bits::and -> b7
 	b0 buf offset mem::set_byte
 	b1 buf offset 1 + mem::set_byte
 	b2 buf offset 2 + mem::set_byte
@@ -196,34 +196,33 @@ pub fn write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
 /// @return result i64 Byte-swapped value
 /// @example 0x1234 bytes::swap16 -> result  // 0x3412
 pub fn swap16(value:i64 -- result:i64) {
-	value 8 shr 255 bits::and
-	value 255 bits::and 8 shl bits::or
+	fn { 8 bits::shr 255 bits::and } fn { 255 bits::and 8 bits::shl } bi bits::or
 }
 
 /// Swap byte order of a 32-bit value.
 /// @param value i64 32-bit value
 /// @return result i64 Byte-swapped value
 /// @example 0x12345678 bytes::swap32 -> result  // 0x78563412
-pub fn swap32(value:i64 -- result:i64) {
-	value 24 shr 255 bits::and
-	value 16 shr 255 bits::and 8 shl bits::or
-	value 8 shr 255 bits::and 16 shl bits::or
-	value 255 bits::and 24 shl bits::or
+pub def swap32(value:i64 -- result:i64) {
+	value 24 bits::shr 255 bits::and
+	value 16 bits::shr 255 bits::and 8 bits::shl bits::or
+	value 8 bits::shr 255 bits::and 16 bits::shl bits::or
+	value 255 bits::and 24 bits::shl bits::or
 }
 
 /// Swap byte order of a 64-bit value.
 /// @param value i64 64-bit value
 /// @return result i64 Byte-swapped value
 /// @example 0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201
-pub fn swap64(value:i64 -- result:i64) {
-	value 56 shr 255 bits::and
-	value 48 shr 255 bits::and 8 shl bits::or
-	value 40 shr 255 bits::and 16 shl bits::or
-	value 32 shr 255 bits::and 24 shl bits::or
-	value 24 shr 255 bits::and 32 shl bits::or
-	value 16 shr 255 bits::and 40 shl bits::or
-	value 8 shr 255 bits::and 48 shl bits::or
-	value 255 bits::and 56 shl bits::or
+pub def swap64(value:i64 -- result:i64) {
+	value 56 bits::shr 255 bits::and
+	value 48 bits::shr 255 bits::and 8 bits::shl bits::or
+	value 40 bits::shr 255 bits::and 16 bits::shl bits::or
+	value 32 bits::shr 255 bits::and 24 bits::shl bits::or
+	value 24 bits::shr 255 bits::and 32 bits::shl bits::or
+	value 16 bits::shr 255 bits::and 40 bits::shl bits::or
+	value 8 bits::shr 255 bits::and 48 bits::shl bits::or
+	value 255 bits::and 56 bits::shl bits::or
 }
 
 /// Copy bytes from one buffer to another.
@@ -233,7 +232,7 @@ pub fn swap64(value:i64 -- result:i64) {
 /// @param src_off i64 Source offset
 /// @param count i64 Number of bytes to copy
 /// @example dst 0 src 0 10 bytes::copy
-pub fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
+pub def copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 	0 -> i
 	loop {
 		i count >= if {
@@ -251,7 +250,7 @@ pub fn copy(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 /// @param offset i64 Starting offset
 /// @param count i64 Number of bytes to fill
 /// @example 0 buf 0 10 bytes::fill
-pub fn fill(value:i64 buf:ptr offset:i64 count:i64 -- ) {
+pub def fill(value:i64 buf:ptr offset:i64 count:i64 -- ) {
 	0 -> i
 	loop {
 		i count >= if {
@@ -270,7 +269,7 @@ pub fn fill(value:i64 buf:ptr offset:i64 count:i64 -- ) {
 /// @param count i64 Number of bytes to compare
 /// @return result i64 0 if equal, negative if a<b, positive if a>b
 /// @example buf1 0 buf2 0 10 bytes::compare -> result
-pub fn compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
+pub def compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
 	0 -> result
 	0 -> i
 	loop {
@@ -295,7 +294,7 @@ pub fn compare(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- result:i64) {
 /// @param count i64 Number of bytes to compare
 /// @return result i64 1 if equal, 0 otherwise
 /// @example buf1 0 buf2 0 10 bytes::equals -> result
-pub stack fn equals(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- i64) {
+pub fn equals(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- i64) {
 	compare 0 ==
 }
 
@@ -305,8 +304,8 @@ pub stack fn equals(a:ptr a_off:i64 b:ptr b_off:i64 count:i64 -- i64) {
 /// @param count i64 Number of bytes to search
 /// @param value i64 Byte value to find
 /// @return result i64 Index of first occurrence, or -1 if not found
-/// @example buf 0 10 0x41 bytes::find -> idx
-pub fn find(buf:ptr offset:i64 count:i64 value:i64 -- result:i64) {
+/// @example buf 0 10 0x41 bytes::index_of -> idx
+pub def index_of(buf:ptr offset:i64 count:i64 value:i64 -- result:i64) {
 	-1 -> result
 	0 -> i
 	loop {
@@ -328,8 +327,8 @@ pub fn find(buf:ptr offset:i64 count:i64 value:i64 -- result:i64) {
 /// @param value i64 Byte value to find
 /// @return result i64 1 if found, 0 otherwise
 /// @example buf 0 10 0x41 bytes::contains -> found
-pub stack fn contains(buf:ptr offset:i64 count:i64 value:i64 -- i64) {
-	find -1 !=
+pub fn contains(buf:ptr offset:i64 count:i64 value:i64 -- i64) {
+	index_of -1 !=
 }
 
 /// Reverse the byte order in a buffer region.
@@ -337,7 +336,7 @@ pub stack fn contains(buf:ptr offset:i64 count:i64 value:i64 -- i64) {
 /// @param offset i64 Starting offset
 /// @param count i64 Number of bytes to reverse
 /// @example buf 0 10 bytes::reverse
-pub fn reverse(buf:ptr offset:i64 count:i64 -- ) {
+pub def reverse(buf:ptr offset:i64 count:i64 -- ) {
 	0 -> i
 	count 1 - -> j
 	loop {
@@ -359,7 +358,7 @@ pub fn reverse(buf:ptr offset:i64 count:i64 -- ) {
 /// @param src_off i64 Source offset
 /// @param count i64 Number of bytes to XOR
 /// @example dst 0 src 0 10 bytes::xor
-pub fn xor(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
+pub def xor(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 	0 -> i
 	loop {
 		i count >= if {
@@ -380,7 +379,7 @@ pub fn xor(dst:ptr dst_off:i64 src:ptr src_off:i64 count:i64 -- ) {
 /// @param value i64 Byte value to count
 /// @return result i64 Number of occurrences
 /// @example buf 0 10 0x41 bytes::count -> n
-pub fn count(buf:ptr offset:i64 len:i64 value:i64 -- result:i64) {
+pub def count(buf:ptr offset:i64 len:i64 value:i64 -- result:i64) {
 	0 -> result
 	0 -> i
 	loop {

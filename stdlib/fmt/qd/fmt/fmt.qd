@@ -17,11 +17,6 @@ import "libfmt.a" as "fmt" {
 	/// @example "world" "Hello %s" fmt::sprintf  // "Hello world"
 	pub fn sprintf(format:str -- result:str)
 
-	/// Print a string to stdout (no newline appended).
-	/// @param s str String to print
-	/// @example "hello" fmt::print
-	pub fn print(s:str -- )
-
 	/// Print a string to stdout followed by a newline.
 	/// @param s str String to print
 	/// @example "hello" fmt::println  // hello\n

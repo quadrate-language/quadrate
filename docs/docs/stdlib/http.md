@@ -262,7 +262,7 @@ Register GET route.   - :param for path parameters (e.g., "/users/:id")   - /* f
 **Example:**
 
 ```qd
-e "/" fn(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
+e "/" def(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
 ```
 ---
 
@@ -332,7 +332,7 @@ Register GET on group.
 **Example:**
 
 ```qd
-api "/users" fn(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
+api "/users" def(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
 ```
 ---
 
@@ -364,7 +364,7 @@ Add middleware to group.
 **Example:**
 
 ```qd
-api fn(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
+api def(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
 ```
 ---
 
@@ -543,7 +543,7 @@ Register POST route.
 **Example:**
 
 ```qd
-e "/api/users" fn(c:Ctx -- ) { c 200 "created" http::string } http::POST
+e "/api/users" def(c:Ctx -- ) { c 200 "created" http::string } http::POST
 ```
 ---
 
@@ -717,7 +717,7 @@ c http::sse_start
 
 ### `fn` static
 
-Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* fn handle_static(c:ptr -- ) {     -> c     c "/static" "./public" http::static } e "/static/*" &handle_static http::GET
+Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:ptr -- ) {     -> c     c "/static" "./public" http::static } e "/static/*" &handle_static http::GET
 
 **Signature:** `(c:Ctx prefix:str fs_path:str -- )`
 
@@ -796,7 +796,7 @@ Add middleware to engine. Middleware runs before route handlers on every request
 **Example:**
 
 ```qd
-e fn(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
+e def(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
 ```
 ## Ctx
 

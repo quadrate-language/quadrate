@@ -3,5 +3,5 @@ use "utils/math.qd"
 use helper.qd
 
 fn main() {
-	42 prints nl
+	42 print nl
 }

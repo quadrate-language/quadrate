@@ -1,10 +1,10 @@
 // Control flow operations in modules
-pub stack fn sign(f64 -- f64) {
-	dup 0.0 gt
+pub fn sign(f64 -- f64) {
+	dup 0.0 >
 	if {
 		drop 1.0
 	} else {
-		dup 0.0 lt
+		dup 0.0 <
 		if {
 			drop -1.0
 		} else {
@@ -13,20 +13,20 @@ pub stack fn sign(f64 -- f64) {
 	}
 }
 
-pub stack fn sum_to_n(f64 -- f64) {
+pub fn sum_to_n(f64 -- f64) {
 	0.0
 	swap
 	1.0 swap 1.0
 	for it {
-		it add
+		it +
 	}
 }
 
-pub stack fn count_evens(f64 -- f64) {
+pub fn count_evens(f64 -- f64) {
 	0.0
 	swap
 	0.0 swap 2.0
 	for it {
-		1.0 add
+		1.0 +
 	}
 }

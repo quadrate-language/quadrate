@@ -2,6 +2,6 @@
 fn main() {
 	// Test dup2 - duplicate top 2 elements
 	1 2 dup2
-	prints
-	drop drop drop drop
+	-> d -> c -> b -> a
+	a print " " print b print " " print c print " " print d print nl
 }

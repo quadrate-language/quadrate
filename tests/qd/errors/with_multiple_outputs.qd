@@ -1,11 +1,11 @@
 // Test: with multiple outputs
-stack fn add_and_sub(i64 i64 -- i64 i64)! {
-	swap dup rot dup rot add rot rot sub
+fn add_and_sub(i64 i64 -- i64 i64)! {
+	swap dup rot dup rot + rot rot -
 }
 
-stack fn divide_and_double(i64 i64 -- i64 i64)! {
+fn divide_and_double(i64 i64 -- i64 i64)! {
 	dup 0 > if {
-		/ dup 2 mul
+		/ dup 2 *
 	} else {
 		drop drop
 		0 0
@@ -15,26 +15,29 @@ stack fn divide_and_double(i64 i64 -- i64 i64)! {
 
 fn main() {
 	"5 add_and_sub 3:" print nl
-	5 3 add_and_sub if {
+	5 3 add_and_sub ok if {
 		"  Difference: " print print nl
 		"  Sum: " print print nl
 	} else {
+		drop drop
 		"  Error" print nl
 	}
 
 	"20 divide_and_double 4:" print nl
-	20 4 divide_and_double if {
+	20 4 divide_and_double ok if {
 		"  Doubled: " print print nl
 		"  Quotient: " print print nl
 	} else {
+		drop drop
 		"  Error" print nl
 	}
 
 	"10 divide_and_double 0:" print nl
-	10 0 divide_and_double if {
+	10 0 divide_and_double ok if {
 		"  Doubled: " print print nl
 		"  Quotient: " print print nl
 	} else {
+		drop drop
 		"  Error (expected)" print nl
 	}
 }

@@ -9,15 +9,15 @@ struct Cat {
 	lives: i64
 }
 
-fn get_dog_name(p:ptr -- n:str) {
+def get_dog_name(p:ptr -- n:str) {
 	p as Dog <<name
 }
 
-fn get_dog_age(p:ptr -- a:i64) {
+def get_dog_age(p:ptr -- a:i64) {
 	p as Dog <<age
 }
 
-fn get_cat_lives(p:ptr -- l:i64) {
+def get_cat_lives(p:ptr -- l:i64) {
 	p as Cat <<lives
 }
 

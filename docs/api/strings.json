@@ -31,7 +31,7 @@
       "name": "byte_len",
       "signature": "(s:str -- bytes:i64)",
       "failable": false,
-      "description": "Size of the string's UTF-8 encoding, in bytes. strings::len counts characters; this is what you want when sizing a buffer or writing to something that counts octets.",
+      "description": "Size of the string's UTF-8 encoding, in bytes. The builtin `len` counts characters; this is what you want when sizing a buffer or writing to something that counts octets.",
       "params": [{"name": "s", "type": "str", "description": "Input string"}],
       "returns": [{"name": "bytes", "type": "i64", "description": "Number of bytes"}],
       "errors": [],
@@ -61,7 +61,7 @@
       "name": "char_at",
       "signature": "(str:str index:i64 -- char_code:i64)",
       "failable": false,
-      "description": "Get character code at index, or NotAChar when the index is outside the string. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character. An index past the end, or a negative one, gives NotAChar (-1) rather than an error: scanners read \"the character here, if there is one\", and -1 matches nothing they test for, so the loop ends on its own. Use strings::len to tell \"past the end\" from a character the string really holds.",
+      "description": "Get character code at index, or NotAChar when the index is outside the string. The index counts characters and the result is a Unicode codepoint, so indexing never lands in the middle of a multi-byte character. An index past the end, or a negative one, gives NotAChar (-1) rather than an error: scanners read \"the character here, if there is one\", and -1 matches nothing they test for, so the loop ends on its own. Use `len` to tell \"past the end\" from a character the string really holds.",
       "params": [{"name": "str", "type": "str", "description": "Input string"}, {"name": "index", "type": "i64", "description": "Character position"}],
       "returns": [{"name": "char_code", "type": "i64", "description": "Unicode codepoint, or NotAChar"}],
       "errors": [],
@@ -296,16 +296,6 @@
       "returns": [{"name": "index", "type": "i64", "description": "Index of last match, -1 if not found"}],
       "errors": [],
       "examples": ["\"hello hello\" \"hello\" strings::last_index_of print  // 6"]
-    },
-    {
-      "name": "len",
-      "signature": "(str:str -- len:i64)",
-      "failable": false,
-      "description": "Get string length in characters. Counts UTF-8 codepoints, so \"héllo\" is 5 even though it occupies 6 bytes. Use strings::data for the byte buffer when byte extent is what you need.",
-      "params": [{"name": "str", "type": "str", "description": "Input string"}],
-      "returns": [{"name": "len", "type": "i64", "description": "Length in characters"}],
-      "errors": [],
-      "examples": ["\"héllo\" strings::len print  // 5"]
     },
     {
       "name": "lines",

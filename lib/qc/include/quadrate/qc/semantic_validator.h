@@ -72,6 +72,12 @@ namespace Qd {
 		std::unordered_map<size_t, std::string> parameterTypeNames;
 		std::unordered_map<size_t, std::string> producesTypeNames;
 		bool throws = false; // Whether the function can throw errors
+		// Stack variables (`..a`): those the function declares, and the ones at the bottom of its
+		// inputs and its outputs. The part of the caller's stack the function reaches into, which
+		// a call fixes from the types of its function-value arguments.
+		std::vector<std::string> stackVariables;
+		std::string inputStackVariable;
+		std::string outputStackVariable;
 	};
 
 	// Semantic validator - checks for errors that would slip through to GCC/runtime
@@ -111,7 +117,14 @@ namespace Qd {
 		StackValueType resolveFieldType(const std::string& structType, const std::string& fieldName,
 				std::string& fieldStructType, bool* unboundTypeParam = nullptr) const;
 		// The signature of the bare fallible call immediately before node->child(i), or nullptr.
-		const FunctionSignature* bareFallibleCallBefore(IAstNode* node, size_t i) const;
+		void reportStatusTestedByIf(IAstNode* call, const std::string& name);
+		void checkStackVariableDeclarations(class AstNodeFunctionDeclaration* func);
+		bool applyStackReach(IAstNode* site, IAstNode* block, const std::string& name, const FunctionSignature& sig,
+				const std::map<std::string, std::string>& bindings, std::vector<StackValueType>& typeStack,
+				std::vector<std::string>& structTypeStack, bool& reachesBelow, size_t& belowCount,
+				std::vector<std::string>& belowOutputs);
+		bool applyFloorCall(IAstNode* site, const std::string& name, const std::string& in, const std::string& out,
+				size_t fixedInputs, const std::vector<StackValueType>& typeStack);
 
 		// Checks the argument types of a call against `sig` (struct, array and fn-pointer parameter
 		// types, and generic type parameters), binding the type parameters as it goes. Reports
@@ -321,13 +334,13 @@ namespace Qd {
 		void typeCheckInstructionNode(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
-		void typeCheckIf(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+		void typeCheckIf(IAstNode* child, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
 		void typeCheckDefer(IAstNode* child, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
-		void typeCheckSwitch(IAstNode* child, IAstNode* node, size_t i, std::vector<StackValueType>& typeStack,
+		void typeCheckSwitch(IAstNode* child, std::vector<StackValueType>& typeStack,
 				std::unordered_map<std::string, StackValueType>& localVariables,
 				std::vector<std::string>& structTypeStack);
 		void typeCheckFor(IAstNode* child, std::vector<StackValueType>& typeStack,
@@ -416,8 +429,12 @@ namespace Qd {
 				std::vector<std::string>& structTypeStack, bool reportErrors);
 		void checkBuiltinCast(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack, bool reportErrors);
+		// `name` is what a diagnostic calls the call: `call`, or the combinator running the value
 		void checkBuiltinCall(IAstNode* node, std::vector<StackValueType>& typeStack,
-				std::vector<std::string>& structTypeStack, bool reportErrors);
+				std::vector<std::string>& structTypeStack, bool reportErrors, const char* name = "call");
+		void typeCheckCombinator(class AstNodeInstruction* instr, IAstNode* block, size_t index,
+				std::vector<StackValueType>& typeStack, std::unordered_map<std::string, StackValueType>& localVariables,
+				std::vector<std::string>& structTypeStack);
 		void checkBuiltinNth(IAstNode* node, std::vector<StackValueType>& typeStack,
 				std::vector<std::string>& structTypeStack, bool reportErrors);
 		void checkBuiltinSet(IAstNode* node, std::vector<StackValueType>& typeStack,
@@ -663,6 +680,12 @@ namespace Qd {
 		// Current function's type parameters (for generic functions)
 		// Set when entering a generic function, cleared when leaving
 		std::vector<std::string> mCurrentTypeParams;
+		// The stack variables of the function being checked, and the one its modelled stack
+		// currently stands on: the values below everything in typeStack. Calling a function value
+		// whose type reaches into it replaces it with the value's output variable.
+		std::vector<std::string> mCurrentStackVariables;
+		std::string mFloorStackVariable;
+		const IAstNode* mCurrentFunctionBody = nullptr;
 
 		// Whether the current function being validated is fallible (can throw)
 		// Used to restrict 'panic' to only be called in fallible functions
@@ -685,6 +708,21 @@ namespace Qd {
 		// Anonymous functions whose body has been checked. The same one can be reached twice --
 		// a module's AST is validated once per importer -- and it is only worth one diagnostic.
 		std::unordered_set<const IAstNode*> mCheckedAnonFunctions;
+
+		// Inferring a `fn { }`'s effect walks its body on more and more inputs until it stops
+		// underflowing. While a trial walk runs, diagnostics are held back, and an underflow is
+		// only noted.
+		int mInferringEffect = 0;
+		// The named inputs of the function being checked when it leaves them on the stack, with
+		// how it is spelled, so naming one in the body is reported as needing `def` rather than
+		// as an undefined identifier
+		std::unordered_map<std::string, std::string> mUnboundParameters;
+		// How to make the function being checked fallible, for a diagnostic: a `fn { }` has no
+		// signature to add the `!` to.
+		std::string fallibleRemedy() const;
+		bool mInferenceUnderflow = false;
+		std::string inferAnonymousFunctionType(class AstNodeAnonymousFunction* anonFunc,
+				const std::unordered_map<std::string, StackValueType>& locals);
 		std::unordered_set<const IAstNode*> mUndefinedNodes;
 
 		// Pending function signature - set when an anonymous function or function pointer

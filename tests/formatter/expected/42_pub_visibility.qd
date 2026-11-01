@@ -1,4 +1,4 @@
-pub fn add(a:i64 b:i64 -- result:i64) {
+pub def add(a:i64 b:i64 -- result:i64) {
 	a b +
 }
 
@@ -26,6 +26,6 @@ pub enum Direction {
 
 pub const MAX_SIZE = 1024
 
-pub fn fallible(x:i64 -- result:i64)! {
+pub def fallible(x:i64 -- result:i64)! {
 	x
 }

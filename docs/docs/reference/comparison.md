@@ -1,39 +1,39 @@
 # Comparison operations
 
-Operations that compare values and return boolean results (0 or 1).
+Operations that compare values and return a flag, 1 or 0.
 
 ## Overview
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `==` / `eq` | `(a b -- bool)` | Equal |
-| `!=` / `neq` | `(a b -- bool)` | Not equal |
-| `<` / `lt` | `(a b -- bool)` | Less than |
-| `<=` / `lte` | `(a b -- bool)` | Less or equal |
-| `>` / `gt` | `(a b -- bool)` | Greater than |
-| `>=` / `gte` | `(a b -- bool)` | Greater or equal |
-| `within` | `(val low high -- bool)` | Range check |
+| `==` | `(a b -- flag)` | Equal |
+| `!=` | `(a b -- flag)` | Not equal |
+| `<` | `(a b -- flag)` | Less than |
+| `<=` | `(a b -- flag)` | Less or equal |
+| `>` | `(a b -- flag)` | Greater than |
+| `>=` | `(a b -- flag)` | Greater or equal |
+| `within` | `(a low high -- flag)` | Range check |
 
 ---
 
 ## Equality
 
-### == (eq)
+### ==
 
 Outputs 1 if a equals b, 0 otherwise.
 
-**Signature:** `(a b -- bool)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 5 5 == // 1
 5 3 == // 0
 ```
 
-### != (neq)
+### !=
 
 Outputs 1 if a does not equal b, 0 otherwise.
 
-**Signature:** `(a b -- bool)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 5 3 != // 1
@@ -44,22 +44,22 @@ Outputs 1 if a does not equal b, 0 otherwise.
 
 ## Ordering
 
-### < (lt)
+### <
 
 Outputs 1 if a is less than b, 0 otherwise.
 
-**Signature:** `(a b -- bool)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 3 5 < // 1
 5 3 < // 0
 ```
 
-### <= (lte)
+### <=
 
 Outputs 1 if a is less than or equal to b, 0 otherwise.
 
-**Signature:** `(a b -- bool)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 5 5 <= // 1
@@ -67,22 +67,22 @@ Outputs 1 if a is less than or equal to b, 0 otherwise.
 6 5 <= // 0
 ```
 
-### > (gt)
+### >
 
 Outputs 1 if a is greater than b, 0 otherwise.
 
-**Signature:** `(a b -- bool)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 5 3 > // 1
 3 5 > // 0
 ```
 
-### >= (gte)
+### >=
 
 Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
-**Signature:** `(a b -- bool)`
+**Signature:** `(a b -- flag)`
 
 ```qd
 5 5 >= // 1
@@ -98,30 +98,10 @@ Outputs 1 if a is greater than or equal to b, 0 otherwise.
 
 Outputs 1 if val is in [low, high], 0 otherwise.
 
-**Signature:** `(val low high -- bool)`
+**Signature:** `(a low high -- flag)`
 
 ```qd
 5 0 10 within  // 1 (5 is in [0,10])
 10 0 10 within // 1 (10 is in [0,10])
 11 0 10 within // 0 (11 is not in [0,10])
-```
-
----
-
-## Word forms
-
-Both symbol and word forms are available:
-
-| Symbol | Word |
-|--------|------|
-| `==` | `eq` |
-| `!=` | `neq` |
-| `<` | `lt` |
-| `<=` | `lte` |
-| `>` | `gt` |
-| `>=` | `gte` |
-
-```qd
-5 3 gt // Same as 5 3 >
-5 5 eq // Same as 5 5 ==
 ```

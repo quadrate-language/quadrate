@@ -1,16 +1,17 @@
 // Test: error recovery patterns
-fn might_fail(val:i64 -- result:i64)! {
-	val 0 eq if {
+def might_fail(val:i64 -- result:i64)! {
+	val 0 == if {
 		"zero not allowed" 1 panic
 	}
 	100 val /
 }
 
-fn with_default(val:i64 def:i64 -- result:i64) {
-	val might_fail if {
+def with_default(val:i64 fallback:i64 -- result:i64) {
+	val might_fail ok if {
 		// got result
 	} else {
-		def
+		drop
+		fallback
 	}
 }
 
@@ -24,28 +25,33 @@ fn main() {
 
 	// Multiple attempts
 	"=== Multiple attempts ===" print nl
-	0 might_fail if {
+	0 might_fail ok if {
 		"0: " print print nl
 	} else {
+		drop
 		"0: failed, trying 10" print nl
-		10 might_fail if {
+		10 might_fail ok if {
 			"10: " print print nl
 		} else {
+			drop
 			"10: also failed" print nl
 		}
 	}
 
 	// Fallback chain
 	"=== Fallback chain ===" print nl
-	0 might_fail if {
+	0 might_fail ok if {
 		print
 	} else {
-		0 might_fail if {
+		drop
+		0 might_fail ok if {
 			print
 		} else {
-			25 might_fail if {
+			drop
+			25 might_fail ok if {
 				print
 			} else {
+				drop
 				"all failed" print
 			}
 		}

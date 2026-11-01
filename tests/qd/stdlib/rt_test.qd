@@ -1,10 +1,9 @@
 // rt test
 use testing
 use rt
-use strings
 
 test "version returns non-empty string" {
-	rt::version strings::len 0 > testing::assert_true
+	rt::version len 0 > testing::assert_true
 }
 
 test "version_api returns positive number" {

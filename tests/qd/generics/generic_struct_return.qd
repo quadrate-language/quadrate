@@ -3,7 +3,7 @@ struct Box<T> {
 	value:T
 }
 
-fn wrap<T>(x:T -- b:Box<T>) {
+def wrap<T>(x:T -- b:Box<T>) {
 	Box<T> { value = x }
 }
 

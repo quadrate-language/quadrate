@@ -1,0 +1,24 @@
+// Regression: a field read through a local after a method call on another field resolved
+// against that field's struct. `<<pos` left "the last field access was a Vec3", `-> p` took
+// its type from the call and never cleared it, and `a <<mass` then looked `mass` up in
+// Vec3 -- an ambiguous field the rocket example tripped over.
+use math
+
+struct Body {
+	mass:f64
+	pos:math::Vec3
+}
+
+struct Other {
+	mass:f64
+}
+
+def heavier(a:Body dt:f64 -- m:f64) {
+	a <<pos dt math::scale -> p
+	a <<mass p <<x +
+}
+
+fn main() {
+	Body { mass = 2.0 pos = math::Vec3 { x = 1.0 y = 2.0 z = 3.0 } } 0.5 heavier print nl
+	Other { mass = 1.0 } <<mass print nl
+}

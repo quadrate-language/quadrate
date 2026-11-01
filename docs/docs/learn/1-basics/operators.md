@@ -16,25 +16,6 @@ fn main() {
 }
 ```
 
-### Word forms
-
-You can also use words instead of symbols:
-
-| Symbol | Word |
-|--------|------|
-| `+` | `add` |
-| `-` | `sub` |
-| `*` | `mul` |
-| `/` | `div` |
-| `%` | `mod` |
-
-```qd
-fn main() {
-	3 4 add print nl  // 7
-	10 3 sub print nl // 7
-}
-```
-
 ### Other arithmetic
 
 ```qd
@@ -45,7 +26,7 @@ fn main() {
 }
 ```
 
-You can also use `inc` and `dec` as word forms for `++` and `--`.
+The operators are spelled only as symbols; `neg` is a word because there is no symbol for it.
 
 ## Comparison
 
@@ -61,17 +42,6 @@ fn main() {
 	5 5 <= print nl  // 1
 }
 ```
-
-### Word forms
-
-| Symbol | Word |
-|--------|------|
-| `==` | `eq` |
-| `!=` | `neq` |
-| `<` | `lt` |
-| `<=` | `lte` |
-| `>` | `gt` |
-| `>=` | `gte` |
 
 ### Range check
 
@@ -125,8 +95,8 @@ fn main() {
 	0b1100 0b1010 bits::or print nl   // 14 (0b1110)
 	0b1100 0b1010 bits::xor print nl  // 6 (0b0110)
 	0b1111 bits::not print nl         // -16 (bitwise NOT)
-	1 4 shl print nl                  // 16 (shift left)
-	16 2 shr print nl                 // 4 (shift right)
+	1 4 bits::shl print nl                  // 16 (shift left)
+	16 2 bits::shr print nl                 // 4 (shift right)
 }
 ```
 

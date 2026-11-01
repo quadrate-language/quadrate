@@ -4,22 +4,18 @@ Techniques for debugging Quadrate programs.
 
 ## Stack debugging
 
-Use the built-in debug instructions to inspect stack state:
+`dump` prints the top value with its type and pops it. `dup dump` looks at it without
+taking it:
 
 ```qd
 fn main() {
 	1 2 3
-	prints    // 1 2 3 (print entire stack, non-destructive)
-	printv    // int:3 (print and pop top value)
-	prints    // 1 2
-	drop drop
+	dup dump    // int:3
+	drop drop drop
 }
 ```
 
-| Instruction | Pops | Type info | Description |
-|-------------|------|-----------|-------------|
-| `prints` | No | No | Print entire stack |
-| `printv` | Yes (one) | Yes | Print and pop top value |
+To see the whole stack, try the code at the `quadrepl` prompt, where `stack` shows every value.
 
 ## GDB debugging
 

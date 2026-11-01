@@ -2,8 +2,8 @@
 fn main() {
     100 -> offset
 
-    fn (a:i64 b:i64 c:i64 -- r:i64) {
-        a b add c add offset add
+    def (a:i64 b:i64 c:i64 -- r:i64) {
+        a b + c + offset +
     } -> sum_with_offset
 
     1 2 3 sum_with_offset call print nl

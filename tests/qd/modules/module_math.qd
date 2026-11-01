@@ -28,7 +28,7 @@ fn main() {
 	3.5 math::round print nl
 
 	// Test deg_to_rad (module function)
-	180.0 math::deg_to_rad math::Pi sub math::abs 0.001 lt print nl
+	180.0 math::deg_to_rad math::Pi - math::abs 0.001 < print nl
 
 	// Test clamp (module function)
 	15.0 0.0 10.0 math::clamp print nl

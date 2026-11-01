@@ -1,0 +1,2 @@
+'panic' with code 0, which is 'Ok'
+use 'Err' for a generic failure

@@ -1,13 +1,13 @@
 // Test: error propagation patterns
-fn might_fail(should_fail:i64 -- result:i64)! {
+def might_fail(should_fail:i64 -- result:i64)! {
 	should_fail if {
 		0 "intentional failure" 99 panic
 	}
 	42
 }
 
-fn double_it(x:i64 -- result:i64)! {
-	x might_fail if {
+def double_it(x:i64 -- result:i64)! {
+	x might_fail ok if {
 		-> val
 		val 2 *
 	} else {
@@ -15,10 +15,10 @@ fn double_it(x:i64 -- result:i64)! {
 	}
 }
 
-fn triple_chain(x:i64 -- result:i64)! {
-	x might_fail if {
+def triple_chain(x:i64 -- result:i64)! {
+	x might_fail ok if {
 		-> val
-		0 might_fail if {
+		0 might_fail ok if {
 			-> val2
 			val val2 +
 		} else {
@@ -31,37 +31,42 @@ fn triple_chain(x:i64 -- result:i64)! {
 
 fn main() {
 	"=== Direct success ===" print nl
-	0 might_fail if {
+	0 might_fail ok if {
 		print nl
 	} else {
+		drop
 		"failed" print nl
 	}
 
 	"=== Direct failure ===" print nl
-	1 might_fail if {
+	1 might_fail ok if {
 		print nl
 	} else {
+		drop
 		"caught failure" print nl
 	}
 
 	"=== Chained success ===" print nl
-	0 double_it if {
+	0 double_it ok if {
 		print nl
 	} else {
+		drop
 		"failed" print nl
 	}
 
 	"=== Chained failure ===" print nl
-	1 double_it if {
+	1 double_it ok if {
 		print nl
 	} else {
+		drop
 		"propagated failure" print nl
 	}
 
 	"=== Triple chain success ===" print nl
-	0 triple_chain if {
+	0 triple_chain ok if {
 		print nl
 	} else {
+		drop
 		"failed" print nl
 	}
 

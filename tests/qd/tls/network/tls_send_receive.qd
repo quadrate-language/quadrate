@@ -16,6 +16,7 @@ fn main( -- ) {
 					"sent:" print bytes_sent print nl
 				}
 				_ {
+					drop
 					"send error" print nl
 				}
 			}
@@ -26,12 +27,13 @@ fn main( -- ) {
 					-> bytes_read
 					-> data
 					// Just check we received some data
-					bytes_read 0 gt
+					bytes_read 0 >
 					if {
 						"received data" print nl
 					}
 				}
 				_ {
+					drop drop
 					"receive error" print nl
 				}
 			}
@@ -39,6 +41,7 @@ fn main( -- ) {
 			conn tls::close
 		}
 		_ {
+			drop
 			"connect error" print nl
 		}
 	}

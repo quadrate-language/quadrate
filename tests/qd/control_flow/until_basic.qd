@@ -1,7 +1,7 @@
 // Test: `loop { ... cond until }` -- `until` takes a flag and leaves the loop when it is
 // true. Written last it is a do-while, written first a while with the test inverted, and
 // in the middle it exits between the two halves of an iteration.
-fn halvings(n:i64 -- steps:i64) {
+def halvings(n:i64 -- steps:i64) {
 	n 0 swap
 	loop {
 		dup 1 <= until

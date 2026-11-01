@@ -1,0 +1,11 @@
+// fn { } has no signature: the braces get one space inside, and a lambda inside one is
+// normalised on the same pass
+fn main() {
+	5 fn{2*} call drop
+	fn {   + } -> add
+	fn{} drop
+	1 fn{fn{1+} call} call drop
+	fn {
+		dup *
+	} -> sq
+}

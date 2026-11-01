@@ -3,8 +3,8 @@
 namespace Qd {
 
 	/**
-	 * Parse an anonymous function: fn (params -- outputs) { body }
-	 * Called when 'fn' keyword is followed by '(' (no identifier name).
+	 * Parse an anonymous function: def (params -- outputs) { body }, or fn { body }
+	 * Called when 'fn' keyword is followed by '(' or '{' (no identifier name).
 	 * The 'fn' keyword has already been consumed.
 	 *
 	 * Captures are detected automatically during semantic analysis - any variable
@@ -18,8 +18,20 @@ namespace Qd {
 		func->setStack(isStack);
 
 		char32_t token = u8t_scanner_scan(scanner);
+		if (token == '{') {
+			// `fn { body }`: no signature. The body works on the stack, and the validator infers
+			// its effect.
+			func->setHasSignature(false);
+			func->setStack(true);
+			AstNodeBlock* body = new AstNodeBlock();
+			setNodePosition(body, scanner, src);
+			parseBlockBody(body, scanner, errorReporter, src);
+			body->setParent(func.get());
+			func->setBody(body);
+			return func.release();
+		}
 		if (token != '(') {
-			errorReporter->reportError(scanner, "Expected '(' after 'fn' for anonymous function");
+			errorReporter->reportError(scanner, "Expected '(' or '{' after 'fn' for anonymous function");
 			return nullptr;
 		}
 
@@ -73,7 +85,7 @@ namespace Qd {
 					// Consume the ':'
 					u8t_scanner_scan(scanner);
 					// A malformed type has been scanned by the time parseType reports it, so
-					// carrying on here loses whatever came next: `fn a(){fn(n:}--){}}` used to
+					// carrying on here loses whatever came next: `fn a(){def(n:}--){}}` used to
 					// lose the brace that closed the signature's block and still parse clean.
 					const std::string paramTypeStr = parseType(scanner, errorReporter);
 					if (paramTypeStr.empty()) {
@@ -88,7 +100,7 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else if (isTypeName(paramNameStr)) {
-					// Unnamed typed parameter (e.g., fn (i64 -- i64) { ... })
+					// Unnamed typed parameter (e.g., def (i64 -- i64) { ... })
 					if (!isOutput) {
 						anonHasUnnamedInput = true;
 					}
@@ -101,7 +113,7 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else if (paramPeek == '<') {
-					// Unnamed generic type parameter (e.g., fn (Vec<i64> -- ) { ... })
+					// Unnamed generic type parameter (e.g., def (Vec<i64> -- ) { ... })
 					std::string typeStr = paramNameStr;
 					u8t_scanner_scan(scanner); // consume '<'
 					parseTypeArgumentList(scanner, errorReporter, typeStr);
@@ -164,13 +176,13 @@ namespace Qd {
 		}
 
 		if (anonHasParams && !anonHasSeparator) {
-			errorReporter->reportError(scanner,
-					"Function signature requires '--' separator (e.g., 'fn(x:i64 -- )' or 'fn(x:i64 -- y:i64)')");
+			errorReporter->reportError(scanner, "Function signature requires '--' separator (e.g., 'fn(x:i64 -- )' "
+												"or 'fn(x:i64 -- y:i64)')");
 		}
-		// Whether inputs are bound is carried by `stack`, not by whether someone wrote a name, so
-		// mixing named and unnamed inputs is no longer a parse error: under `stack` the names are
-		// partial documentation, and without it the validator reports each unnamed input the way
-		// it does for a named function. `anonHasNamedInput` is kept for the parse either way.
+		// Whether inputs are bound is carried by `def`, not by whether someone wrote a name, so
+		// mixing named and unnamed inputs is no longer a parse error: in a `fn` the names are
+		// partial documentation, and with it the validator reports each unnamed input the way it
+		// does for a named function. `anonHasNamedInput` is kept for the parse either way.
 		(void)anonHasNamedInput;
 		(void)anonHasUnnamedInput;
 
@@ -201,7 +213,7 @@ namespace Qd {
 
 	IAstNode* parseFunctionDeclaration(
 			u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src, bool isPublic) {
-		// Check for receiver syntax: fn (receiver:Type) name(...) or fn (receiver:Type<T>) name(...)
+		// Check for receiver syntax: def (receiver:Type) name(...) or def (receiver:Type<T>) name(...)
 		std::string receiverName;
 		std::string receiverType;
 		std::vector<std::string> receiverTypeParams;
@@ -333,6 +345,19 @@ namespace Qd {
 					if (peek == ',') {
 						u8t_scanner_scan(scanner); // Consume ','
 					}
+				} else if (token == '.') {
+					// A stack variable, `..a`, declared beside the type parameters
+					const std::string variable = scanStackVariableTail(scanner);
+					if (variable.empty()) {
+						errorReporter->reportError(
+								scanner, "Expected a stack variable such as '..a' in generic function");
+						break;
+					}
+					func->addStackVariable(variable);
+					peek = peekNextNonWhitespace(scanner, src);
+					if (peek == ',') {
+						u8t_scanner_scan(scanner); // Consume ','
+					}
 				} else if (token != ',') {
 					errorReporter->reportError(scanner, "Expected type parameter or '>' in generic function");
 					break;
@@ -372,6 +397,26 @@ namespace Qd {
 					errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
 					break;
 				}
+			} else if (token == '.') {
+				// A stack variable, `..a`, at the bottom of the inputs or the outputs
+				const std::string variable = scanStackVariableTail(scanner);
+				if (variable.empty()) {
+					errorReporter->reportError(scanner, "Expected a stack variable such as '..a'");
+					break;
+				}
+				const bool listStarted =
+						isOutput ? !func->outputParameters().empty() : !func->inputParameters().empty();
+				const std::string& already = isOutput ? func->outputStackVariable() : func->inputStackVariable();
+				if (listStarted || !already.empty()) {
+					errorReporter->reportError(
+							scanner, ("The stack variable '" + variable +
+											 "' must come first in its list, and a list has at most one")
+											 .c_str());
+				} else if (isOutput) {
+					func->setOutputStackVariable(variable);
+				} else {
+					func->setInputStackVariable(variable);
+				}
 			} else if (token == U8T_IDENTIFIER) {
 				hasParams = true;
 				const char* paramName = u8t_scanner_token_text(scanner, &n);
@@ -383,7 +428,7 @@ namespace Qd {
 					// Consume the ':'
 					u8t_scanner_scan(scanner);
 					// A malformed type has been scanned by the time parseType reports it, so
-					// carrying on here loses whatever came next: `fn a(){fn(n:}--){}}` used to
+					// carrying on here loses whatever came next: `fn a(){def(n:}--){}}` used to
 					// lose the brace that closed the signature's block and still parse clean.
 					const std::string paramTypeStr = parseType(scanner, errorReporter);
 					if (paramTypeStr.empty()) {
@@ -398,7 +443,7 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else if (isTypeName(paramNameStr)) {
-					// Unnamed typed parameter (e.g., fn foo(i64 f64 -- i64))
+					// Unnamed typed parameter (e.g., def foo(i64 f64 -- i64))
 					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
 					param->setParent(func.get());
@@ -408,7 +453,7 @@ namespace Qd {
 						func->addInputParameter(param);
 					}
 				} else if (paramPeek == '<') {
-					// Unnamed generic type parameter (e.g., fn foo(Vec<i64> -- ))
+					// Unnamed generic type parameter (e.g., def foo(Vec<i64> -- ))
 					std::string typeStr = paramNameStr;
 					u8t_scanner_scan(scanner); // consume '<'
 					parseTypeArgumentList(scanner, errorReporter, typeStr);
@@ -423,7 +468,7 @@ namespace Qd {
 				} else {
 					// Unnamed parameter — a bare identifier in a parameter list can only be a
 					// type, since a name is always written `name:type`. This used to store it
-					// as the *name* with an empty type, so `fn f(P -- r:i64)` over a struct
+					// as the *name* with an empty type, so `def f(P -- r:i64)` over a struct
 					// reported "Invalid type ''" and then a cascade from the body.
 					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
 					setNodePosition(param, scanner, src);
@@ -473,8 +518,8 @@ namespace Qd {
 												"or 'fn foo(x:i64 -- y:i64)')");
 		}
 
-		// Whether an unnamed input parameter is allowed at all depends on the `stack`
-		// modifier, which is applied by the caller after this returns -- so the check
+		// Whether an unnamed input parameter is allowed at all depends on whether this is a
+		// `def`, which the caller applies after this returns -- so the check
 		// lives in the collect pass (see validateParameterBinding) rather than here.
 
 		// Check for optional '!' marker (fallible function)

@@ -1,6 +1,6 @@
 // Test: `loop { cond while ... }` -- `while` takes a flag and leaves the loop when it is
 // false. Zero-trip, break/continue, calls and nesting all covered.
-fn is_small(n:i64 -- r:i64) {
+def is_small(n:i64 -- r:i64) {
 	n 3 <
 }
 

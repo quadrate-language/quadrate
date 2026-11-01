@@ -1,6 +1,6 @@
 use http
 
-fn handle_static(c:ptr -- ) {
+def handle_static(c:ptr -- ) {
 	"/" "./" http::static
 }
 

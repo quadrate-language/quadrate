@@ -10,4 +10,4 @@ struct Point {
 	y:i64
 }
 
-fn double(x:Number -- r:Number) { x 2 * }
+def double(x:Number -- r:Number) { x 2 * }

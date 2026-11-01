@@ -2,9 +2,9 @@
 const MyValue = 42
 
 fn MyValue() {
-	"I am a function" prints nl
+	"I am a function" print nl
 }
 
 fn main() {
-	MyValue prints nl
+	MyValue print nl
 }

@@ -1,1 +1,1 @@
-Type error in 'clone': Expected a struct, got []i64
+Type error in 'clone': Expected a struct or an array, got int

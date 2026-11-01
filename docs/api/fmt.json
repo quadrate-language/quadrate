@@ -49,16 +49,6 @@
       "examples": ["\"hello\" fmt::println  // hello\\n"]
     },
     {
-      "name": "print",
-      "signature": "(s:str -- )",
-      "failable": false,
-      "description": "Print a string to stdout (no newline appended).",
-      "params": [{"name": "s", "type": "str", "description": "String to print"}],
-      "returns": [],
-      "errors": [],
-      "examples": ["\"hello\" fmt::print"]
-    },
-    {
       "name": "sprintf",
       "signature": "(format:str -- result:str)",
       "failable": false,

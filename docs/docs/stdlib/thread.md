@@ -244,9 +244,7 @@ Create a new buffered channel.
 
 #### `fn` chan_new
 
-Create a new unbuffered (synchronous) channel. 
-
-A send on it waits until another thread has received the value. 
+Create a new unbuffered (synchronous) channel.  A send on it waits until another thread has received the value. 
 
 **Signature:** `( -- ch:Channel)!`
 
@@ -366,9 +364,7 @@ ch recv!  // val
 
 #### `fn` send
 
-Send a value on the channel. 
-
-Waits while a buffered channel is full. On an unbuffered channel, waits until another thread has received the value. 
+Send a value on the channel.  Waits while a buffered channel is full. On an unbuffered channel, waits until another thread has received the value. 
 
 **Signature:** `(ch:Channel) send(val:i64 -- )!`
 

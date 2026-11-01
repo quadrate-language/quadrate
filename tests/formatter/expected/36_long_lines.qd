@@ -2,7 +2,7 @@ fn short() {
 	1 2 3 + + print nl
 }
 
-fn medium_length_function_name(first_param:i64 second_param:i64 -- result:i64) {
+def medium_length_function_name(first_param:i64 second_param:i64 -- result:i64) {
 	first_param second_param +
 }
 

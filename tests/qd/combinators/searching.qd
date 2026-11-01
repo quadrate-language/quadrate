@@ -1,0 +1,61 @@
+// Test: find, any, all, index and scan over each element type and over strings,
+// stopping at the first element that decides
+struct P {
+	x:i64
+}
+
+def show(v:any -- ) {
+	v print
+}
+
+fn main() {
+	[1 5 12 3] fn { 10 > } any print nl                       // 1
+	[1 5 12 3] fn { 20 > } any print nl                       // 0
+	[1 5 12 3] fn { 0 > } all print nl                        // 1
+	[1 5 -2 3] fn { 0 > } all print nl                        // 0
+	[1 5 12 3] fn { 4 > } find print " " print print nl       // 1 5
+	[1 5 12 3] fn { 40 > } find print " " print print nl      // 0 0
+	["a" "bb" "ccc"] fn { len 2 == } find print " " print print nl   // 1 bb
+	["a"] fn { len 9 == } find print " " print "[" print print "]" print nl  // 0 []
+	[1.5 2.5] fn { 2.0 > } find print " " print print nl      // 1 2.5
+	[1.5 2.5] fn { 9.0 > } find print " " print print nl      // 0 0
+	[1.5d 2.5d] fn { 2.0d > } find print " " print print nl   // 1 2.5
+	[P { x = 1 } P { x = 2 }] fn { <<x 2 == } find drop <<x print nl   // 2
+	[P { x = 1 }] fn { <<x 9 == } find print nl drop          // 0
+	// stops at the first that decides
+	[1 2 3 4] fn { dup print 2 >= } any nl print nl           // 12 then 1
+	[1 2 3 4] fn { dup print 2 < } all nl print nl            // 12 then 0
+	[]i64 fn { 0 > } all print nl                             // 1
+	[]i64 fn { 0 > } any print nl                             // 0
+	fn { 3 > } -> big
+	[1 4] big any print nl                                    // 1
+	[1 4] big find print " " print print nl                   // 1 4
+	// index: the position of the first match, or -1
+	[3 8 5 12] fn { 4 > } index print nl                      // 1
+	[3 8 5 12] fn { 99 > } index print nl                     // -1
+	[]i64 fn { 0 > } index print nl                           // -1
+	["a" "bb"] fn { "bb" == } index print nl                  // 1
+	[1 4] big index print nl                                  // 1
+	// a string is searched one character (codepoint) at a time; positions count characters
+	"héllo wörld" fn { 246 == } index print nl                // 7
+	"héllo" fn { 233 == } any print nl                        // 1
+	"héllo" fn { 122 == } any print nl                        // 0
+	"abc" fn { 97 >= } all print nl                           // 1
+	"" fn { 97 == } all print nl                              // 1
+	"" fn { 97 == } index print nl                            // -1
+	"x1y2" fn { 48 57 within } find print " " print print nl  // 1 49
+	"xyz" fn { 48 57 within } find print " " print print nl   // 0 0
+	"hello world" first_space print nl                        // 5
+	// scan: index, starting at a position
+	[3 8 5 12] 2 fn { 4 > } scan print nl                // 2
+	[3 8 5 12] -5 fn { 4 > } scan print nl               // 1
+	[3 8 5 12] 9 fn { 4 > } scan print nl                // -1
+	"a=b=c" 2 fn { 61 == } scan print nl                 // 3
+	"héllo wörld" 3 fn { 246 == } scan print nl          // 7
+	"" 0 fn { 1 == } scan print nl                       // -1
+	7 show nl
+}
+
+def first_space(s:str -- i:i64) {
+	s fn { 32 == } index
+}

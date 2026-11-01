@@ -1,0 +1,1 @@
+Type error in 'dip': the function value is fallible, and a combinator has nowhere to send its failure

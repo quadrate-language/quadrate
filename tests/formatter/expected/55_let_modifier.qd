@@ -1,0 +1,12 @@
+// The modifiers may be written in any order; the canonical order is pub inline let
+pub inline def twice(x:i64 -- r:i64) {
+	x 2 *
+}
+
+fn diff(a:i64 b:i64 -- r:i64) {
+	-
+}
+
+pub inline fn half(value:f64 -- r:f64) {
+	2.0 /
+}

@@ -37,7 +37,7 @@ fn main() {
 `if` can leave values on the stack:
 
 ```qd
-fn abs(x:i64 -- result:i64) {
+def abs(x:i64 -- result:i64) {
 	x 0 < if {
 		x neg
 	} else {
@@ -111,7 +111,7 @@ fn main() {
 Handle edge cases first with `if`/`else`:
 
 ```qd
-fn process(x:i64 -- result:i64) {
+def process(x:i64 -- result:i64) {
 	x 0 < if {
 		0              // Return 0 for invalid input
 	} else {
@@ -123,7 +123,7 @@ fn process(x:i64 -- result:i64) {
 ### Default values
 
 ```qd
-fn get_or_default(value:i64 default:i64 -- result:i64) {
+def get_or_default(value:i64 default:i64 -- result:i64) {
 	value 0 == if {
 		default
 	} else {
@@ -135,7 +135,7 @@ fn get_or_default(value:i64 default:i64 -- result:i64) {
 ### Range checking
 
 ```qd
-fn is_valid_age(age:i64 -- valid:i64) {
+def is_valid_age(age:i64 -- valid:i64) {
 	age 0 >= age 150 <= and
 }
 

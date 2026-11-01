@@ -5,7 +5,7 @@ In Quadrate, you call functions by simply writing their name.
 ## Basic calls
 
 ```qd
-fn double(x:i64 -- result:i64) {
+def double(x:i64 -- result:i64) {
 	x 2 *
 }
 
@@ -21,15 +21,15 @@ No parentheses needed! Just push the arguments, then write the function name.
 Functions naturally chain together:
 
 ```qd
-fn double(x:i64 -- result:i64) {
+def double(x:i64 -- result:i64) {
 	x 2 *
 }
 
-fn square(x:i64 -- result:i64) {
+def square(x:i64 -- result:i64) {
 	x x *
 }
 
-fn add_one(x:i64 -- result:i64) {
+def add_one(x:i64 -- result:i64) {
 	x 1 +
 }
 
@@ -46,7 +46,7 @@ Each function consumes its inputs and produces outputs for the next.
 Push all arguments before calling:
 
 ```qd
-fn add3(a:i64 b:i64 c:i64 -- sum:i64) {
+def add3(a:i64 b:i64 c:i64 -- sum:i64) {
 	a b + c +
 }
 
@@ -63,7 +63,7 @@ Stack after call: `[6]`
 Capture multiple outputs:
 
 ```qd
-fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
+def minmax(a:i64 b:i64 -- min:i64 max:i64) {
 	a b < if {
 		a b
 	} else {
@@ -84,7 +84,7 @@ fn main() {
 You can immediately use outputs:
 
 ```qd
-fn square(x:i64 -- result:i64) {
+def square(x:i64 -- result:i64) {
 	x x *
 }
 
@@ -107,7 +107,7 @@ fn main() {
 Functions can call themselves:
 
 ```qd
-fn factorial(n:i64 -- result:i64) {
+def factorial(n:i64 -- result:i64) {
 	n 1 <= if {
 		1
 	} else {
@@ -125,7 +125,7 @@ fn main() {
 Functions can call each other:
 
 ```qd
-fn is_even(n:i64 -- result:i64) {
+def is_even(n:i64 -- result:i64) {
 	n 0 == if {
 		1
 	} else {
@@ -133,7 +133,7 @@ fn is_even(n:i64 -- result:i64) {
 	}
 }
 
-fn is_odd(n:i64 -- result:i64) {
+def is_odd(n:i64 -- result:i64) {
 	n 0 == if {
 		0
 	} else {
@@ -152,11 +152,11 @@ fn main() {
 Functions can call other functions:
 
 ```qd
-fn inner(x:i64 -- result:i64) {
+def inner(x:i64 -- result:i64) {
 	x 1 +
 }
 
-fn outer(x:i64 -- result:i64) {
+def outer(x:i64 -- result:i64) {
 	x inner 10 *
 }
 

@@ -1,6 +1,6 @@
 // Test: break outside loop
 fn main() {
-	10 20 add
+	10 20 +
 	break
 	print nl
 }

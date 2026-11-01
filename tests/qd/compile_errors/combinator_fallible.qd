@@ -1,0 +1,4 @@
+// Test: a combinator has nowhere to send a failure, so its function value may not be fallible
+fn main() {
+	1 2 def (x:i64 -- r:i64)! { x } dip drop drop
+}

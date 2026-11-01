@@ -101,7 +101,7 @@ fn main() {
 
     // Compress
     data compress::gzip! -> compressed
-    "Compressed size: " print compressed strings::len print nl
+    "Compressed size: " print compressed len print nl
 
     // Decompress
     compressed compress::gunzip! -> decompressed

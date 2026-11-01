@@ -6,23 +6,23 @@ struct Box {
 	w: f64
 }
 
-fn (b:Box) scaled(by:f64 -- r:f64) {
+def (b:Box) scaled(by:f64 -- r:f64) {
 	b <<w by *
 }
 
-fn half(x:f64 -- r:f64) {
+def half(x:f64 -- r:f64) {
 	x 2.0 /
 }
 
-fn tenth(x:d128 -- r:d128) {
+def tenth(x:d128 -- r:d128) {
 	x 10d /
 }
 
-fn width(b:Box -- r:f64) {
+def width(b:Box -- r:f64) {
 	b <<w
 }
 
-fn pass(a:any -- r:any) {
+def pass(a:any -- r:any) {
 	a
 }
 

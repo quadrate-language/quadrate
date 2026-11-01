@@ -7,29 +7,37 @@
 namespace Qd {
 	// Built-in runtime instructions
 	// These are instructions that are directly compiled into the runtime executable
-	// Grouped by kind, starting with the comparison operators (also available as
-	// symbols). The group comments sit between entries rather than directly after
-	// the brace: clang-format 22 and 23 disagree irreconcilably about a comment in
-	// that position, so a file containing one cannot satisfy both.
+	// Grouped by kind, starting with the comparison operators. The operators are spelled only
+	// as symbols. The group comments sit between entries rather than directly after the brace:
+	// clang-format 22 and 23 disagree irreconcilably about a comment in that position, so a file
+	// containing one cannot satisfy both.
 	inline constexpr const char* BUILTIN_INSTRUCTIONS[] = {"!=", "<", "<=", "==", ">", ">=",
-			// Arithmetic operators (also available as symbols)
+			// Arithmetic operators
 			"%", "*", "+", "++", "-", "--", "/",
-			// Arithmetic instructions
-			"add", "dec", "div", "inc", "mod", "mul", "neg", "sub",
+			// Negation has no symbol of its own
+			"neg",
+			// Range test
+			"within",
 			// Logical operations on truth values: every non-zero value counts as true, so
 			// `2 1 and` is 1. The bitwise forms live in the bits module.
 			"and", "not", "or",
-			// Bitwise operations. Shifts have no logical counterpart, so they keep plain
-			// names; AND/OR/XOR/NOT would collide with the logical words above and are
-			// reached through the bits module. Internal: use bits::and and friends.
-			"__and", "__not", "__or", "__xor", "shl", "shr",
-			// Named comparison instructions
-			"eq", "gt", "gte", "lt", "lte", "neq", "within",
+			// Bitwise operations, reached through the bits module: AND/OR/XOR/NOT would collide
+			// with the logical words above, and the shifts are bitwise as much as they are. Internal:
+			// use bits::and, bits::shl and friends.
+			"__and", "__not", "__or", "__shl", "__shr", "__xor",
 			// Stack operations
-			"call", "clone", "drop", "dup", "dup2", "free", "len", "nip", "nth", "over", "pick", "rot", "swap",
-			// Array operations. Creation is a literal -- `[10]i64`, `[]i64` -- not an
-			// instruction; see REMOVED_INSTRUCTIONS below.
-			"append", "set",
+			"drop", "drop2", "dup", "dup2", "nip", "over", "pick", "rot", "rrot", "swap", "tuck",
+			// Combinators: run function values in the patterns stack code repeats. Typed by
+			// following what each does on the modelled stack; lowered to locals, `for` and `call`
+			// before code generation, with a function value written in place inlined. `call` is the
+			// simplest, and runs one once.
+			"all", "any", "bi", "both", "call", "dip", "dip2", "each", "filter", "find", "fold", "index", "keep",
+			"keep2", "map", "scan", "times", "tri",
+			// Arrays, and strings read as sequences of characters by len and nth. Creation is a
+			// literal -- `[10]i64`, `[]i64` -- not an instruction; see REMOVED_INSTRUCTIONS below.
+			"append", "len", "nth", "set",
+			// Memory: a shallow copy of a struct or an array, and freeing one
+			"clone", "free",
 			// Type casting and introspection
 			"cast", "sizeof",
 			// Raw memory stores/loads — lower directly to LLVM store/load.
@@ -38,18 +46,17 @@ namespace Qd {
 			// Stores: (addr:i64 offset:i64 value:i64 -- )
 			// Loads:  (addr:i64 offset:i64 -- value:i64) (zero-extended)
 			"__ld8", "__ld16", "__ld32", "__ld64", "__st8", "__st16", "__st32", "__st64",
-			// x86 I/O port operations — lower to inline asm (outb/inb etc.).
+			// x86 I/O port operations — lower to inline asm (outb/inb etc.), and named as
+			// <sys/io.h> names them; the operands stay port first, as everywhere else here.
 			// Freestanding-only, x86/x86_64 targets only. Internal: use sys module.
-			// port_out: (port:i64 value:i64 --)   port_in: (port:i64 -- value:i64)
-			"__port_in8", "__port_in16", "__port_in32", "__port_out8", "__port_out16", "__port_out32",
+			// out: (port:i64 value:i64 --)   in: (port:i64 -- value:i64)
+			"__inb", "__inw", "__inl", "__outb", "__outw", "__outl",
 			// CPU control — lower to single inline asm. Freestanding-only.
 			"__cli", "__hlt", "__sti",
 			// I/O
-			"nl", "print", "prints", "printv",
-			// Threading
-			"detach", "spawn", "wait",
-			// Error handling
-			"err", "panic"};
+			"dump", "nl", "print",
+			// Error handling: a fallible call's status tested as a flag
+			"err", "fail", "ok", "panic"};
 
 	inline constexpr size_t BUILTIN_INSTRUCTION_COUNT = sizeof(BUILTIN_INSTRUCTIONS) / sizeof(BUILTIN_INSTRUCTIONS[0]);
 
@@ -71,12 +78,19 @@ namespace Qd {
 	};
 
 	inline constexpr RemovedInstruction REMOVED_INSTRUCTIONS[] = {
-			{"drop2", "( a b -- )", "drop drop"},
+			{"add", "( a b -- sum )", "+", "operators are spelled as symbols"},
+			{"dec", "( a -- a-1 )", "--", "operators are spelled as symbols"},
+			{"detach", "( thread -- )", "t detach!",
+					"threads are the thread module's; detach the Thread that thread::spawn gave"},
+			{"div", "( a b -- quotient )", "/", "operators are spelled as symbols"},
+			{"dupd", "( a b -- a a b )", "over swap", "write it with the stack words"},
+			{"eq", "( a b -- flag )", "==", "operators are spelled as symbols"},
+			{"gt", "( a b -- flag )", ">", "operators are spelled as symbols"},
+			{"gte", "( a b -- flag )", ">=", "operators are spelled as symbols"},
+			{"inc", "( a -- a+1 )", "++", "operators are spelled as symbols"},
 			{"lnot", "( a -- b )", "not", "'not' is the logical negation now; 'bits::not' is the bitwise one"},
-			{"xor", "( a b -- c )", "bits::xor",
-					"the bitwise operators moved to the bits module so 'and', 'or' and 'not' could take "
-					"their logical meanings"},
-			{"dupd", "( a b -- a a b )", "-> b -> a  a a b"},
+			{"lt", "( a b -- flag )", "<", "operators are spelled as symbols"},
+			{"lte", "( a b -- flag )", "<=", "operators are spelled as symbols"},
 			{"make", "( size -- arr )", "[N]T', and an empty one is '[]T",
 					"array creation is a literal now, spelling the element type the way a signature does, so "
 					"'N make<T>' is written"},
@@ -84,19 +98,31 @@ namespace Qd {
 			{"makei", "( size -- arr )", "[N]i64", "array creation is a literal now, so 'N makei' is written"},
 			{"makep", "( size -- arr )", "[N]ptr", "array creation is a literal now, so 'N makep' is written"},
 			{"makes", "( size -- arr )", "[N]str", "array creation is a literal now, so 'N makes' is written"},
-			{"nipd", "( a b c -- a c )", "-> c -> b -> a  a c"},
+			{"mod", "( a b -- remainder )", "%", "operators are spelled as symbols"},
+			{"mul", "( a b -- product )", "*", "operators are spelled as symbols"},
+			{"neq", "( a b -- flag )", "!=", "operators are spelled as symbols"},
+			{"nipd", "( a b c -- a c )", "swap drop", "write it with the stack words"},
 			{"over2", "( a b c d -- a b c d a b )", "-> d -> c -> b -> a  a b c d a b"},
-			{"overd", "( a b c -- a b a c )", "-> c -> b -> a  a b a c"},
+			{"overd", "( a b c -- a b a c )", "fn { over } dip", "write it with the stack words"},
+			{"printv", "( val -- )", "dump", "it was renamed"},
 			{"read", "( -- ... n )", "os::args -> args  args len -> argc",
 					"the arguments are an array now; use os::args instead"},
-			{"printsv", "( -- )", "prints",
-					"nothing ever used it; 'prints' dumps the stack and 'printv' types one value"},
 			{"roll", "( ... n -- ... )", "-> c -> b -> a  b c a",
 					"it took its depth at run time, which no static stack model can follow; name the "
 					"values instead"},
+			{"shl", "( a n -- result )", "bits::shl",
+					"the shifts are in the bits module, with the other bitwise operations"},
+			{"shr", "( a n -- result )", "bits::shr",
+					"the shifts are in the bits module, with the other bitwise operations"},
+			{"spawn", "( fn -- thread )", "use thread  &f thread::spawn! -> t", "threads are the thread module's"},
+			{"sub", "( a b -- diff )", "-", "operators are spelled as symbols"},
 			{"swap2", "( a b c d -- c d a b )", "-> d -> c -> b -> a  c d a b"},
-			{"swapd", "( a b c -- b a c )", "-> c -> b -> a  b a c"},
-			{"tuck", "( a b -- b a b )", "-> b -> a  b a b"},
+			{"swapd", "( a b c -- b a c )", "fn { swap } dip", "write it with the stack words"},
+			{"wait", "( thread -- )", "t join!",
+					"threads are the thread module's; join the Thread that thread::spawn gave"},
+			{"xor", "( a b -- c )", "bits::xor",
+					"the bitwise operators moved to the bits module so 'and', 'or' and 'not' could take "
+					"their logical meanings"},
 	};
 
 	inline constexpr size_t REMOVED_INSTRUCTION_COUNT = sizeof(REMOVED_INSTRUCTIONS) / sizeof(REMOVED_INSTRUCTIONS[0]);
@@ -167,6 +193,43 @@ namespace Qd {
 			}
 		}
 		return false;
+	}
+
+	// The combinators, with how many function values each takes from the top of the stack
+	// and how many values below them
+	struct Combinator {
+		const char* name;
+		size_t functionValues;
+		size_t values;
+	};
+
+	inline constexpr Combinator COMBINATORS[] = {
+			{"all", 1, 1},
+			{"any", 1, 1},
+			{"bi", 2, 1},
+			{"both", 1, 2},
+			{"dip", 1, 1},
+			{"dip2", 1, 2},
+			{"each", 1, 1},
+			{"filter", 1, 1},
+			{"find", 1, 1},
+			{"fold", 1, 2},
+			{"index", 1, 1},
+			{"keep", 1, 1},
+			{"keep2", 1, 2},
+			{"map", 1, 1},
+			{"scan", 1, 2},
+			{"times", 1, 1},
+			{"tri", 3, 1},
+	};
+
+	inline const Combinator* findCombinator(const std::string& name) {
+		for (const Combinator& combinator : COMBINATORS) {
+			if (name == combinator.name) {
+				return &combinator;
+			}
+		}
+		return nullptr;
 	}
 
 	// Helper function to check if an identifier is a built-in instruction

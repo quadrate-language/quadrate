@@ -7,9 +7,8 @@ Built-in operations for input and output.
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
 | `print` | `(val --)` | Print value |
-| `printv` | `(val --)` | Print with type info |
-| `prints` | `()` | Print entire stack |
-| `nl` | `()` | Print newline |
+| `dump` | `(val --)` | Print with type info |
+| `nl` | `(--)` | Print newline |
 
 ---
 
@@ -26,33 +25,21 @@ Prints a value to stdout without a newline.
 "hello" print // prints: hello
 ```
 
-### printv
+### dump
 
 Prints a value with type information for debugging.
 
 **Signature:** `(val --)`
 
 ```qd
-42 printv // prints: int:42
+42 dump // prints: int:42
 ```
-
-### prints
-
-Prints the entire stack contents without clearing it.
-
-**Signature:** `()`
-
-```qd
-1 2 3 prints // prints the entire stack
-```
-
-Useful for debugging to see current stack state.
 
 ### nl
 
 Prints a newline character to stdout.
 
-**Signature:** `()`
+**Signature:** `(--)`
 
 ```qd
 "Hello" print nl // prints: Hello\n
@@ -107,8 +94,7 @@ Expressions inside `{...}` are evaluated and converted to strings automatically.
 
 ```qd
 "Debug: " print
-prints // Show stack
-nl
+dup dump // Show the top value and its type, leaving it
 ```
 
 ---

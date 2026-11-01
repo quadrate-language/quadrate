@@ -43,36 +43,28 @@ namespace Qd {
 
 		static const RuntimeOperator RUNTIME_OPERATORS[] = {
 				{"+", &Impl::generateInlineIntAdd, &Impl::generateTypeAwareAdd, "qd_add", true},
-				{"add", &Impl::generateInlineIntAdd, &Impl::generateTypeAwareAdd, "qd_add", true},
 				{"-", &Impl::generateInlineIntSub, &Impl::generateTypeAwareSub, "qd_sub", true},
-				{"sub", &Impl::generateInlineIntSub, &Impl::generateTypeAwareSub, "qd_sub", true},
 				{"*", &Impl::generateInlineIntMul, &Impl::generateTypeAwareMul, "qd_mul", true},
-				{"mul", &Impl::generateInlineIntMul, &Impl::generateTypeAwareMul, "qd_mul", true},
 				{"/", nullptr, &Impl::generateTypeAwareDiv, nullptr, false},
 				{"div", nullptr, &Impl::generateTypeAwareDiv, nullptr, false},
 				{"%", &Impl::generateInlineIntMod, &Impl::generateTypeAwareMod, nullptr, false},
-				{"mod", &Impl::generateInlineIntMod, &Impl::generateTypeAwareMod, nullptr, false},
 				{"<", &Impl::generateInlineIntLt, &Impl::generateTypeAwareLt, nullptr, false},
-				{"lt", &Impl::generateInlineIntLt, &Impl::generateTypeAwareLt, nullptr, false},
 				{">", &Impl::generateInlineIntGt, &Impl::generateTypeAwareGt, nullptr, false},
-				{"gt", &Impl::generateInlineIntGt, &Impl::generateTypeAwareGt, nullptr, false},
 				{"==", &Impl::generateInlineIntEq, &Impl::generateTypeAwareEq, nullptr, false},
-				{"eq", &Impl::generateInlineIntEq, &Impl::generateTypeAwareEq, nullptr, false},
 				{"!=", &Impl::generateInlineIntNeq, &Impl::generateTypeAwareNeq, nullptr, false},
-				{"neq", &Impl::generateInlineIntNeq, &Impl::generateTypeAwareNeq, nullptr, false},
 				{"<=", &Impl::generateInlineIntLte, &Impl::generateTypeAwareLte, nullptr, false},
-				{"lte", &Impl::generateInlineIntLte, &Impl::generateTypeAwareLte, nullptr, false},
 				{">=", &Impl::generateInlineIntGte, &Impl::generateTypeAwareGte, nullptr, false},
-				{"gte", &Impl::generateInlineIntGte, &Impl::generateTypeAwareGte, nullptr, false},
 				{"and", &Impl::generateInlineLogicalAnd, nullptr, "qd_land", false},
 				{"or", &Impl::generateInlineLogicalOr, nullptr, "qd_lor", false},
 				{"not", &Impl::generateInlineLogicalNot, nullptr, "qd_lnot", false},
+				{"ok", &Impl::generateInlineLogicalNot, nullptr, "qd_status_ok", false},
+				{"fail", &Impl::generateInlineIsNonZero, nullptr, "qd_status_fail", false},
 				{"__and", &Impl::generateInlineBitAnd, nullptr, "qd_and", false},
 				{"__or", &Impl::generateInlineBitOr, nullptr, "qd_or", false},
 				{"__xor", &Impl::generateInlineBitXor, nullptr, "qd_xor", false},
 				{"__not", &Impl::generateInlineBitNot, nullptr, "qd_not", false},
-				{"shl", &Impl::generateInlineBitLshift, nullptr, "qd_shl", false},
-				{"shr", &Impl::generateInlineBitRshift, nullptr, "qd_shr", false},
+				{"__shl", &Impl::generateInlineBitLshift, nullptr, "qd_shl", false},
+				{"__shr", &Impl::generateInlineBitRshift, nullptr, "qd_shr", false},
 		};
 
 		auto pop = [this, ctx]() { return generateInlinePopInt(ctx); };
@@ -187,7 +179,7 @@ namespace Qd {
 
 			builder->CreateCall(methodFn, {ctx});
 			if (fallible) {
-				generateFallibleCallEpilogue(ctx, name.c_str(), inst, inst->abortOnError(), inst->propagateOnError());
+				generateFallibleCallEpilogue(ctx, name.c_str(), inst->abortOnError(), inst->propagateOnError());
 			}
 			return true;
 		}
@@ -244,8 +236,15 @@ namespace Qd {
 		return;
 	}
 
-	// `clone`: a shallow copy of a struct
+	// `clone`: a shallow copy of a struct or an array
 	void LlvmGenerator::Impl::generateClone(AstNodeInstruction* inst, llvm::Value* ctx) {
+		// An array is copied by the runtime, which knows its element type
+		if (inst->resolvedType().compare(0, 2, "[]") == 0) {
+			builder->CreateCall(declareRuntimeFunction("qd_clone_array"), {ctx});
+			lastFieldAccessResultType.clear();
+			lastPushedWasArray = true;
+			return;
+		}
 		// The struct type is not on the stack -- what is popped is a bare pointer -- so the
 		// validator recorded it on the node and it picks the cloner out here. An empty one
 		// means the validator already reported that this is not a struct.
@@ -309,7 +308,7 @@ namespace Qd {
 		builder->CreateCall(runtimeFn, {ctx});
 
 		if (fallibleCall) {
-			generateFallibleCallEpilogue(ctx, "call", inst, inst->abortOnError(), inst->propagateOnError());
+			generateFallibleCallEpilogue(ctx, "call", inst->abortOnError(), inst->propagateOnError());
 		}
 
 		// Special handling for 'panic' instruction in fallible functions
@@ -375,8 +374,8 @@ namespace Qd {
 			return true;
 		}
 
-		const bool portOut = name == "__port_out8" || name == "__port_out16" || name == "__port_out32";
-		const bool portIn = name == "__port_in8" || name == "__port_in16" || name == "__port_in32";
+		const bool portOut = name == "__outb" || name == "__outw" || name == "__outl";
+		const bool portIn = name == "__inb" || name == "__inw" || name == "__inl";
 		const bool cpuControl = name == "__cli" || name == "__sti" || name == "__hlt";
 		if (!portOut && !portIn && !cpuControl) {
 			return false;
@@ -393,12 +392,13 @@ namespace Qd {
 			builder->CreateCall(llvm::InlineAsm::get(asmFnTy, mnemonic, "", /*hasSideEffects=*/true), {});
 			return true;
 		}
+		// The <sys/io.h> suffix: b, w or l
 		const char last = name.back();
-		const unsigned bits = last == '8' ? 8 : last == '6' ? 16 : 32;
+		const unsigned bits = last == 'b' ? 8 : last == 'w' ? 16 : 32;
 		llvm::Type* int16Ty = llvm::Type::getInt16Ty(*context);
 		llvm::Type* valTy = llvm::Type::getIntNTy(*context, bits);
 		if (portOut) {
-			// port value __port_out8/__port_out16/__port_out32
+			// port value __outb/__outw/__outl
 			llvm::Value* value = pop();
 			llvm::Value* port = pop();
 			llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
@@ -412,7 +412,7 @@ namespace Qd {
 					llvm::InlineAsm::get(asmFnTy, asmStr, regStr, /*hasSideEffects=*/true), {truncVal, truncPort});
 			return true;
 		}
-		// port __port_in8/__port_in16/__port_in32 -- value
+		// port __inb/__inw/__inl -- value
 		llvm::Value* port = pop();
 		llvm::Value* truncPort = builder->CreateTrunc(port, int16Ty, "port16");
 		const char* asmStr = (bits == 8) ? "inb %dx, %al" : (bits == 16) ? "inw %dx, %ax" : "inl %dx, %eax";
@@ -532,11 +532,13 @@ namespace Qd {
 			compileTimeStack.push_back(builder->CreateZExt(r, int64Ty, name.c_str()));
 			return true;
 		}
-		if (name == "not") {
+		// `ok` is `not` on a status, which is 0 on success; `fail` is its inverse
+		if (name == "not" || name == "ok" || name == "fail") {
 			llvm::Value* a = compileTimeStack.back();
 			compileTimeStack.pop_back();
-			llvm::Value* isZero = builder->CreateICmpEQ(a, builder->getInt64(0), "is_zero");
-			compileTimeStack.push_back(builder->CreateZExt(isZero, int64Ty, "not"));
+			llvm::Value* test = name == "fail" ? builder->CreateICmpNE(a, builder->getInt64(0), "is_nonzero")
+											   : builder->CreateICmpEQ(a, builder->getInt64(0), "is_zero");
+			compileTimeStack.push_back(builder->CreateZExt(test, int64Ty, name.c_str()));
 			return true;
 		}
 		// Bitwise operations (integer-only, no float changes needed)
@@ -557,15 +559,15 @@ namespace Qd {
 			compileTimeStack.push_back(builder->CreateNot(a, "not"));
 			return true;
 		}
-		if (name == "shl") {
+		if (name == "__shl") {
 			llvm::Value* b = compileTimeStack.back();
 			compileTimeStack.pop_back();
 			llvm::Value* a = compileTimeStack.back();
 			compileTimeStack.pop_back();
-			compileTimeStack.push_back(emitCheckedShift(ctx, a, b, true, "shl"));
+			compileTimeStack.push_back(emitCheckedShift(ctx, a, b, true, "bits::shl"));
 			return true;
 		}
-		if (name == "shr") {
+		if (name == "__shr") {
 			llvm::Value* b = compileTimeStack.back();
 			compileTimeStack.pop_back();
 			llvm::Value* a = compileTimeStack.back();
@@ -574,7 +576,7 @@ namespace Qd {
 			// -- generateInlineBitRshift uses CreateLShr, and both runtimes cast to uint64_t
 			// before shifting. Using CreateAShr here made the same `v shr n` expression yield
 			// a different result depending on whether it happened to be folded.
-			compileTimeStack.push_back(emitCheckedShift(ctx, a, b, false, "shr"));
+			compileTimeStack.push_back(emitCheckedShift(ctx, a, b, false, "bits::shr"));
 			return true;
 		}
 		// Increment/decrement (type-aware)
@@ -669,10 +671,6 @@ namespace Qd {
 				printFn = llvm::Function::Create(fnTy, llvm::Function::ExternalLinkage, "qd_print", *module);
 			}
 			builder->CreateCall(printFn, {ctx});
-			return true;
-		}
-		if (name == "prints") {
-			builder->CreateCall(printsFn, {ctx});
 			return true;
 		}
 		if (name == "nl") {

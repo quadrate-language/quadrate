@@ -1,10 +1,10 @@
 // Test: ? with functions that have multiple return values
-fn divmod(a:i64 b:i64 -- quot:i64 rem:i64)! {
+def divmod(a:i64 b:i64 -- quot:i64 rem:i64)! {
 	b 0 == if { "division by zero" 1 panic }
-	a b / a b mod
+	a b / a b %
 }
 
-fn compute(a:i64 b:i64 -- result:i64)! {
+def compute(a:i64 b:i64 -- result:i64)! {
 	a b divmod?
 	-> rem -> quot
 	quot 100 * rem +
@@ -13,10 +13,10 @@ fn compute(a:i64 b:i64 -- result:i64)! {
 fn main() {
 	17 5 compute switch {
 		Ok { "17/5 -> " print print nl }
-		_ { "compute failed" print nl }
+		_ { drop "compute failed" print nl }
 	}
 	10 0 compute switch {
 		Ok { "10/0 -> " print print nl }
-		_ { "compute div by zero" print nl }
+		_ { drop "compute div by zero" print nl }
 	}
 }

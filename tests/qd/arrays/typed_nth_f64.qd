@@ -1,5 +1,5 @@
 // Test: nth on []f64 returns float element type
-fn get_second(arr:[]f64 -- val:f64) {
+def get_second(arr:[]f64 -- val:f64) {
 	arr 1 nth cast<f64>
 }
 

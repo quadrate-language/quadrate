@@ -1,13 +1,13 @@
 // Test: deeper recursion patterns
-fn gcd(a:i64 b:i64 -- result:i64) {
+def gcd(a:i64 b:i64 -- result:i64) {
 	b 0 == if {
 		a
 	} else {
-		b a b mod gcd
+		b a b % gcd
 	}
 }
 
-fn power(base:i64 exp:i64 -- result:i64) {
+def power(base:i64 exp:i64 -- result:i64) {
 	exp 0 == if {
 		1
 	} else {
@@ -19,7 +19,7 @@ fn power(base:i64 exp:i64 -- result:i64) {
 	}
 }
 
-fn ackermann(m:i64 n:i64 -- result:i64) {
+def ackermann(m:i64 n:i64 -- result:i64) {
 	m 0 == if {
 		n 1 +
 	} else {
@@ -31,14 +31,14 @@ fn ackermann(m:i64 n:i64 -- result:i64) {
 	}
 }
 
-fn digital_root(n:i64 -- result:i64) {
+def digital_root(n:i64 -- result:i64) {
 	n 10 < if {
 		n
 	} else {
 		0 -> sum
 		loop {
 			n 0 == if { break }
-			n 10 mod sum + -> sum
+			n 10 % sum + -> sum
 			n 10 / -> n
 		}
 		sum digital_root

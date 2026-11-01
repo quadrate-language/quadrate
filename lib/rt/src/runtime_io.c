@@ -26,7 +26,7 @@ static bool has_whitespace(const char* str) {
 	return false;
 }
 
-/* Renders a pointer the way `print` and `printv` should: an array as its elements, anything else
+/* Renders a pointer the way `print` and `dump` should: an array as its elements, anything else
  * as what it is. A pointer used to print as nothing at all -- `[1 2 3] print` produced an empty
  * line -- which made arrays and structs the one kind of value you could not look at while
  * debugging.
@@ -148,65 +148,14 @@ int qd_nl(qd_context* ctx) {
 	return (int){0};
 }
 
-int qd_prints(qd_context* ctx) {
-	// Print entire stack (non-destructive) - output only values for piping
-	const size_t stack_size = qd_stack_size(ctx->st);
-
-	// Print from bottom to top, all on one line
-	for (size_t i = 0; i < stack_size; i++) {
-		qd_stack_element_t val;
-		qd_stack_error err = qd_stack_element(ctx->st, i, &val);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "prints", "Failed to read stack element %zu", i);
-		}
-
-		if (i > 0) {
-			printf(" ");
-		}
-
-		switch (val.type) {
-		case QD_STACK_TYPE_INT:
-			printf("%" PRId64, val.value.i);
-			break;
-		case QD_STACK_TYPE_FLOAT:
-			printf("%g", val.value.f);
-			break;
-		case QD_STACK_TYPE_STR: {
-			const char* str_data = qd_string_data(val.value.s);
-			// Smart quoting: only quote if string contains whitespace
-			if (has_whitespace(str_data)) {
-				printf("\"%s\"", str_data);
-			} else {
-				printf("%s", str_data);
-			}
-			break;
-		}
-		case QD_STACK_TYPE_D128: {
-			char text[QD_D128_STRING_MAX];
-			qd_d128_format(val.value.d, text, sizeof text);
-			printf("%s", text);
-			break;
-		}
-		default:
-			return (int){-3};
-		}
-	}
-
-	if (stack_size > 0) {
-		printf("\n");
-	}
-
-	return (int){0};
-}
-
-int qd_printv(qd_context* ctx) {
+int qd_dump(qd_context* ctx) {
 	// Forth-style verbose: pop and print the top element with type info
-	QDRT_CHECK_STACK(ctx, "printv", 1);
+	QDRT_CHECK_STACK(ctx, "dump", 1);
 
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
 	if (err != QD_STACK_OK) {
-		QDRT_FATAL(ctx, "printv", "Failed to pop value");
+		QDRT_FATAL(ctx, "dump", "Failed to pop value");
 	}
 
 	switch (val.type) {

@@ -30,7 +30,7 @@ Defers run even when errors occur:
 use io
 use mem
 
-fn process_file(path:str -- )! {
+def process_file(path:str -- )! {
 	path io::Read io::open! -> file
 	defer {
 		// Always runs, even if the read fails
@@ -91,7 +91,7 @@ fn with_buffer() {
 use io
 use mem
 
-fn copy_file(src:str dst:str -- )! {
+def copy_file(src:str dst:str -- )! {
 	src io::Read io::open! -> src_file
 	defer { src_file io::close }
 
@@ -149,7 +149,7 @@ fn transaction()! {
 ### Logging
 
 ```qd
-fn traced_operation(name:str -- ) {
+def traced_operation(name:str -- ) {
 	"Entering " print name print nl
 	defer {
 		"Exiting " print name print nl

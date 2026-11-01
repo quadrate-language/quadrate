@@ -8,7 +8,7 @@ struct Container {
 	name:     str
 }
 
-fn process(v: math::Vec3 -- len: f64) {
+def process(v: math::Vec3 -- len: f64) {
 	-> v
 	v <<x dup * v <<y dup * + v <<z dup * + math::sqrt
 }

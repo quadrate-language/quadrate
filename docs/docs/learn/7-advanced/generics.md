@@ -7,7 +7,7 @@ Generics let you write functions and structs that work with any type.
 Add type parameters in angle brackets after the function name:
 
 ```qd
-fn identity<T>(x:T -- y:T) {
+def identity<T>(x:T -- y:T) {
 	x
 }
 
@@ -25,7 +25,7 @@ The compiler infers the type `T` from the argument at each call site. No explici
 Functions can have more than one type parameter:
 
 ```qd
-fn pair<A, B>(a:A b:B -- a:A b:B) {
+def pair<A, B>(a:A b:B -- a:A b:B) {
 	a b
 }
 

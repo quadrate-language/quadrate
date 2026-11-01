@@ -106,7 +106,7 @@ mymodule/
 ```qd
 use testing
 
-fn factorial(n:i64 -- result:i64) {
+def factorial(n:i64 -- result:i64) {
 	n 1 <= if {
 		1
 	} else {
@@ -134,7 +134,7 @@ Test fallible functions by checking both success and failure cases:
 ```qd
 use testing
 
-stack fn divide(a:i64 b:i64 -- result:i64)! {
+fn divide(a:i64 b:i64 -- result:i64)! {
 	dup 0 == if {
 		drop drop
 		"division by zero" -1 panic
@@ -143,18 +143,20 @@ stack fn divide(a:i64 b:i64 -- result:i64)! {
 }
 
 test "divide succeeds with valid input" {
-	10 2 divide if {
+	10 2 divide ok if {
 		5 testing::assert_eq
 	} else {
+		drop
 		"should not fail" testing::fail
 	}
 }
 
 test "divide fails on zero" {
-	10 0 divide if {
+	10 0 divide ok if {
 		// The success arm receives the result, so it has to consume it
 		drop "should not succeed" testing::fail
 	} else {
+		drop
 		// Error case: division by zero was caught
 		1 testing::assert_true
 	}
@@ -169,9 +171,9 @@ Import the module you're testing:
 use testing
 use strings
 
-test "strings::len counts characters" {
-	"hello" strings::len 5 testing::assert_eq
-	"" strings::len 0 testing::assert_eq
+test "len counts characters" {
+	"hello" len 5 testing::assert_eq
+	"" len 0 testing::assert_eq
 }
 
 test "strings::contains finds substrings" {

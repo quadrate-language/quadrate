@@ -1,5 +1,5 @@
 // Test: swapped array types in multi-param function should fail with two errors
-fn process(a:[]i64 b:[]str -- ) {
+def process(a:[]i64 b:[]str -- ) {
 }
 
 fn main() {

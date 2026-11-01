@@ -1,10 +1,10 @@
 // Test: No unused functions
 fn helper_one() {
-	1 2 add
+	1 2 +
 }
 
 fn helper_two() {
-	3 4 add
+	3 4 +
 	helper_one
 }
 

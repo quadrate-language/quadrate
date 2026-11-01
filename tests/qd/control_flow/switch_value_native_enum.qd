@@ -9,7 +9,7 @@ enum Dir {
 	Down
 }
 
-fn step(d:i64 -- r:i64) {
+def step(d:i64 -- r:i64) {
 	d switch {
 		Dir::Up {
 			100

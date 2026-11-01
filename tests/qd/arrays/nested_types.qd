@@ -11,7 +11,7 @@ struct Grid {
 
 type Table = [][]str
 
-fn sum(g:[][]i64 -- total:i64) {
+def sum(g:[][]i64 -- total:i64) {
 	0 -> total
 	0 g len 1 for i {
 		g i nth -> row
@@ -24,17 +24,17 @@ fn sum(g:[][]i64 -- total:i64) {
 
 // An unnamed parameter -- the other of the two `[` branches a parameter list has -- and a
 // nested array as a return type
-stack fn widen([][]i64 -- g:[][]i64) {
+fn widen([][]i64 -- g:[][]i64) {
 	-> g
 	g [9 9] append
 }
 
 // The alias has to be load-bearing, or the only thing under test is that `type` parses
-fn corner(t:Table -- s:str) {
+def corner(t:Table -- s:str) {
 	t 0 nth 0 nth
 }
 
-fn build(n:i64 -- g:[][]i64) {
+def build(n:i64 -- g:[][]i64) {
 	[n][]i64 -> g
 	0 n 1 for i {
 		g i nth i append drop

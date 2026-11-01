@@ -174,10 +174,11 @@ of them -- `"12x"` and `"hello"` have no numeric value -- so that direction live
 use strconv
 
 fn main() {
-	"99" strconv::atoi if {
+	"99" strconv::atoi ok if {
 		-> n
 		n print nl              // 99
 	} else {
+		drop
 		"not a number" print nl
 	}
 }
@@ -188,11 +189,11 @@ fn main() {
 When you write functions, you specify types:
 
 ```qd
-fn sum(a:i64 b:i64 -- result:i64) {
+def sum(a:i64 b:i64 -- result:i64) {
 	a b +
 }
 
-fn greet(name:str -- ) {
+def greet(name:str -- ) {
 	"Hello, " print name print nl
 }
 ```

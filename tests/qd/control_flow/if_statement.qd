@@ -33,7 +33,7 @@ fn main() {
 	}
 	// Test 7: Nested if/else
 	1 if {
-		5 3 gt if {
+		5 3 > if {
 			200 print nl
 		} else {
 			300 print nl

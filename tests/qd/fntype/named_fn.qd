@@ -1,8 +1,8 @@
 // Test: &named_fn passed to typed fn parameter
-fn double(x:i64 -- r:i64) { x 2 * }
-fn negate(x:i64 -- r:i64) { 0 x - }
+def double(x:i64 -- r:i64) { x 2 * }
+def negate(x:i64 -- r:i64) { 0 x - }
 
-fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
 	x f call
 }
 

@@ -8,8 +8,10 @@ Built-in operations for error handling.
 |-------------|-----------|-------------|
 | `panic` | `(msg code --)` | Signal a panic (error) |
 | `err` | `(-- msg code)` | Get the message and code of the last failed call |
-| `Ok` | `(-- 1)` | Builtin constant for success |
-| `Err` | `(-- 0)` | Builtin constant for generic error |
+| `ok` | `(status -- flag)` | 1 if a fallible call's status is `Ok` |
+| `fail` | `(status -- flag)` | 1 if a fallible call's status is an error code |
+| `Ok` | `(-- 0)` | The status of a call that succeeded |
+| `Err` | `(-- 1)` | The generic error code |
 
 ---
 
@@ -17,8 +19,8 @@ Built-in operations for error handling.
 
 Quadrate provides two builtin constants for result handling:
 
-- `Ok` = 1 (success)
-- `Err` = 0 (generic error)
+- `Ok` = 0, the status of a call that succeeded
+- `Err` = 1, the generic error code
 
 Each module defines specific error codes starting at 2. For example:
 - `io::ErrNotFound` = 2
@@ -42,9 +44,9 @@ Signals a panic with a message and code. Used in fallible functions.
 
 ### err
 
-Pushes the message and code of the last failed call, and clears them. A failed call leaves
-nothing of its own on the stack, so `err` is how an `else` branch or a `switch` arm gets at
-what went wrong.
+Pushes the message and code of the last failed call, and clears them. A failed call leaves zero
+values where its results would be, so `err` is how an `else` branch or a `switch` arm gets at
+the message.
 
 **Signature:** `(-- msg code)`
 
@@ -52,9 +54,10 @@ what went wrong.
 use io
 
 fn main() {
-	"/no/such/file" io::Read io::open if {
+	"/no/such/file" io::Read io::open ok if {
 		io::close
 	} else {
+		drop
 		err -> code -> msg
 		"code: " print code print nl     // 2
 		"message: " print msg print nl  // No such file or directory
@@ -69,7 +72,7 @@ fn main() {
 Functions that can fail are marked with `!` after the signature:
 
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	b 0 == if {
 		"division by zero" 2 panic
 	}
@@ -79,29 +82,27 @@ fn divide(a:i64 b:i64 -- result:i64)! {
 
 ## Handling errors
 
-!!! note "Error codes and `Ok`"
-    A fallible call leaves a status the consuming `if` or `switch` reads. Both idioms work for
-    functions written in Quadrate and for those imported from a native library.
+!!! note "The status"
+    A bare fallible call leaves its results and then a status: `Ok` (0) on success, the error
+    code on failure. On failure the results are zero values (`0`, `0.0`, `""`, `null`). The shape
+    is the same for functions written in Quadrate and for those imported from a native library,
+    and the status is an ordinary value: it can be bound, kept and tested later.
 
-    `Ok` means "the call succeeded", not "the value equals 1" — so a `panic` carrying code `1`
-    is still recognised as a failure and will not match `Ok`. The same holds for code `0`, even
-    though `0` is the value of `Err`. Prefer codes >= 2 for your own modules anyway, matching
-    the stdlib convention, so that each code stays distinguishable in a `switch`.
+    A `panic` may carry any code but `0`, which is `Ok`. Prefer codes >= 2 for your own modules,
+    matching the stdlib convention, so each code stays distinguishable in a `switch`.
 
-!!! warning "Don't `drop` the status"
-    The `if` or `switch` **consumes** the status value. No arm receives it, so dropping it in an
-    error arm underflows the stack and aborts the program:
+!!! warning "Drop the results in the arm that does not use them"
+    Every arm starts with the call's results. The failure arms usually do not want the zero
+    placeholders, and drop them; an arm that forgets leaves the stack deeper than the others,
+    which the compiler reports:
 
     ```qd
-    // doccheck: skip -- shows the mistake this warning is about
+    // doccheck: skip -- the shape of a switch on a status
     path io::Read io::open switch {
         Ok { -> file  file io::close }
-        io::ErrNotFound { drop  "not found" print nl }   // WRONG: nothing to drop
+        io::ErrNotFound { drop  "not found" print nl }   // drop the null handle
     }
     ```
-
-    To get at the failing code or message inside an arm, use [`err`](#err), not `-> code` —
-    binding also underflows, for the same reason.
 
 ### With switch (recommended)
 
@@ -115,12 +116,15 @@ Use `switch` to match on specific error codes:
 		file io::close
 	}
 	io::ErrNotFound {
+		drop
 		"File not found" print nl
 	}
 	io::ErrPermission {
+		drop
 		"Permission denied" print nl
 	}
 	_ {
+		drop
 		"Unknown error" print nl
 	}
 }
@@ -131,10 +135,12 @@ Use `switch` to match on specific error codes:
 Handle success/failure without matching specific errors:
 
 ```qd
-10 2 divide if {
-	// Success: result on stack
+10 2 divide ok if {
+	// Success: the result is on the stack
 	print nl
 } else {
+	// Failure: the result is a zero placeholder
+	drop
 	"Division failed" print nl
 }
 ```
@@ -171,12 +177,11 @@ Handle errors without matching specific codes:
 
 <!-- doccheck: continues -->
 ```qd
-fn compute(x:i64 -- result:i64)! {
-	x 2 divide if {
-		// Success: the result is on the stack
-	} else {
+def compute(x:i64 -- result:i64)! {
+	x 2 divide fail if {
 		"compute failed" 2 panic
 	}
+	// Success: the result is on the stack
 }
 ```
 
@@ -186,7 +191,7 @@ Abort the program if an error occurs:
 
 <!-- doccheck: continues -->
 ```qd
-fn compute(x:i64 -- result:i64)! {
+def compute(x:i64 -- result:i64)! {
 	x 2 divide!  // Aborts program if divide fails
 	10 +
 }
@@ -200,7 +205,7 @@ Automatically propagate errors to the calling function:
 
 <!-- doccheck: continues -->
 ```qd
-fn compute(x:i64 -- result:i64)! {
+def compute(x:i64 -- result:i64)! {
 	x 2 divide?  // Propagates error to caller if divide fails
 	10 +
 }
@@ -212,7 +217,7 @@ This is equivalent to the more verbose pattern:
 
 <!-- doccheck: continues -->
 ```qd
-fn compute(x:i64 -- result:i64)! {
+def compute(x:i64 -- result:i64)! {
 	x 2 divide switch {
 		Ok { }
 		_ { err panic }
@@ -227,8 +232,8 @@ fn compute(x:i64 -- result:i64)! {
 
 By convention:
 
-- `Ok` (1) = Success
-- `Err` (0) = Generic error
+- `Ok` (0) = Success
+- `Err` (1) = Generic error
 - Module-specific errors start at 2
 
 Each module defines its own error codes:
@@ -261,7 +266,7 @@ strings::ErrAlloc        // 3 - Memory allocation failed
 ```qd
 use io
 
-fn process(path:str -- result:i64)! {
+def process(path:str -- result:i64)! {
 	path io::Read io::open switch {
 		Ok {
 			-> file

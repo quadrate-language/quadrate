@@ -121,7 +121,7 @@ inline bool looksLikeStructType(const std::string& typeName) {
 }
 
 // " in parameter 'x'" when the parameter is named, nothing when it is not:
-// a `stack fn f(i64 -- )` parameter has a type to complain about and no name,
+// a `fn f(i64 -- )` parameter has a type to complain about and no name,
 // and "in parameter ''" reads as though the name were the problem.
 // Templated on the parameter node so this header needs no AST include: it is
 // pulled in from inside `namespace Qd {}`, where an include would nest.
@@ -161,10 +161,10 @@ inline std::string sizedTypeMisuseMessage(const std::string& name, const std::st
 }
 
 inline bool isReservedKeyword(const std::string& name) {
-	// Narrower than Qd::KEYWORDS: a modifier such as `stack`, `inline` or `packed` is a keyword only
+	// Narrower than Qd::KEYWORDS: a modifier such as `inline` or `packed` is a keyword only
 	// where it modifies, and stays usable as a name
 	static const std::unordered_set<std::string> RESERVED = {"if", "else", "for", "loop", "while", "until", "switch",
-			"case", "break", "continue", "return", "fn", "struct", "enum", "type", "const", "pub", "test", "use",
+			"case", "break", "continue", "return", "fn", "def", "struct", "enum", "type", "const", "pub", "test", "use",
 			"import", "defer", "as", "true", "false", "Ok", "Err", "null", "i64", "f64", "d128", "str", "ptr", "void"};
 	return RESERVED.find(name) != RESERVED.end();
 }
@@ -475,6 +475,14 @@ inline bool splitFnType(const std::string& t, std::vector<std::string>& ins, std
 		if (!cur.empty()) {
 			out.push_back(cur);
 		}
+		// A parameter's name, `x:T`, documents it and is not part of its type
+		for (auto& item : out) {
+			size_t colon = item.find(':');
+			if (colon != std::string::npos && colon > 0 && item.compare(colon, 2, "::") != 0 &&
+					(std::isalpha(static_cast<unsigned char>(item[0])) || item[0] == '_')) {
+				item = item.substr(colon + 1);
+			}
+		}
 	};
 	split(left, ins);
 	split(right, outs);
@@ -501,6 +509,152 @@ inline const char* qdTypeNameOf(StackValueType t) {
 	}
 }
 
+// A function type's input or output list: some types, with an optional stack variable at the
+// bottom -- `..a i64 str` -- that stands for however many values the caller has there.
+struct StackList {
+	std::string variable; // "..a", or "" when the list is exactly its types
+	std::vector<std::string> types;
+};
+
+inline bool isStackVariableName(const std::string& t) {
+	return t.size() > 2 && t[0] == '.' && t[1] == '.';
+}
+
+inline StackList stackListOf(std::vector<std::string> items) {
+	StackList list;
+	if (!items.empty() && isStackVariableName(items.front())) {
+		list.variable = items.front();
+		items.erase(items.begin());
+	}
+	list.types = std::move(items);
+	return list;
+}
+
+inline std::string stackListText(const StackList& list) {
+	std::string out = list.variable;
+	for (const auto& t : list.types) {
+		if (!out.empty()) {
+			out += " ";
+		}
+		out += t;
+	}
+	return out;
+}
+
+inline StackList parseStackListText(const std::string& text) {
+	std::vector<std::string> items;
+	std::string current;
+	for (char c : text) {
+		if (c == ' ') {
+			if (!current.empty()) {
+				items.push_back(current);
+				current.clear();
+			}
+		} else {
+			current += c;
+		}
+	}
+	if (!current.empty()) {
+		items.push_back(current);
+	}
+	return stackListOf(std::move(items));
+}
+
+// A stack variable the unifier may bind: the one every plain function type has implicitly
+// (`..~n`), or one of the callee's own, renamed at the call (`..^a`). Any other is the caller's
+// own, which stands for values it does not know, and matches only itself.
+inline bool isBindableStackVariable(const std::string& v) {
+	return v.size() > 2 && v[0] == '.' && v[1] == '.' && (v[2] == '~' || v[2] == '^');
+}
+
+// A fresh implicit stack variable, for a function type that does not write one
+inline std::string freshStackVariable() {
+	static unsigned counter = 0;
+	return "..~" + std::to_string(++counter);
+}
+
+// A list with each bound stack variable at its bottom replaced by what it is bound to
+inline StackList resolveStackList(StackList list, const std::map<std::string, std::string>& bindings) {
+	for (int guard = 0; guard < 64 && !list.variable.empty(); guard++) {
+		auto it = bindings.find(list.variable);
+		if (it == bindings.end()) {
+			break;
+		}
+		StackList bound = parseStackListText(it->second);
+		bound.types.insert(bound.types.end(), list.types.begin(), list.types.end());
+		list = std::move(bound);
+	}
+	return list;
+}
+
+// Renames the callee's own stack variables, `..a` to `..^a`, so they cannot be confused with
+// the caller's, which may be spelled the same
+inline std::string renameCalleeStackVariables(const std::string& t, const std::vector<std::string>& variables) {
+	if (variables.empty() || t.find("..") == std::string::npos) {
+		return t;
+	}
+	std::string out;
+	size_t i = 0;
+	while (i < t.size()) {
+		if (t.compare(i, 2, "..") == 0) {
+			size_t j = i + 2;
+			while (j < t.size() && (std::isalnum(static_cast<unsigned char>(t[j])) || t[j] == '_')) {
+				j++;
+			}
+			const std::string name = t.substr(i, j - i);
+			if (std::find(variables.begin(), variables.end(), name) != variables.end()) {
+				out += "..^" + name.substr(2);
+			} else {
+				out += name;
+			}
+			i = j;
+		} else {
+			out += t[i++];
+		}
+	}
+	return out;
+}
+
+inline bool unifyTypeName(const std::string& expected, const std::string& actual,
+		const std::vector<std::string>& typeParams, std::map<std::string, std::string>& bindings,
+		const std::unordered_set<std::string>& mergedModules,
+		const std::function<std::string(const std::string&)>& canon, std::string& why, bool strict = false);
+
+// Unify two lists of a function type, binding stack variables and type parameters. The tops are
+// matched type by type; whatever is left on one side is bound to the other side's stack
+// variable, which therefore has to be one the unifier may bind.
+inline bool unifyStackLists(StackList a, StackList b, const std::vector<std::string>& typeParams,
+		std::map<std::string, std::string>& bindings, const std::unordered_set<std::string>& mergedModules,
+		const std::function<std::string(const std::string&)>& canon, std::string& why) {
+	a = resolveStackList(std::move(a), bindings);
+	b = resolveStackList(std::move(b), bindings);
+	while (!a.types.empty() && !b.types.empty()) {
+		if (!unifyTypeName(a.types.back(), b.types.back(), typeParams, bindings, mergedModules, canon, why, true)) {
+			return false;
+		}
+		a.types.pop_back();
+		b.types.pop_back();
+	}
+	if (a.types.empty() && b.types.empty() && a.variable == b.variable) {
+		return true;
+	}
+	auto bind = [&](const StackList& to, const StackList& from) {
+		if (!isBindableStackVariable(to.variable) || !to.types.empty()) {
+			return false;
+		}
+		if (from.variable == to.variable && from.types.empty()) {
+			return true;
+		}
+		bindings[to.variable] = stackListText(from);
+		return true;
+	};
+	if (bind(a, b) || bind(b, a)) {
+		return true;
+	}
+	why = "the stack '" + stackListText(a) + "' does not match '" + stackListText(b) + "'";
+	return false;
+}
+
 // Unify a declared type `expected` with an argument's type `actual` ("" when unknown), binding
 // type parameters into `bindings`. Returns false on a mismatch; `why` then explains it.
 // `canon` maps a struct name to its canonical spelling -- an unqualified name that refers to a
@@ -509,9 +663,11 @@ inline const char* qdTypeNameOf(StackValueType t) {
 inline bool unifyTypeName(const std::string& expected, const std::string& actual,
 		const std::vector<std::string>& typeParams, std::map<std::string, std::string>& bindings,
 		const std::unordered_set<std::string>& mergedModules,
-		const std::function<std::string(const std::string&)>& canon, std::string& why, bool strict = false) {
-	if (expected.empty() || expected == "any" || actual.empty()) {
-		return true; // the declaration accepts anything, or nothing is known about the argument
+		const std::function<std::string(const std::string&)>& canon, std::string& why, bool strict) {
+	if (expected.empty() || expected == "any" || actual.empty() || expected == "_" || actual == "_") {
+		// The declaration accepts anything, or nothing is known about the argument. `_` is the
+		// type of an inferred `fn { }`'s input or result that its body does not fix.
+		return true;
 	}
 	if (expected == "ptr") {
 		// A declared `ptr` is the escape hatch, and accepts any pointer-shaped value: what a raw
@@ -571,6 +727,28 @@ inline bool unifyTypeName(const std::string& expected, const std::string& actual
 	bool actFn = actual.compare(0, 3, "fn(") == 0;
 	if (expFn || actFn) {
 		std::vector<std::string> ei, eo, ai, ao;
+		if (expFn && actFn && splitFnType(expected, ei, eo) && splitFnType(actual, ai, ao)) {
+			StackList expIn = stackListOf(ei), expOut = stackListOf(eo);
+			StackList actIn = stackListOf(ai), actOut = stackListOf(ao);
+			const bool variables = !expIn.variable.empty() || !expOut.variable.empty() || !actIn.variable.empty() ||
+								   !actOut.variable.empty();
+			if (variables) {
+				// A function type with no stack variable has one implicitly, the same for its
+				// inputs and its outputs: `fn(T -- U)` leaves the rest of the stack as it was
+				if (expIn.variable.empty() && expOut.variable.empty()) {
+					expIn.variable = expOut.variable = freshStackVariable();
+				}
+				if (actIn.variable.empty() && actOut.variable.empty()) {
+					actIn.variable = actOut.variable = freshStackVariable();
+				}
+				if (!unifyStackLists(expIn, actIn, typeParams, bindings, mergedModules, canon, why) ||
+						!unifyStackLists(expOut, actOut, typeParams, bindings, mergedModules, canon, why)) {
+					why = "expects type '" + expected + "' but got '" + actual + "': " + why;
+					return false;
+				}
+				return true;
+			}
+		}
 		if (!(expFn && actFn) || !splitFnType(expected, ei, eo) || !splitFnType(actual, ai, ao) ||
 				ei.size() != ai.size() || eo.size() != ao.size()) {
 			why = "expects type '" + expected + "' but got '" + actual + "'";

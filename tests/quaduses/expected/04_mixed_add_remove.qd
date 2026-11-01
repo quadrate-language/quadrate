@@ -1,10 +1,9 @@
 use bits
 use math
-use strings
 
 fn helper() {
 	5.5 math::sqrt print nl
-	"test" strings::len print nl
+	"test" len print nl
 }
 
 fn main() {

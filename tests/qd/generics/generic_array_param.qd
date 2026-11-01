@@ -1,10 +1,10 @@
 // Test: a generic array parameter unifies its element type with the argument's.
 // `[]T` used to be compared with `[]i64` as strings, so every such call was rejected.
-fn count<T>(a:[]T -- n:i64) {
+def count<T>(a:[]T -- n:i64) {
 	a len
 }
 
-fn first<T>(a:[]T -- x:T) {
+def first<T>(a:[]T -- x:T) {
 	a 0 nth
 }
 

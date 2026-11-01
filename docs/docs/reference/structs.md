@@ -13,8 +13,8 @@ Custom data types that group related fields together.
 | `<<field` | Read a field |
 | `struct value >>field` | Write a field (pushes modified struct back for chaining) |
 | `struct value >>field drop` | Write a field and discard the struct (standalone mutation) |
-| `clone` | A new struct of the same type, fields copied (shallow) |
-| `fn (s:Name) method(...)` | Define a method |
+| `clone` | A new struct of the same type, fields copied (shallow); copies an array too |
+| `def (s:Name) method(...)` | Define a method |
 
 ---
 
@@ -101,7 +101,7 @@ When a value is typed as `ptr` (e.g., in callback handlers), use `as` to tell th
 ```qd
 use http
 
-fn handler(c:ptr -- ) {
+def handler(c:ptr -- ) {
 	c as http::Ctx <<body -> body
 }
 ```
@@ -142,9 +142,9 @@ s sz 1 + >>size drop    // common in imperative code
 A struct is a reference: `p -> q` gives a second name for the same struct, so a write
 through one is seen through the other. `clone` makes a new struct of the same type with the
 fields copied. The copy is shallow: a field that holds a string, array or struct still
-points to the same one.
+points to the same one. An array is copied the same way, `[1 2 3] clone`.
 
-**Signature:** `(s -- s2)`
+**Signature:** `(x -- x2)`
 
 ```qd
 struct Point {
@@ -167,7 +167,7 @@ fn main() {
 
 Methods are functions with a receiver parameter. The receiver uses a special syntax before the function name.
 
-**Syntax:** `fn (receiver:StructType) name(params -- returns) { body }`
+**Syntax:** `def (receiver:StructType) name(params -- returns) { body }`
 
 ```qd
 struct Circle {
@@ -202,7 +202,7 @@ struct Point {
 	y:f64
 }
 
-fn (p:Point) translate(dx:f64 dy:f64 -- result:Point) {
+def (p:Point) translate(dx:f64 dy:f64 -- result:Point) {
 	p p <<x dx + >>x p <<y dy + >>y
 }
 

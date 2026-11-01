@@ -1,6 +1,6 @@
 // Test: cannot use ! on non-fallible function
-stack fn normal_add(i64 i64 -- i64) {
-	add
+fn normal_add(i64 i64 -- i64) {
+	+
 }
 
 fn main() {

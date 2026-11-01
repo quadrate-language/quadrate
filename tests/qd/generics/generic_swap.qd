@@ -1,24 +1,24 @@
 // Test: generic swap function with different types
 
-fn swap<T>(first:T second:T -- b:T a:T) {
+def exchange<T>(first:T second:T -- b:T a:T) {
 	second first
 }
 
 fn main() {
 	// Test with integers
-	10 20 swap
+	10 20 exchange
 	-> a
 	-> b
 	"int: a=" print a print " b=" print b print nl
 
 	// Test with floats
-	1.5 2.5 swap
+	1.5 2.5 exchange
 	-> c
 	-> d
 	"float: c=" print c print " d=" print d print nl
 
 	// Test with strings
-	"hello" "world" swap
+	"hello" "world" exchange
 	-> s1
 	-> s2
 	"str: s1=" print s1 print " s2=" print s2 print nl

@@ -59,6 +59,16 @@ namespace Qd {
 				reportError(func, errorMsg.c_str());
 				return;
 			}
+			// A call by this name would always run the builtin, and the function never. A method
+			// is dispatched on its receiver, and a module's function is called qualified,
+			// `mem::free`, so either may share a builtin's name.
+			if (!mIsModuleFile && !func->hasReceiver() && isBuiltInInstruction(func->name().c_str())) {
+				reportError(func, ("'" + func->name() +
+										  "' is a builtin, and a function cannot take its name: a call to it would run "
+										  "the builtin")
+										  .c_str());
+				return;
+			}
 
 			// Check parameter names for reserved keywords
 			for (const auto& paramNode : func->inputParameters()) {
@@ -78,25 +88,26 @@ namespace Qd {
 				}
 			}
 
-			// Whether an input is bound to a local is carried by the `stack` modifier, not
-			// by whether someone wrote a name. Without it every input must be named, since
-			// there would be nothing to bind; with it the names are documentation and the
-			// values stay on the stack, so naming some and not others is merely partial
-			// documentation and is allowed.
-			if (func->isStack()) {
+			// Whether an input is bound to a local is carried by `def`, rather than `fn`, not by
+			// whether someone wrote a name. With it every input must be named, since each is
+			// bound; without it the values stay on the stack and the names are documentation,
+			// so naming some and not others is merely partial documentation and is allowed. A
+			// receiver is bound either way.
+			if (!func->isStack()) {
 				if (func->inputParameters().empty()) {
-					std::string errorMsg = "'stack fn " + func->name() +
-										   "' takes no input parameters, so there is nothing to leave on the stack";
+					std::string errorMsg =
+							"'def " + func->name() + "' has no inputs to bind; write 'fn " + func->name() + "'";
 					reportError(func, errorMsg.c_str());
 				}
-			} else {
 				for (const auto& paramNode : func->inputParameters()) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 					if (!param->hasName()) {
-						std::string errorMsg = "Unnamed input parameter '" + param->typeString() + "' in '" +
-											   func->name() + "'. Name it ('value:" + param->typeString() +
-											   "'), or write 'stack fn " + func->name() +
-											   "' to leave the arguments on the stack for the body to work on";
+						std::string errorMsg = "Unnamed input parameter '" + param->typeString() + "' in 'def " +
+											   func->name() +
+											   "', which binds every input: name it ('value:" + param->typeString() +
+											   "'), or write 'fn " + func->name() +
+											   "' to leave the arguments "
+											   "on the stack for the body to work on";
 						reportError(param, errorMsg.c_str());
 					}
 				}
@@ -836,6 +847,17 @@ namespace Qd {
 				return;
 			}
 
+			// An input of a function that leaves its inputs on the stack, named in its body
+			if (auto unbound = mUnboundParameters.find(name); unbound != mUnboundParameters.end()) {
+				reportErrorWithHint(ident,
+						("'" + std::string(name) + "' is an input of " + unbound->second +
+								", which leaves its inputs on the stack rather than binding them")
+								.c_str(),
+						"write 'def' instead of 'fn' to bind the inputs to their names");
+				mUndefinedNodes.insert(ident);
+				return;
+			}
+
 			// Not found - report error with suggestion
 			std::string errorMsg = "Undefined identifier '";
 			errorMsg += name;
@@ -1164,15 +1186,20 @@ namespace Qd {
 				funcLocalVariables.insert(func->receiverName());
 			}
 
-			// Input parameters are auto-bound as local variables, unless the function is
-			// `stack fn` -- there the names are documentation and are not in scope, which
-			// is what leaves the body free to bind a local of the same name with `->`.
-			if (!func->isStack()) {
-				for (const auto& paramNode : func->inputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
-					if (param->hasName()) {
-						funcLocalVariables.insert(param->name());
-					}
+			// Input parameters are bound as local variables when the function is `def`.
+			// Otherwise the names are documentation and are not in scope, which is what leaves
+			// the body free to bind a local of the same name with `->`.
+			auto savedUnbound = std::move(mUnboundParameters);
+			mUnboundParameters.clear();
+			for (const auto& paramNode : func->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+				if (!param->hasName()) {
+					continue;
+				}
+				if (func->isStack()) {
+					mUnboundParameters[param->name()] = "'" + func->name() + "'";
+				} else {
+					funcLocalVariables.insert(param->name());
 				}
 			}
 
@@ -1180,6 +1207,7 @@ namespace Qd {
 			for (auto* child : node->children()) {
 				validateReferencesInternal(child, funcLocalVariables, funcIterators);
 			}
+			mUnboundParameters = std::move(savedUnbound);
 			return;
 		}
 
@@ -1238,14 +1266,19 @@ namespace Qd {
 				validatedLocals.insert(captured);
 			}
 
-			// Named parameters are auto-bound as local variables, unless `stack` says the inputs
-			// stay on the stack -- the same rule a named function follows.
-			if (!anonFunc->isStack()) {
-				for (const auto& paramNode : anonFunc->inputParameters()) {
-					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
-					if (param->hasName()) {
-						validatedLocals.insert(param->name());
-					}
+			// Named parameters are bound as local variables in a `def` -- the same rule
+			// a named function follows.
+			auto savedUnbound = std::move(mUnboundParameters);
+			mUnboundParameters.clear();
+			for (const auto& paramNode : anonFunc->inputParameters()) {
+				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
+				if (!param->hasName()) {
+					continue;
+				}
+				if (anonFunc->isStack()) {
+					mUnboundParameters[param->name()] = "this anonymous function";
+				} else {
+					validatedLocals.insert(param->name());
 				}
 			}
 
@@ -1254,6 +1287,7 @@ namespace Qd {
 
 			// Validate the body
 			validateReferencesInternal(anonFunc->body(), validatedLocals, anonIterators);
+			mUnboundParameters = std::move(savedUnbound);
 
 			return;
 		}
@@ -1501,6 +1535,9 @@ namespace Qd {
 			}
 			sig.throws = func->throws();
 			sig.typeParams = mCurrentTypeParams;
+			sig.stackVariables = func->stackVariables();
+			sig.inputStackVariable = func->inputStackVariable();
+			sig.outputStackVariable = func->outputStackVariable();
 			for (const auto& tp : func->receiverTypeParams()) {
 				if (std::find(sig.typeParams.begin(), sig.typeParams.end(), tp) == sig.typeParams.end()) {
 					sig.typeParams.push_back(tp);

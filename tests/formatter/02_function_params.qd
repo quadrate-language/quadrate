@@ -1,8 +1,8 @@
-fn double(x:f64 -- y:f64) {
+def double(x:f64 -- y:f64) {
 	dup
-	add
+	+
 }
 
-fn triple(x:f64 y:f64 -- z:f64) {
-	mul
+def triple(x:f64 y:f64 -- z:f64) {
+	*
 }

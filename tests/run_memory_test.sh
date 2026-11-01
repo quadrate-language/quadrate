@@ -166,7 +166,7 @@ fn mk( -- v:V) {
 	V { head = null tail = null next = null count = 0 }
 }
 
-fn (parent:V) link(child:V -- p:V) {
+def (parent:V) link(child:V -- p:V) {
 	parent <<tail -> t
 	t null == if {
 		parent child >>head drop
@@ -281,8 +281,8 @@ struct P {
 	n: i64
 }
 
-fn make_adder(n:i64 -- f:fn(i64 -- i64)) {
-	fn (x:i64 -- r:i64) { x n + }
+def make_adder(n:i64 -- f:fn(i64 -- i64)) {
+	def (x:i64 -- r:i64) { x n + }
 }
 
 fn round( -- n:i64) {
@@ -290,7 +290,7 @@ fn round( -- n:i64) {
 	["alpha" "beta"] -> words
 	[] -> items
 	items P { n = 1 } append -> items
-	words 0 nth strings::len items 0 nth <<n + -> total
+	words 0 nth len items 0 nth <<n + -> total
 
 	// a closure over a value, called and dropped
 	5 make_adder -> add5
@@ -298,19 +298,19 @@ fn round( -- n:i64) {
 
 	// a deferred block holding a string
 	"deferred" -> d
-	defer { d strings::len drop }
+	defer { d len drop }
 
 	// a generic field, overwritten
 	Box<str> { value = "first" } -> b
 	b "second" >>value drop
-	b <<value strings::len total + -> total
+	b <<value len total + -> total
 
 	// a plain string field, overwritten in a loop
 	Holder { label = "start" } -> h
 	0 5 1 for i {
 		h i strconv::itoa "-tail" strings::concat >>label drop
 	}
-	h <<label strings::len total +
+	h <<label len total +
 }
 
 fn main(--) {
@@ -363,7 +363,7 @@ check_flat "global_var_store" 'struct Point {
 var origin = Point { x = 0 y = 0 }
 var label:str = "start"
 
-fn round(i:i64 -- n:i64) {
+def round(i:i64 -- n:i64) {
 	Point { x = i y = i } -> origin
 	"round" -> label
 	origin <<x
@@ -382,7 +382,7 @@ fn main(--) {
 # point the returning arm never reached, so every match that returned leaked it.
 check_flat "switch_arm_return" 'use strings
 
-fn kind(s:str -- n:i64) {
+def kind(s:str -- n:i64) {
 	s switch {
 		"abc" { 1 return }
 		_ { 2 }

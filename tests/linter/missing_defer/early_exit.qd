@@ -1,7 +1,7 @@
 // Test: a resource released by hand leaks when an early exit can skip the release
 use mem
 
-fn leaks(n:i64 -- )! {
+def leaks(n:i64 -- )! {
 	n mem::alloc? -> buf
 	n 0 < if {
 		return
@@ -9,7 +9,7 @@ fn leaks(n:i64 -- )! {
 	buf mem::free
 }
 
-fn deferred(n:i64 -- )! {
+def deferred(n:i64 -- )! {
 	n mem::alloc? -> buf
 	defer {
 		buf mem::free
@@ -20,7 +20,7 @@ fn deferred(n:i64 -- )! {
 }
 
 fn straight_line(n:i64 -- ) {
-	n mem::alloc! -> buf
+	mem::alloc! -> buf
 	buf mem::free
 }
 

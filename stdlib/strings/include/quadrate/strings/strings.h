@@ -17,7 +17,7 @@
  * These match the constants defined in strings/module.qd
  * Ok=1 (success), specific errors start at 2
  */
-#define STRINGS_ERR_OK 1			/**< Success (matches builtin Ok) */
+#define STRINGS_ERR_OK 1			/**< Success (a native's success status; the call site reads it as Ok) */
 #define STRINGS_ERR_OUT_OF_BOUNDS 2 /**< Index out of bounds */
 #define STRINGS_ERR_ALLOC 3			/**< Memory allocation failed */
 #define STRINGS_ERR_INVALID_ARG 4	/**< Invalid argument */
@@ -29,14 +29,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief Get string length
- * @par Stack Effect: ( s:s -- len:i )
- * @param ctx Execution context
- * @return Execution result
- */
-int usr_strings_len(qd_context* ctx);
 
 /**
  * @brief Concatenate two strings
@@ -293,7 +285,7 @@ int usr_strings_last_index_of(qd_context* ctx);
  * @param ctx Execution context
  * @return Execution result
  *
- * usr_strings_len counts characters; this counts the bytes they occupy.
+ * The builtin `len` counts characters; this counts the bytes they occupy.
  */
 int usr_strings_byte_len(qd_context* ctx);
 

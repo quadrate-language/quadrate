@@ -42,7 +42,7 @@ fn print_help() {
 
 // Count lines, words, and bytes in a buffer.
 // A "word" is any maximal run of non-whitespace bytes (matches POSIX wc).
-fn count_buffer(buf:ptr length:i64 -- lines:i64 words:i64 bytes:i64) {
+def count_buffer(buf:ptr length:i64 -- lines:i64 words:i64 bytes:i64) {
 	0 -> lines
 	0 -> words
 	0 -> in_word
@@ -77,7 +77,7 @@ fn count_buffer(buf:ptr length:i64 -- lines:i64 words:i64 bytes:i64) {
 // Read an entire file (or all of stdin) into a freshly-allocated buffer.
 // Returns (buf, length, ok). On failure, ok=0 and buf is null. Caller must
 // mem::free buf if ok=1.
-fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
+def slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
 	path "-" strings::compare 0 == if {
 		// Read stdin to EOF using io::readline. readline strips the trailing
 		// newline, so we re-add it to make the byte count match `wc`.
@@ -88,12 +88,12 @@ fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
 				loop {
 					io::readline switch {
 						Ok {
-							-> ok -> line
-							ok 0 == if { line drop break }
-							line strings::len -> line_len
+							-> more -> line
+							more 0 == if { line drop break }
+							line len -> line_len
 							out total line_len 1 + + mem::realloc switch {
 								Ok { -> out }
-								_ { break }
+								_ { drop break }
 							}
 							0 -> i
 							loop {
@@ -106,19 +106,20 @@ fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
 							total line_len 1 + + -> total
 						}
 						_ {
+							drop drop
 							break
 						}
 					}
 				}
 				out total 1
 			}
-			_ { 0 0 0 }
+			_ { drop 0 0 0 }
 		}
 	} else {
 		path io::read_file switch {
 			Ok {
 				-> contents
-				contents strings::len -> n
+				contents len -> n
 				n mem::alloc switch {
 					Ok {
 						-> buf
@@ -131,18 +132,18 @@ fn slurp_file(path:str -- buf:ptr length:i64 ok:i64) {
 						}
 						buf n 1
 					}
-					_ { 0 0 0 }
+					_ { drop 0 0 0 }
 				}
 			}
-			_ { 0 0 0 }
+			_ { drop 0 0 0 }
 		}
 	}
 }
 
-fn print_count(n:i64 width:i64 -- ) {
+def print_count(n:i64 width:i64 -- ) {
 	// Right-pad with spaces to a minimum width for column alignment.
 	n strconv::itoa -> s
-	s strings::len -> slen
+	s len -> slen
 	width slen - -> pad
 	loop {
 		pad 0 <= if {
@@ -154,7 +155,7 @@ fn print_count(n:i64 width:i64 -- ) {
 	s print
 }
 
-fn print_row(lines:i64 words:i64 bytes:i64 label:str want_l:i64 want_w:i64 want_c:i64 -- ) {
+def print_row(lines:i64 words:i64 bytes:i64 label:str want_l:i64 want_w:i64 want_c:i64 -- ) {
 	want_l if {
 		lines 7 print_count " " print
 	}
@@ -199,7 +200,7 @@ fn main() {
 			// Skip entries starting with '-' (flags). We accept argument values
 			// after ` -- ` as a way to pass a literal "-l" filename.
 			f <<argv -> argv
-			argv strings::len -> alen
+			argv len -> alen
 			1 -> start
 			0 -> after_ddash
 			loop {
@@ -215,7 +216,7 @@ fn main() {
 						1 -> after_ddash
 						continue
 					}
-					arg strings::len 0 > if {
+					arg len 0 > if {
 						arg 0 strings::char_at 45 == if {
 							continue
 						}

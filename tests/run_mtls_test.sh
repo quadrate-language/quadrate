@@ -145,6 +145,7 @@ cat >> "$CERT_DIR/mtls_test.qd" << EOF
             conn tls::close
         }
         _ {
+            drop
             err -> code -> msg
             "MTLS_FAILED " print msg print nl
         }

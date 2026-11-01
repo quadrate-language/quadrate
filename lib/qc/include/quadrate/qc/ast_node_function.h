@@ -2,6 +2,7 @@
 #define QD_QC_AST_NODE_FUNCTION_H
 
 #include "ast_node.h"
+#include "ast_node_parameter.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -122,9 +123,9 @@ namespace Qd {
 			return mIsInline;
 		}
 
-		// `stack fn` -- the input parameters are not bound as locals; they stay on the
-		// stack for the body to work on. Any names they carry are documentation, and a
-		// local of the same name may be bound in the body.
+		// True unless the function is `def`: the input parameters are not bound as locals;
+		// they stay on the stack for the body to work on. Any names they carry are
+		// documentation, and a local of the same name may be bound in the body.
 		void setStack(bool isStack) {
 			mIsStack = isStack;
 		}
@@ -143,6 +144,52 @@ namespace Qd {
 
 		void addTypeParam(const std::string& typeParam) {
 			mTypeParams.push_back(typeParam);
+		}
+
+		// Stack variables, `..a`: declared in the `<...>` list with the type parameters, and
+		// written at the bottom of the inputs or the outputs. Spelled with their dots. They are
+		// not parameters -- a function's inputs and outputs are still exactly its parameters --
+		// but the part of the caller's stack below them that the function reaches into.
+		const std::vector<std::string>& stackVariables() const {
+			return mStackVariables;
+		}
+
+		void addStackVariable(const std::string& name) {
+			mStackVariables.push_back(name);
+		}
+
+		const std::string& inputStackVariable() const {
+			return mInputStackVariable;
+		}
+
+		const std::string& outputStackVariable() const {
+			return mOutputStackVariable;
+		}
+
+		void setInputStackVariable(const std::string& name) {
+			mInputStackVariable = name;
+		}
+
+		void setOutputStackVariable(const std::string& name) {
+			mOutputStackVariable = name;
+		}
+
+		// What a signature shows between `<` and `>`: the stack variables, then the type
+		// parameters. Empty for a function with neither.
+		std::vector<std::string> declaredParameters() const {
+			std::vector<std::string> all = mStackVariables;
+			all.insert(all.end(), mTypeParams.begin(), mTypeParams.end());
+			return all;
+		}
+
+		// A signature's inputs and outputs as written: the stack variable first, then each
+		// parameter as `name:type` or a bare type
+		std::vector<std::string> inputItems() const {
+			return itemsOf(mInputParameters, mInputStackVariable);
+		}
+
+		std::vector<std::string> outputItems() const {
+			return itemsOf(mOutputParameters, mOutputStackVariable);
 		}
 
 		// Receiver support for struct methods
@@ -180,8 +227,23 @@ namespace Qd {
 		}
 
 	private:
+		static std::vector<std::string> itemsOf(
+				const std::vector<std::unique_ptr<IAstNode>>& params, const std::string& variable) {
+			std::vector<std::string> items;
+			if (!variable.empty()) {
+				items.push_back(variable);
+			}
+			for (const auto& param : params) {
+				items.push_back(static_cast<const AstNodeParameter*>(param.get())->displayString());
+			}
+			return items;
+		}
+
 		std::string mName;
 		std::vector<std::string> mTypeParams;
+		std::vector<std::string> mStackVariables;
+		std::string mInputStackVariable;
+		std::string mOutputStackVariable;
 		IAstNode* mParent;
 		std::unique_ptr<IAstNode> mBody;
 		std::vector<std::unique_ptr<IAstNode>> mInputParameters;

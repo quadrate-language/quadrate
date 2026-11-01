@@ -1,11 +1,11 @@
 // Test: Regression: fallible switch Ok branch must properly consume result value
 use io
 
-fn read_or_default(path:str -- content:str) {
+def read_or_default(path:str -- content:str) {
 	"" -> content
 	path io::read_file switch {
 		Ok { -> content }
-		_ { "fallback" -> content }
+		_ { drop "fallback" -> content }
 	}
 	content
 }

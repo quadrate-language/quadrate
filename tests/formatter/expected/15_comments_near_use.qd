@@ -7,7 +7,7 @@ use yet_another */
 
 fn main() {
 	// use commented_module
-	5 10 add
+	5 10 +
 	/* use inline_fake */ print
 }
 

@@ -1,0 +1,8 @@
+// Test: `def` binds every input, so each must be named
+def sq(i64 -- result:i64) {
+	dup *
+}
+
+fn main() {
+	6 sq print nl
+}

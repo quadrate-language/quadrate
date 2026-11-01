@@ -1,5 +1,5 @@
 // Test: typed array as both input and output parameter
-fn double_all(arr:[]i64 -- result:[]i64) {
+def double_all(arr:[]i64 -- result:[]i64) {
 	[arr len]i64 -> result
 	0 arr len 1 for i {
 		result i arr i nth 2 * set

@@ -50,6 +50,8 @@ test "hex::is_valid" {
 	"" hex::is_valid testing::assert_true
 	"GHI" hex::is_valid testing::assert_false
 	"48656C6C6G" hex::is_valid testing::assert_false
+	"ABC" hex::is_valid testing::assert_false  // odd length
+	"é0" hex::is_valid testing::assert_false
 }
 
 test "hex long string" {

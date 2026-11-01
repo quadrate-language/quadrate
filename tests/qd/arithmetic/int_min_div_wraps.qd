@@ -1,8 +1,8 @@
 // Test: INT64_MIN / -1 and INT64_MIN % -1 wrap instead of trapping,
 // whichever codegen path the operation takes
 fn negone( -- r:i64) { -1 }
-fn div_fn(a:i64 b:i64 -- r:i64) { a b / }
-fn mod_fn(a:i64 b:i64 -- r:i64) { a b % }
+def div_fn(a:i64 b:i64 -- r:i64) { a b / }
+def mod_fn(a:i64 b:i64 -- r:i64) { a b % }
 
 fn main() {
 	-9223372036854775808 -1 / print nl

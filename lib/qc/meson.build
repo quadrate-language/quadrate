@@ -5,6 +5,8 @@ qc_sources = files(
 		'src/ast_declarations.cc',
 		'src/ast_types.cc',
 		'src/ast_printer.cc',
+		'src/lower_combinators.cc',
+		'src/migrate.cc',
 		'src/colors.cc',
 		'src/error_reporter.cc',
 		'src/source_formatter.cc',
@@ -12,6 +14,7 @@ qc_sources = files(
 		'src/semantic_validator_modules.cc',
 		'src/semantic_validator_collect.cc',
 		'src/semantic_validator_typecheck.cc',
+		'src/semantic_validator_combinators.cc',
 		'src/semantic_validator_instructions.cc',
 		'src/module_resolver.cc',
 )

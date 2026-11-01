@@ -208,6 +208,7 @@ quadlint --json src/   # Report as JSON, for an editor or CI
 | `--no-shadow-variables` | Disable shadowed variable warnings |
 | `--no-empty-blocks` | Disable empty block warnings |
 | `--no-constant-conditions` | Disable constant condition warnings |
+| `--no-needless-binding` | Disable warnings for a `def` that could be a `fn` |
 | `--check-magic-numbers` | Warn about magic numbers (off by default) |
 | `--check-long-functions` | Warn about long functions (off by default) |
 | `--max-function-lines <N>` | With `--check-long-functions`, the limit (default: 50) |
@@ -217,10 +218,20 @@ quadlint --json src/   # Report as JSON, for an editor or CI
 A function is unused only if nothing in its directory calls it: `quadlint` reads the other
 `.qd` files beside the one it checks, as the compiler merges them.
 
+A `def` whose body starts by pushing its inputs back in the order they came, and never names them
+again, is a `fn` with extra steps: the inputs were already on the stack in that order. `quadlint`
+says so, and the fix is to write `fn` and drop the names from the body:
+
+<!-- doccheck: skip excerpt: the same function written two ways -->
+```qd
+def sum(a:i64 b:i64 -- s:i64) { a b + }   // needless-binding
+fn sum(a:i64 b:i64 -- s:i64) { + }        // the same function
+```
+
 `//nolint` at the end of a line suppresses every warning on it; `//nolint:rule1,rule2`
 suppresses the named ones. The rules are `unused-functions`, `unused-variables`,
 `dead-code`, `deep-nesting`, `missing-defer`, `shadow-variables`, `empty-blocks`,
-`constant-conditions`, `magic-numbers`, `long-functions` and `naming`.
+`constant-conditions`, `needless-binding`, `magic-numbers`, `long-functions` and `naming`.
 
 ## quadlsp
 
@@ -264,7 +275,7 @@ Inside the REPL, what a line leaves on the stack stays there, and the prompt sho
 [5 3]> +
 [8]> print
 8
-[]> fn double(x:i64 -- y:i64) { x x + }
+[]> def double(x:i64 -- y:i64) { x x + }
 Function defined
 []> 21 double print
 42

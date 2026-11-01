@@ -5,7 +5,7 @@ use strings
 const ErrDivZero = -1
 const ErrNegative = -2
 
-stack fn division(numerator:i64 denominator:i64 -- i64)! {
+fn division(numerator:i64 denominator:i64 -- i64)! {
 	dup 0 == if {
 		drop drop
 		"division by zero" ErrDivZero panic
@@ -16,67 +16,79 @@ stack fn division(numerator:i64 denominator:i64 -- i64)! {
 // A frame that catches a failure, says where it happened, and passes it on. The wrapped error
 // keeps the original code, so a caller matching on ErrDivZero still matches.
 fn average(total:i64 count:i64 -- avg:i64)! {
-	count 0 < if { "count is negative" ErrNegative panic }
-	total count division if {
-		// success: the result is on the stack
-	} else {
+	dup 0 < if { "count is negative" ErrNegative panic }
+	division fail if {
+		drop
 		error::last "cannot average" wrap -> e
 		e <<message e <<code panic
 	}
 }
 
 fn main() {
-	// A fallible call must say what happens on failure: '!' aborts, '?' propagates, or the
-	// result is read by 'if' or 'switch'. On failure the function produced nothing, so the
-	// failure arm sees the stack as it was before the call.
-	1 0 division if {
+	// A fallible call must say what happens on failure: '!' aborts, '?' propagates, or a bare
+	// call leaves its result and a status -- Ok (0) on success, the error code on failure. On
+	// failure the result is a zero placeholder, which the arm that does not want it drops.
+	1 0 division ok if {
 		"1 / 0 = " print print nl
 	} else {
-		"1 / 0 failed" print nl
+		drop "1 / 0 failed" print nl
 	}
 
-	10 2 division if {
+	10 2 division ok if {
 		"10 / 2 = " print print nl
 	} else {
-		"unexpected failure" print nl
+		drop "unexpected failure" print nl
 	}
 
 	// 'err' reads the channel directly: a message and a code, and reading empties it.
-	1 0 division if {
+	1 0 division fail if {
 		drop
-	} else {
 		err -> code -> msg
 		"err: " print msg print " (code " print code print ")" print nl
+	} else {
+		drop
 	}
 
 	// 'error::last' reads the same thing as one value, which can be kept.
-	1 0 division if {
+	1 0 division fail if {
 		drop
-	} else {
 		error::last -> e
 		"error::last: " print e <<message print " (code " print e <<code print ")" print nl
+	} else {
+		drop
+	}
+
+	// The status is a value like any other: it can be bound now and tested later.
+	7 0 division -> status -> q
+	"status " print status print ", ok? " print status ok print nl
+
+	// 'switch' reads the status itself, so specific codes get arms of their own.
+	1 0 division switch {
+		Ok { print nl }
+		ErrDivZero { drop "division by zero, by code" print nl }
+		_ { drop "something else" print nl }
 	}
 
 	// Kept: several failures collected while the loop carries on.
 	[] -> failures
 	[0 2 0] -> divisors
 	0 divisors len 1 for i {
-		100 divisors i nth division if {
-			drop
-		} else {
+		100 divisors i nth division fail if {
 			failures error::last append -> failures
 		}
+		drop
 	}
 	"collected " print failures len print " failures" print nl
 
 	// Wrapped: context from the frame that had it. Re-raising with 'panic' carries the message
 	// and the code, so the text and the code survive the frame -- the chain behind them does not.
-	100 0 average if {
+	100 0 average fail if {
 		drop
-	} else {
 		error::last -> e
 		e <<message print nl
 		"  code is still ErrDivZero: " print e <<code ErrDivZero == print nl
+	} else {
+		drop
 	}
 
 	// Within one frame the chain is structured, and 'root' walks back to what actually failed.

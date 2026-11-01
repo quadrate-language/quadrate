@@ -10,13 +10,11 @@ struct Resource {
 }
 
 fn create_resource(id:i64 -- r:ptr) {
-	Resource {
-		id = id
-		value = id 100 *
-	}
+	// Positional construction: the fields come off the stack in declaration order
+	dup 100 * Resource
 }
 
-fn destroy_resource(r:ptr -- ) {
+def destroy_resource(r:ptr -- ) {
 	"  Destroying resource " print r <<id print nl
 	r free
 }

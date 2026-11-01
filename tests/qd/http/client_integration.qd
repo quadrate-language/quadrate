@@ -7,7 +7,7 @@ use os
 fn main() {
 	os::args -> args
 	args 0 nth http::new -> req
-	args len 1 gt if {
+	args len 1 > if {
 		req "POST" http::method
 		req args 1 nth http::body
 	}
@@ -20,6 +20,7 @@ fn main() {
 			resp http::close
 		}
 		_ {
+			drop
 			err -> code -> msg
 			"error " print code print nl
 		}

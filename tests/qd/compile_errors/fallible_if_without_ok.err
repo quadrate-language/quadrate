@@ -1,0 +1,2 @@
+'divide' leaves a status that is 0 on success
+test the status first: 'divide ok if

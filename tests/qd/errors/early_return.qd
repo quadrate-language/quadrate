@@ -1,8 +1,8 @@
 // Test: early return on error
-fn process_list(n:i64 -- sum:i64)! {
+def process_list(n:i64 -- sum:i64)! {
 	0 -> total
 	0 n 1 for i {
-		i 5 eq if {
+		i 5 == if {
 			0 "found 5" 1 panic
 		}
 		total i + -> total
@@ -10,8 +10,8 @@ fn process_list(n:i64 -- sum:i64)! {
 	total
 }
 
-fn safe_divide(dividend:i64 divisor:i64 -- result:i64)! {
-	divisor 0 eq if {
+def safe_divide(dividend:i64 divisor:i64 -- result:i64)! {
+	divisor 0 == if {
 		0 "division by zero" 1 panic
 	}
 	dividend divisor /
@@ -20,29 +20,33 @@ fn safe_divide(dividend:i64 divisor:i64 -- result:i64)! {
 fn main() {
 	// Early return on specific value
 	"=== Early return ===" print nl
-	3 process_list if {
+	3 process_list ok if {
 		"sum(0..2): " print print nl
 	} else {
+		drop
 		"3: failed" print nl
 	}
 
-	10 process_list if {
+	10 process_list ok if {
 		"sum(0..9): " print print nl
 	} else {
+		drop
 		"10: failed (hit 5)" print nl
 	}
 
 	// Safe division
 	"=== Safe divide ===" print nl
-	100 10 safe_divide if {
+	100 10 safe_divide ok if {
 		"100/10 = " print print nl
 	} else {
+		drop
 		"100/10 failed" print nl
 	}
 
-	100 0 safe_divide if {
+	100 0 safe_divide ok if {
 		"100/0 = " print print nl
 	} else {
+		drop
 		"100/0 failed" print nl
 	}
 

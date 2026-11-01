@@ -35,9 +35,9 @@ pub struct Crc32 {
 
 // Generate CRC32 lookup table entry
 fn crc32_make_entry(index:i64 -- entry:i64) {
-	index -> crc
+	-> crc
 	0 8 1 for j {
-		crc 1 shr -> shifted
+		crc 1 bits::shr -> shifted
 		shifted CRC32_POLY bits::xor -> xored
 		crc 1 bits::and 1 == if {
 			xored -> crc
@@ -62,7 +62,7 @@ fn crc32_make_table( -- tbl:ptr) {
 /// @param c Crc32 The hasher state
 /// @param data str Data to hash
 /// @return c2 Crc32 Updated hasher state
-pub fn (c:Crc32) update(data:str -- c2:Crc32) {
+pub def (c:Crc32) update(data:str -- c2:Crc32) {
 	c <<state -> state
 	c <<tbl -> tbl
 
@@ -71,12 +71,12 @@ pub fn (c:Crc32) update(data:str -- c2:Crc32) {
 		crc32_make_table -> tbl
 	}
 
-	data strings::len -> slen
+	data len -> slen
 
 	0 slen 1 for i {
 		data i strings::char_at -> byte
 		state byte bits::xor 255 bits::and -> index
-		tbl index 8 * mem::get_i64 state 8 shr bits::xor -> state
+		tbl index 8 * mem::get_i64 state 8 bits::shr bits::xor -> state
 	}
 
 	// Return new Crc32 with updated state
@@ -101,7 +101,7 @@ pub fn (c:Crc32) hex( -- hex:str) {
 
 	8 mem::alloc! -> buf
 	0 8 1 for i {
-		crc 28 i 4 * - shr 15 bits::and -> nibble
+		crc 28 i 4 * - bits::shr 15 bits::and -> nibble
 		nibble 10 < if {
 			48 nibble +
 		} else {
@@ -130,8 +130,7 @@ pub fn (c:Crc32) release() {
 /// @return crc i64 CRC32 checksum
 /// @example "Hello" crypto::crc32 -> crc
 pub fn crc32(s:str -- crc:i64) {
-	Crc32 {} -> c
-	c s update -> c
+	Crc32 {} swap update -> c
 	c value -> result
 	c release
 	result
@@ -141,8 +140,7 @@ pub fn crc32(s:str -- crc:i64) {
 /// @param s str Input string
 /// @return hex str CRC32 as 8-character hex string
 pub fn crc32_hex(s:str -- hex:str) {
-	Crc32 {} -> c
-	c s update -> c
+	Crc32 {} swap update -> c
 	c hex -> result
 	c release
 	result
@@ -153,5 +151,5 @@ pub fn crc32_hex(s:str -- hex:str) {
 /// @param expected i64 Expected CRC32 value
 /// @return ok i64 1 if matches, 0 otherwise
 pub fn crc32_verify(s:str expected:i64 -- ok:i64) {
-	s crc32 expected == if { 1 } else { 0 }
+	swap crc32 == if { 1 } else { 0 }
 }

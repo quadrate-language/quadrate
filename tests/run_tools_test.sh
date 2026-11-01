@@ -29,6 +29,12 @@ QUADREPL="${QUADREPL:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadrepl/quadrepl}"
 QUADFMT="${QUADFMT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadfmt/quadfmt}"
 QUADLINT="${QUADLINT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadlint/quadlint}"
 
+# The tools resolve the runtime and the stdlib relative to their own location. Run from the
+# build tree there is nothing beside them, and they fall through to ~/.local/lib and
+# /usr/share/quadrate -- an installed copy that may be any age -- so point them at the tree.
+export QUADRATE_LIBDIR="${QUADRATE_LIBDIR:-$PROJECT_ROOT/dist/lib}"
+export QUADRATE_ROOT="${QUADRATE_ROOT:-$PROJECT_ROOT/dist/share/quadrate}"
+
 # Marked with the same U+2717 as a failing check: run_all.sh extracts the message
 # it reports by grepping for that character, so a bare "FAIL" here surfaced as
 # "0 passed, 1 failed" with no reason attached. A tool is missing rather than
@@ -135,7 +141,7 @@ cat > "$WORK_DIR/src/greet/greet.qd" <<'EOF'
 /// Greeting helpers.
 
 /// Return a greeting for a name.
-pub fn hello(name:str -- msg:str) {
+pub def hello(name:str -- msg:str) {
 	"Hello, " name strings::concat
 }
 EOF
@@ -172,18 +178,18 @@ pub struct Box { w: i64 }
 
 /// Inline functions are still functions.
 /// @param p i64 A port
-pub inline fn emit(p:i64 -- ) {
+pub inline def emit(p:i64 -- ) {
 	p drop
 }
 
 /// A generic function.
-pub fn (b:Box) scaled<T>(k:T -- out:Box) {
+pub def (b:Box) scaled<T>(k:T -- out:Box) {
 	b
 }
 
 /// Takes a function.
 /// @param f fn(i64 -- i64) The callback
-pub fn apply(x:i64 f:fn(i64 -- i64) -- y:i64) {
+pub def apply(x:i64 f:fn(i64 -- i64) -- y:i64) {
 	x f call
 }
 
@@ -220,7 +226,7 @@ expect_not_contains "a name mentioned in a comment is not a call" \
 
 # A file that does not parse is reported rather than published half-empty.
 mkdir -p "$WORK_DIR/src/broken"
-printf '/// Broken.\n\npub fn ok(x:i64 -- y:i64) {\n\tx\n}\n\npub fn bad(  {\n' \
+printf '/// Broken.\n\npub def ok(x:i64 -- y:i64) {\n\tx\n}\n\npub fn bad(  {\n' \
     > "$WORK_DIR/src/broken/broken.qd"
 expect_contains "reports a parse error as a located warning" \
                 ": warning: " "$QUADDOC" -o "$WORK_DIR/docs3" "$WORK_DIR/src/broken"
@@ -241,7 +247,7 @@ quaddoc_regressions() {
 /// Package docs.
 ///
 /// @example
-/// 1 2 add
+/// 1 2 +
 ///     print
 /// doccheck: page-context
 
@@ -269,11 +275,11 @@ pub fn (b:Bar) len( -- n:i64) {
 /// Apply.
 /// @param f fn(i64 i64 -- i64) Binary function
 /// doccheck: page-setup 1 -> x
-pub fn apply(f:fn(i64 i64 -- i64) x:i64 -- r:i64) {
+pub def apply(f:fn(i64 i64 -- i64) x:i64 -- r:i64) {
 	x x f call assist
 }
 QDEOF
-    printf '/// Helper file.\n\n/// assist\npub fn assist(x:i64 -- y:i64) {\n\tx\n}\n' > "$src/pkg/helper.qd"
+    printf '/// Helper file.\n\n/// assist\npub def assist(x:i64 -- y:i64) {\n\tx\n}\n' > "$src/pkg/helper.qd"
 
     expect_rc "an include cycle does not crash" 0 timeout 20 "$QUADDOC" -q -o "$out" "$src"
     if [ -f "$out/cyc.html" ] && [ ! -f "$out/part.html" ] && [ ! -f "$out/helper.html" ]; then
@@ -328,13 +334,13 @@ repl_last() {
         fail "$name" "expected $want, got '$last'; full output: $(printf '%s' "$all" | tr '\n' ' ')"; fi
 }
 
-repl_last "evaluates piped input" 5 '2 3 add\n'
+repl_last "evaluates piped input" 5 '2 3 +\n'
 repl_last "runs instructions from a pipe" hi '"hi" print\n'
-repl_last "--print reports the stack" 3 '1 2 add\n' -p
+repl_last "--print reports the stack" 3 '1 2 +\n' -p
 
 repl() { printf '%b' "$1" | timeout 20 "$QUADREPL" 2>&1; }
 
-out=$(repl '5\n3\nadd\nstack\n')
+out=$(repl '5\n3\n+\nstack\n')
 if echo "$out" | grep -q '^  \[0\] 8$'; then pass "values stay on the stack between lines"; else
     fail "values stay on the stack between lines" "$(echo "$out" | tr '\n' ' ')"; fi
 
@@ -346,7 +352,7 @@ out=$(repl '"a" 2.5\nstack\n')
 if echo "$out" | grep -q '\[1\] 2.5$'; then pass "floats print without trailing zeros"; else
     fail "floats print without trailing zeros" "$(echo "$out" | tr '\n' ' ')"; fi
 
-out=$(repl '"hello print world" prints\n')
+out=$(repl '"hello print world" print\n')
 if echo "$out" | grep -q 'hello print world'; then pass "a string literal containing 'print' is untouched"; else
     fail "a string literal containing 'print' is untouched" "$(echo "$out" | tr '\n' ' ')"; fi
 if echo "$out" | grep -q 'print nl'; then
@@ -354,11 +360,11 @@ if echo "$out" | grep -q 'print nl'; then
 else
     pass "no 'nl' is spliced into a string literal"; fi
 
-out=$(repl '5 3 add\nreset\nstack\n')
+out=$(repl '5 3 +\nreset\nstack\n')
 if echo "$out" | grep -q 'Stack is empty'; then pass "reset clears the stack"; else
     fail "reset clears the stack" "$(echo "$out" | tr '\n' ' ')"; fi
 
-out=$(repl '1 2 add\n:quit\n3 4 add\n')
+out=$(repl '1 2 +\n:quit\n3 4 +\n')
 if [ "$(echo "$out" | tail -1)" = "3" ]; then pass ":quit ends the session"; else
     fail ":quit ends the session" "$(echo "$out" | tr '\n' ' ')"; fi
 
@@ -392,7 +398,7 @@ out=$(repl '1 2\n10 -> x\nstack\n')
 if [ "$(echo "$out" | grep -c '^  \[')" = "2" ]; then pass "a local is not part of the visible stack"; else
     fail "a local is not part of the visible stack" "$(echo "$out" | tr '\n' ' ')"; fi
 
-out=$(repl '1 2\n10 -> x\nx add\nstack\n')
+out=$(repl '1 2\n10 -> x\nx +\nstack\n')
 if echo "$out" | grep -q '^  \[1\] 12$'; then pass "a local can be pushed back and used"; else
     fail "a local can be pushed back and used" "$(echo "$out" | tr '\n' ' ')"; fi
 
@@ -427,7 +433,7 @@ echo ""
 echo "=== quadrepl :doc ==="
 
 out=$(repl ':doc dup\n')
-if echo "$out" | grep -q '( a -- a a )'; then pass ":doc shows a builtin's stack effect"; else
+if echo "$out" | grep -q '( x -- x x )'; then pass ":doc shows a builtin's stack effect"; else
     fail ":doc shows a builtin's stack effect" "$(echo "$out" | tr '\n' ' ')"; fi
 
 out=$(repl ':doc defer\n')
@@ -442,18 +448,18 @@ out=$(repl ':doc trim\n')
 if echo "$out" | grep -q 'strings::trim_left'; then pass ":doc searches when there is no exact match"; else
     fail ":doc searches when there is no exact match" "$(echo "$out" | tr '\n' ' ')"; fi
 
-out=$(repl 'fn double(x:i64 -- y:i64) { x x add }\n:doc double\n')
+out=$(repl 'def double(x:i64 -- y:i64) { x x + }\n:doc double\n')
 if echo "$out" | grep -q 'this session'; then pass ":doc finds a function defined in the session"; else
     fail ":doc finds a function defined in the session" "$(echo "$out" | tr '\n' ' ')"; fi
 
 echo ""
 echo "=== quadrepl standard library ==="
 
-out=$(repl 'use math\n2.0 math::sqrt printv\n')
+out=$(repl 'use math\n2.0 math::sqrt dump\n')
 if echo "$out" | grep -q '1.41421'; then pass "a stdlib module links and runs"; else
     fail "a stdlib module links and runs" "$(echo "$out" | tr '\n' ' ')"; fi
 
-out=$(repl 'use strings\n"  padded  " strings::trim prints\n')
+out=$(repl 'use strings\n"  padded  " strings::trim print\n')
 if echo "$out" | grep -q '^padded$'; then pass "a second stdlib module links and runs"; else
     fail "a second stdlib module links and runs" "$(echo "$out" | tr '\n' ' ')"; fi
 
@@ -469,7 +475,7 @@ quadrepl_regressions() {
         fail "a runtime error is reported and the session goes on" "$(echo "$out" | tr '\n' ' ')"
     fi
 
-    out=$(repl 'fn d(a:i64 b:i64 -- c:i64) { a b / }\n1 2\n1 0 d\n7\nstack\n' || true)
+    out=$(repl 'def d(a:i64 b:i64 -- c:i64) { a b / }\n1 2\n1 0 d\n7\nstack\n' || true)
     if echo "$out" | grep -q 'Division by zero' && [ "$(echo "$out" | tail -1)" = "1 2 7" ]; then
         pass "a runtime error in a typed function is recovered"
     else
@@ -490,21 +496,21 @@ quadrepl_regressions() {
         fail "a failed line leaves the stack and locals as they were" "$(echo "$out" | tr '\n' ' ')"
     fi
 
-    out=$(repl 'fn g( -- y:i64) { "a" }\n1 2 add\n' || true)
+    out=$(repl 'fn g( -- y:i64) { "a" }\n1 2 +\n' || true)
     if ! echo "$out" | grep -q 'Function defined' && [ "$(echo "$out" | tail -1)" = "3" ]; then
         pass "an ill-typed definition is rejected and does not poison later lines"
     else
         fail "an ill-typed definition is rejected and does not poison later lines" "$(echo "$out" | tr '\n' ' ')"
     fi
 
-    out=$(repl 'fn h() { nosuch }\n1 2 add\n' || true)
+    out=$(repl 'fn h() { nosuch }\n1 2 +\n' || true)
     if echo "$out" | grep -q "Undefined identifier 'nosuch'" && [ "$(echo "$out" | tail -1)" = "3" ]; then
         pass "a definition naming something undefined is rejected"
     else
         fail "a definition naming something undefined is rejected" "$(echo "$out" | tr '\n' ' ')"
     fi
 
-    out=$(repl 'fn f(x:i64 -- y:i64) { x x add }\nfn f(x:i64 -- y:i64) { x }\n5 f print\n' || true)
+    out=$(repl 'def f(x:i64 -- y:i64) { x x + }\ndef f(x:i64 -- y:i64) { x }\n5 f print\n' || true)
     if echo "$out" | grep -q 'Function redefined' && [ "$(echo "$out" | tail -1)" = "5" ]; then
         pass "redefining a function replaces it"
     else
@@ -515,21 +521,21 @@ quadrepl_regressions() {
     if [ "$(echo "$out" | tail -1)" = "8" ]; then pass "redefining a constant replaces it"; else
         fail "redefining a constant replaces it" "$(echo "$out" | tr '\n' ' ')"; fi
 
-    out=$(repl 'fn f(x:i64 -- y:i64) { x x add }\nfn g(x:i64 -- y:i64) { x f }\nfn f(x:str -- y:str) { x }\n3 g print\n' || true)
+    out=$(repl 'def f(x:i64 -- y:i64) { x x + }\ndef g(x:i64 -- y:i64) { x f }\ndef f(x:str -- y:str) { x }\n3 g print\n' || true)
     if [ "$(echo "$out" | tail -1)" = "6" ]; then pass "a redefinition that breaks a caller is rejected"; else
         fail "a redefinition that breaks a caller is rejected" "$(echo "$out" | tr '\n' ' ')"; fi
 
-    printf 'fn sq(x:i64 -- y:i64) {\n\tx x mul\n}\n4 sq\n' > "$WORK_DIR/session.qd"
+    printf 'def sq(x:i64 -- y:i64) {\n\tx x *\n}\n4 sq\n' > "$WORK_DIR/session.qd"
     out=$(repl ":load $WORK_DIR/session.qd\n" || true)
     if [ "$(echo "$out" | tail -1)" = "16" ]; then pass ":load reads a multi-line definition"; else
         fail ":load reads a multi-line definition" "$(echo "$out" | tr '\n' ' ')"; fi
 
-    out=$(repl "fn cube(x:i64 -- y:i64) {\n\tx x x mul mul\n}\n:save $WORK_DIR/saved.qd\n" || true)
+    out=$(repl "def cube(x:i64 -- y:i64) {\n\tx x x * *\n}\n:save $WORK_DIR/saved.qd\n" || true)
     out=$(repl ":load $WORK_DIR/saved.qd\n2 cube print\n" || true)
     if [ "$(echo "$out" | tail -1)" = "8" ]; then pass ":load reads back what :save wrote"; else
         fail ":load reads back what :save wrote" "$(echo "$out" | tr '\n' ' ')"; fi
 
-    out=$(repl 'fn doubled(x:i64 -- y:i64) { x x add }\n:doc double\n' || true)
+    out=$(repl 'def doubled(x:i64 -- y:i64) { x x + }\n:doc double\n' || true)
     if echo "$out" | grep -q 'No exact match' && ! echo "$out" | grep -q '(this session)'; then
         pass ":doc does not count a substring of a session name as exact"
     else
@@ -566,14 +572,28 @@ if [ "$out" = "fn main() { @@@ }" ]; then pass "unparseable stdin is echoed back
 
 expect_rc "unparseable stdin exits 1" 1 sh -c "printf 'fn main() { @@@ }\n' | '$QUADFMT' -"
 
+# --migrate renames builtins that changed name, and leaves a module's own function alone
+printf 'fn main() {\n\t42 printv\n\t1 dbg::printv\n}\n' > "$WORK_DIR/migrate.qd"
+expect_contains     "migrate renames printv to dump"   "42 dump"     "$QUADFMT" --migrate "$WORK_DIR/migrate.qd"
+expect_contains     "migrate leaves dbg::printv"       "dbg::printv" "$QUADFMT" --migrate "$WORK_DIR/migrate.qd"
+
+# The operators' word forms become symbols, but a local or a field of the same name stays, and the
+# shifts bring in the bits module. Code already written for today's language is left as it is.
+printf 'fn main() {\n\t1 2 add 3 mul 1 4 shl -> eq\n\teq 5 gt p <<add drop2\n}\n' > "$WORK_DIR/ops.qd"
+expect_contains     "migrate writes add as +"           "1 2 + 3 * 1 4 bits::shl -> eq" "$QUADFMT" --migrate "$WORK_DIR/ops.qd"
+expect_contains     "migrate keeps a local named eq"    "eq 5 > p <<add" "$QUADFMT" --migrate "$WORK_DIR/ops.qd"
+expect_contains     "migrate adds use bits"             "use bits"    "$QUADFMT" --migrate "$WORK_DIR/ops.qd"
+printf 'use strings\n\nfn main() {\n\t"abc" strings::len print nl\n}\n' > "$WORK_DIR/slen.qd"
+expect_contains     "migrate writes strings::len as len" '"abc" len print' "$QUADFMT" --migrate "$WORK_DIR/slen.qd"
+printf 'fn sq(x:i64 -- r:i64) {\n\tdup *\n}\n' > "$WORK_DIR/current.qd"
+expect_contains     "migrate leaves a stack fn alone"   "fn sq(x:i64" "$QUADFMT" --migrate "$WORK_DIR/current.qd"
+printf 'fn sq(x:i64 -- r:i64) {\n\tx x *\n}\n' > "$WORK_DIR/old.qd"
+expect_contains     "migrate makes a binding fn def"    "def sq(x:i64" "$QUADFMT" --migrate "$WORK_DIR/old.qd"
+
 echo ""
 echo "=== quadc output naming ==="
 
 QUADC="${QUADC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadc/quadc}"
-# quadc resolves the runtime relative to its own location; run from a temp dir it
-# would look under ~/.local/lib, so point it at the tree explicitly.
-export QUADRATE_LIBDIR="${QUADRATE_LIBDIR:-$PROJECT_ROOT/dist/lib}"
-export QUADRATE_ROOT="${QUADRATE_ROOT:-$PROJECT_ROOT/dist/share/quadrate}"
 mkdir -p "$WORK_DIR/nameA" "$WORK_DIR/nameB"
 printf 'fn main() { "A" print nl }\n' > "$WORK_DIR/nameA/alpha.qd"
 printf 'fn main() { "B" print nl }\n' > "$WORK_DIR/nameB/beta.qd"
@@ -674,8 +694,8 @@ fn count_lines( -- n:i64)! {
 	0 -> n
 	loop {
 		io::readline switch {
-			Ok { -> ok -> line ok 0 == if { line drop break } line drop n 1 + -> n }
-			_ { "READ-FAILURE" print nl break }
+			Ok { -> more -> line more 0 == if { line drop break } line drop n 1 + -> n }
+			_ { drop drop "READ-FAILURE" print nl break }
 		}
 	}
 	n
@@ -684,7 +704,7 @@ fn count_lines( -- n:i64)! {
 fn main() {
 	count_lines switch {
 		Ok { -> n "counted=" print n print nl }
-		_ { "caller-saw-failure" print nl }
+		_ { drop "caller-saw-failure" print nl }
 	}
 	"errcode=" print err -> code drop code print nl
 }

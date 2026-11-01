@@ -61,7 +61,7 @@ test "log level off" {
 	logger free
 
 	"/tmp/test_log_off.log" io::read_file! -> content
-	content strings::len 0 testing::assert_eq
+	content len 0 testing::assert_eq
 }
 
 // The size counted for rotation left out what the JSON writer escaped and wrote, so a JSON

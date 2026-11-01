@@ -6,10 +6,9 @@ Bitwise operations for integer manipulation.
 
 `and`, `or` and `not` are logical words in Quadrate -- every non-zero value counts as
 true, so `2 1 and` is 1. The bitwise operations of the same names live here, where the
-`bits::` in front says which meaning is meant. `shl` and `shr` have no logical
-counterpart and stay builtins.
+`bits::` in front says which meaning is meant, and the shifts with them.
 
-The four core operations below are one machine instruction each; the rest of the
+The six core operations below are one machine instruction each; the rest of the
 module is higher-level bit manipulation built on them.
 
 ## Functions
@@ -450,6 +449,51 @@ Set a bit to 1.
 
 ```qd
 0b1000 1 bits::set_bit print  // 10 (0b1010)
+```
+---
+
+### `fn` shl
+
+Shift left, shifting in zeros. A count outside 0-63 is an error.
+
+**Signature:** `(a:i64 n:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `i64` | Value |
+| `n` | `i64` | Bits to shift by |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | a << n |
+
+**Example:**
+
+```qd
+1 4 bits::shl print  // 16
+```
+---
+
+### `fn` shr
+
+Shift right, shifting in zeros (logical, not arithmetic). A count outside 0-63 is an error.
+
+**Signature:** `(a:i64 n:i64 -- result:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `a` | `i64` | Value |
+| `n` | `i64` | Bits to shift by |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `result` | `i64` | a >> n, the vacated bits zero |
+
+**Example:**
+
+```qd
+16 2 bits::shr print  // 4
+-1 60 bits::shr print  // 15
 ```
 ---
 

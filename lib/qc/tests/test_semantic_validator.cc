@@ -27,28 +27,28 @@ TEST(UndefinedFunctionError) {
 
 // Test type error: inc on string
 TEST(TypeErrorIncOnString) {
-	const char* src = "fn main() { \"hello\" inc }";
+	const char* src = "fn main() { \"hello\" ++ }";
 	size_t errors = validateCode(src);
 	ASSERT(errors >= 1, "should have at least 1 error for inc on string");
 }
 
 // Test type error: add with mismatched types
 TEST(TypeErrorAddIntString) {
-	const char* src = "fn main() { 42 \"hello\" add }";
+	const char* src = "fn main() { 42 \"hello\" + }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 1, "should have 1 error for add with int and string");
 }
 
 // Test stack underflow detection
 TEST(StackUnderflowAdd) {
-	const char* src = "fn main() { 5 add }";
+	const char* src = "fn main() { 5 + }";
 	size_t errors = validateCode(src);
 	ASSERT(errors >= 1, "should have at least 1 error for stack underflow in add");
 }
 
 // Test valid arithmetic operations
 TEST(ValidArithmetic) {
-	const char* src = "fn main() { 10 20 add 2 mul print }";
+	const char* src = "fn main() { 10 20 + 2 * print }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "valid arithmetic should have no errors");
 }
@@ -74,7 +74,7 @@ TEST(FunctionSignatureMultipleOutputs) {
 			10 20
 		}
 		fn main() {
-			get_pair add print
+			get_pair + print
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -88,10 +88,10 @@ TEST(ChainedFunctionCalls) {
 			3 7
 		}
 		fn b( -- z:i64) {
-			c add
+			c +
 		}
 		fn a( -- w:i64) {
-			b 2 mul
+			b 2 *
 		}
 		fn main() {
 			a print
@@ -108,16 +108,16 @@ TEST(DeepNesting) {
 			1
 		}
 		fn level2( -- b:i64) {
-			level1 2 add
+			level1 2 +
 		}
 		fn level3( -- c:i64) {
-			level2 3 add
+			level2 3 +
 		}
 		fn level4( -- d:i64) {
-			level3 4 add
+			level3 4 +
 		}
 		fn level5( -- e:i64) {
-			level4 5 add
+			level4 5 +
 		}
 		fn main() {
 			level5 print
@@ -155,7 +155,7 @@ TEST(VaryingOutputs) {
 		}
 		fn main() {
 			one two three
-			add add add add add
+			+ + + + +
 			print
 		}
 	)";
@@ -170,7 +170,7 @@ TEST(FloatTypePropagation) {
 			3.14
 		}
 		fn double_it( -- r:f64) {
-			make_float 2 mul
+			make_float 2 *
 		}
 		fn main() {
 			double_it print
@@ -184,7 +184,7 @@ TEST(FloatTypePropagation) {
 TEST(MixedIntFloat) {
 	const char* src = R"(
 		fn main() {
-			5 2.5 mul print
+			5 2.5 * print
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -195,7 +195,7 @@ TEST(MixedIntFloat) {
 TEST(ErrorInFunctionPropagates) {
 	const char* src = R"(
 		fn bad_func() {
-			"text" inc
+			"text" ++
 		}
 		fn main() {
 			bad_func
@@ -212,7 +212,7 @@ TEST(ErrorWithFunctionResult) {
 			"hello"
 		}
 		fn main() {
-			get_string inc
+			get_string ++
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -229,7 +229,7 @@ TEST(TypeMismatchFromFunctions) {
 			"world"
 		}
 		fn main() {
-			get_int get_string add
+			get_int get_string +
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -249,7 +249,7 @@ TEST(ComplexProducerComposition) {
 			pair1 pair2
 		}
 		fn main() {
-			four_values add add add print
+			four_values + + + print
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -270,7 +270,7 @@ TEST(InterleavedCalls) {
 		}
 		fn main() {
 			one two three
-			add add add add add
+			+ + + + +
 			print
 		}
 	)";
@@ -282,7 +282,7 @@ TEST(InterleavedCalls) {
 TEST(DupOperation) {
 	const char* src = R"(
 		fn main() {
-			5 dup mul print
+			5 dup * print
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -304,7 +304,7 @@ TEST(DupUnderflow) {
 TEST(SwapOperation) {
 	const char* src = R"(
 		fn main() {
-			10 20 swap sub print
+			10 20 swap - print
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -326,7 +326,7 @@ TEST(SwapUnderflow) {
 TEST(IncInteger) {
 	const char* src = R"(
 		fn main() {
-			42 inc print
+			42 ++ print
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -337,7 +337,7 @@ TEST(IncInteger) {
 TEST(IncUnderflow) {
 	const char* src = R"(
 		fn main() {
-			inc
+			++
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -348,8 +348,8 @@ TEST(IncUnderflow) {
 TEST(MultipleErrors) {
 	const char* src = R"(
 		fn main() {
-			"text" inc
-			5 "hello" add
+			"text" ++
+			5 "hello" +
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -374,16 +374,16 @@ TEST(ComprehensiveMixed) {
 			10
 		}
 		fn chain1( -- x:i64) {
-			base 5 add
+			base 5 +
 		}
 		fn chain2( -- x:i64) {
-			chain1 2 mul
+			chain1 2 *
 		}
 		fn multi( -- a:i64 b:i64) {
 			100 200
 		}
 		fn combiner( -- x:i64) {
-			multi add chain2 add
+			multi + chain2 +
 		}
 		fn main() {
 			combiner print
@@ -437,11 +437,11 @@ TEST(ScopedIdentifierModuleImported) {
 // Test implicit cast: int to float - should succeed with warning
 TEST(ImplicitCastIntToFloat) {
 	const char* src = R"(
-		stack fn add_float(f64 f64 -- f64) {
+		fn add_float(f64 f64 -- f64) {
 			+
 		}
 		fn main() {
-			10 20.5 add_float printv
+			10 20.5 add_float dump
 		}
 	)";
 	Qd::Ast ast;
@@ -455,11 +455,11 @@ TEST(ImplicitCastIntToFloat) {
 // Test implicit cast: float to int - should succeed with warning
 TEST(ImplicitCastFloatToInt) {
 	const char* src = R"(
-		stack fn add_int(i64 i64 -- i64) {
+		fn add_int(i64 i64 -- i64) {
 			+
 		}
 		fn main() {
-			10.5 20.3 add_int printv
+			10.5 20.3 add_int dump
 		}
 	)";
 	Qd::Ast ast;
@@ -473,11 +473,11 @@ TEST(ImplicitCastFloatToInt) {
 // Test werror: warnings treated as errors
 TEST(WerrorTreatsWarningsAsErrors) {
 	const char* src = R"(
-		stack fn add_float(f64 f64 -- f64) {
+		fn add_float(f64 f64 -- f64) {
 			+
 		}
 		fn main() {
-			10 20.5 add_float printv
+			10 20.5 add_float dump
 		}
 	)";
 	Qd::Ast ast;
@@ -491,11 +491,11 @@ TEST(WerrorTreatsWarningsAsErrors) {
 // Test werror: clean code still passes
 TEST(WerrorCleanCodePasses) {
 	const char* src = R"(
-		stack fn add_int(i64 i64 -- i64) {
+		fn add_int(i64 i64 -- i64) {
 			+
 		}
 		fn main() {
-			10 20 add_int printv
+			10 20 add_int dump
 		}
 	)";
 	Qd::Ast ast;
@@ -509,11 +509,11 @@ TEST(WerrorCleanCodePasses) {
 // Test multiple implicit casts in one call
 TEST(MultipleImplicitCasts) {
 	const char* src = R"(
-		fn mix(a:i64 b:f64 c:i64 -- result:f64) {
+		def mix(a:i64 b:f64 c:i64 -- result:f64) {
 			b
 		}
 		fn main() {
-			10.5 20 30.5 mix printv
+			10.5 20 30.5 mix dump
 		}
 	)";
 	Qd::Ast ast;

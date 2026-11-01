@@ -1,0 +1,4 @@
+tests/linter/needless_binding/basic.qd:2:5: warning: 'sum' only pushes its inputs back in the order they came; write 'fn' instead of 'def' and drop them from the body
+tests/linter/needless_binding/basic.qd:34:4: warning: This anonymous function only pushes its inputs back in the order they came; write 'fn' instead of 'def' and drop them from the body
+
+2 issues found

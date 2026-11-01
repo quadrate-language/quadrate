@@ -18,7 +18,7 @@ TEST(SimpleFunctionDeclaration) {
 
 TEST(FunctionWithParameters) {
 	Qd::Ast ast;
-	const char* src = "fn add(a: int b: int -- result: int) {}";
+	const char* src = "def add(a: int b: int -- result: int) {}";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root != nullptr");
@@ -157,7 +157,7 @@ TEST(DeferStatement) {
 
 TEST(DeferBlock) {
 	Qd::Ast ast;
-	const char* src = "fn test() { defer { 1 2 add } }";
+	const char* src = "fn test() { defer { 1 2 + } }";
 	Qd::IAstNode* root = ast.generate(src, false, nullptr);
 
 	ASSERT(root != nullptr, "root != nullptr");

@@ -19,6 +19,8 @@ struct FunctionInfo {
 	std::string signature;				   // Full signature string
 	std::string snippet;				   // LSP snippet with placeholders
 	size_t line = 0;					   // Line number where function is defined
+	size_t nameColumn = 3;				   // Column of its name on that line, 0-based
+	bool binds = false;					   // Declared `def`, which binds its inputs
 
 	// Generic type support
 	std::vector<std::string> typeParams; // Type parameters: "T", "U", etc.

@@ -1,8 +1,8 @@
-// Test: an unnamed parameter needs `stack fn`, whatever the others do.
+// Test: in a `def` every input is bound, so each must be named, whatever the others do.
 // Naming some inputs and not others used to be rejected as "mixing"; the
 // binding rule is now carried by the modifier, so what is wrong here is the
 // unnamed `i64` in a function that binds.
-fn greet(name:str i64 -- ) {
+def greet(name:str i64 -- ) {
 	-> count
 	0 count 1 for i {
 		"Hello, " print name print nl

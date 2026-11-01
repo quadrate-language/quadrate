@@ -1,0 +1,4 @@
+// Test: the searching words walk an array or a string, nothing else
+fn main() {
+	5 fn { 1 == } index drop
+}

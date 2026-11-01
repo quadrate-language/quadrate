@@ -44,6 +44,6 @@ fn main() {
 	"0.1" strconv::parse_d128! print nl
 	"-1.5e-3" strconv::parse_d128! print nl
 	"Infinity" strconv::parse_d128! print nl
-	"1.5x" strconv::parse_d128 if { print nl } else { "rejected 1.5x" print nl }
-	" 1" strconv::parse_d128 if { print nl } else { "rejected leading space" print nl }
+	"1.5x" strconv::parse_d128 ok if { print nl } else { drop "rejected 1.5x" print nl }
+	" 1" strconv::parse_d128 ok if { print nl } else { drop "rejected leading space" print nl }
 }

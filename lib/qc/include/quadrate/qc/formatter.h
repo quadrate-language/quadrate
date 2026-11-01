@@ -66,6 +66,12 @@ namespace Qd {
 	 */
 	std::string formatSource(const std::string& source, const FormatOptions& options);
 
+	/**
+	 * Rewrites source written for plain `fn` binding its named inputs and `stack fn` leaving
+	 * them on the stack into the current form: a function or lambda with inputs becomes `def`,
+	 * and `stack fn` becomes `fn`. Changes nothing else; run it once over old code.
+	 */
+	std::string migrateSource(const std::string& source);
 } // namespace Qd
 
 #endif // QD_QC_FORMATTER_H

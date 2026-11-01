@@ -1,12 +1,12 @@
 // Test: Higher-order function with closure
-fn apply(x:i64 f:ptr -- r:i64) {
+def apply(x:i64 f:ptr -- r:i64) {
     x f call
 }
 
 fn main() {
     10 -> multiplier
 
-    fn (x:i64 -- r:i64) { x multiplier mul } -> times_mult
+    def (x:i64 -- r:i64) { x multiplier * } -> times_mult
 
     5 times_mult apply print nl
     7 times_mult apply print nl

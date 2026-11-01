@@ -66,6 +66,26 @@ namespace Qd {
 			}
 		}
 
+		// Gives up ownership of every child, leaving the block empty
+		std::vector<IAstNode*> releaseChildren() {
+			std::vector<IAstNode*> released;
+			for (auto& child : mChildren) {
+				released.push_back(child.release());
+			}
+			mChildren.clear();
+			return released;
+		}
+
+		// Gives up ownership of the child at index and removes it from the block
+		IAstNode* releaseChild(size_t index) {
+			if (index >= mChildren.size()) {
+				return nullptr;
+			}
+			IAstNode* released = mChildren[index].release();
+			mChildren.erase(mChildren.begin() + static_cast<std::ptrdiff_t>(index));
+			return released;
+		}
+
 	private:
 		IAstNode* mParent = nullptr;
 		std::vector<std::unique_ptr<IAstNode>> mChildren;

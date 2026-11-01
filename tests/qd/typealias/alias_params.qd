@@ -7,19 +7,19 @@ struct Box {
 	w: f64
 }
 
-fn double(m:Meters -- r:Meters) {
+def double(m:Meters -- r:Meters) {
 	m 2.0 *
 }
 
-fn flip(b:bool -- r:bool) {
+def flip(b:bool -- r:bool) {
 	b 0 ==
 }
 
-fn (b:Box) scaled(by:f64 label:str -- r:str) {
+def (b:Box) scaled(by:f64 label:str -- r:str) {
 	b <<w by * print " " print label
 }
 
-fn relay(a:any -- r:Meters) {
+def relay(a:any -- r:Meters) {
 	a double
 }
 

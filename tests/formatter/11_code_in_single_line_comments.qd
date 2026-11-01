@@ -2,7 +2,7 @@
 fn test_single() {
 	// fn fake() {
 	//     if {
-	5 10 add
+	5 10 +
 	// }
 	print
 }
@@ -13,6 +13,6 @@ fn main() {
 	//         5 10 add
 	//     }
 	// }
-	1 2 add
+	1 2 +
 	test_single
 }

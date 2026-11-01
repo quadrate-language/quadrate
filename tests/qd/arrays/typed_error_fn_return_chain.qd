@@ -3,7 +3,7 @@ fn get_names( -- arr:[]str) {
 	["a" "b"]
 }
 
-fn sum(arr:[]i64 -- total:i64) {
+def sum(arr:[]i64 -- total:i64) {
 	0
 }
 

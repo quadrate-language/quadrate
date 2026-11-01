@@ -3,7 +3,7 @@ fn main() {
 	// Test nested loops
 	0
 	loop {
-		dup 3 gte
+		dup 3 >=
 		if {
 			drop
 			break
@@ -11,18 +11,18 @@ fn main() {
 
 		0
 		loop {
-			dup 3 gte
+			dup 3 >=
 			if {
 				drop
 				break
 			}
 
 			// Print i * 3 + j
-			over 3 mul over add print nl
+			over 3 * over + print nl
 
-			1 add
+			1 +
 		}
 
-		1 add
+		1 +
 	}
 }

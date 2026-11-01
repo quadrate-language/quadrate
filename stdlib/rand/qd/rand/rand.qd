@@ -66,19 +66,14 @@ pub fn secure( -- rng:Rng) {
 }
 
 /// Create a new RNG with specific seed.
-/// @param seed i64 Initial seed value (must be non-zero)
-/// @return rng ptr New random number generator
+/// @param seed i64 Initial seed value; 0, which the generator cannot use, is taken as 1
+/// @return rng Rng New random number generator
 /// @example 12345 rand::with_seed -> rng
 pub fn with_seed(seed:i64 -- rng:Rng) {
-	seed 0 == if {
-		1
-	} else {
-		seed
+	dup 0 == if {
+		drop 1
 	}
-	-> s
-	Rng {
-		state = s
-	}
+	Rng
 }
 
 /// Generate next random i64.
@@ -90,9 +85,9 @@ pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
 	rng <<state -> x
 
 	// xorshift64*
-	x x 12 shl bits::xor -> x
-	x x 25 shr bits::xor -> x
-	x x 27 shl bits::xor -> x
+	x x 12 bits::shl bits::xor -> x
+	x x 25 bits::shr bits::xor -> x
+	x x 27 bits::shl bits::xor -> x
 
 	// Return new state (rng) first, then random number (n) on top
 	x 2685821657736338717 * -> result
@@ -109,7 +104,7 @@ pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
 /// @return rng ptr Updated RNG state
 /// @return n i64 Random integer in [0, max)
 /// @example rng 100 rand::int -> rng n
-pub fn (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
+pub def (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
 	// Handle edge case: max <= 0 returns 0
 	max 1 < if {
 		rng 0
@@ -122,7 +117,7 @@ pub fn (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
 			raw
 		}
 		-> pos
-		pos max mod -> result
+		pos max % -> result
 		newrng result
 	}
 }
@@ -134,7 +129,7 @@ pub fn (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
 /// @return rng ptr Updated RNG state
 /// @return n i64 Random integer in [min, max)
 /// @example rng 10 20 rand::range -> rng n
-pub fn (rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64) {
+pub def (rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64) {
 	max min - -> diff
 	rng diff int -> n -> newrng
 	n min + -> result
@@ -178,7 +173,7 @@ pub fn (rng:Rng) float( -- rng2:Rng f:f64) {
 /// @return rng ptr Updated RNG state
 /// @return f f64 Random float in [min, max)
 /// @example rng 0.0 10.0 rand::float_range -> rng f
-pub fn (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
+pub def (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
 	rng float -> f -> newrng
 	max min - f * min + -> result
 	newrng
@@ -191,7 +186,7 @@ pub fn (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
 /// @param len i64 Array length
 /// @return rng ptr Updated RNG state
 /// @example rng arr len rand::shuffle -> rng
-pub fn (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
+pub def (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
 	len 1 > if {
 		len 1 - -> i
 		loop {
@@ -219,7 +214,7 @@ pub fn (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
 /// @return rng ptr Updated RNG state
 /// @return val i64 Random element from array
 /// @example rng arr len rand::choice -> rng val
-pub fn (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64) {
+pub def (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64) {
 	rng len int -> idx -> newrng
 	arr idx 8 * mem::get_i64 -> result
 
@@ -260,7 +255,7 @@ pub fn (rng:Rng) normal( -- rng2:Rng n:f64) {
 /// @return rng ptr Updated RNG state
 /// @return n f64 Random value from N(mean, stddev)
 /// @example rng 100.0 15.0 rand::normal_params -> rng n
-pub fn (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64) {
+pub def (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64) {
 	rng normal -> z -> rng
 	z stddev * mean + -> result
 
@@ -274,7 +269,7 @@ pub fn (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64) {
 /// @return rng ptr Updated RNG state
 /// @return n f64 Random value from Exp(lambda)
 /// @example rng 1.0 rand::exponential -> rng n
-pub fn (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
+pub def (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
 	rng float -> u -> rng
 
 	// Avoid log(0)
@@ -299,7 +294,7 @@ pub fn (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
 /// @param n i64 Number of elements to pick
 /// @return rng ptr Updated RNG state
 /// @example rng src 10 dst 3 rand::sample -> rng
-pub fn (rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng) {
+pub def (rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng) {
 	// Handle edge cases
 	n 0 <= if { rng } else {
 		// Clamp n to src_len

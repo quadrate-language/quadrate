@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <quadrate/qc/ast_node_type_alias.h>
+#include <quadrate/qc/lower_combinators.h>
 #include <spawn.h>
 #include <sstream>
 #include <sys/wait.h>
@@ -248,7 +249,6 @@ namespace Qd {
 		pushPtrFn = declareFn(ctxPtrToResultTy, "qd_push_p");
 
 		// Runtime operations: (ctx) -> result
-		printsFn = declareFn(ctxToResultTy, "qd_prints");
 		nlFn = declareFn(ctxToResultTy, "qd_nl");
 		addFn = declareFn(ctxToResultTy, "qd_add");
 		subFn = declareFn(ctxToResultTy, "qd_sub");
@@ -601,19 +601,17 @@ namespace Qd {
 	// value popped at run time, which the compile-time stack cannot model.
 	bool LlvmGenerator::Impl::isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat) {
 		static const std::set<std::string> HANDLED = {// Arithmetic and comparison
-				"+", "-", "*", "/", "%", "++", "--", "add", "sub", "mul", "div", "mod", "neg", "<",
-				"<=", "==", "!=", ">", ">=", "lt", "lte", "eq", "neq", "gt", "gte",
+				"+", "-", "*", "/", "%", "++", "--", "neg", "<", "<=", "==", "!=", ">", ">=",
 				// Logical, and the bitwise forms behind the bits module
-				"and", "or", "not", "__and", "__or", "__xor", "__not", "shl", "shr",
+				"and", "or", "not", "ok", "fail", "__and", "__or", "__xor", "__not", "__shl", "__shr",
 				// Stack shuffling
 				"drop", "dup", "dup2", "nip", "over", "pick", "rot", "swap",
 				// I/O
-				"nl", "print", "prints",
+				"nl", "print",
 				// Raw memory loads/stores
 				"__ld8", "__ld16", "__ld32", "__ld64", "__st8", "__st16", "__st32", "__st64",
 				// x86 port I/O and CPU control
-				"__port_in8", "__port_in16", "__port_in32", "__port_out8", "__port_out16", "__port_out32", "__cli",
-				"__hlt", "__sti"};
+				"__inb", "__inw", "__inl", "__outb", "__outw", "__outl", "__cli", "__hlt", "__sti"};
 
 		const std::string& name = inst->name();
 		// 'cast' has a compile-time path only in its type-parameterised form, and only
@@ -1638,20 +1636,16 @@ namespace Qd {
 			}
 		}
 
-		// Fallible functions remember the depth the caller expects on failure. A failed call
-		// produces nothing, so on the failure exit the stack must be exactly what it was
-		// before the call minus the declared inputs and the receiver -- whatever the body
-		// pushed, or left unconsumed when it panicked, is dropped in the return block. This
-		// is what makes the validator's model of a failure arm ("the pre-call stack") exact
-		// for every callee body, not only for those that bind their inputs before panicking.
-		// Computed here, before the receiver and any named parameters are popped.
+		// Fallible functions remember the depth the caller expects on failure: the stack as it
+		// was before the call minus the declared inputs and the receiver. Whatever the body
+		// pushed, or left unconsumed when it failed, is dropped in the return block and a zero
+		// value of each declared result put in its place, so a call leaves the same shape
+		// whichever way it went. Computed here, before the receiver and any named parameters
+		// are popped.
 		llvm::Value* failTarget = nullptr;
 		if (funcNode->throws()) {
-			llvm::Value* entryStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "entry_stack_ptr");
-			llvm::Value* entryStackPtr = builder->CreateLoad(ptrTy, entryStackPtrPtr, "entry_stack");
-			llvm::Value* entryDepth = builder->CreateCall(stackSizeFn, {entryStackPtr}, "entry_depth");
-			uint64_t consumed = funcNode->inputParameters().size() + (funcNode->hasReceiver() ? 1 : 0);
-			failTarget = builder->CreateSub(entryDepth, builder->getInt64(consumed), "fail_target");
+			failTarget =
+					generateFailTarget(funcNode->inputParameters().size() + (funcNode->hasReceiver() ? 1 : 0), ctx);
 		}
 
 		// Scan for captured variables to enable escaped closures
@@ -1684,7 +1678,7 @@ namespace Qd {
 
 		// Auto-bind named input parameters as local variables
 		// Pop from stack in reverse order (stack is LIFO: last param on top)
-		// A `stack fn` binds nothing: its arguments stay on the stack for the body
+		// A `fn` binds nothing: its arguments stay on the stack for the body
 		if (!currentFunctionIsIntegerOnly) {
 			const auto& inputs = funcNode->inputParameters();
 			const bool bindParams = !funcNode->isStack();
@@ -1729,15 +1723,7 @@ namespace Qd {
 
 		// Failure exit of a fallible function: leave the stack as the caller expects it.
 		if (failTarget) {
-			ErrorState exitState = generateReadErrorState(ctx, "fail_exit");
-			llvm::Function* thisFn = builder->GetInsertBlock()->getParent();
-			auto truncBB = llvm::BasicBlock::Create(*context, "fail_truncate", thisFn);
-			auto afterBB = llvm::BasicBlock::Create(*context, "fail_done", thisFn);
-			builder->CreateCondBr(exitState.failed, truncBB, afterBB);
-			builder->SetInsertPoint(truncBB);
-			builder->CreateCall(stackTruncateFn, {ctx, failTarget});
-			builder->CreateBr(afterBB);
-			builder->SetInsertPoint(afterBB);
+			generateFailureExit(failTarget, parameterTypes(funcNode->outputParameters()), ctx);
 		}
 
 		// Pop function from call stack before returning
@@ -2183,6 +2169,7 @@ namespace Qd {
 			fallibleFunctions[fullName] = func->throws;
 			// Mark as imported C function (handles its own success status)
 			importedCFunctions.insert(fullName);
+			importedOutputTypes[fullName] = parameterTypes(func->outputParameters);
 
 			recordReturnStruct(fullName);
 
@@ -2204,6 +2191,7 @@ namespace Qd {
 				// Also register fallibility under the module name
 				fallibleFunctions[crossModuleName] = func->throws;
 				importedCFunctions.insert(crossModuleName);
+				importedOutputTypes[crossModuleName] = parameterTypes(func->outputParameters);
 
 				recordReturnStruct(crossModuleName);
 
@@ -3104,6 +3092,7 @@ namespace Qd {
 		mImpl->moduleSourceFiles["main"] = mImpl->sourceFileName;
 		// Also add with the actual module name for user function lookups
 		mImpl->moduleSourceFiles[moduleName] = mImpl->sourceFileName;
+		lowerCombinators(root);
 		return mImpl->generateProgram(root);
 	}
 
@@ -3112,6 +3101,7 @@ namespace Qd {
 		if (!mImpl) {
 			mImpl = std::make_unique<Impl>("quadrate_module");
 		}
+		lowerCombinators(moduleRoot);
 		mImpl->moduleASTs.push_back({moduleName, moduleRoot});
 		if (!sourceFileName.empty()) {
 			mImpl->moduleSourceFiles[moduleName] = sourceFileName;

@@ -6,11 +6,11 @@ fn main() {
 	// set_timeout pushed a failure status without setting the error, so `!` let it pass
 	-1 1000 net::set_timeout switch {
 		Ok { "set_timeout: Ok?" print nl }
-		_ { err -> code -> msg "set_timeout: " print code net::ErrTimeout eq print nl }
+		_ { err -> code -> msg "set_timeout: " print code net::ErrTimeout == print nl }
 	}
 	"127.0.0.1" 70000 net::connect switch {
 		Ok { -> s s net::close "connect: Ok?" print nl }
-		_ { err -> code -> msg "bad port: " print code net::ErrInvalidArg eq print nl }
+		_ { drop err -> code -> msg "bad port: " print code net::ErrInvalidArg == print nl }
 	}
 
 	18791 net::listen! -> server
@@ -23,7 +23,7 @@ fn main() {
 	0 20 1 for i {
 		client "ping" net::send switch {
 			Ok { drop }
-			_ { err -> code -> msg 1 -> failed }
+			_ { drop err -> code -> msg 1 -> failed }
 		}
 	}
 	"send to a closed peer failed: " print failed print nl

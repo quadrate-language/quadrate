@@ -6,10 +6,10 @@ struct Circle {
 	radius:f64
 }
 
-fn make_circle(p:Point r:f64 -- c:Circle) {
+def make_circle(p:Point r:f64 -- c:Circle) {
 	Circle { center = p radius = r }
 }
 
-fn circle_area(c:Circle -- area:f64) {
+def circle_area(c:Circle -- area:f64) {
 	math::Pi c <<radius c <<radius * *
 }

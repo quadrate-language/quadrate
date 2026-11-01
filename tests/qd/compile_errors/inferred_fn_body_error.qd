@@ -1,0 +1,4 @@
+// Test: a body with no signature is still type-checked
+fn main() {
+	fn { "a" + } drop
+}

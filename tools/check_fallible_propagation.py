@@ -22,8 +22,8 @@ import sys
 # is not '!='. The lookbehind keeps '>>field!' and '<<' out of it.
 CALL = re.compile(r'(?<![A-Za-z0-9_>])([a-z_][A-Za-z0-9_]*(?:::[a-z_][A-Za-z0-9_]*)?)!(?!=)')
 
-# fn f(..), pub fn f(..), receivers `fn (self:T) m(..)`, generic methods
-# `fn (q:Queue<T>) enqueue<T>(..)`. The trailing group is the fallible marker.
+# fn f(..), pub fn f(..), receivers `def (self:T) m(..)`, generic methods
+# `def (q:Queue<T>) enqueue<T>(..)`. The trailing group is the fallible marker.
 FN = re.compile(
     r'^\s*(?:pub\s+)?fn\s*(?:\([^)]*\)\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*(?:<[^>]*>)?\s*\((.*)\)\s*(!?)\s*\{?\s*$')
 

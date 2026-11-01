@@ -3,10 +3,10 @@ use strings
 
 fn main() {
 	// Length is in characters, not bytes
-	"hello" strings::len print nl
-	"héllo" strings::len print nl
-	"世界" strings::len print nl
-	"🌍" strings::len print nl
+	"hello" len print nl
+	"héllo" len print nl
+	"世界" len print nl
+	"🌍" len print nl
 
 	// UTF-8 concat
 	"Hello " "世界" strings::concat print nl
@@ -39,8 +39,8 @@ fn main() {
 	"  mixed 	 " strings::trim print nl
 
 	// Empty and whitespace edge cases
-	"" strings::len print nl
-	"" "" strings::concat strings::len print nl
+	"" len print nl
+	"" "" strings::concat len print nl
 	"" "test" strings::contains print nl
 	"test" "" strings::contains print nl
 

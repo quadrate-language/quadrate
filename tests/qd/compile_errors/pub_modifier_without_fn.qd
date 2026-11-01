@@ -1,4 +1,4 @@
-// A function modifier before anything but `fn` is an error, after `pub` too. It used
+// A function modifier before anything but `fn` or `def` is an error, after `pub` too. It used
 // to be dropped, and the struct compiled.
 pub inline struct Point {
 	x:i64

@@ -497,7 +497,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path. Supports"}, {"name": "handler", "type": "ptr", "description": "Handler function receiving Ctx"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/\" fn(c:Ctx -- ) { c 200 \"Hello\" http::string } http::GET"]
+      "examples": ["e \"/\" def(c:Ctx -- ) { c 200 \"Hello\" http::string } http::GET"]
     },
     {
       "name": "get_header",
@@ -547,7 +547,7 @@
       "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "path", "type": "str", "description": "Route path (relative to group prefix)"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api \"/users\" fn(c:Ctx -- ) { c 200 \"users\" http::string } http::group_GET"]
+      "examples": ["api \"/users\" def(c:Ctx -- ) { c 200 \"users\" http::string } http::group_GET"]
     },
     {
       "name": "group_POST",
@@ -577,7 +577,7 @@
       "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api fn(c:Ctx -- ) { c \"X-Group\" \"api\" http::set_header } http::group_use"]
+      "examples": ["api def(c:Ctx -- ) { c \"X-Group\" \"api\" http::set_header } http::group_use"]
     },
     {
       "name": "handle_one",
@@ -667,7 +667,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/api/users\" fn(c:Ctx -- ) { c 200 \"created\" http::string } http::POST"]
+      "examples": ["e \"/api/users\" def(c:Ctx -- ) { c 200 \"created\" http::string } http::POST"]
     },
     {
       "name": "PUT",
@@ -773,7 +773,7 @@
       "name": "static",
       "signature": "(c:Ctx prefix:str fs_path:str -- )",
       "failable": false,
-      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* fn handle_static(c:ptr -- ) {     -> c     c \"/static\" \"./public\" http::static } e \"/static/*\" &handle_static http::GET",
+      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:ptr -- ) {     -> c     c \"/static\" \"./public\" http::static } e \"/static/*\" &handle_static http::GET",
       "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "prefix", "type": "str", "description": "URL prefix to strip (e.g., \"/static\")"}, {"name": "fs_path", "type": "str", "description": "Filesystem directory path (e.g., \"./public\")"}],
       "returns": [],
       "errors": [],
@@ -817,7 +817,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e fn(c:Ctx -- ) { c \"X-Server\" \"Quadrate\" http::set_header } http::use"]
+      "examples": ["e def(c:Ctx -- ) { c \"X-Server\" \"Quadrate\" http::set_header } http::use"]
     }
   ]
 }

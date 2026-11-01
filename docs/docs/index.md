@@ -23,7 +23,7 @@ a b +
 Values are pushed onto a stack, then operations consume them. The compiler validates all stack operations at compile time.
 
 ```qd
-fn factorial(n:i64 -- result:i64) {
+def factorial(n:i64 -- result:i64) {
 	n 1 <= if {
 		1
 	} else {

@@ -7,7 +7,7 @@
 // while main goes through the runtime stack.
 use bits
 
-fn negate_native(x:i64 -- r:i64) {
+def negate_native(x:i64 -- r:i64) {
 	x not
 }
 

@@ -24,7 +24,7 @@ struct DocStore {
 
 fn find_docs_dir( -- dir:str) {
 	"QUADRATE_ROOT" os::getenv -> root
-	root strings::len 0 > if {
+	root len 0 > if {
 		root "/docs/api" strings::concat -> candidate
 		candidate os::exists if {
 			candidate
@@ -63,6 +63,7 @@ fn load_docs( -- ds:ptr) {
 	docs_dir "/builtins.json" strings::concat io::read_file switch {
 		Ok { -> builtins }
 		_ {
+			drop
 			"{}" -> builtins
 		}
 	}
@@ -70,6 +71,7 @@ fn load_docs( -- ds:ptr) {
 	docs_dir "/language.json" strings::concat io::read_file switch {
 		Ok { -> language }
 		_ {
+			drop
 			"{}" -> language
 		}
 	}
@@ -77,6 +79,7 @@ fn load_docs( -- ds:ptr) {
 	docs_dir "/modules.json" strings::concat io::read_file switch {
 		Ok { -> modules }
 		_ {
+			drop
 			"[]" -> modules
 		}
 	}
@@ -89,8 +92,8 @@ fn load_docs( -- ds:ptr) {
 	}
 }
 
-fn is_module_name(name:str -- valid:i64) {
-	name strings::len -> n
+def is_module_name(name:str -- valid:i64) {
+	name len -> n
 	n 0 > -> valid
 	0 n 1 for i {
 		name i strings::char_at unicode::is_ident_cont valid * -> valid
@@ -98,7 +101,7 @@ fn is_module_name(name:str -- valid:i64) {
 	valid
 }
 
-fn load_module(ds:ptr name:str -- content:str) {
+def load_module(ds:ptr name:str -- content:str) {
 	name is_module_name 0 == if {
 		"{}"
 	} else {
@@ -107,20 +110,21 @@ fn load_module(ds:ptr name:str -- content:str) {
 			Ok {
 			}
 			_ {
+				drop
 				"{}"
 			}
 		}
 	}
 }
 
-fn rpc_result(id:str result:str -- response:str) {
+def rpc_result(id:str result:str -- response:str) {
 	"jsonrpc" "2.0" json::kv
 	"id" id json::kv_raw json::join
 	"result" result json::kv_raw json::join
 	json::obj
 }
 
-fn rpc_error(id:str code:str msg:str -- response:str) {
+def rpc_error(id:str code:str msg:str -- response:str) {
 	"code" code json::kv_raw
 	"message" msg json::kv json::join
 	json::obj
@@ -131,14 +135,14 @@ fn rpc_error(id:str code:str msg:str -- response:str) {
 	json::obj
 }
 
-fn tool_text_result(text:str -- result:str) {
+def tool_text_result(text:str -- result:str) {
 	"type" "text" json::kv
 	"text" text json::kv json::join
 	json::obj json::arr
 	"content" swap json::kv_raw json::obj
 }
 
-fn tool_error_result(msg:str -- result:str) {
+def tool_error_result(msg:str -- result:str) {
 	"type" "text" json::kv
 	"text" msg json::kv json::join
 	json::obj json::arr
@@ -160,17 +164,16 @@ fn mcp_initialize(id:str -- response:str) {
 	"protocolVersion" PROTOCOL_VERSION json::kv
 	"capabilities" caps json::kv_raw json::join
 	"serverInfo" info json::kv_raw json::join
-	json::obj -> result
-
-	id result rpc_result
+	json::obj
+	rpc_result
 }
 
-fn build_tool(name:str desc:str props:str required:str -- tool:str) {
+def build_tool(name:str desc:str props:str required:str -- tool:str) {
 	"type" "object" json::kv
-	props strings::len 0 > if {
+	props len 0 > if {
 		"properties" props json::kv_raw json::join
 	}
-	required strings::len 0 > if {
+	required len 0 > if {
 		"required" required json::kv_raw json::join
 	}
 	json::obj -> schema
@@ -181,22 +184,22 @@ fn build_tool(name:str desc:str props:str required:str -- tool:str) {
 	json::obj
 }
 
-fn build_string_prop(desc:str -- prop:str) {
+def build_string_prop(desc:str -- prop:str) {
 	"type" "string" json::kv
 	"description" desc json::kv json::join
 	json::obj
 }
 
-fn build_prompt(name:str desc:str args:str -- prompt:str) {
+def build_prompt(name:str desc:str args:str -- prompt:str) {
 	"name" name json::kv
 	"description" desc json::kv json::join
-	args strings::len 0 > if {
+	args len 0 > if {
 		"arguments" args json::kv_raw json::join
 	}
 	json::obj
 }
 
-fn build_prompt_arg(name:str desc:str required:i64 -- arg:str) {
+def build_prompt_arg(name:str desc:str required:i64 -- arg:str) {
 	"name" name json::kv
 	"description" desc json::kv json::join
 	required if {
@@ -205,7 +208,7 @@ fn build_prompt_arg(name:str desc:str required:i64 -- arg:str) {
 	json::obj
 }
 
-fn build_resource(uri:str name:str desc:str mime:str -- resource:str) {
+def build_resource(uri:str name:str desc:str mime:str -- resource:str) {
 	"uri" uri json::kv
 	"name" name json::kv json::join
 	"description" desc json::kv json::join

@@ -18,7 +18,7 @@ test "uuid::is_valid invalid UUIDs" {
 
 test "uuid::v4 format" {
 	uuid::v4 -> id
-	id strings::len 36 testing::assert_eq
+	id len 36 testing::assert_eq
 	id uuid::is_valid testing::assert_true
 }
 
@@ -55,7 +55,7 @@ test "uuid format structure" {
 }
 
 test "uuid length consistency" {
-	1 uuid::v4_seeded strings::len 36 testing::assert_eq
-	2 uuid::v4_seeded strings::len 36 testing::assert_eq
-	3 uuid::v4_seeded strings::len 36 testing::assert_eq
+	1 uuid::v4_seeded len 36 testing::assert_eq
+	2 uuid::v4_seeded len 36 testing::assert_eq
+	3 uuid::v4_seeded len 36 testing::assert_eq
 }

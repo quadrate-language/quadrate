@@ -6,7 +6,7 @@ Other built-in operations.
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
-| `call` | `(fn -- ...)` | Call a function pointer |
+| `call` | `(fn -- ...)` | Run a function value (the simplest combinator) |
 | `sizeof<T>` | `( -- n:i64)` | Size of type T in bytes (compile-time) |
 
 ---
@@ -35,12 +35,13 @@ Works with primitive types (`i64`, `f64`, `str`, `ptr`) and struct types. Useful
 
 ### call
 
-Calls a function pointer obtained with `&funcname` syntax.
+Runs a function value: a `fn { }` literal, a local holding one, or `&name`. It is the simplest
+of the combinators, which run function values in the patterns stack code repeats.
 
 **Signature:** `(fn -- ...)`
 
 ```qd
-fn double(x:i64 -- result:i64) {
+def double(x:i64 -- result:i64) {
 	x 2 *
 }
 
@@ -65,7 +66,7 @@ Use `&` to get a pointer to a function:
 Push arguments, then the pointer, then `call`:
 
 ```qd
-// For: fn addition(a:i64 b:i64 -- sum:i64)
+// For: def addition(a:i64 b:i64 -- sum:i64)
 3 4 &addition call print nl  // 7
 ```
 
@@ -76,13 +77,13 @@ Push arguments, then the pointer, then `call`:
 ### Callbacks
 
 ```qd
-fn for_each(arr:[]i64 callback:fn(i64 --) -- ) {
+def for_each(arr:[]i64 callback:fn(i64 --) -- ) {
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
 }
 
-fn print_item(x:i64 -- ) {
+def print_item(x:i64 -- ) {
 	x print " " print
 }
 
@@ -95,15 +96,15 @@ fn main() {
 ### Function tables
 
 ```qd
-fn op_add(a:i64 b:i64 -- r:i64) {
+def op_add(a:i64 b:i64 -- r:i64) {
 	a b +
 }
 
-fn op_sub(a:i64 b:i64 -- r:i64) {
+def op_sub(a:i64 b:i64 -- r:i64) {
 	a b -
 }
 
-fn op_mul(a:i64 b:i64 -- r:i64) {
+def op_mul(a:i64 b:i64 -- r:i64) {
 	a b *
 }
 
@@ -122,7 +123,7 @@ fn main() {
 ### Higher-order functions
 
 ```qd
-fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
+def map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 	[arr len]i64 -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
@@ -130,10 +131,10 @@ fn map(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 	result
 }
 
-fn square(x:i64 -- r:i64) { x x * }
+def square(x:i64 -- r:i64) { x x * }
 
 fn main() {
-	[1 2 3 4 5] &square map -> squared
+	[1 2 3 4 5] &square map_ints -> squared
 	0 squared len 1 for i {
 		squared i nth print " " print
 	}

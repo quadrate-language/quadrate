@@ -2,8 +2,8 @@
 use strings
 
 fn main() {
-	// Test 1: strings::len
-	"Hello" strings::len print nl
+	// Test 1: len
+	"Hello" len print nl
 
 	// Test 2: strings::concat
 	"Hello" " World" strings::concat print nl
@@ -44,11 +44,11 @@ fn main() {
 	"aaa" "aaa" strings::compare print nl
 
 	// Test 12: Empty string tests
-	"" strings::len print nl
-	"" "" strings::concat strings::len print nl
+	"" len print nl
+	"" "" strings::concat len print nl
 	"test" "" strings::contains print nl
 
 	// Test 13: Single character tests
-	"a" strings::len print nl
+	"a" len print nl
 	"a" "b" strings::concat print nl
 }

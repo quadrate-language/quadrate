@@ -2,7 +2,7 @@
 // (uses directory-based namespace - no explicit local imports needed)
 use math
 
-fn atm_density(alt:f64 -- rho:f64) {
+def atm_density(alt:f64 -- rho:f64) {
 	alt 0.0 < if {
 		AtmRho0
 	} else {
@@ -20,7 +20,7 @@ struct Deriv {
 	dm: f64
 }
 
-pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
+pub def compute_deriv(stage:Stage state:State -- d:Deriv) {
 	state <<pos -> pos
 	state <<vel -> vel
 	state <<mass -> mass
@@ -52,7 +52,7 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 		// thrust = sin(pitch)*up + cos(pitch)*east
 		up pitch math::sin scale
 		east pitch math::cos scale
-		add normalize -> thrust_dir
+		+ normalize -> thrust_dir
 	} else {
 		up -> thrust_dir
 	}
@@ -76,7 +76,7 @@ pub fn compute_deriv(stage:Stage state:State -- d:Deriv) {
 	}
 
 	// Total acceleration
-	g_accel thrust_accel add drag_accel add -> accel
+	g_accel thrust_accel + drag_accel + -> accel
 
 	// Mass flow
 	0.0 -> dm

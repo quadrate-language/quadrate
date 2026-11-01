@@ -2,8 +2,8 @@
 fn main() {
     3.14159 -> pi
 
-    fn (r:f64 -- area:f64) {
-        r r mul pi mul
+    def (r:f64 -- area:f64) {
+        r r * pi *
     } -> circle_area
 
     1.0 circle_area call print nl

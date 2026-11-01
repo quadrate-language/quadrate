@@ -109,7 +109,7 @@ test "fmt::sprintf zero padding" {
 
 // Each conversion used to be formatted into a 256-byte buffer, and a longer result was cut
 test "fmt::sprintf keeps a long %s whole" {
-	"x" 300 strings::repeat "[%s]" fmt::sprintf strings::len 302 testing::assert_eq
+	"x" 300 strings::repeat "[%s]" fmt::sprintf len 302 testing::assert_eq
 }
 
 // The length is fmt's to choose; a written one used to be doubled into an invalid spec

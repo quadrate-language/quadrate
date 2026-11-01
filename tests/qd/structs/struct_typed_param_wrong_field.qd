@@ -10,7 +10,7 @@ struct Rectangle {
 }
 
 // Function declares Point but tries to access width (Rectangle field)
-fn bad_function(p:Point -- result:f64) {
+def bad_function(p:Point -- result:f64) {
 	p <<width  // ERROR: Point has no field 'width'
 }
 

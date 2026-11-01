@@ -9,7 +9,7 @@ fn main() {
             "opened" print nl
             file io::close
         }
-        _ {
+        _ { drop
             "failed" print nl
         }
     }

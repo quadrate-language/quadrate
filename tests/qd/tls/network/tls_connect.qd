@@ -13,6 +13,7 @@ fn main( -- ) {
 			conn tls::close
 		}
 		_ {
+			drop
 			"error: tls connection failed" print nl
 		}
 	}

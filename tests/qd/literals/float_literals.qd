@@ -29,10 +29,10 @@ fn main() {
 
 	// Float comparisons
 	"=== Float comparisons ===" print nl
-	1.5 1.5 eq print nl    // 1
-	1.5 2.5 lt print nl    // 1
-	2.5 1.5 gt print nl    // 1
-	1.0 1.0 neq print nl   // 0
+	1.5 1.5 == print nl    // 1
+	1.5 2.5 < print nl    // 1
+	2.5 1.5 > print nl    // 1
+	1.0 1.0 != print nl   // 0
 
 	"done" print nl
 }

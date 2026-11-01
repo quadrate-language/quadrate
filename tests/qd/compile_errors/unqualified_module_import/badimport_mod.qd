@@ -4,6 +4,6 @@ import "libstrings.a" as "badimport_mod" {
 	pub fn upper(str:str -- result:str)
 }
 
-pub fn shout(s:str -- r:str) {
+pub def shout(s:str -- r:str) {
 	s upper
 }

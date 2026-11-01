@@ -1,5 +1,5 @@
 // Test: missing -- with unnamed parameters
-stack fn add(i64 i64) {
+fn add(i64 i64) {
 	+ print nl
 }
-fn main() { 1 2 add }
+fn main() { 1 2 + }

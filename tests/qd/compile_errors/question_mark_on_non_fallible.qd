@@ -1,9 +1,9 @@
 // Test: ? used on a non-fallible function should error
-stack fn normal_add(i64 i64 -- i64) {
-	add
+fn normal_add(i64 i64 -- i64) {
+	+
 }
 
-fn wrapper(x:i64 -- result:i64)! {
+def wrapper(x:i64 -- result:i64)! {
 	x 1 normal_add?
 }
 

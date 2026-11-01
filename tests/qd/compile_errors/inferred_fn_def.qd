@@ -1,0 +1,4 @@
+// Test: `def { }` has nothing to bind, since a `fn { }` has no signature
+fn main() {
+	def { 2 * } drop
+}

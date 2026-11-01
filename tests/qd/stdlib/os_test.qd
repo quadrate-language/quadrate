@@ -5,12 +5,12 @@ use testing
 
 test "os::getenv existing variable" {
 	"PATH" os::getenv -> path
-	path strings::len 0 > testing::assert_true
+	path len 0 > testing::assert_true
 }
 
 test "os::getenv non-existing variable" {
 	"QUADRATE_TEST_NONEXISTENT_VAR_12345" os::getenv -> val
-	val strings::len 0 testing::assert_eq
+	val len 0 testing::assert_eq
 }
 
 test "os::setenv and getenv" {
@@ -30,12 +30,12 @@ test "os::unsetenv removes variable" {
 	"QUADRATE_UNSET_TEST" "testvalue" os::setenv
 	"QUADRATE_UNSET_TEST" os::getenv "testvalue" testing::assert_eq
 	"QUADRATE_UNSET_TEST" os::unsetenv
-	"QUADRATE_UNSET_TEST" os::getenv strings::len 0 testing::assert_eq
+	"QUADRATE_UNSET_TEST" os::getenv len 0 testing::assert_eq
 }
 
 test "os::unsetenv nonexistent is safe" {
 	"QUADRATE_NEVER_SET_VAR_12345" os::unsetenv
-	"QUADRATE_NEVER_SET_VAR_12345" os::getenv strings::len 0 testing::assert_eq
+	"QUADRATE_NEVER_SET_VAR_12345" os::getenv len 0 testing::assert_eq
 }
 
 test "os::exists for existing directory" {
@@ -72,7 +72,7 @@ test "os::is_dir for non-existing" {
 
 test "os::cwd returns non-empty" {
 	os::cwd! -> dir
-	dir strings::len 0 > testing::assert_true
+	dir len 0 > testing::assert_true
 }
 
 test "os::cwd returns existing directory" {
@@ -161,7 +161,7 @@ test "os::exec exit code" {
 
 test "os::popen line by line" {
 	0 -> count
-	"echo -e 'line1\nline2\nline3'" fn (line:str -- ) {
+	"echo -e 'line1\nline2\nline3'" def (line:str -- ) {
 		count 1 + -> count
 	} os::popen! -> exitcode
 	exitcode 0 testing::assert_eq
@@ -211,7 +211,7 @@ test "os::walk visits all entries" {
 	sub2 os::mkdir!
 
 	0 -> visited
-	tmpdir fn (path:str depth:i64 isdir:i64 -- ) {
+	tmpdir def (path:str depth:i64 isdir:i64 -- ) {
 		visited 1 + -> visited
 	} os::walk!
 
@@ -250,7 +250,7 @@ test "os::is_file empty path" {
 
 test "os::getenv empty name" {
 	"" os::getenv -> val
-	val strings::len 0 testing::assert_eq
+	val len 0 testing::assert_eq
 }
 
 test "os::symlink and readlink" {
@@ -353,5 +353,5 @@ test "os::getgid returns non-negative" {
 
 test "os::hostname returns non-empty" {
 	os::hostname! -> name
-	name strings::len 0 > testing::assert_true
+	name len 0 > testing::assert_true
 }

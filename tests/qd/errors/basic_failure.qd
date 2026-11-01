@@ -1,16 +1,17 @@
 // Test: basic failure
-stack fn safe_operation(i64 -- i64)! {
+fn safe_operation(i64 -- i64)! {
 	dup 0 > if {
-		dup mul
+		dup *
 	} else {
 		"Error occurred" 1 panic
 	}
 }
 
 fn main() {
-	0 safe_operation if {
+	0 safe_operation ok if {
 		"Success: result is " print print nl
 	} else {
+		drop
 		"Error occurred" print nl
 	}
 }

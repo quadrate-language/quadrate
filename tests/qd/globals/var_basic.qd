@@ -12,7 +12,7 @@ fn bump( -- ) {
 	counter 1 + -> counter
 }
 
-fn add_to_magic(n:i64 -- ) {
+def add_to_magic(n:i64 -- ) {
 	magic n + -> magic
 }
 

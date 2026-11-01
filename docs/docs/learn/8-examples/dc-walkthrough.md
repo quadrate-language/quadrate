@@ -74,7 +74,7 @@ Read left to right:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn stack_push(s:ptr val:f64 -- ) {
+def stack_push(s:ptr val:f64 -- ) {
     s <<size -> sz
     s <<capacity -> cap
     sz cap >= if {
@@ -97,7 +97,7 @@ Key syntax:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn stack_pop(s:ptr -- val:f64) {
+def stack_pop(s:ptr -- val:f64) {
     s <<size -> sz
     sz 0 <= if {
         "dc: stack empty" print nl
@@ -117,15 +117,15 @@ underscore `_` as the negative sign (since `-` is subtraction):
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn is_number(tok:str -- result:i64) {
+def is_number(tok:str -- result:i64) {
     0 -> result
-    tok strings::len 0 > if {
+    tok len 0 > if {
         tok 0 strings::char_at -> first
         first unicode::is_digit if {
             1 -> result
         } else {
             first unicode::underscore == first unicode::minus == or if {
-                tok strings::len 1 > if {
+                tok len 1 > if {
                     tok 1 strings::char_at -> second
                     second unicode::is_digit -> result
                 }
@@ -147,13 +147,13 @@ The pattern is:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn process_token(s:ptr tok:str -- ) {
+def process_token(s:ptr tok:str -- ) {
     tok is_number -> is_num
     is_num if {
         tok 0 strings::char_at -> first
         first unicode::underscore == if {
             // dc convention: `_5` means -5
-            tok 1 tok strings::len 1 - strings::substring! cast<f64> -> val
+            tok 1 tok len 1 - strings::substring! cast<f64> -> val
             s 0.0 val - stack_push
         } else {
             tok cast<f64> -> val
@@ -161,7 +161,7 @@ fn process_token(s:ptr tok:str -- ) {
         }
     }
     is_num 0 == if {
-        tok strings::len 0 > if {
+        tok len 0 > if {
             s tok process_operator
         }
     }
@@ -178,7 +178,7 @@ on the first character of the operator token:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn process_operator(s:ptr op:str -- ) {
+def process_operator(s:ptr op:str -- ) {
     op 0 strings::char_at switch {
         unicode::plus {
             s 2 stack_check if {
@@ -262,7 +262,7 @@ unicode::f {
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn process_line(s:ptr input:str -- ) {
+def process_line(s:ptr input:str -- ) {
     // Strip anything after `#` (comments)
     input "#" strings::index_of -> comment_pos
     comment_pos 0 >= if {
@@ -271,17 +271,17 @@ fn process_line(s:ptr input:str -- ) {
     input strings::trim -> trimmed
 
     loop {
-        trimmed strings::len 0 <= if { break }
+        trimmed len 0 <= if { break }
         trimmed " " strings::index_of -> space_pos
         space_pos 0 < if {
             s trimmed process_token
             break
         }
         trimmed 0 space_pos strings::substring! -> token
-        token strings::len 0 > if {
+        token len 0 > if {
             s token process_token
         }
-        trimmed space_pos 1 + trimmed strings::len space_pos - 1 - strings::substring! -> trimmed
+        trimmed space_pos 1 + trimmed len space_pos - 1 - strings::substring! -> trimmed
     }
 }
 ```
@@ -301,12 +301,12 @@ The interactive loop just reads lines from stdin until EOF:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn repl(s:ptr -- ) {
+def repl(s:ptr -- ) {
     loop {
         io::readline switch {
             Ok {
-                -> ok -> input
-                ok 0 == if { input drop  0 os::exit }
+                -> more -> input
+                more 0 == if { input drop  0 os::exit }
                 s input process_line  input drop
             }
             _  { 1 os::exit }
@@ -315,7 +315,7 @@ fn repl(s:ptr -- ) {
 }
 ```
 
-`io::readline` returns a line plus an `ok` flag. `ok 0` is end of input -- not an
+`io::readline` returns a line plus a `more` flag. `more 0` is end of input -- not an
 error, just the end -- and exits cleanly; the `_` arm is a genuine read failure
 and exits non-zero.
 

@@ -79,11 +79,11 @@ fn regex_new( -- re:Nfa) {
 // The state at an index. Typed, so the field names used on the result are checked
 // against State rather than against every struct in the program.
 fn state_at(re:Nfa idx:i64 -- s:State) {
-	re <<states idx nth
+	fn { <<states } dip nth
 }
 
 // Add a state to the regex, returns state index
-fn add_state(re:Nfa stype:i64 -- idx:i64) {
+def add_state(re:Nfa stype:i64 -- idx:i64) {
 	re <<nstates -> n
 	n MAX_STATES >= if {
 		-1  // overflow
@@ -112,7 +112,7 @@ fn cclass_new( -- cc:ptr) {
 }
 
 // Add cclass to regex, returns cclass index
-fn add_cclass(re:Nfa cc:ptr -- idx:i64) {
+def add_cclass(re:Nfa cc:ptr -- idx:i64) {
 	re <<ncclass -> n
 	n MAX_CCLASS >= if {
 		cc mem::free
@@ -125,7 +125,7 @@ fn add_cclass(re:Nfa cc:ptr -- idx:i64) {
 }
 
 // Get cclass pointer by index
-fn get_cclass(re:Nfa idx:i64 -- cc:ptr) {
+def get_cclass(re:Nfa idx:i64 -- cc:ptr) {
 	idx -1 == if {
 		null
 	} else {
@@ -134,26 +134,26 @@ fn get_cclass(re:Nfa idx:i64 -- cc:ptr) {
 }
 
 // Set bit in character class
-fn cclass_set(cc:ptr c:i64 -- ) {
+def cclass_set(cc:ptr c:i64 -- ) {
 	c 255 bits::and -> c
 	c 8 / -> byte_idx
 	c 8 % -> bit_idx
 	cc byte_idx mem::get_byte -> b
-	1 bit_idx shl b bits::or -> b
+	1 bit_idx bits::shl b bits::or -> b
 	b cc byte_idx mem::set_byte
 }
 
 // Test bit in character class
-fn cclass_test(cc:ptr c:i64 -- result:i64) {
+def cclass_test(cc:ptr c:i64 -- result:i64) {
 	c 255 bits::and -> c
 	c 8 / -> byte_idx
 	c 8 % -> bit_idx
 	cc byte_idx mem::get_byte -> b
-	b bit_idx shr 1 bits::and
+	b bit_idx bits::shr 1 bits::and
 }
 
 // Parser: create parser state
-fn parser_new(pattern:str re:Nfa -- ps:Parser) {
+def parser_new(pattern:str re:Nfa -- ps:Parser) {
 	pattern mem::from_string -> plen -> pbuf
 	Parser {
 		pat = pbuf
@@ -165,11 +165,11 @@ fn parser_new(pattern:str re:Nfa -- ps:Parser) {
 
 // Parser: free
 fn parser_free(ps:Parser -- ) {
-	ps <<pat mem::free
+	<<pat mem::free
 }
 
 // Parser: peek current char (or -1 if at end)
-fn parser_peek(ps:Parser -- c:i64) {
+def parser_peek(ps:Parser -- c:i64) {
 	ps <<pos -> pos
 	ps <<len -> plen
 	pos plen >= if {
@@ -180,7 +180,7 @@ fn parser_peek(ps:Parser -- c:i64) {
 }
 
 // Parser: advance and return current char
-fn parser_next(ps:Parser -- c:i64) {
+def parser_next(ps:Parser -- c:i64) {
 	ps parser_peek -> c
 	c -1 != if {
 		ps ps <<pos 1 + >>pos drop
@@ -190,7 +190,7 @@ fn parser_next(ps:Parser -- c:i64) {
 
 // Parse escape sequence, returns character
 fn parse_escape(ps:Parser -- c:i64) {
-	ps parser_next -> c
+	parser_next -> c
 	c switch {
 		unicode::n {
 			unicode::newline -> c
@@ -209,7 +209,7 @@ fn parse_escape(ps:Parser -- c:i64) {
 }
 
 // Parse character class [...], returns state index
-fn parse_cclass(ps:Parser -- start:i64) {
+def parse_cclass(ps:Parser -- start:i64) {
 	ps <<nfa -> re
 
 	// Check for negation
@@ -277,7 +277,7 @@ fn parse_cclass(ps:Parser -- start:i64) {
 }
 
 // Parse atom: char, ., (), [], ^, $
-fn parse_atom(ps:Parser -- start:i64 end:i64) {
+def parse_atom(ps:Parser -- start:i64 end:i64) {
 	ps <<nfa -> re
 	ps parser_peek -> c
 
@@ -367,7 +367,7 @@ fn parse_atom(ps:Parser -- start:i64 end:i64) {
 }
 
 // Helper: connect state to next, using OUT2 for SPLIT states
-fn connect_state(re:Nfa sidx:i64 next:i64 -- ) {
+def connect_state(re:Nfa sidx:i64 next:i64 -- ) {
 	re sidx state_at <<kind StateType::Split == if {
 		re sidx state_at next >>out2 drop
 	} else {
@@ -376,7 +376,7 @@ fn connect_state(re:Nfa sidx:i64 next:i64 -- ) {
 }
 
 // Parse repeat: atom*, atom+, atom?
-fn parse_repeat(ps:Parser -- start:i64 end:i64) {
+def parse_repeat(ps:Parser -- start:i64 end:i64) {
 	ps <<nfa -> re
 	ps parse_atom -> astart -> aend
 
@@ -418,7 +418,7 @@ fn parse_repeat(ps:Parser -- start:i64 end:i64) {
 }
 
 // Parse concatenation
-fn parse_concat(ps:Parser -- start:i64 end:i64) {
+def parse_concat(ps:Parser -- start:i64 end:i64) {
 	ps <<nfa -> re
 	ps parse_repeat -> start -> end
 
@@ -439,7 +439,7 @@ fn parse_concat(ps:Parser -- start:i64 end:i64) {
 }
 
 // Parse alternation
-fn parse_alt(ps:Parser -- start:i64 end:i64) {
+def parse_alt(ps:Parser -- start:i64 end:i64) {
 	ps <<nfa -> re
 	ps parse_concat -> start -> end
 
@@ -476,7 +476,7 @@ fn parse_alt(ps:Parser -- start:i64 end:i64) {
 /// @param pattern str Regular expression pattern
 /// @return re Regex Compiled regex
 /// @example "[0-9]+" regex::compile -> re
-pub fn compile(pattern:str -- re:Regex) {
+pub def compile(pattern:str -- re:Regex) {
 	regex_new -> raw
 	pattern raw parser_new -> ps
 
@@ -515,13 +515,11 @@ pub fn (self:Regex) release() {
 }
 
 // Add state to set with epsilon closure (visited is separate array)
-fn addstate(re:Nfa states:ptr visited:ptr idx:i64 listid:i64 -- ) {
-	idx -1 == if {
-	} else {
+def addstate(re:Nfa states:ptr visited:ptr idx:i64 listid:i64 -- ) {
+	idx -1 != if {
 		// Check if already visited for this listid
 		visited idx 8 * mem::get_i64 -> mark
-		mark listid == if {
-		} else {
+		mark listid != if {
 			listid visited idx 8 * mem::set_i64
 
 			// Add to states array
@@ -542,7 +540,7 @@ fn addstate(re:Nfa states:ptr visited:ptr idx:i64 listid:i64 -- ) {
 }
 
 // Check if state matches character
-fn state_matches(re:Nfa idx:i64 c:i64 -- result:i64) {
+def state_matches(re:Nfa idx:i64 c:i64 -- result:i64) {
 	re idx state_at <<kind -> stype
 	stype StateType::Char == if {
 		re idx state_at <<ch c ==
@@ -576,9 +574,9 @@ fn state_matches(re:Nfa idx:i64 c:i64 -- result:i64) {
 /// Test if a string matches a compiled regex (full match).
 /// @param s str String to match
 /// @return result i64 1 if matches, 0 otherwise
-pub fn (self:Regex) matches(s:str -- result:i64) {
+pub def (self:Regex) matches(s:str -- result:i64) {
 	self <<re -> re
-	s strings::len -> slen
+	s len -> slen
 	re <<nstates -> nstates
 
 	// Allocate state sets and visited array
@@ -655,23 +653,18 @@ pub fn (self:Regex) matches(s:str -- result:i64) {
 /// @param s str String to match
 /// @return result i64 1 if matches, 0 otherwise
 /// @example "hello.*" "hello world" regex::is_match -> result
-pub fn is_match(pattern:str s:str -- result:i64) {
+pub def is_match(pattern:str s:str -- result:i64) {
 	pattern compile -> re
 	re s matches -> result
 	re release
 	result
 }
 
-// Internal: unwrap Regex for internal functions that take raw ptr
-stack fn unwrap_re(self:Regex -- re:Nfa) {
-	<<re
-}
-
 // Internal: find first match of compiled regex starting at or after 'from'.
 // Returns start/end indices (end is exclusive), or -1/-1 if no match.
 // This works by trying the NFA from each start position.
-fn find_from(re:Nfa s:str from:i64 -- start:i64 end:i64) {
-	s strings::len -> slen
+def match_from(re:Nfa s:str from:i64 -- start:i64 end:i64) {
+	s len -> slen
 	re <<nstates -> nstates
 
 	nstates 1 + 8 * mem::alloc! -> clist
@@ -773,7 +766,7 @@ fn find_from(re:Nfa s:str from:i64 -- start:i64 end:i64) {
 /// @return end i64 End index of match, exclusive (-1 if none)
 /// @example "[0-9]+" regex::compile -> re  re "abc123def" regex::find -> end -> start
 pub fn (self:Regex) find(s:str -- start:i64 end:i64) {
-	self <<re s 0 find_from
+	self <<re swap 0 match_from
 }
 
 /// Find all non-overlapping matches. Returns array of start/end pairs and count.
@@ -783,7 +776,7 @@ pub fn (self:Regex) find(s:str -- start:i64 end:i64) {
 /// @return results ptr Array of i64 pairs [start0, end0, start1, end1, ...]
 /// @return count i64 Number of matches found
 /// @example "[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> count -> results
-pub fn (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
+pub def (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 	self <<re -> re
 	// Allocate initial results array (grow as needed)
 	64 -> cap
@@ -794,7 +787,7 @@ pub fn (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 	loop {
 		max -1 != count max >= and if { break }
 
-		re s pos find_from -> fstart -> fend
+		re s pos match_from -> fstart -> fend
 		fstart -1 == if { break }
 
 		// Grow if needed
@@ -827,14 +820,14 @@ pub fn (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 /// @param repl str Replacement string
 /// @return result str String with all matches replaced
 /// @example "[0-9]+" regex::compile -> re  re "abc123def456" "#" regex::replace -> result
-pub fn (self:Regex) replace(s:str repl:str -- result:str) {
+pub def (self:Regex) replace(s:str repl:str -- result:str) {
 	self <<re -> re
-	s strings::len -> slen
+	s len -> slen
 	sb::new -> out
 	0 -> pos
 
 	loop {
-		re s pos find_from -> fstart -> fend
+		re s pos match_from -> fstart -> fend
 		fstart -1 == if {
 			// Append remaining
 			pos slen < if {
@@ -876,13 +869,13 @@ pub fn (self:Regex) replace(s:str repl:str -- result:str) {
 /// @param s str String to search
 /// @return count i64 Number of matches
 /// @example "[0-9]+" regex::compile -> re  re "a1b22c333" regex::match_count -> n
-pub fn (self:Regex) match_count(s:str -- count:i64) {
+pub def (self:Regex) match_count(s:str -- count:i64) {
 	self <<re -> re
 	0 -> count
 	0 -> pos
 
 	loop {
-		re s pos find_from -> fstart -> fend
+		re s pos match_from -> fstart -> fend
 		fstart -1 == if { break }
 		count 1 + -> count
 		fend pos == if {
@@ -890,7 +883,7 @@ pub fn (self:Regex) match_count(s:str -- count:i64) {
 		} else {
 			fend -> pos
 		}
-		pos s strings::len > if { break }
+		pos s len > if { break }
 	}
 
 	count

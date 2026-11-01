@@ -94,7 +94,7 @@ as the body of one. A leading `fn`, `const`, `struct`, `enum`, `use`, `type` or
 `test` decides which, so an error always concerns what the caller meant to write.
 
 ```c
-qd_interp_eval(interp, "fn double(x:i64 -- r:i64) { x 2 * }");  // defines
+qd_interp_eval(interp, "def double(x:i64 -- r:i64) { x 2 * }");  // defines
 qd_interp_eval(interp, "5 double");                             // 10
 ```
 
@@ -123,7 +123,7 @@ the stack — the rule the type checker states, so a body written for this tier
 compiles unchanged:
 
 ```c
-qd_interp_eval(interp, "fn area(w:i64 h:i64 -- a:i64) { w h * }");
+qd_interp_eval(interp, "def area(w:i64 h:i64 -- a:i64) { w h * }");
 qd_interp_eval(interp, "3 4 area");                     // 12
 ```
 
@@ -131,7 +131,7 @@ Leave an input unnamed and every input stays on the stack for the body to read
 positionally, which is the older spelling:
 
 ```c
-qd_interp_eval(interp, "stack fn twice(i64 -- r:i64) { 2 * }");
+qd_interp_eval(interp, "fn twice(i64 -- r:i64) { 2 * }");
 ```
 
 `const` and `enum` declare values rather than words. A constant is stored as

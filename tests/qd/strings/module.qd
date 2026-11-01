@@ -3,10 +3,10 @@ use strings
 
 fn main() {
 	// Test len with various strings
-	"hello" strings::len print nl
-	"" strings::len print nl
-	"a" strings::len print nl
-	"hello world!" strings::len print nl
+	"hello" len print nl
+	"" len print nl
+	"a" len print nl
+	"hello world!" len print nl
 
 	// Test concat with multiple strings
 	"hello" " " strings::concat print nl

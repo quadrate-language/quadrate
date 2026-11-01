@@ -2,20 +2,20 @@
 // result takes the bound type (so `1 +` on the i64 result type-checks).
 use strings
 
-fn apply<T>(x:T f:fn(T -- T) -- r:T) {
+def apply<T>(x:T f:fn(T -- T) -- r:T) {
 	x f call
 }
 
-fn dbl(x:i64 -- r:i64) {
+def dbl(x:i64 -- r:i64) {
 	x 2 *
 }
 
-fn twice(s:str -- r:str) {
+def twice(s:str -- r:str) {
 	s s strings::concat
 }
 
 fn main() {
 	5 &dbl apply 1 + print nl
 	"ha" &twice apply print nl
-	3 fn (x:i64 -- r:i64) { x x * } apply print nl
+	3 def (x:i64 -- r:i64) { x x * } apply print nl
 }

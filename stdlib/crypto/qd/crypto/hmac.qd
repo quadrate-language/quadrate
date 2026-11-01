@@ -26,7 +26,7 @@ const SHA512_OUT = 64
 // Outputs are declared in push order: the length goes on the stack first, the buffer
 // pointer on top, matching the body's closing `total result`. Callers bind them as
 // `-> buf -> len`.
-fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 -- result_len:i64 result:ptr)! {
+def build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 -- result_len:i64 result:ptr)! {
 	key mem::from_string -> klen -> kbuf
 	defer { kbuf mem::free }
 
@@ -79,7 +79,7 @@ fn build_hmac_input(key:str block_size:i64 pad_byte:i64 msg_buf:ptr msg_len:i64 
 /// @param message str Message to authenticate
 /// @return mac str 64-character hex HMAC
 /// @example "Jefe" "what do ya want for nothing?" crypto::hmac_sha256! -> mac
-pub fn hmac_sha256(key:str message:str -- mac:str)! {
+pub def hmac_sha256(key:str message:str -- mac:str)! {
 	message mem::from_string -> mlen -> mbuf
 
 	// Inner: SHA256((key XOR ipad) || message)
@@ -106,7 +106,7 @@ pub fn hmac_sha256(key:str message:str -- mac:str)! {
 /// @param message str Message to authenticate
 /// @return mac str 128-character hex HMAC
 /// @example "Jefe" "what do ya want for nothing?" crypto::hmac_sha512! -> mac
-pub fn hmac_sha512(key:str message:str -- mac:str)! {
+pub def hmac_sha512(key:str message:str -- mac:str)! {
 	message mem::from_string -> mlen -> mbuf
 
 	// Inner: SHA512((key XOR ipad) || message)

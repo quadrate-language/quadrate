@@ -6,7 +6,7 @@
 // through to the code the return was supposed to skip. The semantic validator meanwhile models
 // `return` as diverging, so a main written with guard clauses validated clean and then did the
 // wrong thing at runtime.
-fn helper(c:i64 -- ) {
+def helper(c:i64 -- ) {
 	c if {
 		"helper: early" print nl
 		return

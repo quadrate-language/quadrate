@@ -7,7 +7,7 @@ struct Slot {
 	v: i64
 }
 
-fn (s:Slot) set(n:i64 -- s2:Slot)! {
+def (s:Slot) set(n:i64 -- s2:Slot)! {
 	n 0 < if {
 		s "negative value" 1 panic
 	}

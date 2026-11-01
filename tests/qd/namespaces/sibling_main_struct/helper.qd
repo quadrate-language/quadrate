@@ -1,10 +1,10 @@
 // Helper file that references State struct from main.qd
 // Before the fix, this would fail with "Unknown type 'State'"
 
-fn process_state(s:State -- result:i64) {
+def process_state(s:State -- result:i64) {
 	s <<value 2 *
 }
 
-fn create_state(val:i64 n:str -- s:State) {
+def create_state(val:i64 n:str -- s:State) {
 	State { value = val name = n }
 }

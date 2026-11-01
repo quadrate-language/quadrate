@@ -1,7 +1,7 @@
 // Test: signalling an error with `msg code panic`, the one spelling there is.
 // Was written against the `error { ... }` literal, which is removed.
 
-fn validate(x:i64 -- )! {
+def validate(x:i64 -- )! {
 	x 0 < if {
 		"must be non-negative" 100 panic
 	}

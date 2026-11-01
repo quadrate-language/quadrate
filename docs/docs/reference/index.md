@@ -8,14 +8,14 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Stack Operations](stack.md) - `dup`, `drop`, `swap`, `rot`, etc.
 - [Arithmetic](arithmetic.md) - `+`, `-`, `*`, `/`, `%`
 - [Comparison](comparison.md) - `==`, `!=`, `<`, `>`, `<=`, `>=`
-- [Logic and bits](bitwise.md) - `and`, `or`, `not`, `shl`, `shr`, and `bits::` for bitwise
+- [Logic and bits](bitwise.md) - `and`, `or`, `not`, and `bits::` for bitwise and shifts
 - [Arrays](arrays.md) - Array creation and manipulation
 - [Structs](structs.md) - Struct definition, field access, methods
 - [Generics](generics.md) - Generic functions with `<T>`
 - [Type Casting](types.md) - `cast<T>`, `as TypeName`
-- [Input/Output](io.md) - `print`, `nl`, `prints`
+- [Input/Output](io.md) - `print`, `dump`, `nl`
 - [Error Handling](errors.md) - `panic`
-- [Threading](threading.md) - `spawn`, `wait`, `detach`
+- [Threading](threading.md) - `thread::spawn`, `join`, `detach`
 - [Miscellaneous](misc.md) - `call`
 
 ## Types
@@ -35,7 +35,7 @@ Quadrate has five basic types:
 Function signatures use `(inputs -- outputs)` notation:
 
 ```qd
-fn add(a:i64 b:i64 -- sum:i64) { a b + }
+def sum(a:i64 b:i64 -- s:i64) { a b + }
 ```
 
 - **Before `--`**: Values consumed from stack (bottom to top)
@@ -47,7 +47,7 @@ Functions that can fail are marked with `!`:
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-fn divide(a:i64 b:i64 -- result:i64)! {
+def divide(a:i64 b:i64 -- result:i64)! {
 	// Can signal error
 }
 ```

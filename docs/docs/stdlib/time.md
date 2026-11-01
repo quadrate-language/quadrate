@@ -409,7 +409,7 @@ Check if year is a leap year.
 
 ### `fn` iso_week
 
-Get ISO week number (1-53).
+Get ISO week number (1-53). Weeks start on Monday, and week 1 is the one holding the year's first Thursday, so the first days of January can belong to the last week of the previous year (52 or 53), and the last days of December to week 1 of the next.
 
 **Signature:** `(ts:i64 -- week:i64)`
 

@@ -12,20 +12,16 @@ namespace Qd {
 
 	Ast::~Ast() = default;
 
-	// Consumes the run of `inline` / `stack` modifiers that may precede `fn`, in any
-	// order, and returns the keyword that follows them. `text` is the identifier the
+	// Consumes the `inline` modifiers that may precede `fn` or `def`, and returns the keyword
+	// that follows them. `text` is the identifier the
 	// caller has already scanned; `token` is updated alongside it so the caller's own
 	// dispatch still sees the current token. Returns nullptr if the run is not
 	// followed by an identifier at all, which the caller reports.
 	static const char* consumeFunctionModifiers(
-			u8t_scanner* scanner, const char* text, char32_t& token, bool& isInline, bool& isStack) {
+			u8t_scanner* scanner, const char* text, char32_t& token, bool& isInline) {
 		size_t n;
-		while (text != nullptr && (strcmp(text, "inline") == 0 || strcmp(text, "stack") == 0)) {
-			if (strcmp(text, "inline") == 0) {
-				isInline = true;
-			} else {
-				isStack = true;
-			}
+		while (text != nullptr && strcmp(text, "inline") == 0) {
+			isInline = true;
 			token = u8t_scanner_scan(scanner);
 			if (token != U8T_IDENTIFIER) {
 				return nullptr;
@@ -605,11 +601,12 @@ namespace Qd {
 	}
 
 	// A declaration at the top level, from its first identifier `text`:
-	// `[pub] [inline|stack]... fn`, `[pub] [packed] struct`, `[pub] enum|type|const|var`,
+	// `[pub] [inline] fn|def`, `[pub] [packed] struct`, `[pub] enum|type|const|var`,
 	// and the never-exported `use`, `import` and `test`.
 	static void parseTopLevelDeclaration(u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src,
 			AstProgram* program, const char* text) {
-		static const char* const AFTER_PUB = "Expected 'fn', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'";
+		static const char* const AFTER_PUB =
+				"Expected 'fn', 'def', 'struct', 'enum', 'type', 'const', or 'var' after 'pub'";
 		size_t n;
 		char32_t token = U8T_IDENTIFIER;
 		bool isPublic = false;
@@ -627,11 +624,10 @@ namespace Qd {
 		// Modifiers apply to a `fn` only. `pub` used to accept them before anything,
 		// so `pub inline struct` and `pub packed fn` compiled with the modifier dropped.
 		bool isInline = false;
-		bool isStack = false;
-		if (strcmp(text, "inline") == 0 || strcmp(text, "stack") == 0) {
-			text = consumeFunctionModifiers(scanner, text, token, isInline, isStack);
-			if (text == nullptr || strcmp(text, "fn") != 0) {
-				errorReporter->reportError(scanner, "Expected 'fn' after function modifier");
+		if (strcmp(text, "inline") == 0) {
+			text = consumeFunctionModifiers(scanner, text, token, isInline);
+			if (text == nullptr || (strcmp(text, "fn") != 0 && strcmp(text, "def") != 0)) {
+				errorReporter->reportError(scanner, "Expected 'fn' or 'def' after 'inline'");
 				synchronize(scanner, errorReporter, src);
 				return;
 			}
@@ -650,11 +646,13 @@ namespace Qd {
 			return;
 		}
 
-		if (strcmp(text, "fn") == 0) {
+		if (strcmp(text, "fn") == 0 || strcmp(text, "def") == 0) {
+			// A `fn` leaves its inputs on the stack; a `def` binds them to their names
+			const bool isDef = strcmp(text, "def") == 0;
 			IAstNode* func = parseFunctionDeclaration(scanner, errorReporter, src, isPublic);
 			if (func != nullptr) {
 				static_cast<AstNodeFunctionDeclaration*>(func)->setInline(isInline);
-				static_cast<AstNodeFunctionDeclaration*>(func)->setStack(isStack);
+				static_cast<AstNodeFunctionDeclaration*>(func)->setStack(!isDef);
 			}
 			addToProgram(program, func);
 		} else if (strcmp(text, "struct") == 0) {
@@ -678,7 +676,7 @@ namespace Qd {
 			addToProgram(program, parseTestDeclaration(scanner, errorReporter, src));
 		} else {
 			std::string msg = "Unexpected identifier '" + std::string(text) +
-							  "' at top level. Expected 'fn', 'struct', 'const', 'use', or 'test'";
+							  "' at top level. Expected 'fn', 'def', 'struct', 'const', 'use', or 'test'";
 			errorReporter->reportError(scanner, msg.c_str());
 		}
 	}

@@ -2,13 +2,13 @@
 // (uses directory-based namespace - no explicit local imports needed)
 use math
 
-fn orbital_energy(state:State -- energy:f64) {
+def orbital_energy(state:State -- energy:f64) {
 	state <<vel length -> vmag
 	state <<pos length -> r
 	vmag vmag * 2.0 / MuEarth r / -
 }
 
-fn eccentricity(state:State -- ecc:f64) {
+def eccentricity(state:State -- ecc:f64) {
 	state <<vel -> v
 	state <<pos -> r
 
@@ -24,7 +24,7 @@ fn eccentricity(state:State -- ecc:f64) {
 }
 
 fn semi_major(state:State -- a:f64) {
-	state orbital_energy -> energy
+	orbital_energy -> energy
 	energy 0.0 >= if {
 		-1.0
 	} else {
@@ -32,7 +32,7 @@ fn semi_major(state:State -- a:f64) {
 	}
 }
 
-pub fn apoapsis(state:State -- alt:f64) {
+pub def apoapsis(state:State -- alt:f64) {
 	state eccentricity -> ecc
 	ecc 1.0 >= if {
 		-1.0
@@ -42,7 +42,7 @@ pub fn apoapsis(state:State -- alt:f64) {
 	}
 }
 
-pub fn periapsis(state:State -- alt:f64) {
+pub def periapsis(state:State -- alt:f64) {
 	state eccentricity -> ecc
 	state semi_major -> a
 	a 0.0 < if {
@@ -53,6 +53,6 @@ pub fn periapsis(state:State -- alt:f64) {
 }
 
 pub fn inclination(state:State -- inc:f64) {
-	state <<pos state <<vel cross -> h
+	fn { <<pos } fn { <<vel } bi cross -> h
 	h <<z h length / math::acos
 }

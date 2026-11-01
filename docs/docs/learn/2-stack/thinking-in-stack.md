@@ -120,7 +120,7 @@ When you're confused, track what's on the stack at each step:
 ```qd
 use math
 
-stack fn hypot(a:f64 b:f64 -- result:f64) {
+fn hypot(a:f64 b:f64 -- result:f64) {
     //            Stack: [a, b]
     dup *         // Stack: [a, b*b]
     swap dup *    // Stack: [b*b, a*a]
@@ -150,7 +150,7 @@ num den /
 Or use named parameters in the function signature:
 
 ```qd
-fn compute(a:f64 b:f64 c:f64 d:f64 -- result:f64) {
+def compute(a:f64 b:f64 c:f64 d:f64 -- result:f64) {
     a b *           // named params are on the stack
     c d +
     /
@@ -198,7 +198,7 @@ Step by step:
 3. Divide by length.
 
 ```qd
-fn average_of_squares(nums:[]i64 -- result:f64) {
+def average_of_squares(nums:[]i64 -- result:f64) {
     0 -> total
     0 nums len 1 for i {
         nums i nth -> n

@@ -62,7 +62,7 @@ pub struct Vec<T> {
 ///     v 42 push! -> v
 ///
 /// Stack: (v elem -- v2)
-pub fn (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
+pub def (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 	v <<len -> len
 	v <<cap -> cap
 	v <<data -> data
@@ -120,7 +120,7 @@ pub fn (v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)! {
 ///     v 0 get! -> first
 ///
 /// Stack: (v idx -- elem)
-pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
+pub def (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
 	v <<len -> len
 	v <<data -> data
 
@@ -140,7 +140,7 @@ pub fn (v:Vec<T>) get<T>(idx:i64 -- elem:T)! {
 ///     v 0 100 set! -> v
 ///
 /// Stack: (v idx elem -- v2)
-pub fn (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
+pub def (v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)! {
 	v <<len -> len
 	v <<data -> data
 
@@ -218,7 +218,7 @@ pub fn (v:Vec<T>) reset<T>( -- v2:Vec<T>) {
 pub fn (v:Vec<T>) release<T>() {
 	v <<data -> data
 	v <<len -> len
-	data 0 neq if {
+	data 0 != if {
 		0 len 1 for i {
 			data i mem::AnySize * mem::clear_any
 		}

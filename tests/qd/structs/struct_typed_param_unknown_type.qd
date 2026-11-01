@@ -1,5 +1,5 @@
 // Test: error for unknown struct type in parameter
-fn bad_function(p:UnknownStruct -- result:f64) {
+def bad_function(p:UnknownStruct -- result:f64) {
 	p <<x
 }
 

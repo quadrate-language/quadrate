@@ -4,5 +4,5 @@ use "tables.qd"
 pub var skytexturemid:i64 = 0
 
 pub fn init_sky_map( -- ) {
-	100 FRACUNIT mul -> skytexturemid
+	100 FRACUNIT * -> skytexturemid
 }

@@ -315,6 +315,10 @@ namespace Qd {
 		if (!shouldReport || isUnknownOperandError(message)) {
 			return;
 		}
+		if (mInferringEffect > 0) {
+			mInferenceUnderflow = mInferenceUnderflow || std::strstr(message, "underflow") != nullptr;
+			return;
+		}
 
 		// Create a key for deduplication: line:column:message
 		std::string errorKey;
@@ -404,6 +408,9 @@ namespace Qd {
 	}
 
 	void SemanticValidator::reportWarning(const IAstNode* node, const char* message) {
+		if (mInferringEffect > 0) {
+			return;
+		}
 		// If werror is enabled, treat warnings as errors
 		if (mWerror) {
 			reportError(node, message);
@@ -412,6 +419,16 @@ namespace Qd {
 
 		// Suppress warnings for lines before the minimum line (for REPL incremental compilation)
 		if (mWarningMinLine > 0 && node && static_cast<size_t>(node->line()) < mWarningMinLine) {
+			return;
+		}
+
+		// Once each: a function value written in place before a combinator has its body walked
+		// twice, on its own and where it runs
+		const std::string warningKey = "warning:" +
+									   (node ? std::to_string(node->line()) + ":" + std::to_string(node->column()) + ":"
+											 : std::string("0:0:")) +
+									   message;
+		if (!mReportedErrors.insert(warningKey).second) {
 			return;
 		}
 
@@ -947,6 +964,10 @@ namespace Qd {
 		}
 		if (typeStr == "i64") {
 			return StackValueType::INT;
+		}
+		// An input or result of an inferred `fn { }` whose type its body does not fix
+		if (typeStr == "_") {
+			return StackValueType::UNKNOWN;
 		}
 		// Sized integer types promote to i64 on the stack.
 		if (isSizedIntTypeName(typeStr)) {

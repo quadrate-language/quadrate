@@ -5,7 +5,7 @@ use time
 fn main() {
 	time::unix
 	// Unix timestamp should be a large positive number (> 1700000000 for year 2023+)
-	dup 1700000000 gt
+	dup 1700000000 >
 	if {
 		"Unix timestamp is valid (>1700000000)" print nl
 		drop

@@ -28,33 +28,33 @@ struct Box {
 
 fn main() {
 	// inline in a struct literal, with a plain field after it
-	Ops { add = fn (x:i64 -- r:i64) { x 1 + }  mul = fn (x:i64 -- r:i64) { x 3 * }  name = "ops" } -> o
+	Ops { add = def (x:i64 -- r:i64) { x 1 + }  mul = def (x:i64 -- r:i64) { x 3 * }  name = "ops" } -> o
 	10 o <<add call print nl
 	10 o <<mul call print nl
 	o <<name print nl
 
 	// the lambda captures an enclosing local
 	7 -> k
-	Ops { add = fn (x:i64 -- r:i64) { x k + }  mul = fn (x:i64 -- r:i64) { x k * }  name = "cap" } -> c
+	Ops { add = def (x:i64 -- r:i64) { x k + }  mul = def (x:i64 -- r:i64) { x k * }  name = "cap" } -> c
 	1 c <<add call print nl
 	2 c <<mul call print nl
 
 	// inside a nested struct literal
-	Outer { inner = Inner { g = fn (x:i64 -- r:i64) { x 3 * } } } -> nested
+	Outer { inner = Inner { g = def (x:i64 -- r:i64) { x 3 * } } } -> nested
 	4 nested <<inner <<g call print nl
 
 	// as an array-literal element
-	[fn (x:i64 -- r:i64) { x 2 * }] -> fns
+	[def (x:i64 -- r:i64) { x 2 * }] -> fns
 	5 fns 0 nth call print nl
 	fns free
 
 	// an array literal and a lambda in the same struct literal
-	Box { items = [1 2 3]  f = fn (x:i64 -- r:i64) { x 10 * } } -> b
+	Box { items = [1 2 3]  f = def (x:i64 -- r:i64) { x 10 * } } -> b
 	b <<items len print nl
 	4 b <<f call print nl
 
 	// binding first still works
-	fn (x:i64 -- r:i64) { x 100 * } -> cb
+	def (x:i64 -- r:i64) { x 100 * } -> cb
 	Ops { add = cb  mul = cb  name = "bound" } -> bound
 	1 bound <<add call print nl
 	bound <<name print nl

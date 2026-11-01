@@ -466,10 +466,10 @@ class Runner:
         self.check("renaming a local stays inside its own function",
                    self.ranges(rename(text, 4, 9)) == [(4, 7, 8), (4, 9, 10)])
 
-        text = "fn f(count:i64 -- ) {\n  count print\n}\nfn main() { 1 f }\n"
+        text = "def f(count:i64 -- ) {\n  count print\n}\nfn main() { 1 f }\n"
         self.check("renaming a parameter renames its declaration",
-                   self.ranges(rename(text, 1, 3)) == [(0, 5, 10), (1, 2, 7)])
-        for include, expected in ((True, [(0, 5, 10), (1, 2, 7)]), (False, [(1, 2, 7)])):
+                   self.ranges(rename(text, 1, 3)) == [(0, 6, 11), (1, 2, 7)])
+        for include, expected in ((True, [(0, 6, 11), (1, 2, 7)]), (False, [(1, 2, 7)])):
             response = self.answer([did_open(uri=uri, text=text),
                                     self.request(2, "textDocument/references",
                                                  self.at(uri, 1, 3, context={"includeDeclaration": include}))], 2)

@@ -24,16 +24,18 @@ fn main() {
 	f "--missing" flag::boolean print nl
 
 	"=== string ===" print nl
-	f "--name" flag::string if {
+	f "--name" flag::string ok if {
 		print nl
 	} else {
+		drop
 		"error" print nl
 	}
 
 	"=== int ===" print nl
-	f "--count" flag::int if {
+	f "--count" flag::int ok if {
 		print nl
 	} else {
+		drop
 		"error" print nl
 	}
 

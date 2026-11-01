@@ -17,37 +17,37 @@ struct Cell<T> {
 	value:T
 }
 
-fn cell<T>(x:T -- c:Cell<T>) {
+def cell<T>(x:T -- c:Cell<T>) {
 	Cell<T> { value = x }
 }
 
-fn twice<T>(x:T -- xs:[]T) {
+def twice<T>(x:T -- xs:[]T) {
 	[2]T -> xs
 	xs 0 x set
 	xs 1 x set
 	xs
 }
 
-fn pass(x:d128 -- y:d128) {
+def pass(x:d128 -- y:d128) {
 	x -> y
 	y
 }
 
-fn swapped(a:d128 b:d128 -- c:d128 d:d128) {
+def swapped(a:d128 b:d128 -- c:d128 d:d128) {
 	b a
 }
 
-fn keeper(x:d128 -- k:ptr) {
+def keeper(x:d128 -- k:ptr) {
 	x -> v
 	fn( -- r:d128) { v }
 }
 
-fn show_kept(x:d128 -- ) {
+def show_kept(x:d128 -- ) {
 	x keeper -> k
 	k call print nl
 }
 
-fn kind(x:d128 -- ) {
+def kind(x:d128 -- ) {
 	x switch {
 		Far { "far" print nl }
 		8.888888888888888888888888888888888d { "eights" print nl }
@@ -55,7 +55,7 @@ fn kind(x:d128 -- ) {
 	}
 }
 
-fn deferred(x:d128 -- ) {
+def deferred(x:d128 -- ) {
 	defer { x print nl }
 	"before" print nl
 }

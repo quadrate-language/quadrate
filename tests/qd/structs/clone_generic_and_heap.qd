@@ -6,9 +6,9 @@
 struct Box<T> { v:T  n:i64 }
 struct P { x:i64  s:str }
 
-fn make(n:i64 -- p:P) { P { x = n s = "made" } }
+def make(n:i64 -- p:P) { P { x = n s = "made" } }
 
-fn dup_it(p:P -- q:P) { p clone }
+def dup_it(p:P -- q:P) { p clone }
 
 fn main() {
 	Box<str> { v = "gv" n = 1 } -> g

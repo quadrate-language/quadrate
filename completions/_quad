@@ -56,6 +56,7 @@ _quadfmt_opts() {
 		'(-c --check)'{-c,--check}'[Report whether files are formatted (exit 1 if not)]' \
 		'(-w --write)'{-w,--write}'[Format files in place]' \
 		'--no-sort-imports[Leave use statements in their original order]' \
+		'--migrate[Rewrite old code\: def for functions reading inputs by name, renamed builtins, operator words to symbols]' \
 		$qd_files
 }
 
@@ -73,6 +74,7 @@ _quadlint_opts() {
 		'--no-shadow-variables[Disable shadow variable warnings]' \
 		'--no-empty-blocks[Disable empty block warnings]' \
 		'--no-constant-conditions[Disable constant condition warnings]' \
+		'--no-needless-binding[Disable warnings for a def that could be a fn]' \
 		'--check-magic-numbers[Enable magic number detection]' \
 		'--check-long-functions[Enable long function detection]' \
 		'--check-naming[Enable naming convention checks]' \

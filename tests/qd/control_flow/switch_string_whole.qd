@@ -2,7 +2,7 @@
 // strcmp, which stops at a NUL, so the one-byte string holding NUL matched "".
 use strings
 
-fn describe(s:str -- r:str) {
+def describe(s:str -- r:str) {
 	s switch {
 		"" {
 			"empty"

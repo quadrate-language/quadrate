@@ -1,9 +1,9 @@
 // Test: local variables in nested blocks
 fn main() {
 	10 -> outer
-	outer 5 gt if {
+	outer 5 > if {
 		20 -> inner
-		outer inner add print nl
+		outer inner + print nl
 	}
 	outer print nl
 }

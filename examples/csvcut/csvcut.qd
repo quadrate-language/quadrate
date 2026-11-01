@@ -49,8 +49,8 @@ fn print_help() {
 // Parse the column spec string ("1,3,5") into an array of i64 indices
 // (0-based internally). Returns (cols:ptr, count:i64, ok:i64).
 // Caller frees cols with mem::free if ok=1.
-fn parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
-	spec strings::len -> n
+def parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
+	spec len -> n
 	n 0 == if {
 		0 cast<ptr> 0 0
 	} else {
@@ -91,13 +91,13 @@ fn parse_columns(spec:str -- cols:ptr count:i64 ok:i64) {
 					buf count 1
 				}
 			}
-			_ { 0 cast<ptr> 0 0 }
+			_ { drop 0 cast<ptr> 0 0 }
 		}
 	}
 }
 
 // Append one parsed CSV row's selected columns to `out`. Returns updated sb.
-fn emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:StringBuilder -- out2:StringBuilder) {
+def emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:StringBuilder -- out2:StringBuilder) {
 	out -> b
 	0 -> field_idx
 	start -> pos
@@ -174,7 +174,7 @@ fn emit_row(text:str start:i64 end_pos:i64 cols:ptr ncols:i64 delim:i64 out:Stri
 // Find the end of the current row, handling quoted fields that may
 // contain literal newlines. Returns the position of the byte AFTER the
 // row terminator (newline), or text_len if at EOF.
-fn find_row_end(text:str start:i64 text_len:i64 -- end_pos:i64) {
+def find_row_end(text:str start:i64 text_len:i64 -- end_pos:i64) {
 	start -> pos
 	0 -> in_quotes
 	loop {
@@ -204,20 +204,20 @@ fn find_row_end(text:str start:i64 text_len:i64 -- end_pos:i64) {
 
 // Read entire input (file path or "-" for stdin) into a string.
 // Returns (text, ok). On failure ok=0.
-fn slurp(path:str -- text:str ok:i64) {
+def slurp(path:str -- text:str ok:i64) {
 	path "-" strings::compare 0 == if {
 		sb::new -> b
 		1 -> first
 		loop {
 			io::readline switch {
 				Ok {
-					-> ok -> line
-					ok 0 == if { line drop break }
+					-> more -> line
+					more 0 == if { line drop break }
 					first 0 == if { b "\n" sb::append -> b }
 					b line sb::append -> b
 					0 -> first
 				}
-				_ { break }
+				_ { drop drop break }
 			}
 		}
 		b sb::finish -> result
@@ -225,24 +225,20 @@ fn slurp(path:str -- text:str ok:i64) {
 	} else {
 		path io::read_file switch {
 			Ok { -> contents contents 1 }
-			_ { "" 0 }
+			_ { drop "" 0 }
 		}
 	}
 }
 
 fn main() {
 	os::args -> args
-	args len -> argc
 
 	// Flatten the arguments into a newline-joined string, in input order.
-	"" -> joined
-	0 argc 1 for i {
-		joined args i nth strings::concat "\n" strings::concat -> joined
-	}
+	args "" fn { strings::concat "\n" strings::concat } fold -> joined
 	args free
 
 	// Walk joined args ("arg\narg\n...") in input order.
-	joined strings::len -> jlen
+	joined len -> jlen
 	"" -> spec
 	"-" -> path
 	44 -> delim
@@ -277,7 +273,7 @@ fn main() {
 				ep2 0 < if { jlen -> ep2 }
 				ep2 i > if {
 					joined i ep2 i - strings::substring! -> dstr
-					dstr strings::len 0 > if {
+					dstr len 0 > if {
 						dstr 0 strings::char_at -> delim
 					}
 				}
@@ -288,7 +284,7 @@ fn main() {
 				1 -> after_ddash
 				continue
 			}
-			a strings::len 0 > if {
+			a len 0 > if {
 				a 0 strings::char_at 45 == if {
 					"csvcut: unknown option: " print a print nl
 					continue
@@ -313,7 +309,7 @@ fn main() {
 		show_version if {
 			"csvcut (quadrate) " print VERSION print nl
 		} else {
-			spec strings::len 0 == if {
+			spec len 0 == if {
 				"csvcut: missing required COLUMNS argument" print nl
 				"Try 'csvcut --help' for more information." print nl
 			} else {
@@ -321,7 +317,7 @@ fn main() {
 				ok if {
 					path slurp -> ok2 -> text
 					ok2 if {
-						text strings::len -> tlen
+						text len -> tlen
 						sb::new -> out
 						0 -> pos
 						loop {

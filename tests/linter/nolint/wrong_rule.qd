@@ -1,6 +1,6 @@
 // Test: //nolint with wrong rule name does not suppress
 fn still_warned() { //nolint:dead-code
-	1 2 add
+	1 2 +
 }
 
 fn main() {

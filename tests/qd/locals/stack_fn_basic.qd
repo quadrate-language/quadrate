@@ -1,19 +1,19 @@
-// Test: `stack fn` leaves its arguments on the stack for the body, whether or
+// Test: `fn` leaves its arguments on the stack for the body, whether or
 // not the parameters carry names. A name there is documentation only.
-stack fn sq(n:i64 -- result:i64) {
+fn sq(n:i64 -- result:i64) {
 	dup *
 }
 
-stack fn diff(i64 i64 -- result:i64) {
+fn diff(i64 i64 -- result:i64) {
 	-
 }
 
-pub stack fn scale(value:f64 factor:f64 -- result:f64) {
+pub fn scale(value:f64 factor:f64 -- result:f64) {
 	*
 }
 
 // Mixing named and unnamed is only partial documentation when nothing binds
-stack fn clamp_low(value:i64 i64 -- result:i64) {
+fn clamp_low(value:i64 i64 -- result:i64) {
 	dup2 < if { drop } else { nip }
 }
 

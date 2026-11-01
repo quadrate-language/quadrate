@@ -2,6 +2,6 @@
 // Before reference validation ran over merged siblings this compiled with
 // exit 0 and the binary aborted with a stack underflow at run time.
 fn use_removed( -- x:i64) {
-	1 2 tuck
+	1 2 3 swapd
 	drop drop
 }

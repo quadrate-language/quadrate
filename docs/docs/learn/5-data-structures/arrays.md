@@ -123,9 +123,9 @@ Use `[]T` to declare the element type in function signatures:
 
 <!-- doccheck: skip signatures shown with their bodies elided -->
 ```qd
-fn sum(arr:[]i64 -- total:i64) { ... }
-fn names(arr:[]str -- ) { ... }
-fn coords(arr:[]f64 -- ) { ... }
+def sum(arr:[]i64 -- total:i64) { ... }
+def names(arr:[]str -- ) { ... }
+def coords(arr:[]f64 -- ) { ... }
 ```
 
 The compiler checks that you pass the right array type and that `nth` returns the correct element type.
@@ -135,7 +135,7 @@ The compiler checks that you pass the right array type and that `nth` returns th
 ### Sum
 
 ```qd
-fn sum(arr:[]i64 -- total:i64) {
+def sum(arr:[]i64 -- total:i64) {
 	0 -> total
 	0 arr len 1 for i {
 		total arr i nth cast<i64> + -> total
@@ -151,7 +151,7 @@ fn main() {
 ### Find maximum
 
 ```qd
-fn max(arr:[]i64 -- result:i64) {
+def max(arr:[]i64 -- result:i64) {
 	arr 0 nth -> result
 	0 arr len 1 for i {
 		arr i nth result > if {
@@ -169,7 +169,7 @@ fn main() {
 ### Count matches
 
 ```qd
-fn count_if(arr:[]i64 value:i64 -- count:i64) {
+def count_if(arr:[]i64 value:i64 -- count:i64) {
 	0 -> count
 	0 arr len 1 for i {
 		arr i nth value == if {
@@ -213,7 +213,7 @@ fn main() {
 Arrays are references. To copy:
 
 ```qd
-fn copy_array(src:[]i64 -- dst:[]i64) {
+def copy_array(src:[]i64 -- dst:[]i64) {
 	[src len]i64 -> dst
 	0 src len 1 for i {
 		dst i src i nth set
@@ -237,7 +237,7 @@ fn main() {
 ### Initialize with value
 
 ```qd
-fn fill(arr:[]i64 value:i64 -- ) {
+def fill(arr:[]i64 value:i64 -- ) {
 	0 arr len 1 for i {
 		arr i value set
 	}
@@ -256,7 +256,7 @@ fn main() {
 ### Reverse array
 
 ```qd
-fn reverse(arr:[]i64 -- ) {
+def reverse(arr:[]i64 -- ) {
 	0 -> i
 	arr len 1 - -> j
 	loop {
@@ -282,12 +282,12 @@ fn main() {
 ### Filter array
 
 ```qd
-fn filter_positive(arr:[]i64 -- result:[]i64) {
+def filter_positive(arr:[]i64 -- result:[]i64) {
 	// First count positives
 	0 -> count
 	0 arr len 1 for i {
 		arr i nth 0 > if {
-			count inc -> count
+			count ++ -> count
 		}
 	}
 	// Create result array
@@ -296,7 +296,7 @@ fn filter_positive(arr:[]i64 -- result:[]i64) {
 	0 arr len 1 for i {
 		arr i nth 0 > if {
 			result j arr i nth set
-			j inc -> j
+			j ++ -> j
 		}
 	}
 	result

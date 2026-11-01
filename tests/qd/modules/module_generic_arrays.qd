@@ -2,7 +2,7 @@
 // module-qualified calls check array/struct/fn argument types (they never did before).
 use generic_arrays
 
-fn dbl(x:i64 -- r:i64) {
+def dbl(x:i64 -- r:i64) {
 	x 2 *
 }
 

@@ -69,14 +69,14 @@
       "examples": ["0 buf 0 10 bytes::fill"]
     },
     {
-      "name": "find",
+      "name": "index_of",
       "signature": "(buf:ptr offset:i64 count:i64 value:i64 -- result:i64)",
       "failable": false,
       "description": "Find the first occurrence of a byte value in a buffer.",
       "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to find"}],
       "returns": [{"name": "result", "type": "i64", "description": "Index of first occurrence, or -1 if not found"}],
       "errors": [],
-      "examples": ["buf 0 10 0x41 bytes::find -> idx"]
+      "examples": ["buf 0 10 0x41 bytes::index_of -> idx"]
     },
     {
       "name": "read_u16_be",

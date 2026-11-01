@@ -18,6 +18,7 @@
 #include <quadrate/cli/help.h>
 #include <quadrate/platform/platform.h>
 #include <quadrate/qc/ast.h>
+#include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_identifier.h>
@@ -1553,6 +1554,8 @@ void QuadrateLSP::handleCodeAction(const std::string& id, const std::string& uri
 	json_decref(response);
 }
 
+static void addInferredEffectHints(Qd::IAstNode* node, size_t startLine, size_t endLine, json_t* hints);
+
 void QuadrateLSP::handleInlayHints(const std::string& id, const std::string& uri, size_t startLine, size_t endLine) {
 	json_t* response = json_object();
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
@@ -1672,12 +1675,56 @@ void QuadrateLSP::handleInlayHints(const std::string& id, const std::string& uri
 				}
 				lineNum++;
 			}
+
+			// The effect the checker inferred for each `fn { }`, shown where a signature would go
+			Qd::SemanticValidator validator;
+			validator.setStoreErrors(true);
+			const std::string filePath = lspUriToPath(uri);
+			const std::filesystem::path fileDir = std::filesystem::path(filePath).parent_path();
+			std::vector<std::string> manifestPaths = qdcli::manifestIncludePaths(fileDir.string());
+			if (!manifestPaths.empty()) {
+				validator.setIncludePaths(manifestPaths);
+			}
+			std::vector<std::string> siblingFiles = qdcli::getSiblingQdFiles(filePath);
+			if (!siblingFiles.empty()) {
+				validator.setSiblingFiles(siblingFiles);
+			}
+			validator.validate(astRoot, filePath.c_str(), false, false);
+			addInferredEffectHints(astRoot, startLine, endLine, hints);
 		}
 	}
 
 	json_object_set_new(response, "result", hints);
 	sendMessage(response);
 	json_decref(response);
+}
+
+// An inlay hint after the `fn` of every `fn { }` in [startLine, endLine], giving the effect the
+// validator inferred for it: `def (_ -- i64) {`.
+static void addInferredEffectHints(Qd::IAstNode* node, size_t startLine, size_t endLine, json_t* hints) {
+	if (!node) {
+		return;
+	}
+	if (node->type() == Qd::IAstNode::Type::ANONYMOUS_FUNCTION) {
+		const auto* anonFunc = static_cast<const Qd::AstNodeAnonymousFunction*>(node);
+		const std::string& type = anonFunc->inferredType();
+		const size_t line = node->line() > 0 ? node->line() - 1 : 0;
+		if (!anonFunc->hasSignature() && type.size() > 2 && line >= startLine && line <= endLine) {
+			const size_t column = node->column() > 0 ? node->column() - 1 : 0;
+			json_t* hint = json_object();
+			json_t* position = json_object();
+			json_object_set_new(position, "line", json_integer(static_cast<json_int_t>(line)));
+			json_object_set_new(position, "character", json_integer(static_cast<json_int_t>(column + 2)));
+			json_object_set_new(hint, "position", position);
+			json_object_set_new(hint, "label", json_string(type.substr(2).c_str()));
+			json_object_set_new(hint, "kind", json_integer(1)); // Type hint
+			json_object_set_new(hint, "paddingLeft", json_true());
+			json_array_append_new(hints, hint);
+		}
+	}
+	for (size_t i = 0; i < node->childCount(); i++) {
+		addInferredEffectHints(node->child(i), startLine, endLine, hints);
+	}
 }
 
 // Semantic token type indices (must match the order in handleInitialize)
@@ -2022,7 +2069,7 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 				if (isKeyword(word)) {
 					tokenType = TOKEN_KEYWORD;
 					// Check if this is 'fn' followed by a function name
-					if (word == "fn") {
+					if (word == "fn" || word == "def") {
 						modifiers = MOD_DECLARATION;
 					}
 				} else if (isTypeName(word)) {
@@ -2040,7 +2087,8 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 					while (lookback > 0 && std::isspace(documentText[lookback - 1])) {
 						lookback--;
 					}
-					if (lookback >= 2 && documentText.substr(lookback - 2, 2) == "fn") {
+					if ((lookback >= 2 && documentText.substr(lookback - 2, 2) == "fn") ||
+							(lookback >= 3 && documentText.substr(lookback - 3, 3) == "def")) {
 						tokenType = TOKEN_FUNCTION;
 						modifiers = MOD_DEFINITION;
 					}
@@ -2312,7 +2360,8 @@ void QuadrateLSP::handlePrepareCallHierarchy(
 					json_object_set_new(start, "character", json_integer(0));
 					json_t* end = json_object();
 					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(func.line)));
-					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(func.name.size() + 3)));
+					json_object_set_new(end, "character",
+							json_integer(static_cast<json_int_t>(func.nameColumn + func.name.size())));
 					json_object_set_new(range, "start", start);
 					json_object_set_new(range, "end", end);
 					json_object_set_new(item, "range", range);
@@ -2321,7 +2370,7 @@ void QuadrateLSP::handlePrepareCallHierarchy(
 					json_t* selRange = json_object();
 					json_t* selStart = json_object();
 					json_object_set_new(selStart, "line", json_integer(static_cast<json_int_t>(func.line)));
-					json_object_set_new(selStart, "character", json_integer(3)); // After "fn "
+					json_object_set_new(selStart, "character", json_integer(static_cast<json_int_t>(func.nameColumn)));
 					json_t* selEnd = json_object();
 					json_object_set_new(selEnd, "line", json_integer(static_cast<json_int_t>(func.line)));
 					json_object_set_new(
@@ -2419,8 +2468,8 @@ void QuadrateLSP::handleIncomingCalls(const std::string& id, const std::string& 
 								json_object_set_new(start, "character", json_integer(0));
 								json_t* end = json_object();
 								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(func.line)));
-								json_object_set_new(
-										end, "character", json_integer(static_cast<json_int_t>(func.name.size() + 3)));
+								json_object_set_new(end, "character",
+										json_integer(static_cast<json_int_t>(func.nameColumn + func.name.size())));
 								json_object_set_new(range, "start", start);
 								json_object_set_new(range, "end", end);
 								json_object_set_new(from, "range", range);
@@ -2997,7 +3046,7 @@ void QuadrateLSP::handleCodeLens(const std::string& id, const std::string& uri) 
 			json_array_append_new(args, json_string(uri.c_str()));
 			json_t* position = json_object();
 			json_object_set_new(position, "line", json_integer(static_cast<json_int_t>(func.line)));
-			json_object_set_new(position, "character", json_integer(3)); // After "fn "
+			json_object_set_new(position, "character", json_integer(static_cast<json_int_t>(func.nameColumn)));
 			json_array_append_new(args, position);
 			json_object_set_new(command, "arguments", args);
 			json_object_set_new(lens, "command", command);
@@ -3707,9 +3756,9 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 											}
 
 											// Show type parameters for generic functions
-											if (funcNode->isGeneric()) {
+											if (!funcNode->declaredParameters().empty()) {
 												docStream << "**Type parameters:** `<";
-												const auto& typeParams = funcNode->typeParams();
+												const auto typeParams = funcNode->declaredParameters();
 												for (size_t j = 0; j < typeParams.size(); j++) {
 													if (j > 0) {
 														docStream << ", ";
@@ -3724,7 +3773,8 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 
 											// Build full signature
 											if (funcNode->hasReceiver()) {
-												docStream << "fn (" << funcNode->receiverName() << ":"
+												docStream << (funcNode->isStack() ? "fn (" : "def (")
+														  << funcNode->receiverName() << ":"
 														  << funcNode->receiverType();
 												if (funcNode->hasReceiverTypeParams()) {
 													docStream << "<";
@@ -3739,13 +3789,13 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 												}
 												docStream << ") " << funcNode->name();
 											} else {
-												docStream << "fn " << funcNode->name();
+												docStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name();
 											}
 
 											// Add type parameters
-											if (funcNode->isGeneric()) {
+											if (!funcNode->declaredParameters().empty()) {
 												docStream << "<";
-												const auto& typeParams = funcNode->typeParams();
+												const auto typeParams = funcNode->declaredParameters();
 												for (size_t j = 0; j < typeParams.size(); j++) {
 													if (j > 0) {
 														docStream << ", ";
@@ -3757,32 +3807,18 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 
 											docStream << "(";
 
-											// Input parameters
-											const auto& inputs = funcNode->inputParameters();
+											// Inputs and outputs, a stack variable first in its list
+											const auto inputs = funcNode->inputItems();
 											for (size_t j = 0; j < inputs.size(); j++) {
-												if (j > 0) {
-													docStream << " ";
-												}
-												Qd::AstNodeParameter* param =
-														static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-												docStream << param->displayString();
+												docStream << (j > 0 ? " " : "") << inputs[j];
 											}
-
-											if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+											const auto outputs = funcNode->outputItems();
+											if (!inputs.empty() || !outputs.empty()) {
 												docStream << " -- ";
 											}
-
-											// Output parameters
-											const auto& outputs = funcNode->outputParameters();
 											for (size_t j = 0; j < outputs.size(); j++) {
-												if (j > 0) {
-													docStream << " ";
-												}
-												Qd::AstNodeParameter* param =
-														static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-												docStream << param->displayString();
+												docStream << (j > 0 ? " " : "") << outputs[j];
 											}
-
 											docStream << ")";
 											if (funcNode->throws()) {
 												docStream << "!";
@@ -4013,7 +4049,8 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 													static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 											if (funcNode->name() == symbolName) {
 												std::ostringstream sigStream;
-												sigStream << "fn " << funcNode->name() << "(";
+												sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name()
+														  << "(";
 
 												const auto& inputs = funcNode->inputParameters();
 												for (size_t j = 0; j < inputs.size(); j++) {
@@ -4332,12 +4369,12 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 			info.name = funcNode->name();
 			// AST uses 1-based lines, convert to 0-based for LSP
 			info.line = funcNode->line() > 0 ? funcNode->line() - 1 : 0;
+			info.nameColumn = funcNode->column() > 0 ? funcNode->column() - 1 : 0;
+			info.binds = !funcNode->isStack();
 
-			// Extract generic type parameters
-			info.isGeneric = funcNode->isGeneric();
-			if (info.isGeneric) {
-				info.typeParams = funcNode->typeParams();
-			}
+			// Extract generic type parameters, stack variables first
+			info.typeParams = funcNode->declaredParameters();
+			info.isGeneric = !info.typeParams.empty();
 
 			// Extract method receiver information
 			info.isMethod = funcNode->hasReceiver();
@@ -4354,7 +4391,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 
 			// Include receiver in signature for methods
 			if (info.isMethod) {
-				sigStream << "fn (" << info.receiverName << ":" << info.receiverType;
+				sigStream << (info.binds ? "def (" : "fn (") << info.receiverName << ":" << info.receiverType;
 				if (!info.receiverTypeParams.empty()) {
 					sigStream << "<";
 					for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
@@ -4367,7 +4404,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 				}
 				sigStream << ") " << info.name;
 			} else {
-				sigStream << "fn " << info.name;
+				sigStream << (info.binds ? "def " : "fn ") << info.name;
 			}
 
 			// Add type parameters to signature

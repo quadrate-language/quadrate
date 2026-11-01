@@ -11,7 +11,6 @@ qdrt_sources = files(
 		'src/qd_string.c',
 		'src/qd_struct.c',
 		'src/array.c',
-		'src/platform/thread.c',
 		'src/platform/mutex.c',
 )
 

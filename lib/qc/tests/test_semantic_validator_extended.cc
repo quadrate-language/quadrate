@@ -102,23 +102,23 @@ TEST(NipValid) {
 }
 
 TEST(RemovedShufflerRejected) {
-	// The three drops are correct for tuck's old ( a b -- b a b ) effect, so the
+	// The three drops are correct for swapd's old ( a b c -- b a c ) effect, so the
 	// removal message must be the *only* error: simulating the rest of the body
-	// against a stack that never got tuck's values would report an underflow on a
+	// against a stack that never got swapd's values would report an underflow on a
 	// line the user must not change. A bare `errors > 0` cannot see that, and is
 	// satisfied by the generic "undefined identifier" fallback besides.
-	auto errors = validateCodeErrors("fn main() { 1 2 tuck drop drop drop }");
-	ASSERT(hasError(errors, "'tuck' has been removed"), "removed builtin should say it was removed");
-	ASSERT(hasError(errors, "-> b -> a  b a b"), "removal should give the correct binding order");
+	auto errors = validateCodeErrors("fn main() { 1 2 3 swapd drop drop drop }");
+	ASSERT(hasError(errors, "'swapd' has been removed"), "removed builtin should say it was removed");
+	ASSERT(hasError(errors, "fn { swap } dip"), "removal should give the rewrite");
 	ASSERT(!hasError(errors, "Stack underflow"), "removal should not cascade into a stack underflow");
 	ASSERT(!hasError(errors, "Undefined identifier"), "removal should not fall through to the generic error");
 }
 
 TEST(RemovedShufflerFunctionPointerRejected) {
 	// The fuzzy matcher would otherwise suggest 'pick' here - a different effect.
-	auto errors = validateCodeErrors("fn main() { &tuck -> f  1 2 f call print }");
-	ASSERT(hasError(errors, "'tuck' has been removed"), "&tuck should say tuck was removed");
-	ASSERT(!hasError(errors, "did you mean"), "&tuck should not suggest an unrelated builtin");
+	auto errors = validateCodeErrors("fn main() { &nipd -> f  1 2 3 f call print }");
+	ASSERT(hasError(errors, "'nipd' has been removed"), "&nipd should say nipd was removed");
+	ASSERT(!hasError(errors, "did you mean"), "&nipd should not suggest an unrelated builtin");
 }
 
 TEST(RemovedKeywordCtxRejected) {
@@ -164,19 +164,19 @@ TEST(RollIsRemoved) {
  * this is a peephole check on the preceding literal, not constant propagation, so
  * DivByZeroThroughLocal below must keep validating clean. */
 TEST(DivByZero) {
-	const char* src = "fn main() { 10 0 div drop }";
+	const char* src = "fn main() { 10 0 / drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 1, "division by a literal zero is a compile-time error");
 }
 
 TEST(ModByZero) {
-	const char* src = "fn main() { 10 0 mod drop }";
+	const char* src = "fn main() { 10 0 % drop }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 1, "mod by a literal zero is a compile-time error");
+	ASSERT(errors == 1, "% by a literal zero is a compile-time error");
 }
 
 TEST(DivByZeroThroughLocal) {
-	const char* src = "fn main() { 0 -> z 10 z div drop }";
+	const char* src = "fn main() { 0 -> z 10 z / drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "a zero divisor behind a local is still only a runtime error");
 }
@@ -196,31 +196,31 @@ TEST(NegatInt) {
 // Comparison Operations
 
 TEST(EqInts) {
-	const char* src = "fn main() { 1 2 eq drop }";
+	const char* src = "fn main() { 1 2 == drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "eq on ints should succeed");
 }
 
 TEST(EqFloats) {
-	const char* src = "fn main() { 1.0 2.0 eq drop }";
+	const char* src = "fn main() { 1.0 2.0 == drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "eq on floats should succeed");
 }
 
 TEST(EqStrings) {
-	const char* src = "fn main() { \"a\" \"b\" eq drop }";
+	const char* src = "fn main() { \"a\" \"b\" == drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "eq on strings should succeed");
 }
 
 TEST(LtInts) {
-	const char* src = "fn main() { 1 2 lt drop }";
+	const char* src = "fn main() { 1 2 < drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "lt on ints should succeed");
 }
 
 TEST(GtFloats) {
-	const char* src = "fn main() { 1.0 2.0 gt drop }";
+	const char* src = "fn main() { 1.0 2.0 > drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "gt on floats should succeed");
 }
@@ -268,13 +268,13 @@ TEST(BitwiseAndOperation) {
 }
 
 TEST(ShlOperation) {
-	const char* src = "fn main() { 1 4 shl drop }";
+	const char* src = "fn main() { 1 4 __shl drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "shl operation should succeed");
 }
 
 TEST(ShrOperation) {
-	const char* src = "fn main() { 16 2 shr drop }";
+	const char* src = "fn main() { 16 2 __shr drop }";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "shr operation should succeed");
 }
@@ -404,11 +404,11 @@ TEST(UndefinedLocal) {
 
 TEST(RecursiveFunction) {
 	const char* src = R"(
-		fn recurse(n:i64 -- r:i64) {
-			n 0 eq if {
+		def recurse(n:i64 -- r:i64) {
+			n 0 == if {
 				0
 			} else {
-				n 1 sub recurse n add
+				n 1 - recurse n +
 			}
 		}
 		fn main() { 5 recurse print }
@@ -419,11 +419,11 @@ TEST(RecursiveFunction) {
 
 TEST(MutualRecursion) {
 	const char* src = R"(
-		fn even(n:i64 -- r:i64) {
-			n 0 eq if { 1 } else { n 1 sub odd }
+		def even(n:i64 -- r:i64) {
+			n 0 == if { 1 } else { n 1 - odd }
 		}
-		fn odd(n:i64 -- r:i64) {
-			n 0 eq if { 0 } else { n 1 sub even }
+		def odd(n:i64 -- r:i64) {
+			n 0 == if { 0 } else { n 1 - even }
 		}
 		fn main() { 4 even print }
 	)";
@@ -491,7 +491,7 @@ TEST(StructFieldSetDiscard) {
 TEST(StructFieldSetDiscardStackClean) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
-		fn helper(p:Point) { p 1 >>x drop p 2 >>y drop }
+		def helper(p:Point) { p 1 >>x drop p 2 >>y drop }
 		fn main() { Point { x = 0 y = 0 } -> p p helper }
 	)";
 	size_t errors = validateCode(src);
@@ -562,7 +562,7 @@ TEST(ConstantReference) {
 TEST(ConstantInExpression) {
 	const char* src = R"(
 		const BASE = 10
-		fn main() { BASE 5 add print }
+		fn main() { BASE 5 + print }
 	)";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "constant in expression should succeed");
@@ -610,7 +610,7 @@ TEST(DeferWithLocal) {
 TEST(AnonymousFunctionSimple) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- y:i64) { x dup mul } -> square
+			def(x:i64 -- y:i64) { x dup * } -> square
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -621,7 +621,7 @@ TEST(AnonymousFunctionCapture) {
 	const char* src = R"(
 		fn main() {
 			10 -> base
-			fn(x:i64 -- y:i64) { x base add } -> add_base
+			def(x:i64 -- y:i64) { x base + } -> add_base
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -635,7 +635,7 @@ TEST(AnonymousFunctionCapture) {
 TEST(AnonymousFunctionBodyUnderflows) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- y:i64) { dup mul } -> square
+			def(x:i64 -- y:i64) { dup * } -> square
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -645,7 +645,7 @@ TEST(AnonymousFunctionBodyUnderflows) {
 TEST(AnonymousFunctionBodyLeavesTooMuch) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- y:i64) { x x } -> pair
+			def(x:i64 -- y:i64) { x x } -> pair
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -655,7 +655,7 @@ TEST(AnonymousFunctionBodyLeavesTooMuch) {
 TEST(AnonymousFunctionBodyWrongOutputType) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- y:str) { x 1 add } -> wrong
+			def(x:i64 -- y:str) { x 1 + } -> wrong
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -665,7 +665,7 @@ TEST(AnonymousFunctionBodyWrongOutputType) {
 TEST(AnonymousStackFnLeavesArgumentsOnStack) {
 	const char* src = R"(
 		fn main() {
-			stack fn(i64 -- i64) { 2 mul } -> double
+			fn(i64 -- i64) { 2 * } -> double
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -674,31 +674,31 @@ TEST(AnonymousStackFnLeavesArgumentsOnStack) {
 
 // An anonymous function follows a named function's rules. Each of these used to differ.
 
-TEST(AnonymousUnnamedParamWithoutStackRejected) {
+TEST(AnonymousUnnamedParamWithLetRejected) {
 	const char* src = R"(
 		fn main() {
-			fn(i64 -- i64) { 2 mul } -> double
+			def(i64 -- i64) { 2 * } -> double
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors > 0, "without 'stack' every input must be named, as in a named function");
+	ASSERT(errors > 0, "under 'let' every input must be named, as in a named function");
 }
 
-TEST(AnonymousStackFnWithoutInputsRejected) {
+TEST(AnonymousLetFnWithoutInputsRejected) {
 	const char* src = R"(
 		fn main() {
-			stack fn( -- i64) { 5 } -> five
+			def( -- i64) { 5 } -> five
 		}
 	)";
 	size_t errors = validateCode(src);
-	ASSERT(errors > 0, "'stack fn' with no input has nothing to leave on the stack");
+	ASSERT(errors > 0, "'def' with no input has nothing to bind");
 }
 
 TEST(AnonymousBareTypeNameIsAType) {
 	const char* src = R"(
 		struct Point { x:i64 y:i64 }
 		fn main() {
-			stack fn(Point -- i64) { <<x } -> getx
+			fn(Point -- i64) { <<x } -> getx
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -708,7 +708,7 @@ TEST(AnonymousBareTypeNameIsAType) {
 TEST(AnonymousInvalidParamTypeRejected) {
 	const char* src = R"(
 		fn main() {
-			fn(x:Nope -- i64) { 1 } -> f
+			def(x:Nope -- i64) { 1 } -> f
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -718,7 +718,7 @@ TEST(AnonymousInvalidParamTypeRejected) {
 TEST(AnonymousPanicRequiresFallibleMarker) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- r:i64) { "boom" 1 panic } -> f
+			def(x:i64 -- r:i64) { "boom" 1 panic } -> f
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -728,7 +728,7 @@ TEST(AnonymousPanicRequiresFallibleMarker) {
 TEST(AnonymousFallibleMarkerAllowsPanic) {
 	const char* src = R"(
 		fn main() {
-			5 fn(x:i64 -- r:i64)! { x 0 eq if { "boom" 1 panic } x } call! -> r
+			5 def(x:i64 -- r:i64)! { x 0 == if { "boom" 1 panic } x } call! -> r
 			r drop
 		}
 	)";
@@ -739,7 +739,7 @@ TEST(AnonymousFallibleMarkerAllowsPanic) {
 TEST(AnonymousPanicNotInheritedFromEnclosingFunction) {
 	const char* src = R"(
 		fn outer()! {
-			fn(x:i64 -- r:i64) { "boom" 1 panic } -> f
+			def(x:i64 -- r:i64) { "boom" 1 panic } -> f
 			f drop
 		}
 	)";
@@ -750,7 +750,7 @@ TEST(AnonymousPanicNotInheritedFromEnclosingFunction) {
 TEST(AnonymousAbortOnNonFallibleCallRejected) {
 	const char* src = R"(
 		fn main() {
-			5 fn(x:i64 -- r:i64) { x 2 mul } call! -> r
+			5 def(x:i64 -- r:i64) { x 2 * } call! -> r
 			r drop
 		}
 	)";
@@ -761,7 +761,7 @@ TEST(AnonymousAbortOnNonFallibleCallRejected) {
 TEST(AnonymousBareFallibleCallMustBeChecked) {
 	const char* src = R"(
 		fn main() {
-			5 fn(x:i64 -- r:i64)! { x 2 mul } call -> r
+			5 def(x:i64 -- r:i64)! { x 2 * } call -> r
 			r drop
 		}
 	)";
@@ -773,7 +773,7 @@ TEST(AnonymousFunctionInStructFieldChecked) {
 	const char* src = R"(
 		struct H { f: fn(i64 -- i64) }
 		fn main() {
-			H { f = fn(x:i64 -- y:i64) { mul } } -> h
+			H { f = def(x:i64 -- y:i64) { * } } -> h
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -783,7 +783,7 @@ TEST(AnonymousFunctionInStructFieldChecked) {
 TEST(AnonymousFunctionInArrayLiteralChecked) {
 	const char* src = R"(
 		fn main() {
-			[fn(x:i64 -- y:i64) { mul }] -> fns
+			[def(x:i64 -- y:i64) { * }] -> fns
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -793,7 +793,7 @@ TEST(AnonymousFunctionInArrayLiteralChecked) {
 TEST(AnonymousFunctionDivergingBodyIsClean) {
 	const char* src = R"(
 		fn main() {
-			fn(x:i64 -- y:i64) { x 0 gt if { x return } 0 } -> clamp
+			def(x:i64 -- y:i64) { x 0 > if { x return } 0 } -> clamp
 		}
 	)";
 	size_t errors = validateCode(src);
@@ -804,7 +804,7 @@ TEST(AnonymousFunctionDivergingBodyIsClean) {
 
 TEST(GenericIdentity) {
 	const char* src = R"(
-		fn identity<T>(x:T -- y:T) { x }
+		def identity<T>(x:T -- y:T) { x }
 		fn main() { 42 identity print }
 	)";
 	size_t errors = validateCode(src);
@@ -813,10 +813,10 @@ TEST(GenericIdentity) {
 
 TEST(GenericPair) {
 	const char* src = R"(
-		fn swap_pair<T U>(a:T b:U -- x:U y:T) {
+		def swap_pair<T U>(a:T b:U -- x:U y:T) {
 			b a
 		}
-		fn main() { 1 2 swap_pair add print }
+		fn main() { 1 2 swap_pair + print }
 	)";
 	size_t errors = validateCode(src);
 	ASSERT(errors == 0, "generic pair swap should succeed");
@@ -843,9 +843,9 @@ TEST(PrintString) {
 }
 
 TEST(PrintV) {
-	const char* src = "fn main() { 42 printv }";
+	const char* src = "fn main() { 42 dump }";
 	size_t errors = validateCode(src);
-	ASSERT(errors == 0, "printv should succeed");
+	ASSERT(errors == 0, "dump should succeed");
 }
 
 TEST(Newline) {
@@ -925,11 +925,11 @@ TEST(DeclaredParameterStructTypeWinsOverInference) {
 		struct Cell { value:i64 = 0 }
 		struct Grid { cells:[]Cell  n:i64 }
 
-		fn at(g:Grid idx:i64 -- c:Cell) {
+		def at(g:Grid idx:i64 -- c:Cell) {
 			g <<cells idx nth
 		}
 
-		fn read_at(g:Grid idx:i64 -- v:i64) {
+		def read_at(g:Grid idx:i64 -- v:i64) {
 			g idx at <<value
 		}
 
@@ -957,28 +957,28 @@ int main() {
 
 TEST(EnumSwitchMissingVariantWarns) {
 	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
-								  "fn f(c:i64 -- ) { c switch { Color::Red { } Color::Green { } } }\n"
+								  "def f(c:i64 -- ) { c switch { Color::Red { } Color::Green { } } }\n"
 								  "fn main() { Color::Red f }\n");
 	ASSERT(hasError(w, "switch on enum 'Color' does not handle Blue"), "should name the missing variant");
 }
 
 TEST(EnumSwitchNamesEveryMissingVariant) {
 	auto w = validateCodeWarnings("enum E { A B C D }\n"
-								  "fn f(c:i64 -- ) { c switch { E::A { } } }\n"
+								  "def f(c:i64 -- ) { c switch { E::A { } } }\n"
 								  "fn main() { E::A f }\n");
 	ASSERT(hasError(w, "does not handle B, C, D"), "should list all missing variants");
 }
 
 TEST(EnumSwitchExhaustiveIsClean) {
 	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
-								  "fn f(c:i64 -- ) { c switch { Color::Red { } Color::Green { } Color::Blue { } } }\n"
+								  "def f(c:i64 -- ) { c switch { Color::Red { } Color::Green { } Color::Blue { } } }\n"
 								  "fn main() { Color::Red f }\n");
 	ASSERT(!hasError(w, "does not handle"), "covering every variant should not warn");
 }
 
 TEST(EnumSwitchWildcardIsClean) {
 	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
-								  "fn f(c:i64 -- ) { c switch { Color::Red { } _ { } } }\n"
+								  "def f(c:i64 -- ) { c switch { Color::Red { } _ { } } }\n"
 								  "fn main() { Color::Red f }\n");
 	ASSERT(!hasError(w, "does not handle"), "a '_' arm handles the rest");
 }
@@ -986,7 +986,7 @@ TEST(EnumSwitchWildcardIsClean) {
 TEST(EnumSwitchMixedArmsIsClean) {
 	// Arms that are not all variants of one enum say nothing about exhaustiveness.
 	auto w = validateCodeWarnings("enum Color { Red Green Blue }\n"
-								  "fn f(c:i64 -- ) { c switch { Color::Red { } 7 { } _ { } } }\n"
+								  "def f(c:i64 -- ) { c switch { Color::Red { } 7 { } _ { } } }\n"
 								  "fn main() { Color::Red f }\n");
 	ASSERT(!hasError(w, "does not handle"), "a mixed switch should not be judged for exhaustiveness");
 }
@@ -994,14 +994,14 @@ TEST(EnumSwitchMixedArmsIsClean) {
 TEST(EnumSwitchTwoEnumsIsClean) {
 	auto w = validateCodeWarnings("enum A { X Y }\n"
 								  "enum B { P Q }\n"
-								  "fn f(c:i64 -- ) { c switch { A::X { } B::P { } _ { } } }\n"
+								  "def f(c:i64 -- ) { c switch { A::X { } B::P { } _ { } } }\n"
 								  "fn main() { A::X f }\n");
 	ASSERT(!hasError(w, "does not handle"), "arms from two enums should not be judged");
 }
 
 TEST(NonEnumScopedArmsAreClean) {
 	// `io::ErrNotFound` is a module constant, not an enum variant.
-	auto w = validateCodeWarnings("fn f(c:i64 -- ) { c switch { 1 { } 2 { } _ { } } }\n"
+	auto w = validateCodeWarnings("def f(c:i64 -- ) { c switch { 1 { } 2 { } _ { } } }\n"
 								  "fn main() { 1 f }\n");
 	ASSERT(!hasError(w, "does not handle"), "literal arms should not be judged");
 }

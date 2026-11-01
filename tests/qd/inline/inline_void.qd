@@ -1,5 +1,5 @@
 // Test: inline function with no return value
-inline fn print_twice(x:i64 --) {
+inline def print_twice(x:i64 --) {
 	x print nl
 	x print nl
 }
