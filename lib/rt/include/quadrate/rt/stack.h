@@ -86,7 +86,9 @@ typedef struct {
  */
 typedef enum {
 	QD_PTR_UNKNOWN = 0, ///< Ask the registries
-	QD_PTR_RAW = 1		///< Not counted: nothing to retain or release
+	QD_PTR_RAW = 1,		///< Not counted: nothing to retain or release
+	QD_PTR_STRUCT = 2,	///< A struct: counted by its header, checked by its magic, no lookup
+	QD_PTR_ARRAY = 3	///< An array: the same
 } qd_ptr_kind;
 
 /**
@@ -175,6 +177,9 @@ qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value);
  * @return QD_STACK_OK on success, QD_STACK_ERR_OVERFLOW if stack is full
  */
 qd_stack_error qd_stack_push_raw(qd_stack* stack, void* value);
+
+/** @brief Push a pointer whose kind is known (qd_ptr_kind), taking no reference */
+qd_stack_error qd_stack_push_kind(qd_stack* stack, void* value, uint8_t kind);
 
 /**
  * @brief Push a string onto the stack

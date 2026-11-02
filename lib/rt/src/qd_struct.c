@@ -104,6 +104,44 @@ void qd_struct_release(void* struct_ptr) {
 	}
 }
 
+void* qd_ptr_retain(void* ptr);
+void qd_ptr_release(void* ptr);
+
+// A freed struct's magic is cleared before it goes, so a stale pointer falls through as well
+static bool struct_magic_ok(void* struct_ptr) {
+	return qd_struct_get_header(struct_ptr)->magic == (size_t)QD_STRUCT_MAGIC;
+}
+
+void qd_struct_retain_known(void* struct_ptr) {
+	if (struct_ptr == NULL) {
+		return;
+	}
+	if (!struct_magic_ok(struct_ptr)) {
+		qd_ptr_retain(struct_ptr);
+		return;
+	}
+	atomic_fetch_add(&qd_struct_get_header(struct_ptr)->refcount, 1);
+}
+
+void qd_struct_release_known(void* struct_ptr) {
+	if (struct_ptr == NULL) {
+		return;
+	}
+	if (!struct_magic_ok(struct_ptr)) {
+		qd_ptr_release(struct_ptr);
+		return;
+	}
+	qd_struct_header_t* header = qd_struct_get_header(struct_ptr);
+	if (atomic_fetch_sub(&header->refcount, 1) == 1) {
+		ptr_registry_remove(&struct_registry, struct_ptr);
+		if (header->destructor != NULL) {
+			header->destructor(struct_ptr);
+		}
+		header->magic = 0;
+		free(header);
+	}
+}
+
 // Generic pointer retain/release (works for both arrays and structs)
 
 void* qd_ptr_retain(void* ptr) {

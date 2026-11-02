@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`math::v3_add`, `v3_sub`, `v3_scale`, `v3_dot`, `v3_cross`, `v3_length`, `v3_length_sq` and `v3_normalize`**: 3D vectors as three f64s on the stack, `( ax ay az bx by bz -- x y z )`. Native code, no allocation: the fast way for inner loops.
 - **`qd_push_raw(ctx, ptr)`**: push a pointer to raw memory, never an array or a struct; retains and releases skip it. `mem::alloc`, `mem::from_string`, `mem::ptr_add` into a buffer and `strings::data` use it.
 - **A global can hold an array or a function value**: `var cells:[]f64 = [1024]f64`, `var show:fn(i64 --) = &plain`, typed and checked as a local is. A store of the wrong type into any global is now an error.
 - **`rot4` and `rrot4`**: `( a b c d -- b c d a )` and `( a b c d -- d a b c )`.
@@ -71,11 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The raytracer keeps its vectors on the stack**, three f64s each, with math's `v3` words; nothing is allocated per ray. 15 s to 1.9 s, the same image.
 - **A function taking a `str` has a native version** when it only reads the string with `len` and `nth`, as `each` over one does, or passes it on. `within` has a native form. `wc` on 25 MB: 8.2 s to 0.17 s.
 - **`Sha256`, `Sha512` and `Md5` `update` copy input with `mem::copy`** and hash whole blocks in place. `sha256sum` on 25 MB: 77 s to 0.43 s.
 - **A function taking a `ptr` has a native version**, the address an i64 in it; `mem::get_*`/`set_*` read through it in place. Not one that returns a `ptr`, prints one or casts one.
 - **A word of several results has a native version**, its results returned together. `divmod` and its callers no longer run on the runtime stack.
-- **A stack slot knows a raw pointer is raw** (`ptr_kind`, in what was padding), so pushing and dropping one skips the locked registry lookups.
+- **A stack slot knows what pointer it holds** (`ptr_kind`, in what was padding): raw memory, a struct, or an array, whenever what pushed it knew. Their copies and drops skip the locked registry lookups. The raytracer: 31 s to 15 s.
 - **`mem::get_*` and `mem::set_*` compile to one load or store**, falling back to the C word for a null pointer or a value of another type.
 - **sha256, sha512 and md5 build their constant tables once per call**, not once per block.
 - **An `inline fn` is spliced into its caller.** A call to an `inline fn` declared in the same file is replaced by a copy of its body when the body can stand there unchanged -- a stack `fn`, not fallible, generic or a method, declaring no local and with no `return` or `defer` -- each copy with its own names for what lowering made of its combinators; a word that calls itself keeps the call. Whether a function gets a native version, taking and returning plain integers, is decided on the AST, and a call to one with more than one result ruled it out, `inline` or not: `tak` factored into `dup3`, `dec`, `bury` and `step` took 2.1 s where the `def` took 0.02 s. Spliced, it takes 0.03 s. Across files too: a word of a file merged from the program's directory is spliced as the program's own, and a module's word called as `module::name` when its body names only the module's functions and constants, which the copy names by their qualified names.

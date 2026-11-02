@@ -1306,6 +1306,86 @@
       "examples": ["-2.7 math::trunc print  // -2.0"]
     },
     {
+      "name": "v3_add",
+      "signature": "(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64)",
+      "failable": false,
+      "description": "Sum of two vectors on the stack.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add -> z -> y -> x"]
+    },
+    {
+      "name": "v3_cross",
+      "signature": "(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64)",
+      "failable": false,
+      "description": "Cross product of two vectors on the stack, a × b.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross -> z -> y -> x"]
+    },
+    {
+      "name": "v3_dot",
+      "signature": "(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- d:f64)",
+      "failable": false,
+      "description": "Dot product of two vectors on the stack.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot -> d"]
+    },
+    {
+      "name": "v3_length_sq",
+      "signature": "(x:f64 y:f64 z:f64 -- l:f64)",
+      "failable": false,
+      "description": "Squared length of a vector on the stack.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 2.0 2.0 math::v3_length_sq -> l"]
+    },
+    {
+      "name": "v3_length",
+      "signature": "(x:f64 y:f64 z:f64 -- l:f64)",
+      "failable": false,
+      "description": "Length of a vector on the stack.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 2.0 2.0 math::v3_length -> l"]
+    },
+    {
+      "name": "v3_normalize",
+      "signature": "(x:f64 y:f64 z:f64 -- x:f64 y:f64 z:f64)",
+      "failable": false,
+      "description": "A vector on the stack scaled to length 1; the zero vector stays zero.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 2.0 2.0 math::v3_normalize -> z -> y -> x"]
+    },
+    {
+      "name": "v3_scale",
+      "signature": "(x:f64 y:f64 z:f64 k:f64 -- x:f64 y:f64 z:f64)",
+      "failable": false,
+      "description": "A vector on the stack times a scalar.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["1.0 2.0 3.0 2.0 math::v3_scale -> z -> y -> x"]
+    },
+    {
+      "name": "v3_sub",
+      "signature": "(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64)",
+      "failable": false,
+      "description": "Difference of two vectors on the stack, a - b.",
+      "params": [],
+      "returns": [],
+      "errors": [],
+      "examples": ["4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub -> z -> y -> x"]
+    },
+    {
       "name": "vec2_one",
       "signature": "( -- v:Vec2)",
       "failable": false,

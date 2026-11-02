@@ -250,7 +250,17 @@ namespace Qd {
 		pushStrFn = declareFn(ctxPtrToResultTy, "qd_push_s");
 		pushStrRefFn = declareFn(ctxPtrToResultTy, "qd_push_s_ref");
 		pushPtrFn = declareFn(ctxPtrToResultTy, "qd_push_p");
-		pushRawFn = declareFn(ctxPtrToResultTy, "qd_push_raw");
+		pushStructFn = declareFn(ctxPtrToResultTy, "qd_push_struct");
+		pushArrayFn = declareFn(ctxPtrToResultTy, "qd_push_array");
+		pushPtrKindFn =
+				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy, builder->getInt8Ty()}, false),
+						"qd_push_ptr_kind");
+		pushSlotFn = declareFn(ctxPtrToResultTy, "qd_push_slot");
+		releaseSlotFn = declareFn(ptrToVoidTy, "qd_release_slot");
+		structRetainKnownFn = declareFn(ptrToVoidTy, "qd_struct_retain_known");
+		structReleaseKnownFn = declareFn(ptrToVoidTy, "qd_struct_release_known");
+		arrayRetainKnownFn = declareFn(ptrToVoidTy, "qd_array_retain_known");
+		arrayReleaseKnownFn = declareFn(ptrToVoidTy, "qd_array_release_known");
 
 		// Runtime operations: (ctx) -> result
 		nlFn = declareFn(ctxToResultTy, "qd_nl");

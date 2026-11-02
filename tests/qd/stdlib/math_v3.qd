@@ -1,0 +1,14 @@
+// math::v3_* take a vector as three f64s on the stack, x deepest, and leave one the same way.
+use math
+fn show(x:f64 y:f64 z:f64 -- ) { rot print " " print swap print " " print print nl }
+fn main() {
+	1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add show
+	4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub show
+	1.0 2.0 3.0 2.0 math::v3_scale show
+	1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot print nl
+	1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross show
+	1.0 2.0 2.0 math::v3_length print nl
+	1.0 2.0 2.0 math::v3_length_sq print nl
+	0.0 3.0 4.0 math::v3_normalize show
+	0.0 0.0 0.0 math::v3_normalize show
+}

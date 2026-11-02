@@ -795,12 +795,9 @@ namespace Qd {
 				llvm::Value* isPtr = builder->CreateICmpEQ(type, builder->getInt32(2), varName + "_is_ptr");
 				builder->CreateCondBr(isPtr, freePtrBlock, skipFreeBlock);
 
+				// As the slot's kind says
 				builder->SetInsertPoint(freePtrBlock);
-				llvm::Value* ptrValuePtr =
-						builder->CreateStructGEP(stackElementTy, localAlloca, 0, varName + "_cleanup_ptr_value_ptr");
-				llvm::Value* ptrVal = builder->CreateLoad(ptrTy, ptrValuePtr, varName + "_cleanup_ptr");
-
-				builder->CreateCall(qdPtrReleaseFn, {ptrVal});
+				builder->CreateCall(releaseSlotFn, {localAlloca});
 				builder->CreateBr(skipFreeBlock);
 			}
 

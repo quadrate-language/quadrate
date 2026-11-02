@@ -153,9 +153,13 @@ qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value) {
 }
 
 qd_stack_error qd_stack_push_raw(qd_stack* stack, void* value) {
+	return qd_stack_push_kind(stack, value, QD_PTR_RAW);
+}
+
+qd_stack_error qd_stack_push_kind(qd_stack* stack, void* value, uint8_t kind) {
 	const qd_stack_error err = qd_stack_push_ptr(stack, value);
 	if (err == QD_STACK_OK) {
-		stack->data[stack->size - 1].ptr_kind = QD_PTR_RAW;
+		stack->data[stack->size - 1].ptr_kind = kind;
 	}
 	return err;
 }

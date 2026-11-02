@@ -729,6 +729,50 @@ pub def (v:Vec3) angle_between(other:Vec3 -- result:f64) {
 }
 
 // ============================================================================
+// v3 - 3D vectors on the stack
+// ============================================================================
+//
+// A vector as three f64s on the stack, x deepest, rather than a Vec3: nothing is allocated,
+// and each word is arithmetic, so it runs as native code. The fast way for inner loops.
+
+/// Sum of two vectors on the stack.
+/// @example 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add -> z -> y -> x
+pub def v3_add(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64) { ax bx + ay by + az bz + }
+
+/// Difference of two vectors on the stack, a - b.
+/// @example 4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub -> z -> y -> x
+pub def v3_sub(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64) { ax bx - ay by - az bz - }
+
+/// A vector on the stack times a scalar.
+/// @example 1.0 2.0 3.0 2.0 math::v3_scale -> z -> y -> x
+pub def v3_scale(x:f64 y:f64 z:f64 k:f64 -- x:f64 y:f64 z:f64) { x k * y k * z k * }
+
+/// Dot product of two vectors on the stack.
+/// @example 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot -> d
+pub def v3_dot(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- d:f64) { ax bx * ay by * + az bz * + }
+
+/// Cross product of two vectors on the stack, a × b.
+/// @example 1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross -> z -> y -> x
+pub def v3_cross(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64) {
+	ay bz * az by * - az bx * ax bz * - ax by * ay bx * -
+}
+
+/// Squared length of a vector on the stack.
+/// @example 1.0 2.0 2.0 math::v3_length_sq -> l
+pub def v3_length_sq(x:f64 y:f64 z:f64 -- l:f64) { x x * y y * + z z * + }
+
+/// Length of a vector on the stack.
+/// @example 1.0 2.0 2.0 math::v3_length -> l
+pub def v3_length(x:f64 y:f64 z:f64 -- l:f64) { x x * y y * + z z * + math::sqrt }
+
+/// A vector on the stack scaled to length 1; the zero vector stays zero.
+/// @example 1.0 2.0 2.0 math::v3_normalize -> z -> y -> x
+pub def v3_normalize(x:f64 y:f64 z:f64 -- x:f64 y:f64 z:f64) {
+	x x * y y * + z z * + math::sqrt -> mag
+	mag 0.0 > if { 1.0 mag / -> recip x recip * y recip * z recip * } else { 0.0 0.0 0.0 }
+}
+
+// ============================================================================
 // Vec4 - 4D vector math operations (homogeneous coordinates)
 // ============================================================================
 

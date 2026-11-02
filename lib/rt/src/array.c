@@ -126,6 +126,34 @@ void qd_array_retain(qd_array_t* arr) {
 	}
 }
 
+void qd_array_retain_known(void* p) {
+	qd_array_t* arr = (qd_array_t*)p;
+	if (arr == NULL) {
+		return;
+	}
+	if (arr->magic != QD_ARRAY_MAGIC) {
+		qd_ptr_retain(p);
+		return;
+	}
+	atomic_fetch_add(&arr->refcount, 1);
+}
+
+static void array_free_last(qd_array_t* arr);
+
+void qd_array_release_known(void* p) {
+	qd_array_t* arr = (qd_array_t*)p;
+	if (arr == NULL) {
+		return;
+	}
+	if (arr->magic != QD_ARRAY_MAGIC) {
+		qd_ptr_release(p);
+		return;
+	}
+	if (atomic_fetch_sub(&arr->refcount, 1) == 1) {
+		array_free_last(arr);
+	}
+}
+
 void qd_array_release(qd_array_t* arr) {
 	if (!arr) {
 		return;
@@ -148,6 +176,11 @@ void qd_array_release(qd_array_t* arr) {
 		return;
 	}
 
+	array_free_last(arr);
+}
+
+// Its last reference gone: its contents, its registration, itself
+static void array_free_last(qd_array_t* arr) {
 	// Free contents
 	switch (arr->elemType) {
 	case QD_ARRAY_TYPE_ANY:
@@ -684,7 +717,7 @@ int qd_clone_array(qd_context* ctx) {
 	}
 	copy->length = src->length;
 	qd_array_release(src);
-	return qd_push_p(ctx, copy);
+	return qd_push_array(ctx, copy);
 }
 
 // The `make` words: an array of `n` zero values of one type
@@ -706,7 +739,7 @@ static int make_array(qd_context* ctx, const char* op, qd_array_type type) {
 		}
 	}
 	arr->length = (size_t)size;
-	return qd_push_p(ctx, arr);
+	return qd_push_array(ctx, arr);
 }
 
 int qd_makei(qd_context* ctx) {
@@ -772,7 +805,7 @@ int qd_append(qd_context* ctx) {
 	}
 
 	// The array goes back with the reference it came with
-	return qd_push_p(ctx, arr);
+	return qd_push_array(ctx, arr);
 }
 
 int qd_set(qd_context* ctx) {

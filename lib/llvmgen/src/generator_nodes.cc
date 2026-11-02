@@ -319,7 +319,7 @@ namespace Qd {
 				return true;
 			}
 
-			pushStackElement(storagePtr, ctx, name, localArrayVariables.count(name) > 0);
+			pushStackElement(storagePtr, ctx, name);
 			// An array an earlier literal pushed is no longer the last value pushed, so it must
 			// not mark what a following `-> name` binds: `[1 2] f -> q -> a` marked the function
 			// value `q` an array. Only cleared: calls do not clear it, so setting it here for an
@@ -340,10 +340,9 @@ namespace Qd {
 		return false;
 	}
 
-	// Push the value a qd_stack_element_t holds, as its type tag says. A pointer is retained
-	// for the stack's reference; `isArray` says it is known to be an array.
-	void LlvmGenerator::Impl::pushStackElement(
-			llvm::Value* elementPtr, llvm::Value* ctx, const std::string& name, bool isArray) {
+	// Push the value a qd_stack_element_t holds, as its type tag says. A pointer is counted as
+	// its slot's kind says.
+	void LlvmGenerator::Impl::pushStackElement(llvm::Value* elementPtr, llvm::Value* ctx, const std::string& name) {
 		llvm::Value* typePtr = builder->CreateStructGEP(stackElementTy, elementPtr, 1, name + "_type_ptr");
 		llvm::Value* type = builder->CreateLoad(int32Ty, typePtr, name + "_type");
 		llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, elementPtr, 0, name + "_value_ptr");
@@ -375,33 +374,9 @@ namespace Qd {
 		builder->CreateCall(pushStrRefFn, {ctx, builder->CreateLoad(ptrTy, valuePtr, name + "_s")});
 		builder->CreateBr(endBlock);
 
+		// The slot's kind says what it holds, and so how a copy is counted
 		builder->SetInsertPoint(ptrBlock);
-		llvm::Value* ptrVal = builder->CreateLoad(ptrTy, valuePtr, name + "_p");
-		if (isArray) {
-			llvm::Function* arrayRetainFn = module->getFunction("qd_array_retain");
-			if (!arrayRetainFn) {
-				auto arrayRetainFnTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false);
-				arrayRetainFn = llvm::Function::Create(
-						arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
-			}
-			builder->CreateCall(arrayRetainFn, {ptrVal});
-			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
-		} else {
-			// Raw memory, as its slot says, is pushed as it is, and stays marked raw; anything
-			// else could be an array or a struct, which qd_ptr_retain tells apart
-			llvm::Value* kind = builder->CreateLoad(builder->getInt8Ty(),
-					builder->CreateStructGEP(stackElementTy, elementPtr, 3, name + "_kind_ptr"), name + "_kind");
-			llvm::BasicBlock* rawBlock = llvm::BasicBlock::Create(*context, name + "_raw", fn);
-			llvm::BasicBlock* countedBlock = llvm::BasicBlock::Create(*context, name + "_counted", fn);
-			builder->CreateCondBr(
-					builder->CreateICmpEQ(kind, builder->getInt8(1)), rawBlock, countedBlock); // QD_PTR_RAW
-			builder->SetInsertPoint(rawBlock);
-			builder->CreateCall(pushRawFn, {ctx, ptrVal});
-			builder->CreateBr(endBlock);
-			builder->SetInsertPoint(countedBlock);
-			builder->CreateCall(qdPtrRetainFn, {ptrVal});
-			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
-		}
+		builder->CreateCall(pushSlotFn, {ctx, elementPtr});
 		builder->CreateBr(endBlock);
 
 		builder->SetInsertPoint(endBlock);
@@ -414,7 +389,7 @@ namespace Qd {
 			return false;
 		}
 		llvm::Value* outerVarPtr = builder->CreateLoad(ptrTy, capIt->second, name + "_cap_ptr");
-		pushStackElement(outerVarPtr, ctx, name + "_cap", false);
+		pushStackElement(outerVarPtr, ctx, name + "_cap");
 		// A captured struct carries its type for a following `<<`, as a plain local does.
 		auto capStructIt = localVariableStructTypes.find(name);
 		if (capStructIt != localVariableStructTypes.end()) {
@@ -523,8 +498,17 @@ namespace Qd {
 			// (qd_push_s_ref retains internally, which is why the str case above needs
 			// nothing; the compile-time-stack path above pushes an SSA value that no
 			// runtime release ever sees.)
-			builder->CreateCall(qdPtrRetainFn, {v});
-			builder->CreateCall(pushPtrFn, {ctx, v});
+			// A global's type says what it holds, and so how it is counted
+			if (isKnownStruct(typeName)) {
+				builder->CreateCall(structRetainKnownFn, {v});
+				builder->CreateCall(pushStructFn, {ctx, v});
+			} else if (isArrayType(typeName)) {
+				builder->CreateCall(arrayRetainKnownFn, {v});
+				builder->CreateCall(pushArrayFn, {ctx, v});
+			} else {
+				builder->CreateCall(qdPtrRetainFn, {v});
+				builder->CreateCall(pushPtrFn, {ctx, v});
+			}
 			// What `-> local` takes it for, as when an array is read from a local
 			lastPushedWasArray = typeName.rfind("[]", 0) == 0;
 		} else {

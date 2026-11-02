@@ -1,6 +1,10 @@
 // Sphere raytracer — renders 4 spheres with diffuse lighting and shadows
 // Outputs PPM P3 image to stdout (800x800)
 //
+// A vector is three f64s on the stack, x deepest, and its words take and leave them as
+// they would any numbers: `math::v3_sub` is ( ax ay az bx by bz -- x y z ). Nothing is allocated
+// per ray, and every word that is arithmetic runs as native code.
+//
 // Run: quadc raytracer.qd -r > image.ppm
 use fmt
 use math
@@ -10,54 +14,50 @@ const W = 800
 const H = 800
 const VpW = 2.0
 
-struct Sphere {
-	center: math::Vec3
-	rad:    f64
-	color:  math::Vec3
-}
+const CamX = 0.0
+const CamY = 0.5
+const CamZ = 2.0
 
-// The scene. The ground's colour is a checkerboard, worked out where it is hit.
-var ground = Sphere {
-	center = math::Vec3 { x = 0.0 y = -100.5 z = -1.0 }
-	rad = 100.0
-	color = math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
-}
-var red = Sphere {
-	center = math::Vec3 { x = 0.0 y = 0.0 z = -1.2 }
-	rad = 0.5
-	color = math::Vec3 { x = 0.9 y = 0.15 z = 0.15 }
-}
-var green = Sphere {
-	center = math::Vec3 { x = -1.1 y = 0.0 z = -1.5 }
-	rad = 0.5
-	color = math::Vec3 { x = 0.15 y = 0.9 z = 0.15 }
-}
-var blue = Sphere {
-	center = math::Vec3 { x = 1.1 y = 0.0 z = -1.5 }
-	rad = 0.5
-	color = math::Vec3 { x = 0.15 y = 0.15 z = 0.9 }
-}
-var cam = math::Vec3 { x = 0.0 y = 0.5 z = 2.0 }
-var light = math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
+// The ray being traced, the light's direction, and the point the ray hits
+var ray_x:f64 = 0.0
+var ray_y:f64 = 0.0
+var ray_z:f64 = 0.0
+var light_x:f64 = 0.0
+var light_y:f64 = 0.0
+var light_z:f64 = 0.0
+var hit_x:f64 = 0.0
+var hit_y:f64 = 0.0
+var hit_z:f64 = 0.0
 
-// The ray being traced; the nearest sphere it hits, by distance (-1.0 for none) and number;
-// and where it hits it
-var dir = math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
+// The nearest sphere it hits, by distance (-1.0 for none) and number
 var best_t:f64 = -1.0
 var best_id:i64 = 0
-var hp = math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
 
-fn sphere(id:i64 -- s:Sphere) { switch { 0 { ground } 1 { red } 2 { green } _ { blue } } }
+// The scene, by sphere: 0 is the ground, whose colour is a checkerboard worked out where it is hit
+fn center(id:i64 -- x:f64 y:f64 z:f64) {
+	switch { 0 { 0.0 -100.5 -1.0 } 1 { 0.0 0.0 -1.2 } 2 { -1.1 0.0 -1.5 } _ { 1.1 0.0 -1.5 } }
+}
+
+fn radius(id:i64 -- r:f64) { 0 == if { 100.0 } else { 0.5 } }
+
+fn color(id:i64 -- r:f64 g:f64 b:f64) {
+	switch { 0 { 0.0 0.0 0.0 } 1 { 0.9 0.15 0.15 } 2 { 0.15 0.9 0.15 } _ { 0.15 0.15 0.9 } }
+}
 
 // Ray-sphere intersection (half-b optimization): the nearest t past 0.001, or -1.0 for a miss
 fn past(t:f64 -- yes:i64) { 0.001 > }
-fn nearest(half_b:f64 sq:f64 -- t:f64) { fn { neg } dip dup2 - dup past if { nip nip } else { drop + dup past not if { drop -1.0 } } }
 
-fn hit(origin:math::Vec3 dir:math::Vec3 center:math::Vec3 rad:f64 -- t:f64) {
-	dup * fn { rot swap subtract } dip    // dir oc rad²
-	fn { tuck dot } dip                    // oc half_b rad²
-	rot length_sq rot dup dup * rot - rot +    // half_b disc
-	dup 0.0 < if { drop2 -1.0 } else { math::sqrt nearest }
+def hit(ox:f64 oy:f64 oz:f64 dx:f64 dy:f64 dz:f64 cx:f64 cy:f64 cz:f64 r:f64 -- t:f64) {
+	ox oy oz cx cy cz math::v3_sub -> ez -> ey -> ex
+	dx dy dz ex ey ez math::v3_dot -> hb
+	hb hb * ex ey ez ex ey ez math::v3_dot - r r * + -> disc
+	disc 0.0 < if {
+		-1.0
+	} else {
+		disc math::sqrt -> sq
+		hb neg sq - -> near
+		near past if { near } else { hb neg sq + -> far far past if { far } else { -1.0 } }
+	}
 }
 
 // Clamp float to [0, 255] integer
@@ -66,69 +66,87 @@ fn to_byte(v:f64 -- b:i64) { dup 0.0 < if { drop 0 } else { dup 1.0 > if { drop 
 // Tracing: each sphere in turn, kept when it is hit nearer than the best so far
 
 fn nearer(best:f64 t:f64 -- yes:i64) { dup 0.0 > if { over 0.0 < rrot > or } else { drop2 0 } }
-fn look(s:Sphere id:i64 -- ) { swap cam dir rot dup <<center swap <<rad hit best_t over nearer if { -> best_t -> best_id } else { drop2 } }
-fn trace() { -1.0 -> best_t 0 -> best_id ground 0 look red 1 look green 2 look blue 3 look }
+
+def look(id:i64 -- ) {
+	CamX CamY CamZ ray_x ray_y ray_z id center id radius hit -> t
+	best_t t nearer if { t -> best_t id -> best_id }
+}
+
+fn trace() { -1.0 -> best_t 0 -> best_id 0 look 1 look 2 look 3 look }
 
 // Shading the hit point
 
-fn normal( -- n:math::Vec3) { best_id sphere dup <<center hp swap subtract swap <<rad 1.0 swap / scale }
-fn blocks(origin:math::Vec3 s:Sphere -- yes:i64) { light swap dup <<center swap <<rad hit 0.0 > }
-fn shadowed(origin:math::Vec3 -- yes:i64) { dup red blocks over green blocks or swap blue blocks or }
-fn diffuse(n:math::Vec3 -- d:f64) { dup light dot dup 0.0 < if { drop 0.0 } swap 0.001 scale hp swap add shadowed if { drop 0.1 } }
+fn normal( -- x:f64 y:f64 z:f64) { hit_x hit_y hit_z best_id center math::v3_sub 1.0 best_id radius / math::v3_scale }
+def blocks(ox:f64 oy:f64 oz:f64 id:i64 -- yes:i64) { ox oy oz light_x light_y light_z id center id radius hit 0.0 > }
+def shadowed(ox:f64 oy:f64 oz:f64 -- yes:i64) { ox oy oz 1 blocks ox oy oz 2 blocks or ox oy oz 3 blocks or }
+
+def diffuse(nx:f64 ny:f64 nz:f64 -- d:f64) {
+	nx ny nz light_x light_y light_z math::v3_dot -> d
+	d 0.0 < if { 0.0 -> d }
+	hit_x hit_y hit_z nx ny nz 0.001 math::v3_scale math::v3_add shadowed if { 0.1 -> d }
+	d
+}
+
 fn floor_of(v:f64 -- n:i64) { math::floor cast<i64> }
-fn checker( -- c:math::Vec3) { hp <<x floor_of hp <<z floor_of + 2 % 0 == if { 0.9 0.9 0.9 } else { 0.4 0.4 0.4 } math::Vec3 }
-fn material( -- c:math::Vec3) { best_id 0 == if { checker } else { best_id sphere <<color } }
-fn rgb(c:math::Vec3 -- ) { dup <<x to_byte over <<y to_byte rot <<z to_byte "%d %d %d\n" fmt::printf }
+fn checker( -- r:f64 g:f64 b:f64) { hit_x floor_of hit_z floor_of + 2 % 0 == if { 0.9 0.9 0.9 } else { 0.4 0.4 0.4 } }
+fn material( -- r:f64 g:f64 b:f64) { best_id 0 == if { checker } else { best_id color } }
+def rgb(r:f64 g:f64 b:f64 -- ) { r to_byte g to_byte b to_byte "%d %d %d\n" fmt::printf }
 
 // Ambient plus diffuse, in the material's colour
-fn shade() { cam dir best_t scale add -> hp normal diffuse material swap 0.9 * 0.1 swap + scale rgb }
+fn lit(d:f64 -- k:f64) { 0.9 * 0.1 + }
+
+fn shade() {
+	CamX CamY CamZ ray_x ray_y ray_z best_t math::v3_scale math::v3_add -> hit_z -> hit_y -> hit_x
+	normal diffuse lit -> k
+	material k math::v3_scale rgb
+}
 
 // The sky: a gradient by the ray's height
 fn fade(t:f64 k:f64 -- b:i64) { over * 1.0 rot - swap + to_byte }
-fn sky() { dir <<y 0.5 * 0.5 + dup 0.5 fade swap 0.7 fade 255 "%d %d %d\n" fmt::printf }
+fn sky() { ray_y 0.5 * 0.5 + dup 0.5 fade swap 0.7 fade 255 "%d %d %d\n" fmt::printf }
 
 // The image, row by row
 
 fn vp_h( -- h:f64) { W cast<f64> H cast<f64> / VpW * }
 fn px(col:i64 -- x:f64) { cast<f64> 0.5 + W cast<f64> / VpW * VpW 2.0 / - }
 fn py(row:i64 -- y:f64) { vp_h 2.0 / swap cast<f64> 0.5 + H cast<f64> / vp_h * - }
-fn aim(row:i64 col:i64 -- ) { px swap py 0.0 math::Vec3 cam subtract normalize -> dir }
+fn aim(row:i64 col:i64 -- ) { px swap py 0.0 CamX CamY CamZ math::v3_sub math::v3_normalize -> ray_z -> ray_y -> ray_x }
 fn pixel(row:i64 col:i64 -- ) { aim trace best_t 0.0 > if { shade } else { sky } }
 fn line(row:i64 -- row:i64) { 0 W fn { dup2 pixel 1 + } times drop }
 
 // --- Tests (run with: quadc raytracer.qd --test -r) ---
 test "hit: direct hit along -z axis" {
-	0.0 0.0 0.0 math::Vec3 0.0 0.0 -1.0 math::Vec3 0.0 0.0 -5.0 math::Vec3 1.0 hit
+	0.0 0.0 0.0 0.0 0.0 -1.0 0.0 0.0 -5.0 1.0 hit
 	4.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: ray misses sphere" {
-	0.0 5.0 0.0 math::Vec3 0.0 0.0 -1.0 math::Vec3 0.0 0.0 -5.0 math::Vec3 1.0 hit
+	0.0 5.0 0.0 0.0 0.0 -1.0 0.0 0.0 -5.0 1.0 hit
 	-1.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: origin inside sphere returns exit point" {
-	0.0 0.0 -5.0 math::Vec3 0.0 0.0 -1.0 math::Vec3 0.0 0.0 -5.0 math::Vec3 1.0 hit
+	0.0 0.0 -5.0 0.0 0.0 -1.0 0.0 0.0 -5.0 1.0 hit
 	1.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: ray pointing away from sphere" {
-	0.0 0.0 0.0 math::Vec3 0.0 0.0 1.0 math::Vec3 0.0 0.0 -5.0 math::Vec3 1.0 hit
+	0.0 0.0 0.0 0.0 0.0 1.0 0.0 0.0 -5.0 1.0 hit
 	-1.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: tangent ray" {
-	1.0 0.0 0.0 math::Vec3 0.0 0.0 -1.0 math::Vec3 0.0 0.0 -5.0 math::Vec3 1.0 hit
+	1.0 0.0 0.0 0.0 0.0 -1.0 0.0 0.0 -5.0 1.0 hit
 	5.0 0.001 testing::assert_approx_eq
 }
 
 test "hit: off-center hit" {
-	0.3 0.0 0.0 math::Vec3 0.0 0.0 -1.0 math::Vec3 0.0 0.0 -5.0 math::Vec3 0.5 hit
+	0.3 0.0 0.0 0.0 0.0 -1.0 0.0 0.0 -5.0 0.5 hit
 	4.6 0.001 testing::assert_approx_eq
 }
 
 test "hit: large sphere (ground plane)" {
-	0.0 0.5 2.0 math::Vec3 0.0 -0.2425 -0.9701 math::Vec3 0.0 -100.5 -1.0 math::Vec3 100.0 hit
+	0.0 0.5 2.0 0.0 -0.2425 -0.9701 0.0 -100.5 -1.0 100.0 hit
 	0.0 > testing::assert_true
 }
 
@@ -153,7 +171,7 @@ test "to_byte: one maps to 255" {
 }
 
 fn main() {
-	-0.5 0.8 0.6 math::Vec3 normalize -> light
+	-0.5 0.8 0.6 math::v3_normalize -> light_z -> light_y -> light_x
 	"P3" print nl
 	W H "%d %d\n" fmt::printf
 	"255" print nl

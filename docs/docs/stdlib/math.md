@@ -1167,6 +1167,110 @@ Truncate toward zero.
 ```qd
 -2.7 math::trunc print  // -2.0
 ```
+---
+
+### `fn` v3_add
+
+Sum of two vectors on the stack.
+
+**Signature:** `(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64)`
+
+**Example:**
+
+```qd
+1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add -> z -> y  // x
+```
+---
+
+### `fn` v3_cross
+
+Cross product of two vectors on the stack, a × b.
+
+**Signature:** `(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64)`
+
+**Example:**
+
+```qd
+1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross -> z -> y  // x
+```
+---
+
+### `fn` v3_dot
+
+Dot product of two vectors on the stack.
+
+**Signature:** `(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- d:f64)`
+
+**Example:**
+
+```qd
+1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot  // d
+```
+---
+
+### `fn` v3_length_sq
+
+Squared length of a vector on the stack.
+
+**Signature:** `(x:f64 y:f64 z:f64 -- l:f64)`
+
+**Example:**
+
+```qd
+1.0 2.0 2.0 math::v3_length_sq  // l
+```
+---
+
+### `fn` v3_length
+
+Length of a vector on the stack.
+
+**Signature:** `(x:f64 y:f64 z:f64 -- l:f64)`
+
+**Example:**
+
+```qd
+1.0 2.0 2.0 math::v3_length  // l
+```
+---
+
+### `fn` v3_normalize
+
+A vector on the stack scaled to length 1; the zero vector stays zero.
+
+**Signature:** `(x:f64 y:f64 z:f64 -- x:f64 y:f64 z:f64)`
+
+**Example:**
+
+```qd
+1.0 2.0 2.0 math::v3_normalize -> z -> y  // x
+```
+---
+
+### `fn` v3_scale
+
+A vector on the stack times a scalar.
+
+**Signature:** `(x:f64 y:f64 z:f64 k:f64 -- x:f64 y:f64 z:f64)`
+
+**Example:**
+
+```qd
+1.0 2.0 3.0 2.0 math::v3_scale -> z -> y  // x
+```
+---
+
+### `fn` v3_sub
+
+Difference of two vectors on the stack, a - b.
+
+**Signature:** `(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64)`
+
+**Example:**
+
+```qd
+4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub -> z -> y  // x
+```
 ## Mat4
 
 4x4 matrix in column-major order (OpenGL compatible).

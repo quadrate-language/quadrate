@@ -408,7 +408,7 @@ int usr_strings_split(qd_context* ctx) {
 	qd_string_release(delim_s);
 
 	parts_arr->length = count;
-	qd_push_p(ctx, parts_arr);
+	qd_push_array(ctx, parts_arr);
 	qd_push_i(ctx, STRINGS_ERR_OK); // Success status for fallible function
 
 	return (int){STRINGS_ERR_OK};
@@ -1520,7 +1520,7 @@ int usr_strings_lines(qd_context* ctx) {
 
 	parts_arr->length = idx;
 	qd_string_release(s);
-	qd_push_p(ctx, parts_arr);
+	qd_push_array(ctx, parts_arr);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
@@ -1559,7 +1559,7 @@ int usr_strings_words(qd_context* ctx) {
 			qd_fatal_raise(ctx, "strings::words", "Out of memory");
 		}
 		qd_string_release(s);
-		qd_push_p(ctx, empty);
+		qd_push_array(ctx, empty);
 		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
 	}
@@ -1597,7 +1597,7 @@ int usr_strings_words(qd_context* ctx) {
 
 	parts_arr->length = idx;
 	qd_string_release(s);
-	qd_push_p(ctx, parts_arr);
+	qd_push_array(ctx, parts_arr);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }
@@ -1622,7 +1622,7 @@ int usr_strings_split_n(qd_context* ctx) {
 		one->length = 1;
 		qd_string_release(s);
 		qd_string_release(delim_s);
-		qd_push_p(ctx, one);
+		qd_push_array(ctx, one);
 		qd_push_i(ctx, STRINGS_ERR_OK);
 		return (int){0};
 	}
@@ -1659,7 +1659,7 @@ int usr_strings_split_n(qd_context* ctx) {
 	parts_arr->length = count;
 	qd_string_release(s);
 	qd_string_release(delim_s);
-	qd_push_p(ctx, parts_arr);
+	qd_push_array(ctx, parts_arr);
 	qd_push_i(ctx, STRINGS_ERR_OK);
 	return (int){0};
 }

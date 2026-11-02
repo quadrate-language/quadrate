@@ -622,7 +622,7 @@ namespace Qd {
 		}
 
 		// Push struct pointer onto stack
-		builder->CreateCall(pushPtrFn, {ctx, structPtr});
+		builder->CreateCall(pushStructFn, {ctx, structPtr});
 
 		// Track that we just constructed this struct type
 		lastStructConstructed = structName;
@@ -777,8 +777,13 @@ namespace Qd {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			// Retain the pointer before pushing (it could be an array/struct that will be released after use)
-			builder->CreateCall(qdPtrRetainFn, {ptrValue});
-			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+			if (isArrayType(matchingField->typeName)) {
+				builder->CreateCall(arrayRetainKnownFn, {ptrValue});
+				builder->CreateCall(pushArrayFn, {ctx, ptrValue});
+			} else {
+				builder->CreateCall(qdPtrRetainFn, {ptrValue});
+				builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+			}
 			// `*T` points at a struct, and the value read out of it can take a method or a
 			// chained `<<` exactly as a `T` field's can -- only the name was missing, so
 			// `node <<next -> c  c … method` resolved to a builtin of that name, or to
@@ -797,8 +802,8 @@ namespace Qd {
 			llvm::Value* fieldPtr = bytePtr;
 			llvm::Value* ptrValue = builder->CreateLoad(ptrTy, fieldPtr, "field_value");
 			// Retain the struct pointer before pushing
-			builder->CreateCall(qdPtrRetainFn, {ptrValue});
-			builder->CreateCall(pushPtrFn, {ctx, ptrValue});
+			builder->CreateCall(structRetainKnownFn, {ptrValue});
+			builder->CreateCall(pushStructFn, {ctx, ptrValue});
 			// Track the struct type for chained field access
 			lastFieldAccessResultType = matchingField->typeName;
 		} else if (matchingField->isTypeParam) {
@@ -859,7 +864,7 @@ namespace Qd {
 
 		// Release the struct pointer if it was popped from stack (was retained when pushed)
 		if (needsReleaseAfterAccess) {
-			builder->CreateCall(qdPtrReleaseFn, {structPtr});
+			builder->CreateCall(releaseSlotFn, {tempElem});
 		}
 	}
 
@@ -976,6 +981,10 @@ namespace Qd {
 			builder->CreateStore(ptrValue, bytePtr);
 			if (matchingField->typeName == "str") {
 				builder->CreateCall(qdStringReleaseFn, {oldFieldValue});
+			} else if (isArrayType(matchingField->typeName)) {
+				builder->CreateCall(arrayReleaseKnownFn, {oldFieldValue});
+			} else if (looksLikeStructType(matchingField->typeName) && isKnownStruct(matchingField->typeName)) {
+				builder->CreateCall(structReleaseKnownFn, {oldFieldValue});
 			} else {
 				builder->CreateCall(qdPtrReleaseFn, {oldFieldValue});
 			}
@@ -1016,9 +1025,11 @@ namespace Qd {
 			builder->CreateStore(intValue, bytePtr);
 		}
 
-		// Push the struct back onto the stack for chaining. Always: the `>>field!`
-		// form that suppressed this is gone, and callers write `>>field drop`.
-		builder->CreateCall(pushPtrFn, {ctx, structPtr});
+		// Push the struct back onto the stack for chaining, as the kind its slot was. Always: the
+		// `>>field!` form that suppressed this is gone, and callers write `>>field drop`.
+		llvm::Value* structKind = builder->CreateLoad(builder->getInt8Ty(),
+				builder->CreateStructGEP(stackElementTy, structTempElem, 3, "struct_kind_ptr"), "struct_kind");
+		builder->CreateCall(pushPtrKindFn, {ctx, structPtr, structKind});
 	}
 
 	// The qd_make* entry point that builds an array of `elemType`. A type parameter of the
@@ -1196,7 +1207,7 @@ namespace Qd {
 			}
 			llvm::Value* arrPtr =
 					builder->CreateCall(createArrayFn, {builder->getInt64(8), builder->getInt32(4)}, "empty_arr");
-			builder->CreateCall(pushPtrFn, {ctx, arrPtr});
+			builder->CreateCall(pushArrayFn, {ctx, arrPtr});
 			return;
 		}
 
@@ -1238,7 +1249,7 @@ namespace Qd {
 
 			llvm::Value* dynArr = builder->CreateCall(
 					createAnyArrayFn, {builder->getInt64(numElements), builder->getInt32(4)}, "arr_dyn");
-			builder->CreateCall(pushPtrFn, {ctx, dynArr});
+			builder->CreateCall(pushArrayFn, {ctx, dynArr});
 			for (const auto& elemPtr : elements) {
 				generateNode(elemPtr.get(), ctx);
 				builder->CreateCall(appendFn, {ctx});
@@ -1339,7 +1350,7 @@ namespace Qd {
 		}
 
 		// Push array pointer onto the Quadrate stack
-		builder->CreateCall(pushPtrFn, {ctx, arrPtr});
+		builder->CreateCall(pushArrayFn, {ctx, arrPtr});
 
 		// Mark that the last pushed value was an array
 		lastPushedWasArray = true;

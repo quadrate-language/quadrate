@@ -1,0 +1,41 @@
+// A slot knows a struct or an array it holds as one when what put it there knew -- a struct
+// built, an array made, a global or a field of that type -- and its copies and releases go to
+// the object's own count, with no lookup in the registries. One it does not know is looked up
+// as before. Every count comes out even; `make tests --valgrind` is what proves it.
+use mem
+
+struct Box {
+	v:i64
+}
+
+struct Pair {
+	a:Box
+	b:Box
+}
+
+var origin = Box { v = 1 }
+var seen = []i64
+
+def swapped(p:Pair -- q:Pair) { Pair { a = p <<b b = p <<a } }
+
+fn main() {
+	// Built, copied, dropped
+	0 100 1 for i { Box { v = i } dup drop <<v drop }
+	// A global struct, read and shuffled
+	0 100 1 for i { origin dup over drop drop drop }
+	origin <<v print nl
+	// Fields holding structs, read, rebuilt and set
+	Pair { a = Box { v = 2 } b = Box { v = 3 } } -> p
+	0 100 1 for i { p swapped -> p }
+	p <<a <<v print " " print p <<b <<v print nl
+	p Box { v = 9 } >>a -> p
+	p <<a <<v print nl
+	// An array global appended to and read
+	0 10 1 for i { seen i append -> seen }
+	seen len print nl
+	// A struct through raw memory: what comes back is looked up, as before
+	16 mem::alloc! -> buf
+	origin buf 0 mem::set_ptr
+	buf 0 mem::get_ptr as Box <<v print nl
+	buf mem::free
+}

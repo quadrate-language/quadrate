@@ -110,6 +110,13 @@ void qd_array_retain(qd_array_t* arr);
 void qd_array_release(qd_array_t* arr);
 
 /**
+ * @brief Retain and release a pointer known to be an array, checked by its magic rather than
+ * looked up; one whose magic is not an array's goes to qd_ptr_retain / qd_ptr_release
+ */
+void qd_array_retain_known(void* arr);
+void qd_array_release_known(void* arr);
+
+/**
  * @brief Get the length of an array
  *
  * @param arr Array to query

@@ -328,6 +328,47 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return push_elem(ctx, e);
 }
 
+int qd_push_ptr_kind(qd_context* ctx, void* value, uint8_t kind) {
+	qd_stack_element_t e;
+	e.type = QD_STACK_TYPE_PTR;
+	e.ptr_kind = kind;
+	e.value.p = value;
+	return push_elem(ctx, e);
+}
+
+int qd_push_struct(qd_context* ctx, void* value) {
+	return qd_push_ptr_kind(ctx, value, QD_PTR_STRUCT);
+}
+
+int qd_push_array(qd_context* ctx, void* value) {
+	return qd_push_ptr_kind(ctx, value, QD_PTR_ARRAY);
+}
+
+// Nothing is counted here, so a copy is the slot as it is, and a release nothing
+int qd_push_slot(qd_context* ctx, const qd_stack_element_t* slot) {
+	return push_elem(ctx, *slot);
+}
+
+void qd_release_slot(const qd_stack_element_t* slot) {
+	(void)slot;
+}
+
+void qd_struct_retain_known(void* p) {
+	(void)p;
+}
+
+void qd_struct_release_known(void* p) {
+	(void)p;
+}
+
+void qd_array_retain_known(void* p) {
+	(void)p;
+}
+
+void qd_array_release_known(void* p) {
+	(void)p;
+}
+
 // Nothing is counted here, so raw and unknown are alike; the slot says which all the same
 int qd_push_raw(qd_context* ctx, void* value) {
 	qd_stack_element_t e;

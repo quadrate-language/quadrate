@@ -121,6 +121,20 @@ int qd_push_p(qd_context* ctx, void* value);
 int qd_push_raw(qd_context* ctx, void* value);
 
 /**
+ * @brief Push a struct or an array the caller hands over, its slot marked as one
+ *
+ * Its retains and releases then go to the object's own count, not the registries.
+ */
+int qd_push_struct(qd_context* ctx, void* value);
+int qd_push_array(qd_context* ctx, void* value);
+/** @brief Push a pointer as `kind` (qd_ptr_kind), taking no reference */
+int qd_push_ptr_kind(qd_context* ctx, void* value, uint8_t kind);
+/** @brief Push a copy of a slot, taking a reference for what it holds as its kind says */
+int qd_push_slot(qd_context* ctx, const qd_stack_element_t* slot);
+/** @brief Give up the reference a slot holds, as its kind says */
+void qd_release_slot(const qd_stack_element_t* slot);
+
+/**
  * @brief Push a d128 onto the stack
  *
  * @param ctx Execution context

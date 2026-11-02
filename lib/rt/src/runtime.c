@@ -378,6 +378,27 @@ int qd_push_raw(qd_context* ctx, void* value) {
 	return push_result(ctx, qd_stack_push_raw(ctx->st, value));
 }
 
+int qd_push_struct(qd_context* ctx, void* value) {
+	return push_result(ctx, qd_stack_push_kind(ctx->st, value, QD_PTR_STRUCT));
+}
+
+int qd_push_array(qd_context* ctx, void* value) {
+	return push_result(ctx, qd_stack_push_kind(ctx->st, value, QD_PTR_ARRAY));
+}
+
+int qd_push_ptr_kind(qd_context* ctx, void* value, uint8_t kind) {
+	return push_result(ctx, qd_stack_push_kind(ctx->st, value, kind));
+}
+
+int qd_push_slot(qd_context* ctx, const qd_stack_element_t* slot) {
+	return push_result(ctx, qdrt_push_element(ctx->st, slot));
+}
+
+void qd_release_slot(const qd_stack_element_t* slot) {
+	qd_stack_element_t copy = *slot;
+	qdrt_release_element(&copy);
+}
+
 int qd_push_d(qd_context* ctx, qd_d128_t value) {
 	return push_result(ctx, qd_stack_push_d128(ctx->st, value));
 }
@@ -596,9 +617,20 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 		// Take a reference of our own, as the string case above does. A slot owns what it
 		// holds, so a value that ends up in two slots -- `dup`, `over`, `pick` -- must be
 		// counted twice; otherwise releasing one slot frees a value the other still holds.
-		// Raw memory has no count, and the slot says so.
+		// Raw memory has no count, and the slot says so; a struct or an array counts itself.
 		if (elem->ptr_kind == QD_PTR_RAW) {
 			err = qd_stack_push_raw(stack, elem->value.p);
+			break;
+		}
+		if (elem->ptr_kind == QD_PTR_STRUCT || elem->ptr_kind == QD_PTR_ARRAY) {
+			err = qd_stack_push_kind(stack, elem->value.p, elem->ptr_kind);
+			if (err == QD_STACK_OK) {
+				if (elem->ptr_kind == QD_PTR_STRUCT) {
+					qd_struct_retain_known(elem->value.p);
+				} else {
+					qd_array_retain_known(elem->value.p);
+				}
+			}
 			break;
 		}
 		qd_ptr_retain(elem->value.p);

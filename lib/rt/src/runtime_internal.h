@@ -4,7 +4,9 @@
 #ifndef QDRT_RUNTIME_INTERNAL_H
 #define QDRT_RUNTIME_INTERNAL_H
 
+#include <quadrate/rt/array.h>
 #include <quadrate/rt/qd_string.h>
+#include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/runtime.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -80,8 +82,20 @@ static inline double qdrt_to_double(const qd_stack_element_t* elem) {
 static inline void qdrt_release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR) {
 		qd_string_release(elem->value.s);
-	} else if (elem->type == QD_STACK_TYPE_PTR && elem->ptr_kind != QD_PTR_RAW) {
-		qd_ptr_release(elem->value.p);
+	} else if (elem->type == QD_STACK_TYPE_PTR) {
+		switch (elem->ptr_kind) {
+		case QD_PTR_RAW:
+			break;
+		case QD_PTR_STRUCT:
+			qd_struct_release_known(elem->value.p);
+			break;
+		case QD_PTR_ARRAY:
+			qd_array_release_known(elem->value.p);
+			break;
+		default:
+			qd_ptr_release(elem->value.p);
+			break;
+		}
 	}
 }
 

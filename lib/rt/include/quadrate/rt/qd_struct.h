@@ -99,6 +99,13 @@ void* qd_struct_retain(void* struct_ptr);
 void qd_struct_release(void* struct_ptr);
 
 /**
+ * @brief Retain and release a pointer known to be a struct, checked by its magic rather than
+ * looked up; one whose magic is not a struct's goes to qd_ptr_retain / qd_ptr_release
+ */
+void qd_struct_retain_known(void* struct_ptr);
+void qd_struct_release_known(void* struct_ptr);
+
+/**
  * @brief Get the header from a struct pointer
  *
  * Internal helper to access the header from the user-visible struct pointer.

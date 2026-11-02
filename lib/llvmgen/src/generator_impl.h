@@ -199,7 +199,16 @@ namespace Qd {
 		llvm::Function* pushStrFn = nullptr;
 		llvm::Function* pushStrRefFn = nullptr;
 		llvm::Function* pushPtrFn = nullptr;
-		llvm::Function* pushRawFn = nullptr;
+		// Pointers whose kind is known (qd_ptr_kind), and slots copied and released by theirs
+		llvm::Function* pushStructFn = nullptr;
+		llvm::Function* pushArrayFn = nullptr;
+		llvm::Function* pushPtrKindFn = nullptr;
+		llvm::Function* pushSlotFn = nullptr;
+		llvm::Function* releaseSlotFn = nullptr;
+		llvm::Function* structRetainKnownFn = nullptr;
+		llvm::Function* structReleaseKnownFn = nullptr;
+		llvm::Function* arrayRetainKnownFn = nullptr;
+		llvm::Function* arrayReleaseKnownFn = nullptr;
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
@@ -545,7 +554,7 @@ namespace Qd {
 		void generateIdentifier(AstNodeIdentifier* ident, llvm::Value* ctx);
 		// What an identifier can name, tried in this order by generateIdentifier; each returns
 		// false when the name is not one of its kind
-		void pushStackElement(llvm::Value* elementPtr, llvm::Value* ctx, const std::string& name, bool isArray);
+		void pushStackElement(llvm::Value* elementPtr, llvm::Value* ctx, const std::string& name);
 		bool generateCapturedPush(const std::string& name, llvm::Value* ctx);
 		bool generateIteratorPush(const std::string& name, llvm::Value* ctx);
 		bool generateGlobalVarPush(const std::string& name, llvm::Value* ctx);
