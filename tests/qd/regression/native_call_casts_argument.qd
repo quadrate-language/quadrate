@@ -1,0 +1,10 @@
+// An i64 passed to a function that takes an f64 is converted on the native path too. Between
+// two functions with native versions the argument went as the i64 it was, and LLVM refused the
+// call: "Call parameter type does not match function signature".
+fn half(x:f64 -- y:f64) { 2.0 / }
+fn half_of_int(n:i64 -- y:f64) { half }
+
+fn main() {
+	7 half_of_int print nl
+	-3 half_of_int print nl
+}

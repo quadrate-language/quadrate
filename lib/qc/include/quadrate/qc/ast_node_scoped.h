@@ -23,6 +23,11 @@ namespace Qd {
 			return Type::SCOPED_IDENTIFIER;
 		}
 
+		// Name resolution qualifies a module's own enum: `Mode::Fast` in module `m` is `m::Mode::Fast`
+		void setScope(const std::string& scope) {
+			mScope = scope;
+		}
+
 		const std::string& scope() const {
 			return mScope;
 		}

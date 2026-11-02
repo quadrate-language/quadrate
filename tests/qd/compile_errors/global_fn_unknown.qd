@@ -1,0 +1,4 @@
+// Test: a function-value global names a function that exists
+var show:fn(i64 -- ) = &nosuch
+
+fn main() { 1 show call }

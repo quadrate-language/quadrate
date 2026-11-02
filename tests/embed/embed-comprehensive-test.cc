@@ -362,6 +362,20 @@ void test_syntax_error_fails_build() {
 	qd_free_context(ctx);
 }
 
+// A script that uses a module there is none of is not compiled. The script is validated as
+// a module, which leaves a missing `use` unreported, and the loader skipped what it could not
+// find: the build went on and failed at load time, on an undefined symbol.
+void test_missing_module_fails_build() {
+	printf("--- A missing module fails the build ---\n");
+
+	qd_context* ctx = qd_create_context(1024);
+	qd_module* app = qd_get_module(ctx, "lost");
+	qd_add_script(app, "use no_such_module\nfn go( -- v:i64) { 1 no_such_module::f }\n");
+	qd_build(app);
+	check("script using a missing module is not compiled", !qd_is_compiled(app));
+	qd_free_context(ctx);
+}
+
 // Building a module again builds what it holds now
 void test_rebuild() {
 	printf("--- Rebuilding a module ---\n");
@@ -402,6 +416,7 @@ int main(void) {
 	test_many_functions();
 	test_multi_file_stdlib_module();
 	test_syntax_error_fails_build();
+	test_missing_module_fails_build();
 	test_rebuild();
 
 	printf("\n=== Results: %d passed, %d failed ===\n", g_tests_passed, g_tests_failed);

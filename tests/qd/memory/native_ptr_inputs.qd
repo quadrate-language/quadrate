@@ -1,0 +1,50 @@
+// A function taking a `ptr` among numbers has a native version: the address is an i64 in it,
+// compared and stored as one, and the memory words read and write through it in place. Its
+// caller's reference lasts the call and is given up after it, raw memory's costing nothing.
+// sha256's block function, built of such words, had none and ran on the runtime stack.
+use mem
+
+struct Pair {
+	a:i64
+	b:i64
+}
+
+def sum_words(buf:ptr n:i64 -- t:i64) {
+	0 -> t
+	0 n 1 for i { t buf i 8 * mem::get_i64 + -> t }
+	t
+}
+
+def fill(buf:ptr n:i64 start:i64 -- ) {
+	0 n 1 for i { start i + buf i 8 * mem::set_i64 }
+}
+
+// Unaligned, narrow, signed and float, and an address kept in a local
+def mixed(buf:ptr -- x:i64 y:f64) {
+	buf -> p
+	-5 p 3 mem::set_i16
+	1.5 p 9 mem::set_f64
+	p 3 mem::get_i16 p 9 mem::get_f64
+}
+
+def nonnull(p:ptr -- yes:i64) { p 0 != }
+
+// Printing an address it holds keeps a function on the runtime stack, where it prints as one
+def show(p:ptr -- ) { p 0 == if { "null" print nl } else { "set" print nl } }
+
+fn main() {
+	64 mem::alloc! -> buf
+	buf 8 100 fill
+	buf 8 sum_words print nl
+	buf mixed print " " print print nl
+	buf nonnull print nl
+	buf show
+
+	// A struct passed where a ptr is taken is counted as before, and still there after
+	Pair { a = 7 b = 9 } -> pair
+	0 1000 1 for i { pair 0 mem::get_i64 drop }
+	pair 8 mem::get_i64 print nl
+	pair <<a print nl
+
+	buf mem::free
+}

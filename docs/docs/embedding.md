@@ -802,6 +802,7 @@ Declared in `<quadrate/interp/interp.h>`. Link with `-linterp -lqc -lu8t -lrt`.
 | `qd_push_f(ctx, val)` | Push float |
 | `qd_push_s(ctx, str)` | Push string (copied) |
 | `qd_push_p(ctx, ptr)` | Push pointer |
+| `qd_push_raw(ctx, ptr)` | Push a pointer to raw memory (never an array or a struct), which costs no reference counting |
 | `qd_pop_i(ctx, &val)` | Pop integer |
 | `qd_pop_f(ctx, &val)` | Pop float |
 | `qd_pop_s(ctx, buf, size)` | Pop string into buffer |

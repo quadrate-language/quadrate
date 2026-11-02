@@ -13,6 +13,8 @@
         {"name": "drop", "signature": "(x --)", "description": "Removes the top value."},
         {"name": "rot", "signature": "(x y z -- y z x)", "description": "Moves the third value to the top."},
         {"name": "rrot", "signature": "(x y z -- z x y)", "description": "Moves the top value below the next two; the inverse of rot."},
+        {"name": "rot4", "signature": "(a b c d -- b c d a)", "description": "Moves the fourth value to the top; rot one deeper."},
+        {"name": "rrot4", "signature": "(a b c d -- d a b c)", "description": "Moves the top value below the next three; the inverse of rot4."},
         {"name": "tuck", "signature": "(x y -- y x y)", "description": "Copies the top value below the second."},
         {"name": "drop2", "signature": "(x y --)", "description": "Removes the top two values."},
         {"name": "pick", "signature": "(x y z -- x y z x)", "description": "Copies the third value to the top."}

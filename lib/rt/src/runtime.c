@@ -374,6 +374,10 @@ int qd_push_p(qd_context* ctx, void* value) {
 	return push_result(ctx, qd_stack_push_ptr(ctx->st, value));
 }
 
+int qd_push_raw(qd_context* ctx, void* value) {
+	return push_result(ctx, qd_stack_push_raw(ctx->st, value));
+}
+
 int qd_push_d(qd_context* ctx, qd_d128_t value) {
 	return push_result(ctx, qd_stack_push_d128(ctx->st, value));
 }
@@ -592,6 +596,11 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 		// Take a reference of our own, as the string case above does. A slot owns what it
 		// holds, so a value that ends up in two slots -- `dup`, `over`, `pick` -- must be
 		// counted twice; otherwise releasing one slot frees a value the other still holds.
+		// Raw memory has no count, and the slot says so.
+		if (elem->ptr_kind == QD_PTR_RAW) {
+			err = qd_stack_push_raw(stack, elem->value.p);
+			break;
+		}
 		qd_ptr_retain(elem->value.p);
 		err = qd_stack_push_ptr(stack, elem->value.p);
 		if (err != QD_STACK_OK) {

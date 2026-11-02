@@ -1,0 +1,15 @@
+// Test: a module's inline fn is spliced into a caller in another file when what its body names
+// can be named from there: its own functions and constants, qualified. One that reads a field
+// stays a call, and a caller's own `bump` and `Scale` do not change what the words mean.
+use inl_mod
+
+const Scale = 1000
+
+fn bump(n:i64 -- m:i64) { 500 + }
+
+fn main() {
+	1 inl_mod::scaled print nl
+	1 inl_mod::twice_scaled print nl
+	inl_mod::Pair { a = 7 b = 8 } inl_mod::first print nl
+	1 bump Scale + print nl
+}

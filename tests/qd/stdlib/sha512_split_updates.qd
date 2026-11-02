@@ -1,0 +1,31 @@
+// Sha512's update copies input into its block buffer in one piece, and hashes a whole block
+// of input in place when nothing is buffered, where it copied a byte at a time. The same input
+// split across two updates anywhere -- inside a block, at a block's edge, after a partial one --
+// hashes the same.
+use crypto
+use strings
+
+def text(n:i64 -- s:str) {
+	"" -> s
+	0 n 1 for i { s 97 i 26 % + strings::from_char strings::concat -> s }
+	s
+}
+
+def hashed(n:i64 cut:i64 -- ) {
+	n text -> s
+	crypto::Sha512 {} -> h
+	h s 0 cut strings::substring! crypto::update! -> h
+	h s cut n cut - strings::substring! crypto::update! -> h
+	h crypto::finish! print nl
+	h crypto::release
+}
+
+fn main() {
+	258 0 hashed
+	258 7 hashed
+	258 128 hashed
+	258 129 hashed
+	258 258 hashed
+	127 30 hashed
+	128 1 hashed
+}

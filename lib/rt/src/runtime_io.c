@@ -127,7 +127,9 @@ int qd_print(qd_context* ctx) {
 		break;
 	case QD_STACK_TYPE_PTR:
 		print_pointer(val.value.p, 0);
-		qd_ptr_release(val.value.p); // The stack held a reference; printing consumes it
+		if (val.ptr_kind != QD_PTR_RAW) {
+			qd_ptr_release(val.value.p); // The stack held a reference; printing consumes it
+		}
 		break;
 	case QD_STACK_TYPE_D128: {
 		char text[QD_D128_STRING_MAX];
@@ -180,7 +182,9 @@ int qd_dump(qd_context* ctx) {
 		printf("ptr:");
 		print_pointer(val.value.p, 0);
 		printf("\n");
-		qd_ptr_release(val.value.p);
+		if (val.ptr_kind != QD_PTR_RAW) {
+			qd_ptr_release(val.value.p);
+		}
 		break;
 	case QD_STACK_TYPE_D128: {
 		char text[QD_D128_STRING_MAX];

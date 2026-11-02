@@ -80,7 +80,7 @@ static inline double qdrt_to_double(const qd_stack_element_t* elem) {
 static inline void qdrt_release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR) {
 		qd_string_release(elem->value.s);
-	} else if (elem->type == QD_STACK_TYPE_PTR) {
+	} else if (elem->type == QD_STACK_TYPE_PTR && elem->ptr_kind != QD_PTR_RAW) {
 		qd_ptr_release(elem->value.p);
 	}
 }
@@ -91,6 +91,7 @@ static inline void qdrt_copy_element(qd_stack_element_t* dst, const qd_stack_ele
 	dst->value.d = src->value.d;
 	dst->type = src->type;
 	dst->is_error_tainted = src->is_error_tainted;
+	dst->ptr_kind = src->ptr_kind;
 }
 
 // Push a stack element, taking a reference of its own to what it holds

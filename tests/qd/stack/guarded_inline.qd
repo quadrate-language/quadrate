@@ -1,0 +1,25 @@
+// `rot`, `over`, `dup`, `within`, `and`, `or` and `not` with strings and floats in the slots
+// they read, on the runtime stack, and `within` in a native version.
+def shuffle(s:str -- ) {
+	s 1 2 rot print " " print print " " print print nl
+	s dup over print " " print print " " print print nl
+	1.5 dup print " " print print nl
+}
+
+def logic(s:str -- ) {
+	s len 3 > 1 and print nl
+	0 s len 0 == or print nl
+	s len not print nl
+	2.5 1 3 within print nl
+	7 1 3 within print nl
+	3 3 3 within print nl
+}
+
+// Integer-only, so native: `within` there too
+fn digitish(c:i64 -- yes:i64) { 48 57 within }
+
+fn main() {
+	"abcd" shuffle
+	"abcd" logic
+	55 digitish print 65 digitish print nl
+}

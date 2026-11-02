@@ -312,6 +312,7 @@ namespace Qd {
 
 		// Pass 3b: Type check the AST
 		void typeCheckFunction(IAstNode* node);
+		void checkGlobalInitializers(IAstNode* program);
 		// Checks a loop's stack effect and applies it to typeStack/structTypeStack. The body must
 		// be neutral; `exitsByFallthrough` says whether running off the end of the range is also
 		// an exit (true for `for`, false for `loop`).

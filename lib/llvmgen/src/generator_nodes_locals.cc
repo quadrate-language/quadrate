@@ -106,7 +106,7 @@ namespace Qd {
 				const std::string& typeName = global->type;
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr_for_g");
 				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack_for_g");
-				llvm::AllocaInst* tmp = builder->CreateAlloca(stackElementTy, nullptr, name + "_g_tmp");
+				llvm::AllocaInst* tmp = createEntryAlloca(stackElementTy, (name + "_g_tmp").c_str());
 				builder->CreateCall(stackPopFn, {stackPtr, tmp});
 				llvm::Value* valuePtr = builder->CreateStructGEP(stackElementTy, tmp, 0, name + "_g_vp");
 
@@ -115,8 +115,8 @@ namespace Qd {
 					storeVolatile(v);
 				} else if (typeName == "d128") {
 					storeVolatile(loadSlotValue(valuePtr, name + "_g_q"));
-				} else if (typeName == "str" || typeName == "ptr" || isKnownStruct(typeName)) {
-					// Struct-typed globals store a pointer just like `ptr`/`str`.
+				} else if (typeName == "str" || globalHoldsPointer(typeName)) {
+					// Struct, array and function-value globals store a pointer just like `ptr`/`str`.
 					llvm::Value* v = builder->CreateLoad(ptrTy, valuePtr, name + "_g_p");
 					// A global owns what it holds (specification 11.2.2), so the store has to
 					// hand back the reference the slot held before taking over the one the

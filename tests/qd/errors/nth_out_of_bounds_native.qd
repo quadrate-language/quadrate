@@ -1,0 +1,7 @@
+// Test: `nth` past the end of a string raises in a native version as on the runtime stack.
+def at(s:str i:i64 -- c:i64) { s i nth }
+
+fn main() {
+	"before" print nl
+	"abc" 5 at print nl
+}

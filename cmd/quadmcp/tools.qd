@@ -646,6 +646,8 @@ fn tool_trace_stack(args:str -- result:str) {
 		output "  over      (a b -- a b a)       copy second to top\n" strings::concat -> output
 		output "  rot       (a b c -- b c a)     rotate: bottom to top\n" strings::concat -> output
 		output "  rrot      (a b c -- c a b)     rotate: top to bottom\n" strings::concat -> output
+		output "  rot4      (a b c d -- b c d a) rot, four deep\n" strings::concat -> output
+		output "  rrot4     (a b c d -- d a b c) rrot, four deep\n" strings::concat -> output
 		output "  tuck      (a b -- b a b)       copy top below second\n" strings::concat -> output
 		output "  nip       (a b -- b)           remove second\n\n" strings::concat -> output
 

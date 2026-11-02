@@ -1,0 +1,18 @@
+// A function taking a `str` among numbers has a native version when all it does with the string
+// is `len` and `nth` -- `each` over it is that -- or pass it on: the string is an address there,
+// its caller's reference lasting the call. Anything else that reads it as a string, `==` here,
+// keeps the function on the runtime stack, where it compares as strings do.
+fn newlines(s:str -- n:i64) { 0 swap fn { 10 == + } each }
+fn vowels(s:str -- n:i64) { 0 swap fn { dup 97 == swap 101 == or + } each }
+def third(s:str -- c:i64) { s 2 nth }
+def chars(s:str -- n:i64) { s len }
+def same(a:str b:str -- yes:i64) { a b == }
+
+fn main() {
+	"a\nb\nc\n" newlines print nl
+	"banana bread" vowels print nl
+	"héllo" third print nl
+	"héllo" chars print nl
+	"ab" "ab" same print nl
+	"ab" "ba" same print nl
+}

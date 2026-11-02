@@ -1,0 +1,9 @@
+// Test: reading through a null pointer raises in a native version as in the C word.
+use mem
+
+def first(p:ptr -- v:i64) { p 0 mem::get_i64 }
+
+fn main() {
+	"before" print nl
+	null first print nl
+}

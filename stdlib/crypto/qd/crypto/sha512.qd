@@ -183,10 +183,9 @@ def sha512_write_u64_be(buf:ptr offset:i64 val:i64 -- ) {
 	val 255 bits::and buf offset 7 + mem::set_byte
 }
 
-// Process a single 128-byte block
-def sha512_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
-	sha512_make_k -> k
-	640 mem::alloc! -> w
+// Process a single 128-byte block. k holds the round constants and w is 640 bytes to expand
+// the message into: both made once for every block a call hashes, rather than again for each.
+def sha512_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr k:ptr w:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
 
 	// Load message block into w[0..15]
 	0 16 1 for i {
@@ -227,9 +226,6 @@ def sha512_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64
 		t1 t2 + -> a
 	}
 
-	w mem::free
-	k mem::free
-
 	hh0 a +
 	hh1 b +
 	hh2 cc +
@@ -253,6 +249,10 @@ pub def (h:Sha512) update(data:str -- h2:Sha512)! {
 	h <<buf -> buf
 	h <<buflen -> buflen
 	h <<total -> total
+	sha512_make_k -> k
+	defer { k mem::free }
+	640 mem::alloc? -> w
+	defer { w mem::free }
 
 	// Lazy init buffer (128 bytes for SHA-512)
 	buf 0 == if {
@@ -268,18 +268,24 @@ pub def (h:Sha512) update(data:str -- h2:Sha512)! {
 	loop {
 		i dlen >= if { break }
 
-		// Fill buffer
-		loop {
-			buflen 128 >= if { break }
-			i dlen >= if { break }
-			bytes i mem::get_byte buf buflen mem::set_byte
-			buflen 1 + -> buflen
-			i 1 + -> i
+		// A whole block of input with nothing buffered is hashed where it lies
+		buflen 0 == dlen i - 128 >= and if {
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 bytes i mem::ptr_add k w sha512_process_block
+			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+			i 128 + -> i
+			continue
 		}
+
+		// Otherwise as much as the buffer takes, or the input has, in one copy
+		128 buflen - -> n
+		dlen i - n < if { dlen i - -> n }
+		buf buflen mem::ptr_add bytes i mem::ptr_add n mem::copy
+		buflen n + -> buflen
+		i n + -> i
 
 		// Process complete block
 		buflen 128 == if {
-			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha512_process_block
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf k w sha512_process_block
 			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 			0 -> buflen
 		}
@@ -305,6 +311,10 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 	h <<buf -> buf
 	h <<buflen -> buflen
 	h <<total -> total
+	sha512_make_k -> k
+	defer { k mem::free }
+	640 mem::alloc? -> w
+	defer { w mem::free }
 
 	buf 0 == if {
 		128 mem::alloc? -> buf
@@ -321,7 +331,7 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 			0 buf buflen mem::set_byte
 			buflen 1 + -> buflen
 		}
-		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha512_process_block
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf k w sha512_process_block
 		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 		0 -> buflen
 	}
@@ -338,7 +348,7 @@ pub fn (h:Sha512) finish( -- hash:str)! {
 	buf 112 0 sha512_write_u64_be
 	buf 120 bitlen sha512_write_u64_be
 
-	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha512_process_block
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf k w sha512_process_block
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	// Convert to hex (128 chars for 512 bits)
@@ -434,6 +444,10 @@ pub def sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 
 	128 mem::alloc? -> block
 	defer { block mem::free }
+	sha512_make_k -> k
+	defer { k mem::free }
+	640 mem::alloc? -> w
+	defer { w mem::free }
 	0 -> buflen
 	0 -> total
 
@@ -446,7 +460,7 @@ pub def sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 		total 1 + -> total
 
 		buflen 128 == if {
-			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block k w sha512_process_block
 			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 			0 -> buflen
 		}
@@ -464,7 +478,7 @@ pub def sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 			0 block buflen mem::set_byte
 			buflen 1 + -> buflen
 		}
-		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block k w sha512_process_block
 		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 		0 -> buflen
 	}
@@ -479,7 +493,7 @@ pub def sha512_bytes(buf:ptr length:i64 -- hash:str)! {
 	block 112 0 sha512_write_u64_be
 	block 120 bitlen sha512_write_u64_be
 
-	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha512_process_block
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block k w sha512_process_block
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	128 mem::alloc? -> out

@@ -1,0 +1,12 @@
+// `each`, `map` and `fold` over ASCII and UTF-8 strings, and arrays of numbers, of strings, and
+// none.
+fn count_vowels(s:str -- n:i64) { 0 swap fn { dup 97 == swap 101 == or + } each }
+
+fn main() {
+	"banana bread" count_vowels print nl
+	"héllo" fn { print " " print } each nl
+	[1 2 3 4] 0 fn { + } fold print nl
+	[1.5 2.5] fn { 2.0 * } map fn { print " " print } each nl
+	["x" "yz"] fn { print } each nl
+	[]i64 fn { print } each "empty" print nl
+}

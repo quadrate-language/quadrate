@@ -501,16 +501,295 @@ namespace Qd {
 		llvm::Value* value = loadSlotValue(valuePtr, "pop_value");
 		llvm::Value* srcTypePtr = builder->CreateStructGEP(stackElementTy, topElemPtr, 1, "src_type_ptr");
 		llvm::Value* srcType = builder->CreateLoad(int32Ty, srcTypePtr, "src_type");
-		// Store to destination (qd_stack_element_t: { [2 x i64] value, i32 type, i8 tainted })
+		// Store to destination (qd_stack_element_t: { [2 x i64] value, i32 type, i8 tainted, i8 ptr_kind })
 		llvm::Value* dstValuePtr = builder->CreateStructGEP(stackElementTy, dst, 0, "dst_value_ptr");
 		storeSlotValue(value, dstValuePtr);
 		llvm::Value* dstTypePtr = builder->CreateStructGEP(stackElementTy, dst, 1, "dst_type_ptr");
 		builder->CreateStore(srcType, dstTypePtr);
 		llvm::Value* dstTaintedPtr = builder->CreateStructGEP(stackElementTy, dst, 2, "dst_tainted_ptr");
 		builder->CreateStore(builder->getInt1(false), dstTaintedPtr);
+		llvm::Value* srcKind = builder->CreateLoad(builder->getInt8Ty(),
+				builder->CreateStructGEP(stackElementTy, topElemPtr, 3, "src_kind_ptr"), "src_kind");
+		builder->CreateStore(srcKind, builder->CreateStructGEP(stackElementTy, dst, 3, "dst_kind_ptr"));
 		// Decrement size
 		llvm::Value* newSize = builder->CreateSub(sa.size, builder->getInt64(1), "new_size");
 		builder->CreateStore(newSize, sa.sizePtr);
+	}
+
+	namespace {
+		// What each inline mem:: word reads or writes
+		struct MemAccess {
+			unsigned bits; // 64 for f64
+			bool isFloat;
+			bool isStore;
+			bool isSigned; // a load's extension
+		};
+
+		const MemAccess* memAccess(const std::string& name) {
+			static const std::map<std::string, MemAccess> accesses = {
+					{"mem::get_byte", {8, false, false, false}},
+					{"mem::get_u8", {8, false, false, false}},
+					{"mem::get_i8", {8, false, false, true}},
+					{"mem::get_u16", {16, false, false, false}},
+					{"mem::get_i16", {16, false, false, true}},
+					{"mem::get_u32", {32, false, false, false}},
+					{"mem::get_i32", {32, false, false, true}},
+					{"mem::get_i64", {64, false, false, true}},
+					{"mem::get_f64", {64, true, false, false}},
+					{"mem::set_byte", {8, false, true, false}},
+					{"mem::set_u8", {8, false, true, false}},
+					{"mem::set_i8", {8, false, true, false}},
+					{"mem::set_u16", {16, false, true, false}},
+					{"mem::set_i16", {16, false, true, false}},
+					{"mem::set_u32", {32, false, true, false}},
+					{"mem::set_i32", {32, false, true, false}},
+					{"mem::set_i64", {64, false, true, false}},
+					{"mem::set_f64", {64, true, true, false}},
+			};
+			auto it = accesses.find(name);
+			return it == accesses.end() ? nullptr : &it->second;
+		}
+	}
+
+	bool LlvmGenerator::Impl::isInlineMemWord(const std::string& name) {
+		return memAccess(name) != nullptr;
+	}
+
+	bool LlvmGenerator::Impl::bodyPrintsOrCasts(IAstNode* node) {
+		if (!node) {
+			return false;
+		}
+		if (node->type() == IAstNode::Type::INSTRUCTION) {
+			const std::string& name = static_cast<AstNodeInstruction*>(node)->name();
+			if (name == "print" || name == "cast") {
+				return true;
+			}
+		}
+		for (auto* child : node->children()) {
+			if (bodyPrintsOrCasts(child)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool LlvmGenerator::Impl::bodyReadsElements(IAstNode* node) {
+		if (!node) {
+			return false;
+		}
+		if (node->type() == IAstNode::Type::INSTRUCTION) {
+			const std::string& name = static_cast<AstNodeInstruction*>(node)->name();
+			if (name == "len" || name == "nth") {
+				return true;
+			}
+		}
+		for (auto* child : node->children()) {
+			if (bodyReadsElements(child)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool LlvmGenerator::Impl::bodyStringSafe(IAstNode* node) {
+		if (!node) {
+			return true;
+		}
+		switch (node->type()) {
+		case IAstNode::Type::INSTRUCTION: {
+			auto* inst = static_cast<AstNodeInstruction*>(node);
+			static const std::set<std::string> MOVES = {"dup", "dup2", "drop", "drop2", "swap", "over", "rot", "rrot",
+					"nip", "tuck", "pick", "rot4", "rrot4", "len", "nth"};
+			if (!MOVES.count(inst->name()) && inst->stringOperands() != AstNodeInstruction::StringOperands::None) {
+				return false;
+			}
+			break;
+		}
+		case IAstNode::Type::LOCAL:
+			// A store into a global would keep the address past the call
+			for (const std::string& name : static_cast<AstNodeLocal*>(node)->names()) {
+				if (findGlobalVar(name)) {
+					return false;
+				}
+			}
+			break;
+		case IAstNode::Type::IDENTIFIER: {
+			const GlobalVar* global = findGlobalVar(static_cast<AstNodeIdentifier*>(node)->name());
+			if (global && valueKind(global->type) != ValueKind::Int && valueKind(global->type) != ValueKind::Float) {
+				return false;
+			}
+			break;
+		}
+		default:
+			break;
+		}
+		for (auto* child : node->children()) {
+			if (!bodyStringSafe(child)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	llvm::Value* LlvmGenerator::Impl::generateInlinePopPtr(llvm::Value* ctx, llvm::Value*& isRaw) {
+		auto sa = getStackAccess(ctx);
+		llvm::Value* topIdx = builder->CreateSub(sa.size, builder->getInt64(1), "top_idx");
+		llvm::Value* topElemPtr = builder->CreateGEP(stackElementTy, sa.data, topIdx, "top_elem");
+		llvm::Value* value = builder->CreateLoad(
+				int64Ty, builder->CreateStructGEP(stackElementTy, topElemPtr, 0, "value_ptr"), "pop_address");
+		llvm::Value* kind = builder->CreateLoad(
+				builder->getInt8Ty(), builder->CreateStructGEP(stackElementTy, topElemPtr, 3, "kind_ptr"), "pop_kind");
+		isRaw = builder->CreateICmpEQ(kind, builder->getInt8(1), "pop_raw"); // QD_PTR_RAW
+		builder->CreateStore(builder->CreateSub(sa.size, builder->getInt64(1), "new_size"), sa.sizePtr);
+		return value;
+	}
+
+	// The slot's reference, given up once the native version is done with the address, as the
+	// stack version's consuming it would have
+	void LlvmGenerator::Impl::releasePoppedPtr(llvm::Value* address, llvm::Value* isRaw) {
+		// A string's slot always owns a reference (isRaw null)
+		if (!isRaw) {
+			builder->CreateCall(qdStringReleaseFn, {builder->CreateIntToPtr(address, ptrTy, "release_str")});
+			return;
+		}
+		llvm::Function* fn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* releaseBlock = llvm::BasicBlock::Create(*context, "ptr_release", fn);
+		llvm::BasicBlock* doneBlock = llvm::BasicBlock::Create(*context, "ptr_released", fn);
+		builder->CreateCondBr(isRaw, doneBlock, releaseBlock);
+		builder->SetInsertPoint(releaseBlock);
+		builder->CreateCall(qdPtrReleaseFn, {builder->CreateIntToPtr(address, ptrTy, "release_ptr")});
+		builder->CreateBr(doneBlock);
+		builder->SetInsertPoint(doneBlock);
+	}
+
+	// mem::get_* ( address:ptr offset:i64 -- value ) and mem::set_* ( value address:ptr offset:i64 -- )
+	// as one load or store. The C words move every argument through qd_args, which is most of
+	// what a byte read costs; here the slots are read where they lie. Only the case the words
+	// were written for is taken -- a non-null pointer, an integer offset, a value of the type
+	// stored -- and anything else calls the C word, which raises as it always has.
+	bool LlvmGenerator::Impl::generateInlineMemCall(const std::string& callee, llvm::Function* word, llvm::Value* ctx) {
+		const MemAccess* found = memAccess(callee);
+		if (!found) {
+			return false;
+		}
+		const MemAccess& access = *found;
+		const uint64_t operands = access.isStore ? 3 : 2;
+		llvm::Type* memTy = access.isFloat ? builder->getDoubleTy() : builder->getIntNTy(access.bits);
+
+		// In a native version the address is an i64 on the compile-time stack, and so are the
+		// offset and the value; a null address raises as the C word does
+		if (useCompileTimeStack) {
+			if (compileTimeStack.size() < operands) {
+				return false;
+			}
+			llvm::Value* offset = asNativeType(compileTimeStack.back(), NativeParamType::I64);
+			compileTimeStack.pop_back();
+			llvm::Value* address = asNativeType(compileTimeStack.back(), NativeParamType::I64);
+			compileTimeStack.pop_back();
+			llvm::Value* value = nullptr;
+			if (access.isStore) {
+				value = asNativeType(
+						compileTimeStack.back(), access.isFloat ? NativeParamType::F64 : NativeParamType::I64);
+				compileTimeStack.pop_back();
+			}
+			llvm::Function* fn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* nullBlock = llvm::BasicBlock::Create(*context, "mem_null", fn);
+			llvm::BasicBlock* okBlock = llvm::BasicBlock::Create(*context, "mem_ok", fn);
+			builder->CreateCondBr(builder->CreateICmpEQ(address, builder->getInt64(0)), nullBlock, okBlock);
+			builder->SetInsertPoint(nullBlock);
+			llvm::FunctionCallee raise = module->getOrInsertFunction("qd_fatal_raise",
+					llvm::FunctionType::get(builder->getVoidTy(), {contextPtrTy, ptrTy, ptrTy}, true));
+			builder->CreateCall(raise, {ctx, getOrCreateGlobalString(callee), getOrCreateGlobalString("Null pointer")});
+			builder->CreateUnreachable();
+			builder->SetInsertPoint(okBlock);
+			llvm::Value* at =
+					builder->CreateIntToPtr(builder->CreateAdd(address, offset, "mem_at_int"), ptrTy, "mem_at");
+			if (access.isStore) {
+				if (!access.isFloat && access.bits < 64) {
+					value = builder->CreateTrunc(value, memTy, "mem_narrow");
+				}
+				builder->CreateAlignedStore(value, at, llvm::Align(1));
+			} else {
+				llvm::Value* loaded = builder->CreateAlignedLoad(memTy, at, llvm::Align(1), "mem_loaded");
+				if (!access.isFloat && access.bits < 64) {
+					loaded = access.isSigned ? builder->CreateSExt(loaded, int64Ty, "mem_wide")
+											 : builder->CreateZExt(loaded, int64Ty, "mem_wide");
+				}
+				compileTimeStack.push_back(loaded);
+			}
+			return true;
+		}
+
+		auto sa = getStackAccess(ctx);
+		auto slot = [&](uint64_t fromTop, const char* name) {
+			llvm::Value* idx = builder->CreateSub(sa.size, builder->getInt64(fromTop), std::string(name) + "_idx");
+			return builder->CreateGEP(stackElementTy, sa.data, idx, std::string(name) + "_slot");
+		};
+		auto typeOf = [&](llvm::Value* elem, const char* name) {
+			return builder->CreateLoad(int32Ty,
+					builder->CreateStructGEP(stackElementTy, elem, 1, std::string(name) + "_type_ptr"),
+					std::string(name) + "_type");
+		};
+		auto valueAt = [&](llvm::Value* elem) { return builder->CreateStructGEP(stackElementTy, elem, 0, "mem_vp"); };
+
+		llvm::Function* fn = builder->GetInsertBlock()->getParent();
+		llvm::BasicBlock* checkBlock = llvm::BasicBlock::Create(*context, "mem_check", fn);
+		llvm::BasicBlock* fastBlock = llvm::BasicBlock::Create(*context, "mem_fast", fn);
+		llvm::BasicBlock* slowBlock = llvm::BasicBlock::Create(*context, "mem_slow", fn);
+		llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(*context, "mem_done", fn);
+
+		// Enough values to look at, before any slot is read
+		builder->CreateCondBr(
+				builder->CreateICmpUGE(sa.size, builder->getInt64(operands), "mem_enough"), checkBlock, slowBlock);
+
+		builder->SetInsertPoint(checkBlock);
+		llvm::Value* offsetSlot = slot(1, "mem_offset");
+		llvm::Value* addressSlot = slot(2, "mem_address");
+		llvm::Value* address = builder->CreateLoad(ptrTy, valueAt(addressSlot), "mem_address");
+		llvm::Value* ok = builder->CreateICmpEQ(typeOf(offsetSlot, "mem_offset"), builder->getInt32(0)); // INT
+		ok = builder->CreateAnd(
+				ok, builder->CreateICmpEQ(typeOf(addressSlot, "mem_address"), builder->getInt32(2))); // PTR
+		ok = builder->CreateAnd(ok, builder->CreateIsNotNull(address, "mem_not_null"));
+		llvm::Value* valueSlot = nullptr;
+		if (access.isStore) {
+			valueSlot = slot(3, "mem_value");
+			ok = builder->CreateAnd(ok, builder->CreateICmpEQ(typeOf(valueSlot, "mem_value"),
+												builder->getInt32(access.isFloat ? 1 : 0))); // FLOAT : INT
+		}
+		builder->CreateCondBr(ok, fastBlock, slowBlock);
+
+		builder->SetInsertPoint(fastBlock);
+		llvm::Value* offset = builder->CreateLoad(int64Ty, valueAt(offsetSlot), "mem_offset");
+		llvm::Value* at = builder->CreateGEP(builder->getInt8Ty(), address, offset, "mem_at");
+		if (access.isStore) {
+			llvm::Value* value = builder->CreateLoad(
+					access.isFloat ? builder->getDoubleTy() : int64Ty, valueAt(valueSlot), "mem_value");
+			if (!access.isFloat && access.bits < 64) {
+				value = builder->CreateTrunc(value, memTy, "mem_narrow");
+			}
+			builder->CreateAlignedStore(value, at, llvm::Align(1));
+		} else {
+			llvm::Value* value = builder->CreateAlignedLoad(memTy, at, llvm::Align(1), "mem_loaded");
+			if (!access.isFloat && access.bits < 64) {
+				value = access.isSigned ? builder->CreateSExt(value, int64Ty, "mem_wide")
+										: builder->CreateZExt(value, int64Ty, "mem_wide");
+			}
+			// The result takes the address's slot; the pointer's reference goes, as qd_args lets it
+			builder->CreateStore(value, valueAt(addressSlot));
+			builder->CreateStore(builder->getInt32(access.isFloat ? 1 : 0),
+					builder->CreateStructGEP(stackElementTy, addressSlot, 1, "mem_result_type"));
+			builder->CreateStore(
+					builder->getInt8(0), builder->CreateStructGEP(stackElementTy, addressSlot, 2, "mem_result_taint"));
+		}
+		builder->CreateStore(builder->CreateSub(sa.size, builder->getInt64(access.isStore ? 3 : 1)), sa.sizePtr);
+		builder->CreateBr(endBlock);
+
+		builder->SetInsertPoint(slowBlock);
+		builder->CreateCall(word, {ctx});
+		builder->CreateBr(endBlock);
+
+		builder->SetInsertPoint(endBlock);
+		return true;
 	}
 
 } // namespace Qd

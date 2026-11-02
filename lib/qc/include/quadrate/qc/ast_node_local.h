@@ -37,6 +37,11 @@ namespace Qd {
 		}
 
 		// Get all names for multiple assignment
+		// Name resolution qualifies a store into a module's own global
+		void rename(size_t index, const std::string& name) {
+			mNames[index] = name;
+		}
+
 		const std::vector<std::string>& names() const {
 			return mNames;
 		}

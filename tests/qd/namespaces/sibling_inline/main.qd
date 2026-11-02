@@ -1,0 +1,7 @@
+// Test: an inline fn from a sibling file is spliced into the program, its names meaning there
+// what they mean in the file it came from
+fn main() {
+	1 based print nl
+	1 2 3 spread print nl
+	1 2 3 dup3 + + + + + print nl
+}

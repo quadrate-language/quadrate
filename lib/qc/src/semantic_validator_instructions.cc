@@ -58,7 +58,28 @@ namespace Qd {
 
 	void SemanticValidator::typeCheckInstruction(IAstNode* node, const char* name,
 			std::vector<StackValueType>& typeStack, std::vector<std::string>& structTypeStack) {
+		const std::vector<StackValueType> before = typeStack;
 		typeCheckInstructionInternal(node, name, typeStack, structTypeStack, true);
+		// What it took is what changed: the slots past the part of the stack it left alone. A
+		// type that could be a string counts as one. A check that knew a type to be still open --
+		// a `fn { }` body inferred before it is checked where it runs -- says nothing either way.
+		if (node && node->type() == IAstNode::Type::INSTRUCTION) {
+			size_t kept = 0;
+			while (kept < before.size() && kept < typeStack.size() && before[kept] == typeStack[kept]) {
+				kept++;
+			}
+			bool anyString = false;
+			bool open = false;
+			for (size_t i = kept; i < before.size(); i++) {
+				const StackValueType t = before[i];
+				open = open || t == StackValueType::UNKNOWN || t == StackValueType::TYPEVAR;
+				anyString = anyString || t == StackValueType::STRING || t == StackValueType::PTR ||
+							t == StackValueType::ANY;
+			}
+			if (anyString || !open) {
+				static_cast<AstNodeInstruction*>(node)->noteOperands(anyString);
+			}
+		}
 	}
 
 	void SemanticValidator::typeCheckInstructionInternal(IAstNode* node, const char* name,
@@ -1070,17 +1091,19 @@ namespace Qd {
 		};
 
 		static const Shuffle SHUFFLES[] = {
-				{"dup", 1, {0, 0}},		   // ( a -- a a )
-				{"dup2", 2, {0, 1, 0, 1}}, // ( a b -- a b a b )
-				{"swap", 2, {1, 0}},	   // ( a b -- b a )
-				{"over", 2, {0, 1, 0}},	   // ( a b -- a b a )
-				{"pick", 3, {0, 1, 2, 0}}, // ( x y z -- x y z x )
-				{"nip", 2, {1}},		   // ( a b -- b )
-				{"drop", 1, {}},		   // ( a -- )
-				{"drop2", 2, {}},		   // ( a b -- )
-				{"rot", 3, {1, 2, 0}},	   // ( a b c -- b c a )
-				{"rrot", 3, {2, 0, 1}},	   // ( a b c -- c a b )
-				{"tuck", 2, {1, 0, 1}},	   // ( a b -- b a b )
+				{"dup", 1, {0, 0}},			// ( a -- a a )
+				{"dup2", 2, {0, 1, 0, 1}},	// ( a b -- a b a b )
+				{"swap", 2, {1, 0}},		// ( a b -- b a )
+				{"over", 2, {0, 1, 0}},		// ( a b -- a b a )
+				{"pick", 3, {0, 1, 2, 0}},	// ( x y z -- x y z x )
+				{"nip", 2, {1}},			// ( a b -- b )
+				{"drop", 1, {}},			// ( a -- )
+				{"drop2", 2, {}},			// ( a b -- )
+				{"rot", 3, {1, 2, 0}},		// ( a b c -- b c a )
+				{"rrot", 3, {2, 0, 1}},		// ( a b c -- c a b )
+				{"rot4", 4, {1, 2, 3, 0}},	// ( a b c d -- b c d a )
+				{"rrot4", 4, {3, 0, 1, 2}}, // ( a b c d -- d a b c )
+				{"tuck", 2, {1, 0, 1}},		// ( a b -- b a b )
 		};
 		for (const Shuffle& shuffle : SHUFFLES) {
 			if (strcmp(name, shuffle.name) != 0) {

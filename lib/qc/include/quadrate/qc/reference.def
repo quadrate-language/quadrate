@@ -179,6 +179,16 @@ BUILTIN(rot, "( x y z -- y z x )", "Moves the third value to the top.")
 /// @example 1 2 3 rrot  // Stack: 3 1 2
 BUILTIN(rrot, "( x y z -- z x y )", "Moves the top value below the next two; the inverse of rot.")
 
+/// Moves the fourth value to the top.
+/// @signature ( a b c d -- b c d a )
+/// @example 1 2 3 4 rot4  // Stack: 2 3 4 1
+BUILTIN(rot4, "( a b c d -- b c d a )", "Moves the fourth value to the top; rot one deeper.")
+
+/// Moves the top value below the next three; the inverse of rot4.
+/// @signature ( a b c d -- d a b c )
+/// @example 1 2 3 4 rrot4  // Stack: 4 1 2 3
+BUILTIN(rrot4, "( a b c d -- d a b c )", "Moves the top value below the next three; the inverse of rot4.")
+
 /// Copy the top value below the second.
 /// @signature ( x y -- y x y )
 /// @example 1 2 tuck  // Stack: 2 1 2

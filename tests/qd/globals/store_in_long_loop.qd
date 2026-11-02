@@ -1,0 +1,22 @@
+// A store into a global, or into a struct's field, in a loop runs in constant machine stack.
+// The value was popped into a slot allocated where the store was, so each time round the loop
+// took another slot that only the function's return gave back: csvcut, which keeps its cursor
+// in globals, crashed on its 130,000th row.
+struct Counter {
+	n:i64
+}
+
+var total:i64 = 0
+var label:str = ""
+
+fn main() {
+	Counter { n = 0 } -> c
+	0 3000000 1 for i {
+		total i + -> total
+		"x" -> label
+		c c <<n 1 + >>n drop
+	}
+	total print nl
+	label print nl
+	c <<n print nl
+}

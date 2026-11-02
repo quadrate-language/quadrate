@@ -15,8 +15,9 @@
 #define MEM_ERR_ALLOC 2
 #define MEM_ERR_INVALID_ARG 3
 
+// What malloc gave is raw memory, which the slot says so retains and releases skip it
 static int push_ok(qd_context* ctx, void* address) {
-	qd_push_p(ctx, address);
+	qd_push_raw(ctx, address);
 	return qd_push_i(ctx, MEM_ERR_OK);
 }
 
@@ -111,7 +112,7 @@ int usr_mem_from_string(qd_context* ctx) {
 	}
 	memcpy(buffer, qd_string_data(text), length);
 	qd_string_release(text);
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	return qd_push_i(ctx, (int64_t)length);
 }
 

@@ -2658,6 +2658,24 @@ namespace Qd {
 			typeStack.pop_back();
 			localVariables[varName] = varType;
 
+			// `-> name` for a global is a store, and the global keeps its declared type
+			if (auto globalIt = mGlobalVarTypes.find(varName); globalIt != mGlobalVarTypes.end()) {
+				const StackValueType expected = stringToStackValueType(globalIt->second);
+				const std::string actualType = structTypeStack.empty() ? "" : structTypeStack.back();
+				const bool definite = varType != StackValueType::ANY && varType != StackValueType::UNKNOWN &&
+									  varType != StackValueType::TYPEVAR && expected != StackValueType::ANY &&
+									  expected != StackValueType::UNKNOWN && expected != StackValueType::TYPEVAR;
+				const bool widens = varType == StackValueType::INT && expected == StackValueType::D128;
+				const bool otherArray = globalIt->second.rfind("[]", 0) == 0 && actualType.rfind("[]", 0) == 0 &&
+										actualType != globalIt->second;
+				if ((definite && varType != expected && !widens) || otherArray) {
+					const std::string got = !actualType.empty() ? actualType : stackValueTypeToString(varType);
+					reportError(local, ("Type error in '-> " + varName + "': the global is " + globalIt->second +
+											   ", but the value is " + got)
+											   .c_str());
+				}
+			}
+
 			// If it's a PTR type, also store which struct type it is (if any)
 			if (varType == StackValueType::PTR && !structTypeStack.empty()) {
 				std::string structType = structTypeStack.back();
@@ -3034,8 +3052,18 @@ namespace Qd {
 		}
 		// A module-level `var`, carrying its struct type so that a following `<<field` resolves
 		if (auto globalIt = mGlobalVarTypes.find(name); globalIt != mGlobalVarTypes.end()) {
-			typeStack.push_back(stringToStackValueType(globalIt->second));
-			structTypeStack.push_back(isStructTypeName(globalIt->second) ? globalIt->second : "");
+			// A struct, array or function value carries its type, as a local's does, so what
+			// reads it -- `<<field`, `each`, `call` -- is checked against it
+			const std::string& type = globalIt->second;
+			const bool isFn = type.rfind("fn(", 0) == 0;
+			const bool carriesType = isFn || type.rfind("[]", 0) == 0 || isStructTypeName(type);
+			typeStack.push_back(stringToStackValueType(type));
+			structTypeStack.push_back(carriesType ? type : "");
+			if (isFn) {
+				mPendingFnSignature = parseFnTypeString(type);
+			} else {
+				mPendingFnSignature.reset();
+			}
 			return;
 		}
 		// Positional construction, `x y Point`

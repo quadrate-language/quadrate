@@ -1,0 +1,39 @@
+// A global may hold an array or a typed function value, as a local may: read and written
+// from any function, reference counted as it is replaced, and checked by its type where it
+// is used.
+var cells:[]f64 = [4]f64
+var seen = []i64
+var show:fn(i64 --) = &plain
+var twice:fn(i64 -- i64) = &double
+
+fn plain(n:i64 -- ) { print " " print }
+fn bracketed(n:i64 -- ) { "[" print print "] " print }
+fn double(n:i64 -- m:i64) { 2 * }
+fn put(i:i64 v:f64 -- ) { cells rrot set }
+fn remember(n:i64 -- ) { seen swap append -> seen }
+
+fn main() {
+	1 1.5 put
+	3 2.5 put
+	cells fn { print " " print } each nl
+	cells len print nl
+
+	1 remember 2 remember 3 remember
+	seen fn { print " " print } each nl
+	[10 20] -> seen
+	seen len print nl
+
+	7 show call
+	&bracketed -> show
+	7 show call
+	nl
+	1 2 3 show show show tri_star nl
+
+	21 twice call print nl
+	fn { 10 * } -> twice
+	21 twice call print nl
+	5 twice call twice call print nl
+
+	[8]f64 -> cells
+	cells len print nl
+}

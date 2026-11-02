@@ -363,6 +363,10 @@ public:
 	// Namespace and root of every file loaded, a file before the files it uses
 	std::vector<std::pair<std::string, Qd::IAstNode*>> modules;
 
+	// Whether everything used was found, parsed and validated. The script is validated as a
+	// module, which leaves a missing `use` to whoever loads it: here.
+	bool ok = true;
+
 private:
 	Qd::IAstNode* parse(const std::string& path) {
 		auto cached = mParsed.find(path);
@@ -406,6 +410,8 @@ private:
 		}
 		Qd::IAstNode* root = parse(path);
 		if (!root) {
+			fprintf(stderr, "qd_build: Failed to parse module file '%s'\n", path.c_str());
+			ok = false;
 			return;
 		}
 		Qd::SemanticValidator validator;
@@ -413,6 +419,7 @@ private:
 		validator.setSiblingFiles(
 				Qd::moduleSiblings(path, moduleFiles, [this](const std::string& file) { return qdImportsOf(file); }));
 		if (validator.validate(root, path.c_str(), true, false) != 0) {
+			ok = false;
 			return;
 		}
 		modules.push_back({ns, root});
@@ -427,7 +434,10 @@ private:
 				Qd::ModuleSearch fileSearch;
 				fileSearch.sourceDir = importerDir;
 				const std::string path = Qd::findModuleFile(name, fileSearch);
-				if (!path.empty()) {
+				if (path.empty()) {
+					fprintf(stderr, "qd_build: File '%s': No such file or directory\n", name.c_str());
+					ok = false;
+				} else {
 					const bool inModule = !importerNs.empty();
 					loadFile(path, inModule ? importerNs : fs::path(name).stem().string(),
 							inModule ? Qd::moduleFiles(fs::path(path).parent_path().string())
@@ -438,9 +448,16 @@ private:
 			if (!mProcessedModules.insert(name).second) {
 				return;
 			}
-			// Not found or ambiguous: the validator has reported it
 			const Qd::ModuleLocation location = Qd::findModule(name, mSearch);
+			if (!location.ambiguous.empty()) {
+				fprintf(stderr, "qd_build: Ambiguous module '%s': more than one installed package claims it\n",
+						name.c_str());
+				ok = false;
+				return;
+			}
 			if (location.directory.empty()) {
+				fprintf(stderr, "qd_build: Module '%s' not found in any search path\n", name.c_str());
+				ok = false;
 				return;
 			}
 			const std::vector<std::string> files = Qd::moduleFiles(location.directory);
@@ -715,6 +732,9 @@ void qd_build(qd_module* mod) {
 
 		ModuleLoader loader(mod->temp_dir);
 		loader.load(root);
+		if (!loader.ok) {
+			return;
+		}
 		const std::vector<fs::path> stubs = compileNativeStubs(mod, root);
 
 		Qd::LlvmGenerator generator;

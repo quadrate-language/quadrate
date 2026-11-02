@@ -44,7 +44,7 @@ namespace Qd {
 
 	bool LlvmGenerator::Impl::nativeSignatureTypes(const std::vector<std::string>& inputs,
 			const std::vector<std::string>& outputs, std::vector<NativeParamType>& inputTypes,
-			NativeParamType& outputType) {
+			std::vector<NativeParamType>& outputTypes, bool allowPtrInputs) {
 		auto nativeType = [this](const std::string& typeStr, NativeParamType& out) {
 			if (typeStr.empty()) {
 				out = NativeParamType::I64;
@@ -64,18 +64,85 @@ namespace Qd {
 		inputTypes.clear();
 		for (const std::string& typeStr : inputs) {
 			NativeParamType type;
+			// A plain `ptr` only: a struct or an array is counted, and read by words native code
+			// does not have
+			if (allowPtrInputs && resolveTypeName(typeStr) == "ptr") {
+				inputTypes.push_back(NativeParamType::PTR);
+				continue;
+			}
+			if (allowPtrInputs && resolveTypeName(typeStr) == "str") {
+				inputTypes.push_back(NativeParamType::STR);
+				continue;
+			}
 			if (!nativeType(typeStr, type)) {
 				return false;
 			}
 			inputTypes.push_back(type);
 		}
-		outputType = NativeParamType::I64;
+		outputTypes.clear();
 		for (const std::string& typeStr : outputs) {
-			if (!nativeType(typeStr, outputType)) {
+			NativeParamType type;
+			if (!nativeType(typeStr, type)) {
 				return false;
 			}
+			outputTypes.push_back(type);
 		}
 		return true;
+	}
+
+	llvm::Type* LlvmGenerator::Impl::nativeValueType(NativeParamType type) {
+		return type == NativeParamType::F64 ? builder->getDoubleTy() : int64Ty;
+	}
+
+	llvm::Type* LlvmGenerator::Impl::nativeReturnType(const std::vector<NativeParamType>& outputTypes) {
+		if (outputTypes.empty()) {
+			return builder->getVoidTy();
+		}
+		if (outputTypes.size() == 1) {
+			return nativeValueType(outputTypes[0]);
+		}
+		std::vector<llvm::Type*> fields;
+		for (NativeParamType type : outputTypes) {
+			fields.push_back(nativeValueType(type));
+		}
+		return llvm::StructType::get(*context, fields);
+	}
+
+	std::vector<llvm::Value*> LlvmGenerator::Impl::nativeResults(llvm::Value* result, size_t outputCount) {
+		if (outputCount == 1) {
+			return {result};
+		}
+		std::vector<llvm::Value*> values;
+		for (size_t i = 0; i < outputCount; i++) {
+			values.push_back(builder->CreateExtractValue(result, {static_cast<unsigned>(i)}, "native_result"));
+		}
+		return values;
+	}
+
+	llvm::Value* LlvmGenerator::Impl::asNativeType(llvm::Value* value, NativeParamType type) {
+		if (type == NativeParamType::F64 && value->getType()->isIntegerTy()) {
+			return builder->CreateSIToFP(value, builder->getDoubleTy(), "native_f");
+		}
+		if (type == NativeParamType::I64 && value->getType()->isDoubleTy()) {
+			return builder->CreateFPToSI(value, int64Ty, "native_i");
+		}
+		return value;
+	}
+
+	void LlvmGenerator::Impl::storeNativeResults(const NativeFuncInfo& info) {
+		if (!nativeReturnAlloca || compileTimeStack.size() < info.outputCount) {
+			return;
+		}
+		const size_t base = compileTimeStack.size() - info.outputCount;
+		if (info.outputCount == 1) {
+			builder->CreateStore(asNativeType(compileTimeStack[base], info.outputTypes[0]), nativeReturnAlloca);
+			return;
+		}
+		llvm::Type* retTy = nativeReturnAlloca->getAllocatedType();
+		for (size_t i = 0; i < info.outputCount; i++) {
+			builder->CreateStore(asNativeType(compileTimeStack[base + i], info.outputTypes[i]),
+					builder->CreateStructGEP(retTy, nativeReturnAlloca, static_cast<unsigned>(i), "retval_field"));
+		}
 	}
 
 	bool isFnType(const std::string& typeStr) {
@@ -129,7 +196,6 @@ namespace Qd {
 		} else {
 			layout.name = structDecl->name();
 		}
-		layout.module = moduleName;
 		layout.isPublic = structDecl->isPublic();
 		layout.isPacked = structDecl->isPacked();
 		layout.totalSize = 0;
@@ -825,11 +891,11 @@ namespace Qd {
 		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
 		llvm::Value* stackPtrVal = builder->CreateLoad(ptrTy, stackPtrPtr, "stack");
 
-		llvm::Value* valueTempElem = builder->CreateAlloca(stackElementTy, nullptr, "value_temp_elem");
+		llvm::Value* valueTempElem = createEntryAlloca(stackElementTy, "value_temp_elem");
 		builder->CreateCall(stackPopFn, {stackPtrVal, valueTempElem});
 
 		// Pop struct from stack into temp
-		llvm::Value* structTempElem = builder->CreateAlloca(stackElementTy, nullptr, "struct_temp_elem");
+		llvm::Value* structTempElem = createEntryAlloca(stackElementTy, "struct_temp_elem");
 		builder->CreateCall(stackPopFn, {stackPtrVal, structTempElem});
 
 		// Load the struct pointer
@@ -1057,14 +1123,11 @@ namespace Qd {
 		}
 		const StructLayout& layout = *layoutPtr;
 		generateFilledArray(ctx, [&] {
-			// A default is read in the module that wrote it, wherever the struct is built
-			const std::string caller = std::exchange(currentModuleName, layout.module);
 			for (const auto& field : layout.fields) {
 				for (IAstNode* defaultNode : field.defaultValue) {
 					generateNode(defaultNode, ctx);
 				}
 			}
-			currentModuleName = caller;
 			generateStructConstruction(layout.name, ctx);
 		});
 	}

@@ -1,0 +1,12 @@
+// rot4 and rrot4: rot and rrot one deeper. Each holds a value aside where it is lowered, and two
+// in one function, or one inside a combinator's body, hold theirs apart.
+fn show4(a:i64 b:i64 c:i64 d:i64 -- ) { fn { fn { fn { print " " print } dip print " " print } dip print " " print } dip print nl }
+
+fn main() {
+	1 2 3 4 rot4 show4
+	1 2 3 4 rrot4 show4
+	1 2 3 4 rot4 rrot4 show4
+	1 2 3 4 rot4 rot4 rot4 rot4 show4
+	"a" 2 3.5 4 rot4 print " " print print " " print print " " print print nl
+	1 2 3 4 fn { rrot4 } call show4
+}

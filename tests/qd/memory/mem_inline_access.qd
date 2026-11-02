@@ -1,0 +1,45 @@
+// mem::get_* and mem::set_* are compiled to one load or store each, where the C words moved
+// every argument through qd_args. They read and write what the C words did: little or big as
+// the machine is, at any offset, a load extended by sign or by zeros as its name says, a store
+// keeping the low bytes of its value.
+use mem
+
+fn main() {
+	32 mem::alloc! -> buf
+	0 buf 0 mem::set_i64
+	0 buf 8 mem::set_i64
+	0 buf 16 mem::set_i64
+	0 buf 24 mem::set_i64
+
+	// A store keeps the low bytes; a signed load extends by sign, an unsigned one by zeros
+	511 buf 1 mem::set_byte
+	buf 1 mem::get_byte print nl
+	buf 1 mem::get_u8 print nl
+	buf 1 mem::get_i8 print nl
+	200 buf 2 mem::set_i8
+	buf 2 mem::get_i8 print nl
+
+	-2 buf 3 mem::set_i16
+	buf 3 mem::get_i16 print nl
+	buf 3 mem::get_u16 print nl
+	70000 buf 5 mem::set_u16
+	buf 5 mem::get_u16 print nl
+
+	-3 buf 7 mem::set_i32
+	buf 7 mem::get_i32 print nl
+	buf 7 mem::get_u32 print nl
+	4294967297 buf 11 mem::set_u32
+	buf 11 mem::get_u32 print nl
+
+	// Unaligned 8-byte values
+	-1234567890123 buf 15 mem::set_i64
+	buf 15 mem::get_i64 print nl
+	2.5 buf 23 mem::set_f64
+	buf 23 mem::get_f64 print nl
+
+	// What was written around them is still there
+	buf 1 mem::get_byte print nl
+	buf 3 mem::get_i16 print nl
+
+	buf mem::free
+}

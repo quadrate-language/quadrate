@@ -44,6 +44,10 @@ namespace Qd {
 			mColumn = column;
 		}
 
+		void setFunctionName(const std::string& name) {
+			mFunctionName = name;
+		}
+
 		const std::string& functionName() const {
 			return mFunctionName;
 		}

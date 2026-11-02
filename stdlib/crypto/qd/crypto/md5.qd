@@ -156,12 +156,10 @@ def md5_write_u32_le(buf:ptr offset:i64 val:i64 -- ) {
 }
 
 // Process a single 64-byte block
-def md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr -- ra:i64 rb:i64 rc:i64 rd:i64) {
-	md5_make_k -> k
-	md5_make_s -> s
-
+// k and s hold the round constants and shifts, and m is 128 bytes for the message words: made
+// once for every block a call hashes, rather than again for each
+def md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr k:ptr s:ptr m:ptr -- ra:i64 rb:i64 rc:i64 rd:i64) {
 	// Load message into M[0..15]
-	128 mem::alloc! -> m
 	0 16 1 for i {
 		block i 4 * md5_read_u32_le m i 8 * mem::set_i64
 	}
@@ -205,10 +203,6 @@ def md5_process_block(aa:i64 bb:i64 cc:i64 dd:i64 block:ptr -- ra:i64 rb:i64 rc:
 		d_tmp -> a
 	}
 
-	m mem::free
-	s mem::free
-	k mem::free
-
 	aa a + 32 bits::mask
 	bb b + 32 bits::mask
 	cc c + 32 bits::mask
@@ -227,6 +221,12 @@ pub def (h:Md5) update(data:str -- h2:Md5)! {
 	h <<buf -> buf
 	h <<buflen -> buflen
 	h <<total -> total
+	md5_make_k -> k
+	defer { k mem::free }
+	md5_make_s -> s
+	defer { s mem::free }
+	128 mem::alloc? -> m
+	defer { m mem::free }
 
 	// Lazy init buffer
 	buf 0 == if {
@@ -242,18 +242,23 @@ pub def (h:Md5) update(data:str -- h2:Md5)! {
 	loop {
 		i dlen >= if { break }
 
-		// Fill buffer
-		loop {
-			buflen 64 >= if { break }
-			i dlen >= if { break }
-			bytes i mem::get_byte buf buflen mem::set_byte
-			buflen 1 + -> buflen
-			i 1 + -> i
+		// A whole block of input with nothing buffered is hashed where it lies
+		buflen 0 == dlen i - 64 >= and if {
+			aa bb cc dd bytes i mem::ptr_add k s m md5_process_block -> dd -> cc -> bb -> aa
+			i 64 + -> i
+			continue
 		}
+
+		// Otherwise as much as the buffer takes, or the input has, in one copy
+		64 buflen - -> n
+		dlen i - n < if { dlen i - -> n }
+		buf buflen mem::ptr_add bytes i mem::ptr_add n mem::copy
+		buflen n + -> buflen
+		i n + -> i
 
 		// Process complete block
 		buflen 64 == if {
-			aa bb cc dd buf md5_process_block -> dd -> cc -> bb -> aa
+			aa bb cc dd buf k s m md5_process_block -> dd -> cc -> bb -> aa
 			0 -> buflen
 		}
 	}
@@ -275,6 +280,12 @@ pub fn (h:Md5) finish( -- hash:str)! {
 	h <<buf -> buf
 	h <<buflen -> buflen
 	h <<total -> total
+	md5_make_k -> k
+	defer { k mem::free }
+	md5_make_s -> s
+	defer { s mem::free }
+	128 mem::alloc? -> m
+	defer { m mem::free }
 
 	buf 0 == if {
 		64 mem::alloc? -> buf
@@ -291,7 +302,7 @@ pub fn (h:Md5) finish( -- hash:str)! {
 			0 buf buflen mem::set_byte
 			buflen 1 + -> buflen
 		}
-		aa bb cc dd buf md5_process_block -> dd -> cc -> bb -> aa
+		aa bb cc dd buf k s m md5_process_block -> dd -> cc -> bb -> aa
 		0 -> buflen
 	}
 
@@ -308,7 +319,7 @@ pub fn (h:Md5) finish( -- hash:str)! {
 	buf 56 bitlen md5_write_u32_le
 	buf 60 bitlen_hi md5_write_u32_le
 
-	aa bb cc dd buf md5_process_block -> dd -> cc -> bb -> aa
+	aa bb cc dd buf k s m md5_process_block -> dd -> cc -> bb -> aa
 
 	// Convert to hex (32 chars for 128 bits)
 	// Output is A, B, C, D in little-endian byte order

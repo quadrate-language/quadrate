@@ -18,6 +18,10 @@ fn count( -- n:i64) {
 	-1
 }
 
+fn helper(n:i64 -- m:i64) {
+	500 +
+}
+
 fn main() {
 	Width print nl
 	space print nl
@@ -42,4 +46,6 @@ fn main() {
 	scope_b::greet print nl
 	scope_a::box_w print nl
 	4 scope_a::rated print nl
+	1 scope_a::helped print nl
+	1 helper print nl
 }

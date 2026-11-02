@@ -3,6 +3,9 @@
 
 #include "ast_node.h"
 
+#include <string>
+#include <vector>
+
 namespace Qd {
 	// Replaces each call to an `inline fn` declared in the same tree with a copy of its body,
 	// as a Forth word is the words it is made of. Only a word whose body can stand in its
@@ -12,10 +15,20 @@ namespace Qd {
 	// statements and words alone. A word is not spliced into itself, and not where the caller
 	// declares a local of a name the body uses.
 	//
-	// Code generation decides on the AST whether a function has a native version, which a call
-	// to one with more than one result rules out; spliced, a factored word costs nothing.
+	// Spliced, a factored word costs nothing, not even the call its native version would be.
+	// Across files: a word of a file merged from the program's directory is spliced as one of
+	// the program's own, sharing its names, and a module's word wherever it is called as
+	// `module::name`: resolveNames has named everything in it qualified, so it means the same
+	// in any caller.
+	//
 	// Runs after validation and lowerCombinators, before code generation.
-	void inlineWords(IAstNode* root);
+	struct InlineModule {
+		std::string name;
+		IAstNode* root;
+		bool merged;
+	};
+
+	void inlineWords(IAstNode* root, const std::vector<InlineModule>& modules = {});
 }
 
 #endif

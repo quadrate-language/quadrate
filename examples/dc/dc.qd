@@ -16,19 +16,14 @@ use unicode
 
 const Capacity = 1024
 
-// The calculator's stack: its cells, and how many are in use. A global cannot hold an array
-// itself, so it holds this.
-struct Cells {
-	at: []f64 = [1024]f64
-}
-
-var cells = Cells {}
+// The calculator's stack: its cells, and how many are in use
+var cells:[]f64 = [1024]f64
 var depth:i64 = 0
 
-fn push(v:f64 -- ) { depth Capacity >= if { drop "dc: stack overflow" print nl } else { cells <<at depth rot set depth 1 + -> depth } }
-fn pop( -- v:f64) { depth 0 <= if { "dc: stack empty" print nl 0.0 } else { depth 1 - -> depth cells <<at depth nth } }
-fn top( -- v:f64) { cells <<at depth 1 - nth }
-fn nth_down(i:i64 -- v:f64) { cells <<at swap depth 1 - swap - nth }
+fn push(v:f64 -- ) { depth Capacity >= if { drop "dc: stack overflow" print nl } else { cells depth rot set depth 1 + -> depth } }
+fn pop( -- v:f64) { depth 0 <= if { "dc: stack empty" print nl 0.0 } else { depth 1 - -> depth cells depth nth } }
+fn top( -- v:f64) { cells depth 1 - nth }
+fn nth_down(i:i64 -- v:f64) { cells swap depth 1 - swap - nth }
 fn operands( -- a:f64 b:f64) { pop pop swap }
 
 // Whether there are n values to work on, saying so when there are not

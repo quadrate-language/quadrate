@@ -1,0 +1,4 @@
+// Test: an array literal that does not name its element type needs the global's type written
+var xs = [1 2 3]
+
+fn main() { xs len print nl }

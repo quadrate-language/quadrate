@@ -1,0 +1,4 @@
+// Test: an array global starts as an array
+var cells:[]i64 = 5
+
+fn main() { cells len print nl }

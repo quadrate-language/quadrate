@@ -30,13 +30,8 @@ use strings
 
 const VERSION = "1.0.0"
 
-// The columns to print, 0-based. A global cannot hold an array itself, so it holds this.
-struct Columns {
-	picked: []i64 = []i64
-}
-
-// What the arguments asked for
-var columns = Columns {}
+// What the arguments asked for: the columns to print, 0-based, and the rest
+var columns = []i64
 var spec:str = ""
 var path:str = "-"
 var delim:i64 = 44
@@ -98,7 +93,7 @@ fn argument(mode:i64 a:str -- mode:i64) {
 // The column spec, "1,3": the digits of each part, 1-based, that has any
 fn digits(s:str -- d:str) { "" swap fn { dup 48 57 within if { strings::from_char strings::concat } else { drop } } each }
 fn columns_of(spec:str -- picked:[]i64) { "," strings::split! fn { digits } map fn { len 0 > } filter fn { 10 strconv::parse_int! 1 - } map }
-fn picked(i:i64 -- yes:i64) { 0 columns <<picked fn { pick == or } each nip }
+fn picked(i:i64 -- yes:i64) { 0 columns fn { pick == or } each nip }
 
 // Rows. A newline in quotes is not the end of one, and "" in quotes is a quote
 
@@ -168,7 +163,7 @@ fn run() {
 	spec columns_of dup len 0 == if {
 		drop "csvcut: invalid column spec: " print spec print nl
 	} else {
-		columns swap >>picked drop
+		-> columns
 		path slurp if {
 			dup -> text len -> size
 			rows

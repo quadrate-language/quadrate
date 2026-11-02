@@ -928,8 +928,8 @@ namespace Qd {
 			// Return from current function — defers are executed in the return block itself
 			if (currentFunctionReturnBlock) {
 				// For native functions, store return value before branching
-				if (useCompileTimeStack && nativeReturnAlloca && !compileTimeStack.empty()) {
-					builder->CreateStore(compileTimeStack.back(), nativeReturnAlloca);
+				if (useCompileTimeStack && currentNativeInfo) {
+					storeNativeResults(*currentNativeInfo);
 				}
 				builder->CreateBr(currentFunctionReturnBlock);
 			}
@@ -1021,12 +1021,10 @@ namespace Qd {
 						generateCastInstructions({initIt->second->cast}, structName + "." + field.name, false, ctx);
 					}
 				} else if (!field.defaultValue.empty()) {
-					// The default, read in the module that wrote it
-					const std::string caller = std::exchange(currentModuleName, layout.module);
+					// Use default value for this field
 					for (IAstNode* defaultNode : field.defaultValue) {
 						generateNode(defaultNode, ctx);
 					}
-					currentModuleName = caller;
 				} else {
 					// Missing field with no default - should have been caught by semantic validator
 					std::cerr << "Error: Missing field initializer for '" << field.name << "' in struct " << structName

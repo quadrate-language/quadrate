@@ -177,9 +177,12 @@ int usr_mem_set_ptr(qd_context* ctx) {
 	return 0;
 }
 
+// A slot owns what it holds, so a struct or array read back takes a reference for it, as
+// mem::get_any's does; without one, dropping what was read released a reference it never had
 int usr_mem_get_ptr(qd_context* ctx) {
 	void* v;
 	memcpy(&v, load_at(ctx, "mem::get_ptr"), sizeof(void*));
+	qd_ptr_retain(v);
 	return qd_push_p(ctx, v);
 }
 
@@ -199,7 +202,9 @@ int usr_mem_ptr_add(qd_context* ctx) {
 	void* base;
 	int64_t offset;
 	qd_args(ctx, "mem::ptr_add", "pi", &base, &offset);
-	return qd_push_p(ctx, (char*)base + offset);
+	// Into the middle of something is raw memory; at offset 0 it may still be the array or
+	// struct it started as
+	return offset != 0 ? qd_push_raw(ctx, (char*)base + offset) : qd_push_p(ctx, base);
 }
 
 // Stack signature: ( address:ptr bytes:i64 -- )

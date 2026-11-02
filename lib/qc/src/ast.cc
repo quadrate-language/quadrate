@@ -202,13 +202,11 @@ namespace Qd {
 
 		token = u8t_scanner_scan(scanner);
 		if (token == ':') {
-			// Explicit type annotation.
-			token = u8t_scanner_scan(scanner);
-			if (token != U8T_IDENTIFIER) {
-				errorReporter->reportError(scanner, "Expected type name after ':'");
+			// Explicit type annotation, any type a parameter may have: `[]f64`, `fn(i64 -- )`
+			typeName = parseTypeFrom(u8t_scanner_scan(scanner), scanner, errorReporter);
+			if (typeName.empty()) {
 				return;
 			}
-			typeName = u8t_scanner_token_text(scanner, &n);
 			hasExplicitType = true;
 			token = u8t_scanner_scan(scanner);
 		}
@@ -226,7 +224,31 @@ namespace Qd {
 		std::string value;		// Resolved value for codegen (empty for struct-init path).
 		std::string sourceExpr; // Original text for the formatter round-trip.
 		AstNodeStructConstruction* structInit = nullptr;
-		if (token == U8T_IDENTIFIER) {
+		IAstNode* valueInit = nullptr; // an array literal or a function value
+		if (token == '[' || token == '&') {
+			// Read as the expression it is anywhere else, and run in main as a struct's is
+			const size_t start = u8t_scanner_token_start(scanner);
+			valueInit = parseBlockStatement(token, scanner, errorReporter, &n, src, false);
+			if (!valueInit) {
+				return;
+			}
+			sourceExpr = std::string(src + start, static_cast<size_t>(scanner->_str - src) - start);
+			if (!hasExplicitType) {
+				// An array literal that names its element type says the global's type
+				auto* array = valueInit->type() == IAstNode::Type::ARRAY_LITERAL
+									  ? static_cast<AstNodeArrayLiteral*>(valueInit)
+									  : nullptr;
+				if (!array || array->elementType().empty()) {
+					errorReporter->reportError(
+							scanner, ("var '" + varName + "' needs a type: write it, as in 'var " + varName +
+											 ":[]i64 = ...' or 'var " + varName + ":fn(i64 -- ) = &name'")
+											 .c_str());
+					delete valueInit;
+					return;
+				}
+				typeName = "[]" + array->elementType();
+			}
+		} else if (token == U8T_IDENTIFIER) {
 			std::string refName(u8t_scanner_token_text(scanner, &n));
 			if (refName == "env") {
 				errorReporter->reportError(
@@ -294,7 +316,7 @@ namespace Qd {
 			return;
 		}
 
-		if (!hasExplicitType && !structInit) {
+		if (!hasExplicitType && !structInit && !valueInit) {
 			typeName = inferTypeFromValue(value);
 		}
 
@@ -303,6 +325,8 @@ namespace Qd {
 		varDecl->setHasExplicitType(hasExplicitType);
 		if (structInit) {
 			varDecl->setInitializerNode(structInit);
+		} else if (valueInit) {
+			varDecl->setInitializerNode(valueInit);
 		} else if (typeName == "str" && !value.empty() && value.front() == '"') {
 			// A string global runs its initializer the way a struct global does. A
 			// refcounted string needs a heap header, which no LLVM static initializer can

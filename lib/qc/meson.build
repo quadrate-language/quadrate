@@ -7,6 +7,7 @@ qc_sources = files(
 		'src/ast_printer.cc',
 		'src/inline_words.cc',
 		'src/lower_combinators.cc',
+		'src/resolve_names.cc',
 		'src/migrate.cc',
 		'src/colors.cc',
 		'src/error_reporter.cc',

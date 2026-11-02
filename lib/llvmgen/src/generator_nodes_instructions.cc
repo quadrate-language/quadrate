@@ -134,33 +134,15 @@ namespace Qd {
 			if (userFnIt != userFunctions.end()) {
 				methodFn = userFnIt->second;
 			}
-			if (!methodFn && !currentModuleName.empty() && receiverType.find("::") == std::string::npos) {
-				// Try with current module qualifier
-				std::string qualifiedKey = currentModuleName + "::" + receiverType + "::" + name;
-				userFnIt = userFunctions.find(qualifiedKey);
-				if (userFnIt != userFunctions.end()) {
-					methodFn = userFnIt->second;
-				}
-			}
-			// Legacy fallback: construct mangled LLVM name directly
+			// Legacy fallback: construct mangled LLVM name directly. A module's own receiver is
+			// named qualified by now (resolveNames).
 			std::string mangledFnName;
 			if (!methodFn) {
-				std::string qualifiedReceiverType = receiverType;
-				if (receiverType.find("::") == std::string::npos && !currentModuleName.empty()) {
-					qualifiedReceiverType = currentModuleName + "::" + receiverType;
-				}
-				mangledFnName = "usr_" + qualifiedReceiverType + "_" + name;
+				mangledFnName = "usr_" + receiverType + "_" + name;
 				for (size_t pos = 0; (pos = mangledFnName.find("::")) != std::string::npos;) {
 					mangledFnName.replace(pos, 2, "_");
 				}
 				methodFn = module->getFunction(mangledFnName);
-				if (!methodFn) {
-					std::string fallbackFnName = "usr_" + receiverType + "_" + name;
-					for (size_t pos = 0; (pos = fallbackFnName.find("::")) != std::string::npos;) {
-						fallbackFnName.replace(pos, 2, "_");
-					}
-					methodFn = module->getFunction(fallbackFnName);
-				}
 			}
 			if (!methodFn) {
 				// Method not found - this shouldn't happen if validation passed
@@ -635,6 +617,73 @@ namespace Qd {
 		if (name == "over") {
 			size_t sz = compileTimeStack.size();
 			compileTimeStack.push_back(compileTimeStack[sz - 2]);
+			return true;
+		}
+		if (name == "len" || name == "nth") {
+			// Of a string, the only pointer a native version that reads elements holds
+			llvm::Value* index = nullptr;
+			if (name == "nth") {
+				index = asNativeType(compileTimeStack.back(), NativeParamType::I64);
+				compileTimeStack.pop_back();
+			}
+			llvm::Value* s = builder->CreateIntToPtr(
+					asNativeType(compileTimeStack.back(), NativeParamType::I64), ptrTy, "native_str");
+			compileTimeStack.pop_back();
+			if (name == "len") {
+				llvm::FunctionCallee lenFn =
+						module->getOrInsertFunction("qd_string_len", llvm::FunctionType::get(int64Ty, {ptrTy}, false));
+				compileTimeStack.push_back(builder->CreateCall(lenFn, {s}, "str_len"));
+				return true;
+			}
+			// An ASCII string -- its character count, once known, is its byte count -- holds
+			// character i at byte i; anything else asks the runtime
+			llvm::Type* sizeTy = module->getDataLayout().getIntPtrType(*context);
+			llvm::StructType* stringTy =
+					llvm::StructType::get(*context, {ptrTy, sizeTy, sizeTy, sizeTy}); // qd_string_t
+			llvm::Function* fn = builder->GetInsertBlock()->getParent();
+			llvm::BasicBlock* entry = builder->GetInsertBlock();
+			llvm::BasicBlock* byteBlock = llvm::BasicBlock::Create(*context, "str_nth_byte", fn);
+			llvm::BasicBlock* slowBlock = llvm::BasicBlock::Create(*context, "str_nth_slow", fn);
+			llvm::BasicBlock* doneBlock = llvm::BasicBlock::Create(*context, "str_nth_done", fn);
+			llvm::Value* length = builder->CreateLoad(sizeTy, builder->CreateStructGEP(stringTy, s, 1), "str_len");
+			llvm::Value* chars = builder->CreateLoad(sizeTy, builder->CreateStructGEP(stringTy, s, 3), "str_chars");
+			llvm::Value* wide = builder->CreateZExtOrTrunc(index, sizeTy);
+			llvm::Value* ok = builder->CreateAnd(builder->CreateICmpEQ(chars, length),
+					builder->CreateAnd(
+							builder->CreateICmpSGE(index, builder->getInt64(0)), builder->CreateICmpULT(wide, length)));
+			builder->CreateCondBr(ok, byteBlock, slowBlock);
+			builder->SetInsertPoint(byteBlock);
+			llvm::Value* data = builder->CreateLoad(ptrTy, builder->CreateStructGEP(stringTy, s, 0), "str_data");
+			llvm::Value* byte =
+					builder->CreateLoad(builder->getInt8Ty(), builder->CreateGEP(builder->getInt8Ty(), data, wide));
+			llvm::Value* ascii = builder->CreateICmpSGE(byte, builder->getInt8(0));
+			llvm::Value* fastValue = builder->CreateZExt(byte, int64Ty);
+			llvm::BasicBlock* byteEnd = builder->GetInsertBlock();
+			builder->CreateCondBr(ascii, doneBlock, slowBlock);
+			builder->SetInsertPoint(slowBlock);
+			llvm::FunctionCallee nthFn = module->getOrInsertFunction(
+					"qd_string_nth", llvm::FunctionType::get(int64Ty, {contextPtrTy, ptrTy, int64Ty}, false));
+			llvm::Value* slowValue = builder->CreateCall(nthFn, {ctx, s, index}, "str_nth");
+			llvm::BasicBlock* slowEnd = builder->GetInsertBlock();
+			builder->CreateBr(doneBlock);
+			builder->SetInsertPoint(doneBlock);
+			llvm::PHINode* value = builder->CreatePHI(int64Ty, 2, "str_char");
+			value->addIncoming(fastValue, byteEnd);
+			value->addIncoming(slowValue, slowEnd);
+			(void)entry;
+			compileTimeStack.push_back(value);
+			return true;
+		}
+		if (name == "within") {
+			// ( x lo hi -- flag ): lo <= x <= hi, compared as f64 as the runtime's is
+			llvm::Value* hi = asNativeType(compileTimeStack.back(), NativeParamType::F64);
+			compileTimeStack.pop_back();
+			llvm::Value* lo = asNativeType(compileTimeStack.back(), NativeParamType::F64);
+			compileTimeStack.pop_back();
+			llvm::Value* x = asNativeType(compileTimeStack.back(), NativeParamType::F64);
+			compileTimeStack.pop_back();
+			llvm::Value* in = builder->CreateAnd(builder->CreateFCmpOGE(x, lo), builder->CreateFCmpOLE(x, hi));
+			compileTimeStack.push_back(builder->CreateZExt(in, int64Ty, "within"));
 			return true;
 		}
 		if (name == "rot") {

@@ -7,6 +7,7 @@
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/inline_words.h>
 #include <quadrate/qc/lower_combinators.h>
+#include <quadrate/qc/resolve_names.h>
 #include <spawn.h>
 #include <sstream>
 #include <sys/wait.h>
@@ -200,12 +201,13 @@ namespace Qd {
 		// exec_result is just an i32 (0 = success, non-zero = error)
 		execResultTy = i32t;
 
-		// qd_stack_element_t layout: { union(i64, double, ptr, ptr, d128), i32 type, i8 is_error_tainted }. The
+		// qd_stack_element_t layout: { union(i64, double, ptr, ptr, d128), i32 type, i8 is_error_tainted, i8
+		// ptr_kind }. The
 		// union is two words for the d128; an array of i64 rather than an i128 keeps its alignment at a word's,
 		// as the C union has it.
 		slotValueTy = llvm::ArrayType::get(i64t, 2);
-		stackElementTy =
-				llvm::StructType::create(*context, {slotValueTy, i32t, builder->getInt8Ty()}, "qd_stack_element_t");
+		stackElementTy = llvm::StructType::create(
+				*context, {slotValueTy, i32t, builder->getInt8Ty(), builder->getInt8Ty()}, "qd_stack_element_t");
 
 		// Context layout: {qd_stack* st, int64_t error_code, char* error_msg, int argc, char** argv, char*
 		// program_name, int64_t has_error}
@@ -248,6 +250,7 @@ namespace Qd {
 		pushStrFn = declareFn(ctxPtrToResultTy, "qd_push_s");
 		pushStrRefFn = declareFn(ctxPtrToResultTy, "qd_push_s_ref");
 		pushPtrFn = declareFn(ctxPtrToResultTy, "qd_push_p");
+		pushRawFn = declareFn(ctxPtrToResultTy, "qd_push_raw");
 
 		// Runtime operations: (ctx) -> result
 		nlFn = declareFn(ctxToResultTy, "qd_nl");
@@ -486,11 +489,8 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			auto* ident = static_cast<AstNodeIdentifier*>(node);
 			const std::string& name = ident->name();
-			// Could be a local function or module function - add both possibilities
-			calledFunctions.insert(name); // local
-			if (!currentModule.empty()) {
-				calledFunctions.insert(currentModule + "::" + name); // module-qualified
-			}
+			// A module's call of its own function is named qualified by now (resolveNames)
+			calledFunctions.insert(name);
 		}
 
 		// Check for instruction (could be a function call)
@@ -602,7 +602,7 @@ namespace Qd {
 	// value popped at run time, which the compile-time stack cannot model.
 	bool LlvmGenerator::Impl::isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat) {
 		static const std::set<std::string> HANDLED = {// Arithmetic and comparison
-				"+", "-", "*", "/", "%", "++", "--", "neg", "<", "<=", "==", "!=", ">", ">=",
+				"+", "-", "*", "/", "%", "++", "--", "neg", "<", "<=", "==", "!=", ">", ">=", "within",
 				// Logical, and the bitwise forms behind the bits module
 				"and", "or", "not", "ok", "fail", "__and", "__or", "__xor", "__not", "__shl", "__shr",
 				// Stack shuffling
@@ -626,7 +626,7 @@ namespace Qd {
 	}
 
 	bool LlvmGenerator::Impl::analyzeIsBodyNativeEligible(
-			IAstNode* node, const std::set<std::string>& localNames, bool allowFloat) {
+			IAstNode* node, const std::set<std::string>& localNames, bool allowFloat, bool scopedCallsSettled) {
 		if (!node) {
 			return true;
 		}
@@ -658,7 +658,10 @@ namespace Qd {
 				// compile-time-stack mode, the function is not eligible. Keep this in
 				// sync with the `if (useCompileTimeStack)` block of
 				// generator_nodes_instructions.cc.
-				if (!isCompileTimeStackInstruction(inst, allowFloat)) {
+				// `len` and `nth` of a string, for a native version that takes one; declareNativeVersion
+				// sees to it that nothing else reaches them
+				const bool element = scopedCallsSettled && (name == "len" || name == "nth");
+				if (!element && !isCompileTimeStackInstruction(inst, allowFloat)) {
 					return false;
 				}
 			}
@@ -671,10 +674,15 @@ namespace Qd {
 			// compile-time stack approach. Reject for now.
 			return false;
 		case IAstNode::Type::SCOPED_IDENTIFIER: {
+			// For a native version, allowed as a bare call is and settled with it by
+			// demoteNonNativeFunctions. Requiring the callee's native version as each function is
+			// declared made the answer depend on declaration order: the program is declared before
+			// its modules, so a call to `bits::mask` cost the caller its native version though
+			// `bits::mask` has one, and sha256 ran entirely on the runtime stack. The integer fast
+			// paths have nothing to settle them later, and keep the check.
 			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);
-			std::string fullName = scoped->scope() + "::" + scoped->name();
-			// Allow if a native bridge exists for this scoped function
-			if (nativeFunctions.find(fullName) == nativeFunctions.end()) {
+			if (!scopedCallsSettled &&
+					nativeFunctions.find(scoped->scope() + "::" + scoped->name()) == nativeFunctions.end()) {
 				return false;
 			}
 			break;
@@ -688,7 +696,9 @@ namespace Qd {
 			// that is one is not a call.
 			auto* ident = static_cast<AstNodeIdentifier*>(node);
 			const std::string& identName = ident->name();
-			if (localNames.find(identName) == localNames.end() &&
+			// For a native version, a callee is settled by demoteNonNativeFunctions: one with a
+			// native version returns numbers only, whatever pointers it takes.
+			if (!scopedCallsSettled && localNames.find(identName) == localNames.end() &&
 					nonIntegerSignatureFunctions.find(identName) != nonIntegerSignatureFunctions.end()) {
 				return false;
 			}
@@ -721,7 +731,7 @@ namespace Qd {
 
 		// Recursively check children
 		for (auto* child : node->children()) {
-			if (!analyzeIsBodyNativeEligible(child, localNames, allowFloat)) {
+			if (!analyzeIsBodyNativeEligible(child, localNames, allowFloat, scopedCallsSettled)) {
 				return false;
 			}
 		}
@@ -803,7 +813,6 @@ namespace Qd {
 	void LlvmGenerator::Impl::demoteNonNativeFunctions(IAstNode* root) {
 		struct Candidate {
 			AstNodeFunctionDeclaration* funcNode;
-			std::string prefix;
 			std::vector<std::string> registerNames;
 		};
 
@@ -831,19 +840,18 @@ namespace Qd {
 			}
 			for (auto* child : modulePair.second->children()) {
 				if (auto* funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
-					candidates.push_back({funcNode, modulePair.first, registerNamesFor(funcNode, modulePair.first)});
+					candidates.push_back({funcNode, registerNamesFor(funcNode, modulePair.first)});
 				}
 			}
 		}
 		if (root) {
 			for (auto* child : root->children()) {
 				if (auto* funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
-					candidates.push_back({funcNode, mainModuleName, registerNamesFor(funcNode, mainModuleName)});
+					candidates.push_back({funcNode, registerNamesFor(funcNode, mainModuleName)});
 				}
 			}
 		}
 
-		const std::string savedPrefix = currentModulePrefix;
 		bool changed = true;
 		while (changed) {
 			changed = false;
@@ -863,7 +871,6 @@ namespace Qd {
 				if (!body) {
 					continue;
 				}
-				currentModulePrefix = candidate.prefix;
 				bool calleesAllNative = true;
 				for (auto* child : body->children()) {
 					if (!analyzeCalleesAllNative(child)) {
@@ -892,7 +899,6 @@ namespace Qd {
 				changed = true;
 			}
 		}
-		currentModulePrefix = savedPrefix;
 	}
 
 	// Check if all user function calls in a body have native versions.
@@ -904,15 +910,13 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::IDENTIFIER) {
 			auto* ident = static_cast<AstNodeIdentifier*>(node);
 			const std::string& name = ident->name();
-			// Check if this identifier is a user function call
-			std::string lookupName = name;
-			if (currentModulePrefix != "main" && userFunctions.find(lookupName) == userFunctions.end()) {
-				lookupName = currentModulePrefix + "::" + name;
-			}
-			auto it = userFunctions.find(lookupName);
+			// Check if this identifier is a user function call. A module's own are named
+			// qualified (resolveNames); trying the bare name first, then the module's, checked the
+			// program's function of the same name instead.
+			auto it = userFunctions.find(name);
 			if (it != userFunctions.end()) {
 				// It's a user function call - check if it has a native version
-				if (nativeFunctions.find(lookupName) == nativeFunctions.end()) {
+				if (nativeFunctions.find(name) == nativeFunctions.end()) {
 					return false;
 				}
 			}
@@ -920,8 +924,8 @@ namespace Qd {
 		if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
 			auto* scoped = static_cast<AstNodeScopedIdentifier*>(node);
 			std::string fullName = scoped->scope() + "::" + scoped->name();
-			// Imported C functions with native bridges are fine
-			if (nativeFunctions.find(fullName) == nativeFunctions.end()) {
+			// Imported C functions with native bridges are fine, and the memory words compiled in place
+			if (nativeFunctions.find(fullName) == nativeFunctions.end() && !isInlineMemWord(fullName)) {
 				return false;
 			}
 		}
@@ -1195,14 +1199,12 @@ namespace Qd {
 		// runtime stack path explicitly (useCompileTimeStack is still false here).
 		for (auto& pending : pendingHeapGlobalInits) {
 			llvm::GlobalVariable* gv = pending.gv;
-			currentModuleName = pending.module;
 			generateNode(pending.init, ctx);
-			currentModuleName = "";
 
 			// Pop the just-pushed struct pointer and store into the global.
 			llvm::Value* initStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
 			llvm::Value* initStackPtr = builder->CreateLoad(ptrTy, initStackPtrPtr, "init_stack_ptr");
-			llvm::AllocaInst* initTmp = builder->CreateAlloca(stackElementTy, nullptr, "init_tmp");
+			llvm::AllocaInst* initTmp = createEntryAlloca(stackElementTy, "init_tmp");
 			builder->CreateCall(stackPopFn, {initStackPtr, initTmp});
 			llvm::Value* initVp = builder->CreateStructGEP(stackElementTy, initTmp, 0, "init_vp");
 			llvm::Value* initV = builder->CreateLoad(ptrTy, initVp, "init_ptr");
@@ -1421,13 +1423,11 @@ namespace Qd {
 
 		// Create return value alloca in entry block (LLVM mem2reg will promote to SSA)
 		nativeReturnAlloca = nullptr;
-		if (info.outputCount == 1) {
-			llvm::Type* retTy = (info.outputType == NativeParamType::F64) ? builder->getDoubleTy() : int64Ty;
+		currentNativeInfo = &info;
+		if (info.outputCount > 0) {
+			llvm::Type* retTy = nativeReturnType(info.outputTypes);
 			nativeReturnAlloca = builder->CreateAlloca(retTy, nullptr, "retval");
-			llvm::Value* retInit =
-					retTy->isDoubleTy() ? static_cast<llvm::Value*>(llvm::ConstantFP::get(builder->getDoubleTy(), 0.0))
-										: static_cast<llvm::Value*>(builder->getInt64(0));
-			builder->CreateStore(retInit, nativeReturnAlloca);
+			builder->CreateStore(llvm::Constant::getNullValue(retTy), nativeReturnAlloca);
 		}
 
 		// Create return block for native function
@@ -1447,16 +1447,14 @@ namespace Qd {
 		// Before branching to return, store the return value
 		llvm::BasicBlock* nativeBodyBlock = builder->GetInsertBlock();
 		if (nativeBodyBlock != nullptr && !isTerminated(nativeBodyBlock)) {
-			if (info.outputCount == 1 && !compileTimeStack.empty()) {
-				builder->CreateStore(compileTimeStack.back(), nativeReturnAlloca);
-			}
+			storeNativeResults(info);
 			builder->CreateBr(nativeReturnBB);
 		}
 
 		// Generate return block
 		builder->SetInsertPoint(nativeReturnBB);
 
-		if (info.outputCount == 1) {
+		if (info.outputCount > 0) {
 			llvm::Value* retVal =
 					builder->CreateLoad(nativeReturnAlloca->getAllocatedType(), nativeReturnAlloca, "retval_load");
 			builder->CreateRet(retVal);
@@ -1468,6 +1466,7 @@ namespace Qd {
 		useCompileTimeStack = false;
 		compileTimeStack.clear();
 		nativeReturnAlloca = nullptr;
+		currentNativeInfo = nullptr;
 
 		// Restore state
 		localVariables = savedLocalVars;
@@ -1489,11 +1488,18 @@ namespace Qd {
 		nativeArgs.push_back(ctx); // First arg is always ctx
 		// Pop N args (they come off stack in reverse parameter order)
 		std::vector<llvm::Value*> poppedArgs;
+		std::vector<std::pair<llvm::Value*, llvm::Value*>> poppedPtrs; // address, slot was raw
 		for (size_t i = 0; i < info.inputCount; i++) {
 			// Pop in reverse order, so pop index is (inputCount - 1 - i)
 			size_t popIdx = info.inputCount - 1 - i;
-			if (popIdx < info.inputTypes.size() && info.inputTypes[popIdx] == NativeParamType::F64) {
+			const NativeParamType type =
+					popIdx < info.inputTypes.size() ? info.inputTypes[popIdx] : NativeParamType::I64;
+			if (type == NativeParamType::F64) {
 				poppedArgs.push_back(generateInlinePopFloat(ctx));
+			} else if (type == NativeParamType::PTR || type == NativeParamType::STR) {
+				llvm::Value* isRaw = nullptr;
+				poppedArgs.push_back(generateInlinePopPtr(ctx, isRaw));
+				poppedPtrs.push_back({poppedArgs.back(), type == NativeParamType::STR ? nullptr : isRaw});
 			} else {
 				poppedArgs.push_back(generateInlinePopInt(ctx));
 			}
@@ -1503,16 +1509,22 @@ namespace Qd {
 			nativeArgs.push_back(*it);
 		}
 
-		// Call native function and push result to runtime stack
-		if (info.outputCount == 1) {
+		// Call native function and push its results to the runtime stack, first to last
+		if (info.outputCount > 0) {
 			llvm::Value* nativeResult = builder->CreateCall(nativeFn, nativeArgs, "result");
-			if (info.outputType == NativeParamType::F64) {
-				generateInlinePushFloatValue(ctx, nativeResult);
-			} else {
-				generateInlinePushIntValue(ctx, nativeResult);
+			const std::vector<llvm::Value*> results = nativeResults(nativeResult, info.outputCount);
+			for (size_t i = 0; i < results.size(); i++) {
+				if (info.outputTypes[i] == NativeParamType::F64) {
+					generateInlinePushFloatValue(ctx, results[i]);
+				} else {
+					generateInlinePushIntValue(ctx, results[i]);
+				}
 			}
 		} else {
 			builder->CreateCall(nativeFn, nativeArgs);
+		}
+		for (const auto& [address, isRaw] : poppedPtrs) {
+			releasePoppedPtr(address, isRaw);
 		}
 
 		// Branch to return
@@ -1760,26 +1772,40 @@ namespace Qd {
 
 	// Declares `<fnName>_native`, the version of the function that takes and returns its values
 	// as i64 and double instead of on the stack, when it can have one: no receiver, cannot fail,
-	// at least one input and at most one output, all i64 or f64, and a body the native path
+	// at least one input, inputs and outputs all i64 or f64, and a body the native path
 	// handles, and no debug info asked for. Null, with `info` untouched, when it cannot.
 	llvm::Function* LlvmGenerator::Impl::declareNativeVersion(AstNodeFunctionDeclaration* funcNode,
 			const std::string& fnName, llvm::GlobalValue::LinkageTypes linkage, NativeFuncInfo& info) {
 		const size_t inputCount = funcNode->inputParameters().size();
 		const size_t outputCount = funcNode->outputParameters().size();
 		// With debug info every function keeps its stack-based body, which the debugger can show
-		if (debugInfoEnabled || funcNode->hasReceiver() || funcNode->throws() || inputCount == 0 || outputCount > 1) {
+		if (debugInfoEnabled || funcNode->hasReceiver() || funcNode->throws() || inputCount == 0) {
 			return nullptr;
 		}
 		std::vector<NativeParamType> inputTypes;
-		NativeParamType outputType = NativeParamType::I64;
+		std::vector<NativeParamType> outputTypes;
 		if (!nativeSignatureTypes(parameterTypes(funcNode->inputParameters()),
-					parameterTypes(funcNode->outputParameters()), inputTypes, outputType)) {
+					parameterTypes(funcNode->outputParameters()), inputTypes, outputTypes, true)) {
+			return nullptr;
+		}
+		// An address held as an i64 would print, and cast, as the integer it is
+		const bool takesPtr = std::find(inputTypes.begin(), inputTypes.end(), NativeParamType::PTR) != inputTypes.end();
+		const bool takesStr = std::find(inputTypes.begin(), inputTypes.end(), NativeParamType::STR) != inputTypes.end();
+		if (takesPtr && bodyPrintsOrCasts(funcNode->body())) {
+			return nullptr;
+		}
+		// `len` and `nth` read a string's in native code, so the only pointers there may be
+		// strings; and a string may go only where it is still one
+		if (takesStr && (takesPtr || !bodyStringSafe(funcNode->body()))) {
+			return nullptr;
+		}
+		if (!takesStr && bodyReadsElements(funcNode->body())) {
 			return nullptr;
 		}
 		std::set<std::string> funcLocalNames;
 		collectLocalNames(funcNode, funcLocalNames);
 		for (auto* child : funcNode->children()) {
-			if (!analyzeIsBodyNativeEligible(child, funcLocalNames)) {
+			if (!analyzeIsBodyNativeEligible(child, funcLocalNames, true, true)) {
 				return nullptr;
 			}
 		}
@@ -1788,16 +1814,14 @@ namespace Qd {
 		const std::string nativeName = fnName + "_native";
 		llvm::Function* nativeFn = module->getFunction(nativeName);
 		if (!nativeFn) {
-			auto* doubleTy = builder->getDoubleTy();
 			std::vector<llvm::Type*> nativeParams;
 			nativeParams.push_back(contextPtrTy); // ctx still needed for print/etc
 			for (NativeParamType type : inputTypes) {
-				nativeParams.push_back(type == NativeParamType::F64 ? doubleTy : int64Ty);
+				nativeParams.push_back(nativeValueType(type));
 			}
-			llvm::Type* nativeRetTy = (outputCount == 0) ? builder->getVoidTy()
-														 : (outputType == NativeParamType::F64 ? doubleTy : int64Ty);
-			nativeFn = llvm::Function::Create(
-					llvm::FunctionType::get(nativeRetTy, nativeParams, false), linkage, nativeName, *module);
+			nativeFn =
+					llvm::Function::Create(llvm::FunctionType::get(nativeReturnType(outputTypes), nativeParams, false),
+							linkage, nativeName, *module);
 			nativeFn->addParamAttr(0, llvm::Attribute::NonNull);
 			nativeFn->addParamAttr(0, llvm::Attribute::NoAlias);
 			nativeFn->addFnAttr(llvm::Attribute::NoUnwind);
@@ -1805,7 +1829,7 @@ namespace Qd {
 				nativeFn->addFnAttr(llvm::Attribute::AlwaysInline);
 			}
 		}
-		info = {inputCount, outputCount, inputTypes, outputType};
+		info = {inputCount, outputCount, inputTypes, outputTypes};
 		return nativeFn;
 	}
 
@@ -2211,24 +2235,21 @@ namespace Qd {
 			// This allows functions calling these imports to use native calling convention.
 			if (!func->throws) {
 				std::vector<NativeParamType> bridgeInputTypes;
-				NativeParamType bridgeOutputType = NativeParamType::I64;
+				std::vector<NativeParamType> bridgeOutputTypes;
 				const size_t bridgeOutputCount = func->outputParameters.size();
 				const bool allNumeric = nativeSignatureTypes(parameterTypes(func->inputParameters),
-						parameterTypes(func->outputParameters), bridgeInputTypes, bridgeOutputType);
-				if (allNumeric && bridgeInputTypes.size() > 0 && bridgeOutputCount <= 1) {
+						parameterTypes(func->outputParameters), bridgeInputTypes, bridgeOutputTypes);
+				if (allNumeric && bridgeInputTypes.size() > 0) {
 					size_t bridgeInputCount = bridgeInputTypes.size();
 					std::string nativeName = mangledName + "_native";
 
 					// Build native function type: (ctx, typed_params...) -> typed_result
-					auto* doubleTy = builder->getDoubleTy();
 					std::vector<llvm::Type*> nativeParams;
 					nativeParams.push_back(contextPtrTy);
 					for (size_t i = 0; i < bridgeInputCount; i++) {
-						nativeParams.push_back(bridgeInputTypes[i] == NativeParamType::F64 ? doubleTy : int64Ty);
+						nativeParams.push_back(nativeValueType(bridgeInputTypes[i]));
 					}
-					llvm::Type* nativeRetTy = (bridgeOutputCount == 0)
-													  ? builder->getVoidTy()
-													  : (bridgeOutputType == NativeParamType::F64 ? doubleTy : int64Ty);
+					llvm::Type* nativeRetTy = nativeReturnType(bridgeOutputTypes);
 					auto nativeFnTy = llvm::FunctionType::get(nativeRetTy, nativeParams, false);
 					auto nativeFn =
 							llvm::Function::Create(nativeFnTy, llvm::Function::InternalLinkage, nativeName, *module);
@@ -2254,15 +2275,22 @@ namespace Qd {
 					}
 					// Call the C function
 					builder->CreateCall(fn, {bridgeCtx});
-					// Pop result if any
-					if (bridgeOutputCount == 1) {
-						llvm::Value* result;
-						if (bridgeOutputType == NativeParamType::F64) {
-							result = generateInlinePopFloat(bridgeCtx);
-						} else {
-							result = generateInlinePopInt(bridgeCtx);
+					// Pop the results, the last on top, and return them
+					if (bridgeOutputCount > 0) {
+						std::vector<llvm::Value*> results(bridgeOutputCount);
+						for (size_t i = bridgeOutputCount; i > 0; i--) {
+							results[i - 1] = bridgeOutputTypes[i - 1] == NativeParamType::F64
+													 ? generateInlinePopFloat(bridgeCtx)
+													 : generateInlinePopInt(bridgeCtx);
 						}
-						builder->CreateRet(result);
+						llvm::Value* ret = results[0];
+						if (bridgeOutputCount > 1) {
+							ret = llvm::UndefValue::get(nativeRetTy);
+							for (size_t i = 0; i < bridgeOutputCount; i++) {
+								ret = builder->CreateInsertValue(ret, results[i], {static_cast<unsigned>(i)});
+							}
+						}
+						builder->CreateRet(ret);
 					} else {
 						builder->CreateRetVoid();
 					}
@@ -2276,14 +2304,14 @@ namespace Qd {
 					std::string bridgeFullName = namespaceName + "::" + func->name;
 					nativeFunctions[bridgeFullName] = nativeFn;
 					nativeFuncInfo[bridgeFullName] = {
-							bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
+							bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputTypes};
 
 					// Also register under moduleName::name for cross-module access
 					if (func->isPublic && !moduleName.empty() && moduleName != namespaceName) {
 						std::string crossName = moduleName + "::" + func->name;
 						nativeFunctions[crossName] = nativeFn;
 						nativeFuncInfo[crossName] = {
-								bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputType};
+								bridgeInputCount, bridgeOutputCount, bridgeInputTypes, bridgeOutputTypes};
 					}
 				}
 			}
@@ -2382,11 +2410,10 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::collectConstants(IAstNode* root) {
-		// A module's constants and enum variants are keyed by their qualified name only:
-		// findConstant reads an unqualified one in the module that wrote it. Keyed by the bare
-		// name as well, they were found from everywhere, ahead of the program's own functions
-		// -- `use flag` brought unicode's `space`, and a `fn space` in the program pushed 32.
-		// A merged file shares the program's namespace, so it alone is keyed by the bare name.
+		// A module's constants and enum variants are keyed by their qualified names alone, which
+		// is how resolveNames has the module itself name them. Keyed bare as well, they were found
+		// from everywhere -- `use flag` brought unicode's `space`, and a program's `fn space`
+		// pushed 32. A merged file shares the program's names, so its are keyed bare.
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
 			IAstNode* moduleRoot = modulePair.second;
@@ -2437,10 +2464,8 @@ namespace Qd {
 		// Reads/writes are lowered in generateIdentifier and
 		// generateLocalOne respectively.
 		//
-		// A module's globals are its own, keyed `module::name` and read bare only in it, as
-		// findConstant reads constants. Keyed by the bare name, two modules' `var count`s
-		// were one global, and a module's global hid the program's function of that name. A
-		// merged file shares the program's namespace, so its globals keep the bare name.
+		// A module's globals are keyed `module::name`, as its constants are. Keyed bare, two
+		// modules' `var count`s were one global. A merged file's keep the bare name.
 		std::vector<std::pair<IAstNode*, std::string>> allRootsForGlobals;
 		allRootsForGlobals.emplace_back(root, "");
 		for (const auto& modulePair : moduleASTs) {
@@ -2512,7 +2537,7 @@ namespace Qd {
 					init = llvm::ConstantPointerNull::get(ptrTy);
 					auto* gv = new llvm::GlobalVariable(*module, ty, /*isConstant=*/false, varLinkage, init, symbol);
 					moduleGlobalVars[key] = {gv, typeName};
-					pendingHeapGlobalInits.push_back({gv, varNode->initializerNode(), owner});
+					pendingHeapGlobalInits.push_back({gv, varNode->initializerNode()});
 					continue;
 				}
 
@@ -2664,10 +2689,6 @@ namespace Qd {
 				continue;
 			}
 
-			// What a body names is read in its module here too: deciding whether a function
-			// gets a native version reads its constants and globals
-			currentModuleName = moduleName;
-
 			for (auto* child : moduleRoot->children()) {
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 					// Track return struct type for module functions (same logic as main file)
@@ -2698,13 +2719,11 @@ namespace Qd {
 
 					// Declare the function (creates LLVM function and registers in userFunctions)
 					if (!declareFunction(funcNode, moduleName)) {
-						currentModuleName = "";
 						return false;
 					}
 				}
 			}
 		}
-		currentModuleName = "";
 		return true;
 	}
 
@@ -3104,7 +3123,19 @@ namespace Qd {
 		// Also add with the actual module name for user function lookups
 		mImpl->moduleSourceFiles[moduleName] = mImpl->sourceFileName;
 		lowerCombinators(root);
-		inlineWords(root);
+		// Every file is lowered by now. A module's names are made to mean the same wherever its
+		// nodes go, and then a word can be spliced from any file into any other.
+		std::vector<InlineModule> modules;
+		std::vector<std::pair<std::string, IAstNode*>> moduleFiles;
+		for (const auto& [name, moduleRoot] : mImpl->moduleASTs) {
+			const bool merged = mImpl->mergedModules.count(name) > 0;
+			if (!merged) {
+				moduleFiles.push_back({name, moduleRoot});
+			}
+			modules.push_back({name, moduleRoot, merged});
+		}
+		resolveNames(moduleFiles);
+		inlineWords(root, modules);
 		return mImpl->generateProgram(root);
 	}
 
@@ -3114,7 +3145,6 @@ namespace Qd {
 			mImpl = std::make_unique<Impl>("quadrate_module");
 		}
 		lowerCombinators(moduleRoot);
-		inlineWords(moduleRoot);
 		mImpl->moduleASTs.push_back({moduleName, moduleRoot});
 		if (!sourceFileName.empty()) {
 			mImpl->moduleSourceFiles[moduleName] = sourceFileName;

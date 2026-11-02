@@ -1,0 +1,46 @@
+// A slot knows a pointer to raw memory as raw, and copying or dropping it costs no lookup in
+// the registries of arrays and structs. Every push of a `ptr` local looked it up in both, under
+// a lock, to learn there was nothing to count: a third of sha256's time. Raw is only ever what
+// the registries would call uncounted too, so a struct beside it is still retained and
+// released as before. `make tests --valgrind` is what proves the counts.
+use mem
+use strings
+
+struct P {
+	x:i64
+}
+
+def total(buf:ptr n:i64 -- t:i64) {
+	0 -> t
+	0 n 1 for i { t buf i 8 * mem::get_i64 + -> t }
+	t
+}
+
+fn main() {
+	64 mem::alloc! -> buf
+	0 8 1 for i { i 10 * buf i 8 * mem::set_i64 }
+
+	// Copied, rebound, passed and dropped many times over
+	0 -> sum
+	0 10000 1 for j {
+		buf dup drop -> b
+		b buf swap drop 8 total sum + -> sum
+	}
+	sum print nl
+
+	// Into the middle of a buffer is raw too
+	buf 16 mem::ptr_add -> mid
+	mid 0 mem::get_i64 print nl
+
+	// A string's bytes, behind the string the local still holds
+	"hello" -> s
+	s strings::data -> bytes
+	bytes 1 mem::get_byte print nl
+
+	// A struct beside them is counted as it always was
+	P { x = 42 } -> p
+	0 1000 1 for j { p dup drop drop }
+	p <<x print nl
+
+	buf mem::free
+}

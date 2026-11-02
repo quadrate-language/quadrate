@@ -51,6 +51,10 @@ namespace Qd {
 			mColumn = column;
 		}
 
+		void setTypeName(const std::string& name) {
+			mTypeName = name;
+		}
+
 		const std::string& typeName() const {
 			return mTypeName;
 		}

@@ -249,6 +249,17 @@ int qd_len(qd_context* ctx);
 int qd_nth(qd_context* ctx);
 
 /**
+ * @brief The codepoint at character `index` of `s`, as `nth` reads one, for native code
+ *
+ * Raises as `nth` does when the index is out of bounds. Takes no reference and gives none up:
+ * the caller holds the string.
+ */
+int64_t qd_string_nth(qd_context* ctx, qd_string_t* s, int64_t index);
+
+/** @brief A string's length in characters, as `len` reads it, for native code */
+int64_t qd_string_len(qd_string_t* s);
+
+/**
  * @brief A shallow copy of an array ( arr -- arr2 ): `clone` on an array
  *
  * The elements are copied; a string or struct an element refers to is shared.

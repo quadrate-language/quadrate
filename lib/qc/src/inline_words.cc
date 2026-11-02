@@ -249,29 +249,32 @@ namespace Qd {
 			}
 		};
 
+		// Whether a call converts any of its arguments: the validator lists every parameter,
+		// most with nothing to do
+		bool castsArguments(const std::vector<CastDirection>& casts) {
+			for (CastDirection cast : casts) {
+				if (cast != CastDirection::NONE) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		class Inliner {
 		public:
-			explicit Inliner(IAstNode* root) {
-				for (size_t i = 0; i < root->childCount(); i++) {
-					IAstNode* child = root->child(i);
-					if (!child || child->type() != IAstNode::Type::FUNCTION_DECLARATION) {
-						continue;
-					}
-					auto* word = static_cast<AstNodeFunctionDeclaration*>(child);
-					if (word->isInline() && word->isStack() && !word->throws() && !word->hasReceiver() &&
-							word->typeParams().empty() && word->stackVariables().empty() && word->body() &&
-							splicable(word->body(), 0)) {
-						Names uses;
-						collectNames(word->body(), uses);
-						mWords[word->name()] = {word, std::move(uses)};
+			// The words of every file: by bare name the program's and its merged files', which
+			// share its names; by `module::name` a module's, whose bodies name their module's
+			// declarations qualified by now (resolveNames) and so mean the same anywhere
+			Inliner(IAstNode* root, const std::vector<InlineModule>& modules) {
+				addWords(root, "");
+				for (const InlineModule& m : modules) {
+					if (m.root) {
+						addWords(m.root, m.merged ? "" : m.name + "::");
 					}
 				}
 			}
 
 			void run(IAstNode* root) {
-				if (mWords.empty()) {
-					return;
-				}
 				for (size_t i = 0; i < root->childCount(); i++) {
 					IAstNode* child = root->child(i);
 					if (!child || (child->type() != IAstNode::Type::FUNCTION_DECLARATION &&
@@ -297,35 +300,50 @@ namespace Qd {
 			static std::atomic<size_t> sNextCopy;
 			std::unordered_map<std::string, Word> mWords;
 
-			// Whether a call converts any of its arguments: the validator lists every parameter,
-			// most with nothing to do
-			static bool castsArguments(const AstNodeIdentifier* ident) {
-				for (CastDirection cast : ident->parameterCasts()) {
-					if (cast != CastDirection::NONE) {
-						return true;
+			void addWords(IAstNode* root, const std::string& prefix) {
+				for (size_t i = 0; i < root->childCount(); i++) {
+					IAstNode* child = root->child(i);
+					if (!child || child->type() != IAstNode::Type::FUNCTION_DECLARATION) {
+						continue;
+					}
+					auto* word = static_cast<AstNodeFunctionDeclaration*>(child);
+					if (word->isInline() && word->isStack() && !word->throws() && !word->hasReceiver() &&
+							word->typeParams().empty() && word->stackVariables().empty() && word->body() &&
+							splicable(word->body(), 0)) {
+						Names uses;
+						collectNames(word->body(), uses);
+						mWords[prefix + word->name()] = {word, std::move(uses)};
 					}
 				}
-				return false;
 			}
 
-			// The word a node calls, when it is one to splice here
-			const Word* spliceable(
-					const IAstNode* node, const Names& declared, const std::vector<std::string>& active) {
-				if (node->type() != IAstNode::Type::IDENTIFIER) {
+			// The word a node calls, when it is one to splice here, and the name it is called by
+			const Word* spliceable(const IAstNode* node, const Names& declared, const std::vector<std::string>& active,
+					std::string& key) {
+				if (node->type() == IAstNode::Type::IDENTIFIER) {
+					const auto* ident = static_cast<const AstNodeIdentifier*>(node);
+					// A local of the name is what the name means here; a call that needs its
+					// arguments cast is left as a call, which casts them
+					if (declared.count(ident->name()) || ident->isMethodCall() ||
+							castsArguments(ident->parameterCasts())) {
+						return nullptr;
+					}
+					key = ident->name();
+				} else if (node->type() == IAstNode::Type::SCOPED_IDENTIFIER) {
+					const auto* scoped = static_cast<const AstNodeScopedIdentifier*>(node);
+					if (scoped->isMethodCall() || castsArguments(scoped->parameterCasts())) {
+						return nullptr;
+					}
+					key = scoped->scope() + "::" + scoped->name();
+				} else {
 					return nullptr;
 				}
-				const auto* ident = static_cast<const AstNodeIdentifier*>(node);
-				// A local of the name is what the name means here; a call that needs its
-				// arguments cast is left as a call, which casts them
-				if (declared.count(ident->name()) || ident->isMethodCall() || castsArguments(ident)) {
-					return nullptr;
-				}
-				auto it = mWords.find(ident->name());
+				auto it = mWords.find(key);
 				if (it == mWords.end()) {
 					return nullptr;
 				}
 				for (const std::string& name : active) {
-					if (name == ident->name()) {
+					if (name == key) {
 						return nullptr;
 					}
 				}
@@ -353,7 +371,8 @@ namespace Qd {
 			void expand(AstNodeBlock* block, const Names& declared, std::vector<std::string>& active) {
 				for (size_t i = 0; i < block->childCount(); i++) {
 					IAstNode* site = block->child(i);
-					const Word* word = spliceable(site, declared, active);
+					std::string key;
+					const Word* word = spliceable(site, declared, active, key);
 					if (!word) {
 						walk(site, declared, active);
 						continue;
@@ -362,7 +381,7 @@ namespace Qd {
 					// keeps the call
 					Copier copier(sNextCopy++);
 					auto* copy = static_cast<AstNodeBlock*>(copier.copy(word->decl->body()));
-					active.push_back(word->decl->name());
+					active.push_back(key);
 					expand(copy, declared, active);
 					active.pop_back();
 					std::vector<IAstNode*> nodes = copy->releaseChildren();
@@ -383,11 +402,16 @@ namespace Qd {
 		std::atomic<size_t> Inliner::sNextCopy{0};
 	}
 
-	void inlineWords(IAstNode* root) {
+	void inlineWords(IAstNode* root, const std::vector<InlineModule>& modules) {
 		if (!root) {
 			return;
 		}
-		Inliner inliner(root);
+		Inliner inliner(root, modules);
 		inliner.run(root);
+		for (const InlineModule& m : modules) {
+			if (m.root) {
+				inliner.run(m.root);
+			}
+		}
 	}
 }

@@ -1,0 +1,7 @@
+// Test: a store keeps a global's declared type
+var cells:[]f64 = [2]f64
+
+fn main() {
+	[]i64 -> cells
+	cells len print nl
+}

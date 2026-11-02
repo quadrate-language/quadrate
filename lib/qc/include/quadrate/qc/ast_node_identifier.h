@@ -55,6 +55,15 @@ namespace Qd {
 			return mName;
 		}
 
+		// Name resolution qualifies a module's own names: `bump` in module `m` becomes `m::bump`
+		void setName(const std::string& name) {
+			mName = name;
+		}
+
+		void setQualifiedReceiverType(const std::string& type) {
+			mReceiverType = type;
+		}
+
 		void setAbortOnError(bool abort) {
 			mAbortOnError = abort;
 		}

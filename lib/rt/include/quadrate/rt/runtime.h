@@ -109,6 +109,18 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
 int qd_push_p(qd_context* ctx, void* value);
 
 /**
+ * @brief Push a pointer to raw memory: one from malloc, or into a string or a buffer
+ *
+ * Never an array or a struct. The slot is marked raw, so pushing and dropping it costs no
+ * lookup in the registries of counted objects (see qd_ptr_kind).
+ *
+ * @param ctx Execution context
+ * @param value Pointer value to push
+ * @return 0
+ */
+int qd_push_raw(qd_context* ctx, void* value);
+
+/**
  * @brief Push a d128 onto the stack
  *
  * @param ctx Execution context

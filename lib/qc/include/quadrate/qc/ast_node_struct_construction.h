@@ -82,6 +82,10 @@ namespace Qd {
 			mColumn = column;
 		}
 
+		void setStructName(const std::string& name) {
+			mStructName = name;
+		}
+
 		const std::string& structName() const {
 			return mStructName;
 		}

@@ -385,11 +385,23 @@ namespace Qd {
 						arrayRetainFnTy, llvm::Function::ExternalLinkage, "qd_array_retain", *module);
 			}
 			builder->CreateCall(arrayRetainFn, {ptrVal});
+			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 		} else {
-			// Could be an array or a struct; qd_ptr_retain tells them apart
+			// Raw memory, as its slot says, is pushed as it is, and stays marked raw; anything
+			// else could be an array or a struct, which qd_ptr_retain tells apart
+			llvm::Value* kind = builder->CreateLoad(builder->getInt8Ty(),
+					builder->CreateStructGEP(stackElementTy, elementPtr, 3, name + "_kind_ptr"), name + "_kind");
+			llvm::BasicBlock* rawBlock = llvm::BasicBlock::Create(*context, name + "_raw", fn);
+			llvm::BasicBlock* countedBlock = llvm::BasicBlock::Create(*context, name + "_counted", fn);
+			builder->CreateCondBr(
+					builder->CreateICmpEQ(kind, builder->getInt8(1)), rawBlock, countedBlock); // QD_PTR_RAW
+			builder->SetInsertPoint(rawBlock);
+			builder->CreateCall(pushRawFn, {ctx, ptrVal});
+			builder->CreateBr(endBlock);
+			builder->SetInsertPoint(countedBlock);
 			builder->CreateCall(qdPtrRetainFn, {ptrVal});
+			builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 		}
-		builder->CreateCall(pushPtrFn, {ctx, ptrVal});
 		builder->CreateBr(endBlock);
 
 		builder->SetInsertPoint(endBlock);
@@ -457,7 +469,7 @@ namespace Qd {
 		bool isFloat = (typeName == "f64");
 		bool isStr = (typeName == "str");
 		bool isD128 = (typeName == "d128");
-		bool isPtr = (typeName == "ptr") || isKnownStruct(typeName);
+		bool isPtr = globalHoldsPointer(typeName);
 
 		llvm::Type* loadTy = int64Ty;
 		if (isFloat) {
@@ -513,6 +525,8 @@ namespace Qd {
 			// runtime release ever sees.)
 			builder->CreateCall(qdPtrRetainFn, {v});
 			builder->CreateCall(pushPtrFn, {ctx, v});
+			// What `-> local` takes it for, as when an array is read from a local
+			lastPushedWasArray = typeName.rfind("[]", 0) == 0;
 		} else {
 			// Integer (sized or unknown → i64 default).
 			builder->CreateCall(pushIntFn, {ctx, v});
@@ -525,27 +539,24 @@ namespace Qd {
 		return true;
 	}
 
-	// A constant or enum variant by the name the code being generated spells it with. In a
-	// module, a bare name is that module's own; a qualified one is looked up as written.
+	// A constant, enum variant or `var` by its name: a module's are named qualified by the time
+	// code is generated (resolveNames), the program's and its merged files' bare
 	const std::string* LlvmGenerator::Impl::findConstant(const std::string& name) const {
-		if (!currentModuleName.empty() && mergedModules.count(currentModuleName) == 0) {
-			if (auto it = moduleConstants.find(currentModuleName + "::" + name); it != moduleConstants.end()) {
-				return &it->second;
-			}
-			if (name.find("::") == std::string::npos) {
-				return nullptr;
-			}
-		}
 		auto it = moduleConstants.find(name);
 		return it != moduleConstants.end() ? &it->second : nullptr;
 	}
 
-	// A `var` by the name the code being generated spells it with, which in a module is that
-	// module's own. A global is never named from outside its module.
 	const LlvmGenerator::Impl::GlobalVar* LlvmGenerator::Impl::findGlobalVar(const std::string& name) const {
-		const bool inModule = !currentModuleName.empty() && mergedModules.count(currentModuleName) == 0;
-		auto it = moduleGlobalVars.find(inModule ? currentModuleName + "::" + name : name);
+		auto it = moduleGlobalVars.find(name);
 		return it != moduleGlobalVars.end() ? &it->second : nullptr;
+	}
+
+	// Whether a global of this type holds a pointer: to a struct, an array, a function value,
+	// or what `ptr` and `*T` name. Everything else that is not a float, d128 or str is an
+	// integer.
+	bool LlvmGenerator::Impl::globalHoldsPointer(const std::string& typeName) {
+		return typeName == "ptr" || typeName.rfind("[]", 0) == 0 || typeName.rfind("fn(", 0) == 0 ||
+			   typeName.find('*') != std::string::npos || isKnownStruct(typeName);
 	}
 
 	// A `const`, pushed as its spelling says
@@ -615,12 +626,10 @@ namespace Qd {
 			resolvedAsMethod = userFunctions.count(method) > 0;
 			return resolvedAsMethod ? method : std::string();
 		}
-		// The plain name, then the current module's, for an intra-module call
+		// A module's call of its own function is named qualified by now (resolveNames). The bare
+		// name was tried first, so a module calling its own `bump` reached the program's `bump`.
 		if (userFunctions.count(name) > 0) {
 			return name;
-		}
-		if (currentModulePrefix != "main" && userFunctions.count(currentModulePrefix + "::" + name) > 0) {
-			return currentModulePrefix + "::" + name;
 		}
 		// A method on the most recently pushed struct. This handles intra-module method calls
 		// in cached module function bodies, where the semantic validator didn't type-check
@@ -658,14 +667,27 @@ namespace Qd {
 			poppedArgs.push_back(compileTimeStack.back());
 			compileTimeStack.pop_back();
 		}
-		// Reverse to get correct parameter order
-		for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
-			args.push_back(*rit);
+		// Reverse to get correct parameter order, each converted to what its parameter takes: an
+		// i64 passed to an f64 parameter, which the stack path casts, reached the native one as
+		// it was, and LLVM refused the call
+		size_t param = 0;
+		for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit, ++param) {
+			llvm::Value* arg = *rit;
+			const bool wantsFloat =
+					param < calleeInfo.inputTypes.size() && calleeInfo.inputTypes[param] == NativeParamType::F64;
+			if (wantsFloat && arg->getType()->isIntegerTy()) {
+				arg = builder->CreateSIToFP(arg, builder->getDoubleTy(), "native_arg_f");
+			} else if (!wantsFloat && arg->getType()->isDoubleTy()) {
+				arg = builder->CreateFPToSI(arg, int64Ty, "native_arg_i");
+			}
+			args.push_back(arg);
 		}
-		// Call native function directly
-		if (calleeInfo.outputCount == 1) {
+		// Call native function directly; its results go on the compile-time stack, first deepest
+		if (calleeInfo.outputCount > 0) {
 			llvm::Value* result = builder->CreateCall(calleeNativeIt->second, args, "call_result");
-			compileTimeStack.push_back(result);
+			for (llvm::Value* value : nativeResults(result, calleeInfo.outputCount)) {
+				compileTimeStack.push_back(value);
+			}
 		} else {
 			builder->CreateCall(calleeNativeIt->second, args);
 		}
@@ -714,9 +736,16 @@ namespace Qd {
 		std::vector<llvm::Value*> nativeArgs;
 		nativeArgs.push_back(ctx);
 		std::vector<llvm::Value*> poppedArgs;
+		std::vector<std::pair<llvm::Value*, llvm::Value*>> poppedPtrs; // address, slot was raw
 		for (size_t j = info.inputCount; j > 0; j--) {
 			if (info.inputTypes[j - 1] == NativeParamType::F64) {
 				poppedArgs.push_back(generateInlinePopFloat(ctx));
+			} else if (info.inputTypes[j - 1] == NativeParamType::PTR ||
+					   info.inputTypes[j - 1] == NativeParamType::STR) {
+				llvm::Value* isRaw = nullptr;
+				poppedArgs.push_back(generateInlinePopPtr(ctx, isRaw));
+				poppedPtrs.push_back(
+						{poppedArgs.back(), info.inputTypes[j - 1] == NativeParamType::STR ? nullptr : isRaw});
 			} else {
 				poppedArgs.push_back(generateInlinePopInt(ctx));
 			}
@@ -724,15 +753,21 @@ namespace Qd {
 		for (auto rit = poppedArgs.rbegin(); rit != poppedArgs.rend(); ++rit) {
 			nativeArgs.push_back(*rit);
 		}
-		if (info.outputCount == 1) {
+		if (info.outputCount > 0) {
 			llvm::Value* result = builder->CreateCall(nativeIt->second, nativeArgs, "inline_call");
-			if (info.outputType == NativeParamType::F64) {
-				generateInlinePushFloatValue(ctx, result);
-			} else {
-				generateInlinePushIntValue(ctx, result);
+			const std::vector<llvm::Value*> results = nativeResults(result, info.outputCount);
+			for (size_t i = 0; i < results.size(); i++) {
+				if (info.outputTypes[i] == NativeParamType::F64) {
+					generateInlinePushFloatValue(ctx, results[i]);
+				} else {
+					generateInlinePushIntValue(ctx, results[i]);
+				}
 			}
 		} else {
 			builder->CreateCall(nativeIt->second, nativeArgs);
+		}
+		for (const auto& [address, isRaw] : poppedPtrs) {
+			releasePoppedPtr(address, isRaw);
 		}
 		// The native version reports nothing; a failure goes through the error state
 		return builder->getInt32(0);
@@ -804,6 +839,9 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx) {
 		const std::string& funcName = funcPtr->functionName();
+		// A function value is no array, whatever was pushed before it: `-> name` reads this to
+		// decide how the local is released, and an array read earlier left it set
+		lastPushedWasArray = false;
 
 		// Look up the function in the user functions map
 		auto it = userFunctions.find(funcName);
@@ -821,11 +859,15 @@ namespace Qd {
 
 	void LlvmGenerator::Impl::generateAnonymousFunction(AstNodeAnonymousFunction* anonFunc, llvm::Value* ctx) {
 		const std::string funcName = "__anon_" + std::to_string(anonymousFunctionCounter++);
+
 		const auto& captures = anonFunc->capturedVariables();
 
 		EnclosingScope enclosing = enterLambdaScope();
 		llvm::Function* fn = generateLambdaFunction(anonFunc, funcName, enclosing);
 		leaveLambdaScope(std::move(enclosing));
+		// As for &name -- and after the body, whose last array read left the flag set for the
+		// function value bound next
+		lastPushedWasArray = false;
 
 		if (captures.empty()) {
 			// No captures: the function pointer itself
@@ -1117,11 +1159,12 @@ namespace Qd {
 	// `module::function`: one generated here, one in a library, or an imported C function
 	void LlvmGenerator::Impl::generateModuleFunctionCall(
 			AstNodeScopedIdentifier* scopedIdent, const std::string& fullName, llvm::Value* ctx) {
-		if (useCompileTimeStack && generateCompileTimeNativeCall(fullName, ctx)) {
+		const std::string mangledName = "usr_" + scopedIdent->scope() + "_" + scopedIdent->name();
+		if (useCompileTimeStack &&
+				(generateCompileTimeNativeCall(fullName, ctx) || generateInlineMemCall(fullName, nullptr, ctx))) {
 			return;
 		}
 
-		const std::string mangledName = "usr_" + scopedIdent->scope() + "_" + scopedIdent->name();
 		llvm::Function* fn = module->getFunction(mangledName);
 		if (!fn) {
 			auto linkage = exportMode ? llvm::Function::ExternalLinkage : llvm::Function::InternalLinkage;
@@ -1136,7 +1179,8 @@ namespace Qd {
 		if (fallible) {
 			generateClearErrorState(ctx);
 		}
-		llvm::Value* callResult = generateDirectCall(fullName, fn, ctx);
+		llvm::Value* callResult =
+				generateInlineMemCall(fullName, fn, ctx) ? builder->getInt32(0) : generateDirectCall(fullName, fn, ctx);
 
 		// Track return struct type for local variable binding (-> name)
 		auto returnTypeIt = functionReturnStructType.find(fullName);

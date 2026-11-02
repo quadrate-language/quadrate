@@ -1,0 +1,31 @@
+// A word of several results, its inputs and results all i64 or f64, has a native version as a
+// word of one has: its results come back together, the first deepest on the stack. A call to
+// one used to cost the caller its native version too, so `digits` below, which calls `divmod`
+// in a loop, ran on the runtime stack a hundred times slower than it does now.
+fn divmod(a:i64 b:i64 -- q:i64 r:i64) { dup2 / rrot % }
+fn sumdiff(a:i64 b:i64 -- s:i64 d:i64) { dup2 + rrot - }
+fn halves(a:i64 -- x:f64 n:i64) { dup cast<f64> 2.0 / swap 3 * }
+fn three(a:i64 -- x:i64 y:i64 z:i64) { dup 1 + over 2 + }
+
+// A `return` leaves its results as the end of the body does
+def clamped(n:i64 -- lo:i64 hi:i64) {
+	n 0 < if { 0 0 return }
+	n n 1 +
+}
+
+// Digit sum: a loop of divmod, native caller to native callee
+fn digits(n:i64 -- s:i64) {
+	0 swap loop { dup 0 == if { break } 10 divmod rot + swap } drop
+}
+
+fn chained(a:i64 b:i64 -- t:i64) { divmod sumdiff * }
+
+fn main() {
+	17 5 divmod print " " print print nl
+	17 5 chained print nl
+	7 halves print " " print print nl
+	10 three print " " print print " " print print nl
+	-1 clamped print " " print print nl
+	4 clamped print " " print print nl
+	9876543210 digits print nl
+}

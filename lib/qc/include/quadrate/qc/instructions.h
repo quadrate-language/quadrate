@@ -26,7 +26,7 @@ namespace Qd {
 			// use bits::and, bits::shl and friends.
 			"__and", "__not", "__or", "__shl", "__shr", "__xor",
 			// Stack operations
-			"drop", "drop2", "dup", "dup2", "nip", "over", "pick", "rot", "rrot", "swap", "tuck",
+			"drop", "drop2", "dup", "dup2", "nip", "over", "pick", "rot", "rot4", "rrot", "rrot4", "swap", "tuck",
 			// Combinators: run function values in the patterns stack code repeats. Typed by
 			// following what each does on the modelled stack; lowered to locals, `for` and `call`
 			// before code generation, with a function value written in place inlined. `call` is the

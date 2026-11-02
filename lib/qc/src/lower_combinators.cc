@@ -30,6 +30,8 @@
 //
 // The derived shuffles are lowered here too, since each is two of the core ones:
 //   drop2 -> drop drop     tuck -> swap over     rrot -> rot rot
+// and the four-deep ones, which need a value held aside:
+//   rot4  -> -> $t  rot  $t swap          rrot4 -> swap  -> $t  rot rot  $t
 
 #include <atomic>
 #include <string>
@@ -272,6 +274,23 @@ namespace Qd {
 						}
 						block->replaceChildWithMany(i, out);
 						i++;
+						continue;
+					}
+					if (inst->name() == "rot4" || inst->name() == "rrot4") {
+						mLine = inst->line();
+						mColumn = inst->column();
+						const std::string held = "$t" + std::to_string(sNextId++);
+						std::vector<IAstNode*> out;
+						if (inst->name() == "rot4") {
+							out = {local(held), instr("rot"), ident(held), instr("swap")};
+						} else {
+							out = {instr("swap"), local(held), instr("rot"), instr("rot"), ident(held)};
+						}
+						for (IAstNode* n : out) {
+							n->setParent(block);
+						}
+						block->replaceChildWithMany(i, out);
+						i += out.size() - 1;
 						continue;
 					}
 					const Combinator* combinator = findCombinator(inst->name());

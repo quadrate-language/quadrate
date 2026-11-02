@@ -10,6 +10,7 @@
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
+#include <quadrate/qc/ast_node_array_literal.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_defer.h>
 #include <quadrate/qc/ast_node_field_access.h>
@@ -753,6 +754,7 @@ namespace Qd {
 		printTiming("analyzeFunctionSignatures");
 
 		// Pass 3b: Type check using function signatures
+		checkGlobalInitializers(program);
 		typeCheckFunction(program);
 
 		// Pass 3c: Type check merged module functions
@@ -1117,6 +1119,54 @@ namespace Qd {
 		}
 
 		return fallbackMatch;
+	}
+
+	// A global that holds an array or a function value starts with one of its type: an array
+	// literal, `[]i64` or `[10]i64`, or `&name`. Checked once every signature is known, since
+	// the function an initializer names may be declared after it.
+	void SemanticValidator::checkGlobalInitializers(IAstNode* program) {
+		for (size_t i = 0; i < program->childCount(); i++) {
+			IAstNode* child = program->child(i);
+			if (!child || child->type() != IAstNode::Type::GLOBAL_VAR_DECLARATION) {
+				continue;
+			}
+			auto* var = static_cast<AstNodeGlobalVar*>(child);
+			const std::string& type = var->typeName();
+			const std::string prefix = "Global '" + var->name() + "' is " + type;
+			IAstNode* init = var->initializerNode();
+			const bool givenArray = init && init->type() == IAstNode::Type::ARRAY_LITERAL;
+			const bool givenFn = init && init->type() == IAstNode::Type::FUNCTION_POINTER_REFERENCE;
+			if (type.rfind("[]", 0) == 0) {
+				if (!givenArray) {
+					reportError(var, (prefix + ": initialize it with an array literal, such as " + type + " or [10]" +
+											 type.substr(2))
+											 .c_str());
+					continue;
+				}
+				const std::string& element = static_cast<AstNodeArrayLiteral*>(init)->elementType();
+				if (!element.empty() && "[]" + element != type) {
+					reportError(var, (prefix + ", but its initializer makes a []" + element).c_str());
+				}
+			} else if (type.rfind("fn(", 0) == 0) {
+				if (!givenFn) {
+					reportError(var, (prefix + ": initialize it with a function, '&name'").c_str());
+					continue;
+				}
+				const std::string& fnName = static_cast<AstNodeFunctionPointerReference*>(init)->functionName();
+				auto sigIt = mFunctionSignatures.find(fnName);
+				if (sigIt == mFunctionSignatures.end()) {
+					reportError(var, (prefix + ", but there is no function named '" + fnName + "'").c_str());
+					continue;
+				}
+				const std::optional<FunctionSignature> declared = parseFnTypeString(type);
+				if (declared && (declared->consumes != sigIt->second.consumes ||
+										declared->produces != sigIt->second.produces)) {
+					reportError(var, (prefix + ", and '" + fnName + "' takes or leaves something else").c_str());
+				}
+			} else if (givenArray || givenFn) {
+				reportError(var, (prefix + ", which cannot hold " + (givenArray ? "an array" : "a function")).c_str());
+			}
+		}
 	}
 
 } // namespace Qd

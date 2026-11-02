@@ -34,16 +34,11 @@ $ dc -e "2 3 * 4 + p"
 
 The calculator keeps its own stack of `f64` values, separate from Quadrate's:
 a fixed array of cells, and a count of how many are in use. Both are globals,
-because every operator works on them. A global cannot hold an array itself, so
-it holds a struct that does:
+because every operator works on them:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-struct Cells {
-	at: []f64 = [1024]f64
-}
-
-var cells = Cells {}
+var cells:[]f64 = [1024]f64
 var depth:i64 = 0
 ```
 
@@ -56,9 +51,9 @@ Every word that touches the stack is a line:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn push(v:f64 -- ) { depth Capacity >= if { drop "dc: stack overflow" print nl } else { cells <<at depth rot set depth 1 + -> depth } }
-fn pop( -- v:f64) { depth 0 <= if { "dc: stack empty" print nl 0.0 } else { depth 1 - -> depth cells <<at depth nth } }
-fn top( -- v:f64) { cells <<at depth 1 - nth }
+fn push(v:f64 -- ) { depth Capacity >= if { drop "dc: stack overflow" print nl } else { cells depth rot set depth 1 + -> depth } }
+fn pop( -- v:f64) { depth 0 <= if { "dc: stack empty" print nl 0.0 } else { depth 1 - -> depth cells depth nth } }
+fn top( -- v:f64) { cells depth 1 - nth }
 fn operands( -- a:f64 b:f64) { pop pop swap }
 ```
 
@@ -66,7 +61,7 @@ Read `push` from the left, watching Quadrate's stack:
 
 1. `v` is on the stack when `push` starts. A `fn` leaves its inputs there;
    the `v:f64` in the signature only documents it.
-2. `cells <<at` reads the array out of the struct: `v arr`.
+2. `cells` pushes the array: `v arr`.
 3. `depth` pushes the index of the first free cell: `v arr i`.
 4. `rot` brings `v` to the top: `arr i v`, which is what `set` takes.
 5. `depth 1 + -> depth` stores the new count. `->` into a global is an
@@ -235,7 +230,7 @@ starting with a `dup` so the flags are still there for the next one.
   its signature are documentation
 - **Globals for state every word shares**, assigned with `->` as Forth's `!`
   stores
-- **An array behind a struct**, for a global that needs one
+- **A global holding an array**, typed and checked like a local
 - **Dispatch on character** using `switch` and `unicode::` constants
 - **Combinators over data**: `each` over the tokens of a line and the lines of
   a file, `times` to print the stack

@@ -1,0 +1,6 @@
+// Test: a function-value global holds a function of its type
+var show:fn(i64 -- ) = &double
+
+fn double(n:i64 -- m:i64) { 2 * }
+
+fn main() { 1 show call }

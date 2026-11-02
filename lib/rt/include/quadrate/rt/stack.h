@@ -72,7 +72,22 @@ typedef struct {
 
 	qd_stack_type type;	   ///< Type of the stored value
 	bool is_error_tainted; ///< Error propagation flag
+	uint8_t ptr_kind;	   ///< For a QD_STACK_TYPE_PTR, what it points at (qd_ptr_kind)
 } qd_stack_element_t;
+
+/**
+ * @brief What a pointer on the stack points at, as far as its slot knows
+ *
+ * A slot owns a counted object it holds -- an array or a struct -- and so retains and
+ * releases it; a pointer to raw memory has nothing to count. QD_PTR_UNKNOWN asks the
+ * registries which it is, as every pointer once did, at the price of two locked lookups
+ * per push and pop. A slot that knows its pointer is raw (mem::alloc's, strings::data's)
+ * skips them. Meaningful only for QD_STACK_TYPE_PTR; whatever writes that type writes this.
+ */
+typedef enum {
+	QD_PTR_UNKNOWN = 0, ///< Ask the registries
+	QD_PTR_RAW = 1		///< Not counted: nothing to retain or release
+} qd_ptr_kind;
 
 /**
  * @brief Stack structure
@@ -151,6 +166,15 @@ qd_stack_error qd_stack_push_float(qd_stack* stack, double value);
  * @note The pointer is stored as-is; the stack does not take ownership
  */
 qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value);
+
+/**
+ * @brief Push a pointer to raw memory, which no retain or release will look up
+ *
+ * @param stack Target stack
+ * @param value Pointer value to push; never an array or a struct
+ * @return QD_STACK_OK on success, QD_STACK_ERR_OVERFLOW if stack is full
+ */
+qd_stack_error qd_stack_push_raw(qd_stack* stack, void* value);
 
 /**
  * @brief Push a string onto the stack

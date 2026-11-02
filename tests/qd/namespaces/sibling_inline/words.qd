@@ -1,0 +1,7 @@
+// Inline words in a sibling file: the program shares this file's names, so they are spliced
+// into it as its own are
+const Base = 100
+
+inline fn dup3(a:i64 b:i64 c:i64 -- a:i64 b:i64 c:i64 a:i64 b:i64 c:i64) { pick pick pick }
+inline fn based(n:i64 -- m:i64) { Base + }
+inline fn spread(a:i64 b:i64 c:i64 -- s:i64) { dup3 + + rrot4 drop2 drop }

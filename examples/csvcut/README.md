@@ -53,4 +53,4 @@ $ quad run csvcut.qd -d ';' 1,3 semi.csv
   cursor kept in globals (`ch`, `at`, `next`, `to_delim`, `closing`), the way a Forth parser keeps one
 - Arguments parsed by a `fold` whose value says what the next argument is
 - The column spec through `strings::split`, `map` and `filter`
-- An array held by a global, through a struct with an array field
+- An array held by a global, `var columns = []i64`

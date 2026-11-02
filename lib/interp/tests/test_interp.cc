@@ -1189,6 +1189,8 @@ TEST(CombinatorsWithTheirFunctionValueInPlace) {
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 drop2"), "1") == 0, "drop2");
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 tuck drop drop"), "2") == 0, "tuck");
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 rrot"), "2") == 0, "rrot");
+	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 4 rot4"), "1") == 0, "rot4");
+	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 4 rrot4"), "3") == 0, "rrot4");
 
 	// A function cannot take a builtin's name, here as in the compiled tier
 	ASSERT(!qd_interp_eval(emptied(interp), "def keep(x:i64 -- r:i64) { x }"), "a function named keep is refused");

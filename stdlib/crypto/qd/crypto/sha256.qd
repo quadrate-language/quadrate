@@ -168,10 +168,10 @@ def sha256_write_u32_be(buf:ptr offset:i64 val:i64 -- ) {
 	val 255 bits::and buf offset 3 + mem::set_byte
 }
 
-// Process a single 64-byte block (returns updated h values)
-def sha256_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
-	sha256_make_k -> k
-	512 mem::alloc! -> w
+// Process a single 64-byte block (returns updated h values). k holds the round constants and
+// w is 512 bytes to expand the message into: both made once for every block a call hashes,
+// rather than again for each of them.
+def sha256_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64 hh7:i64 block:ptr k:ptr w:ptr -- r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64) {
 
 	// Load message block into w[0..15]
 	0 16 1 for i {
@@ -213,9 +213,6 @@ def sha256_process_block(hh0:i64 hh1:i64 hh2:i64 hh3:i64 hh4:i64 hh5:i64 hh6:i64
 		t1 t2 sha256_add32 -> a
 	}
 
-	w mem::free
-	k mem::free
-
 	// Return updated hash state
 	hh0 a sha256_add32
 	hh1 b sha256_add32
@@ -243,6 +240,10 @@ pub def (h:Sha256) update(data:str -- h2:Sha256)! {
 	h <<buf -> buf
 	h <<buflen -> buflen
 	h <<total -> total
+	sha256_make_k -> k
+	defer { k mem::free }
+	512 mem::alloc? -> w
+	defer { w mem::free }
 
 	// Lazy init buffer
 	buf 0 == if {
@@ -258,18 +259,24 @@ pub def (h:Sha256) update(data:str -- h2:Sha256)! {
 	loop {
 		i dlen >= if { break }
 
-		// Fill buffer
-		loop {
-			buflen 64 >= if { break }
-			i dlen >= if { break }
-			bytes i mem::get_byte buf buflen mem::set_byte
-			buflen 1 + -> buflen
-			i 1 + -> i
+		// A whole block of input with nothing buffered is hashed where it lies
+		buflen 0 == dlen i - 64 >= and if {
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 bytes i mem::ptr_add k w sha256_process_block
+			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
+			i 64 + -> i
+			continue
 		}
+
+		// Otherwise as much as the buffer takes, or the input has, in one copy
+		64 buflen - -> n
+		dlen i - n < if { dlen i - -> n }
+		buf buflen mem::ptr_add bytes i mem::ptr_add n mem::copy
+		buflen n + -> buflen
+		i n + -> i
 
 		// Process complete block
 		buflen 64 == if {
-			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha256_process_block
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf k w sha256_process_block
 			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 			0 -> buflen
 		}
@@ -306,6 +313,10 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 	h <<buf -> buf
 	h <<buflen -> buflen
 	h <<total -> total
+	sha256_make_k -> k
+	defer { k mem::free }
+	512 mem::alloc? -> w
+	defer { w mem::free }
 
 	buf 0 == if {
 		64 mem::alloc? -> buf
@@ -322,7 +333,7 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 			0 buf buflen mem::set_byte
 			buflen 1 + -> buflen
 		}
-		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha256_process_block
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf k w sha256_process_block
 		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 		0 -> buflen
 	}
@@ -339,7 +350,7 @@ pub fn (h:Sha256) finish( -- hash:str)! {
 	buf 56 0 sha256_write_u32_be
 	buf 60 bitlen sha256_write_u32_be
 
-	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf sha256_process_block
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 buf k w sha256_process_block
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	// Convert to hex
@@ -439,6 +450,10 @@ pub def sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 
 	64 mem::alloc? -> block
 	defer { block mem::free }
+	sha256_make_k -> k
+	defer { k mem::free }
+	512 mem::alloc? -> w
+	defer { w mem::free }
 	0 -> buflen
 	0 -> total
 
@@ -452,7 +467,7 @@ pub def sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 		total 1 + -> total
 
 		buflen 64 == if {
-			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha256_process_block
+			hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block k w sha256_process_block
 			-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 			0 -> buflen
 		}
@@ -471,7 +486,7 @@ pub def sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 			0 block buflen mem::set_byte
 			buflen 1 + -> buflen
 		}
-		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha256_process_block
+		hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block k w sha256_process_block
 		-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 		0 -> buflen
 	}
@@ -488,7 +503,7 @@ pub def sha256_bytes(buf:ptr length:i64 -- hash:str)! {
 	block 56 0 sha256_write_u32_be
 	block 60 bitlen sha256_write_u32_be
 
-	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block sha256_process_block
+	hh0 hh1 hh2 hh3 hh4 hh5 hh6 hh7 block k w sha256_process_block
 	-> hh7 -> hh6 -> hh5 -> hh4 -> hh3 -> hh2 -> hh1 -> hh0
 
 	// Convert to hex

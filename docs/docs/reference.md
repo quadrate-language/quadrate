@@ -1221,6 +1221,8 @@ nl
 | [`over`](#over) | `( x y -- x y x )` | Copies the second value to the top. |
 | [`rot`](#rot) | `( x y z -- y z x )` | Moves the third value to the top. |
 | [`rrot`](#rrot) | `( x y z -- z x y )` | Moves the top value below the next two; the inverse of rot. |
+| [`rot4`](#rot4) | `( a b c d -- b c d a )` | Moves the fourth value to the top; rot one deeper. |
+| [`rrot4`](#rrot4) | `( a b c d -- d a b c )` | Moves the top value below the next three; the inverse of rot4. |
 | [`tuck`](#tuck) | `( x y -- y x y )` | Copies the top value below the second. |
 | [`drop2`](#drop2) | `( x y -- )` | Removes the top two values. |
 | [`nip`](#nip) | `( x y -- y )` | Removes the second value. |
@@ -1320,6 +1322,34 @@ Moves the top value below the next two; the inverse of rot.
 
 ```qd
 1 2 3 rrot  // Stack: 3 1 2
+```
+
+---
+
+#### rot4
+
+Moves the fourth value to the top; rot one deeper.
+
+**Signature:** `( a b c d -- b c d a )`
+
+**Example:**
+
+```qd
+1 2 3 4 rot4  // Stack: 2 3 4 1
+```
+
+---
+
+#### rrot4
+
+Moves the top value below the next three; the inverse of rot4.
+
+**Signature:** `( a b c d -- d a b c )`
+
+**Example:**
+
+```qd
+1 2 3 4 rrot4  // Stack: 4 1 2 3
 ```
 
 ---

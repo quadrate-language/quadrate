@@ -79,7 +79,29 @@ fn main() {
 }
 ```
 
-Write `:type` explicitly when you want a narrower integer type (e.g. `u8`, `i32`) or to force a specific type; inference only chooses between `i64`, `f64`, `str`, and `ptr`.
+Write `:type` explicitly to force a specific type; inference only chooses between `i64`, `f64`, `str`, and `ptr`. A global is a 64-bit slot, so a sized integer type such as `u8` is rejected there.
+
+A global can also hold an array or a function value. Write its type, unless an array literal names its element type:
+
+```qd
+var cells:[]f64 = [4]f64           // four zeros
+var seen = []i64                   // empty; the literal says []i64
+var show:fn(i64 --) = &plain
+
+fn plain(n:i64 -- ) { print nl }
+fn loud(n:i64 -- ) { "!" print print nl }
+
+fn main() {
+	cells 1 2.5 set
+	seen 7 append -> seen
+	cells len print nl          // 4
+	seen 0 nth show call        // 7
+	&loud -> show
+	seen 0 nth show call        // !7
+}
+```
+
+Each is checked by its type: storing a `[]i64` in `cells`, or a function that takes two values in `show`, is a compile error.
 
 Writes use the same `-> name` syntax as locals — if `name` matches a module-level `var`, the write always targets the global; locals never shadow globals. Pick a different name if you need a local.
 

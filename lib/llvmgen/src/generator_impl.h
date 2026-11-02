@@ -199,6 +199,7 @@ namespace Qd {
 		llvm::Function* pushStrFn = nullptr;
 		llvm::Function* pushStrRefFn = nullptr;
 		llvm::Function* pushPtrFn = nullptr;
+		llvm::Function* pushRawFn = nullptr;
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
@@ -271,16 +272,24 @@ namespace Qd {
 		// Maps register name (e.g. "fib") to the native LLVM function
 		std::map<std::string, llvm::Function*> nativeFunctions;
 
+		// PTR is a `ptr` input, an i64 in native code: compared and stored as one, and turned
+		// back into an address only by the memory words. A native version takes one and never
+		// returns one, so it holds no reference of its own: its caller's lasts the call.
+		// STR is a `str` input, held as PTR is: read by `len` and `nth`, released by the caller
 		enum class NativeParamType {
 			I64,
-			F64
+			F64,
+			PTR,
+			STR
 		};
 
+		// A native version returns nothing, its one result, or its results as a struct of them
+		// in order, the first deepest on the stack
 		struct NativeFuncInfo {
 			size_t inputCount;
-			size_t outputCount; // 0 or 1
+			size_t outputCount;
 			std::vector<NativeParamType> inputTypes;
-			NativeParamType outputType = NativeParamType::I64;
+			std::vector<NativeParamType> outputTypes; // outputCount of them
 		};
 
 		std::map<std::string, NativeFuncInfo> nativeFuncInfo;
@@ -291,6 +300,8 @@ namespace Qd {
 
 		// Return value alloca for native functions (used by return statement)
 		llvm::AllocaInst* nativeReturnAlloca = nullptr;
+		// The native version being generated, for a `return` to store its results by
+		const NativeFuncInfo* currentNativeInfo = nullptr;
 
 		// Native local variables: name → alloca (i64) for compile-time stack mode
 		std::map<std::string, llvm::AllocaInst*> nativeLocalVariables;
@@ -313,11 +324,10 @@ namespace Qd {
 		// string literal. Both need a runtime init sequence in `main`: a struct calls
 		// qd_struct_alloc and writes fields at runtime, and a refcounted string needs a
 		// heap header no LLVM static initializer can express. The IAstNode* is the
-		// initializer node held by the var node, read in the module that declared it.
+		// initializer node held by the var node.
 		struct PendingGlobalInit {
 			llvm::GlobalVariable* gv;
 			IAstNode* init;
-			std::string module;
 		};
 
 		std::vector<PendingGlobalInit> pendingHeapGlobalInits;
@@ -409,7 +419,6 @@ namespace Qd {
 
 		struct StructLayout {
 			std::string name;
-			std::string module; // the module it is declared in, empty for the program's own
 			std::vector<FieldInfo> fields;
 			size_t totalSize;
 			bool isPublic;
@@ -542,6 +551,7 @@ namespace Qd {
 		bool generateGlobalVarPush(const std::string& name, llvm::Value* ctx);
 		const std::string* findConstant(const std::string& name) const;
 		const GlobalVar* findGlobalVar(const std::string& name) const;
+		bool globalHoldsPointer(const std::string& typeName);
 		bool generateConstantPush(const std::string& name, llvm::Value* ctx);
 		bool generateFunctionAliasPush(const std::string& name, llvm::Value* ctx);
 		// The user function an identifier calls, or "" when it calls none
@@ -550,6 +560,9 @@ namespace Qd {
 				AstNodeIdentifier* ident, const std::string& callee, bool resolvedAsMethod, llvm::Value* ctx);
 		bool generateCompileTimeNativeCall(const std::string& callee, llvm::Value* ctx);
 		bool generateInlineBitsCall(const std::string& callee, llvm::Value* ctx);
+		// mem::get_* and mem::set_* as a load or a store, falling back to the C word itself
+		// for anything its fast path does not take
+		bool generateInlineMemCall(const std::string& callee, llvm::Function* word, llvm::Value* ctx);
 		void generateReceiverRoll(size_t positionFromTop, llvm::Value* ctx);
 		llvm::Value* generateDirectCall(const std::string& callee, llvm::Function* wrapper, llvm::Value* ctx);
 		void generateFunctionPointer(AstNodeFunctionPointerReference* funcPtr, llvm::Value* ctx);
@@ -679,10 +692,32 @@ namespace Qd {
 		/// `typeStr` with the program's aliases and the built-in ones (`bool`) resolved
 		std::string resolveTypeName(const std::string& typeStr);
 		ValueKind valueKind(const std::string& typeStr);
-		/// The native calling convention's types for a signature, when every input is i64 or
-		/// f64 (or untyped) and the output, if any, is too
+		/// The native calling convention's types for a signature, when every input and output is
+		/// i64 or f64 (or untyped); with allowPtrInputs an input may also be `ptr`
 		bool nativeSignatureTypes(const std::vector<std::string>& inputs, const std::vector<std::string>& outputs,
-				std::vector<NativeParamType>& inputTypes, NativeParamType& outputType);
+				std::vector<NativeParamType>& inputTypes, std::vector<NativeParamType>& outputTypes,
+				bool allowPtrInputs = false);
+		/// Pops a `ptr` argument for a native call: its address as an i64, and whether the slot was
+		/// marked raw, for releasePoppedPtr once the call is done
+		llvm::Value* generateInlinePopPtr(llvm::Value* ctx, llvm::Value*& isRaw);
+		void releasePoppedPtr(llvm::Value* address, llvm::Value* isRaw);
+		/// Whether `name` is a mem:: word generateInlineMemCall compiles in place
+		static bool isInlineMemWord(const std::string& name);
+		/// Whether a body prints or casts, which a `ptr` held as an i64 would do as an integer
+		static bool bodyPrintsOrCasts(IAstNode* node);
+		/// Whether a body may hold a string as an address: every instruction a shuffle, `len`,
+		/// `nth`, or one the validator found takes no string, and no global but a number touched
+		bool bodyStringSafe(IAstNode* node);
+		static bool bodyReadsElements(IAstNode* node);
+		llvm::Type* nativeValueType(NativeParamType type);
+		/// What a native version with these results returns: void, the one, or a struct of them
+		llvm::Type* nativeReturnType(const std::vector<NativeParamType>& outputTypes);
+		/// A native call's result as the values it stands for, first to last
+		std::vector<llvm::Value*> nativeResults(llvm::Value* result, size_t outputCount);
+		/// The top outputCount values of the compile-time stack into nativeReturnAlloca
+		void storeNativeResults(const NativeFuncInfo& info);
+		/// A value on the compile-time stack as the type a native parameter or result has
+		llvm::Value* asNativeType(llvm::Value* value, NativeParamType type);
 
 		// Helpers
 		void collectAllCapturesFromAST(IAstNode* node, std::set<std::string>& captures);
@@ -814,8 +849,10 @@ namespace Qd {
 
 		// Analysis helpers
 		void collectLocalNames(IAstNode* node, std::set<std::string>& names);
-		bool analyzeIsBodyNativeEligible(
-				IAstNode* node, const std::set<std::string>& localNames, bool allowFloat = true);
+		// scopedCallsSettled: a `module::word` call is let through, for demoteNonNativeFunctions to
+		// settle once every function is declared; otherwise it needs the word's native version now
+		bool analyzeIsBodyNativeEligible(IAstNode* node, const std::set<std::string>& localNames,
+				bool allowFloat = true, bool scopedCallsSettled = false);
 		// True when generateInstruction lowers 'inst' onto the compile-time stack.
 		static bool isCompileTimeStackInstruction(AstNodeInstruction* inst, bool allowFloat);
 		bool analyzeCalleesAllNative(IAstNode* node);

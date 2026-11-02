@@ -62,3 +62,7 @@ pub fn box_w( -- n:i64) {
 pub fn rated(x:i64 -- y:i64) {
 	Rate * cast<i64>
 }
+
+// Its own function, which the program's of the same name does not replace
+fn helper(n:i64 -- m:i64) { 1 + }
+pub fn helped(n:i64 -- m:i64) { helper 10 * }

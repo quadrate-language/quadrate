@@ -692,13 +692,16 @@ All operations MUST be postfix. Arguments MUST be popped from the stack, and res
 | `over` | `( a b -- a b a )` | Copy second to top |
 | `rot` | `( a b c -- b c a )` | Rotate three |
 | `rrot` | `( a b c -- c a b )` | Rotate three the other way |
+| `rot4` | `( a b c d -- b c d a )` | Rotate four |
+| `rrot4` | `( a b c d -- d a b c )` | Rotate four the other way |
 | `tuck` | `( a b -- b a b )` | Copy top below second |
 | `pick` | `( x y z -- x y z x )` | Copy the third value to the top |
 
 Every stack word has a fixed effect. A word whose depth comes from a value on the stack cannot be
 given one, so an implementation cannot say what the code around it leaves — `pick` therefore
-copies the third value rather than an indexed one, and there is no `roll`. Below three deep, the
-values are named with `->` (§4.4).
+copies the third value rather than an indexed one, and there is no `roll`; `rot4` and `rrot4` reach
+the fourth value, a fixed depth like the rest. Deeper than that, the values are named with `->`
+(§4.4).
 
 ### 4.3 Stack Effect Signatures
 
@@ -958,7 +961,7 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ```
 
 - `pub`: Makes function publicly accessible from other modules
-- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions. An `inline fn` called in the file that declares it SHOULD be replaced by its body where the body can stand in the caller unchanged -- a stack `fn`, neither fallible, generic nor a method, whose body declares no local and has no `return` or `defer` -- so that a word factored into smaller words costs what it would written out in one piece, whatever results the smaller words leave.
+- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions. An `inline fn` SHOULD be replaced by its body where the body can stand in the caller unchanged -- a stack `fn`, neither fallible, generic nor a method, whose body declares no local and has no `return` or `defer` -- so that a word factored into smaller words costs what it would written out in one piece, whatever results the smaller words leave. That holds for a call in the declaring file and in the files sharing its names (§9.7), and for a call of a module's word as `module::name` when its body names only the module's functions and constants, which then keep their meaning by their qualified names; a body that reads a field, calls a method, names a global or takes `&name` is resolved in its module, and is called.
 - `fn`: The inputs stay on the stack for the body to work on (§4.4); names on them are
   documentation and are not in scope, so naming is optional and naming some inputs and not others
   is permitted.
@@ -2485,6 +2488,7 @@ Implementations MUST provide the following runtime functions:
 - `qd_push_s(ctx, string)` - Push string (copy)
 - `qd_push_s_ref(ctx, string)` - Push string (reference)
 - `qd_push_p(ctx, ptr)` - Push pointer
+- `qd_push_raw(ctx, ptr)` - Push a pointer to raw memory, never an array or a struct; the slot is marked so that retains and releases skip it
 - `qd_pop_i(ctx, &val)` - Pop integer
 - `qd_pop_f(ctx, &val)` - Pop float
 - `qd_pop_s(ctx, buf, size)` - Pop string into buffer
@@ -2523,7 +2527,7 @@ declaration     = use_stmt | const_decl | var_decl | enum_decl | type_alias_decl
 
 use_stmt        = "use" ( identifier | string ) ;
 const_decl      = "const" identifier "=" expression ;
-var_decl        = ["pub"] "var" identifier [ ":" type ] "=" ( literal | const_name | struct_construction ) ;
+var_decl        = ["pub"] "var" identifier [ ":" type ] "=" ( literal | const_name | struct_construction | array_literal | "&" identifier ) ;
 enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
 enum_variant    = identifier [ "=" integer ] ;
 type_alias_decl = ["pub"] "type" identifier "=" type ;

@@ -67,6 +67,7 @@ qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src) {
 	for (size_t i = 0; i < src->size; i++) {
 		d->data[i].type = src->data[i].type;
 		d->data[i].is_error_tainted = src->data[i].is_error_tainted;
+		d->data[i].ptr_kind = src->data[i].ptr_kind;
 
 		/* Deep copy strings (for ctx isolation) */
 		if (src->data[i].type == QD_STACK_TYPE_STR) {
@@ -146,8 +147,17 @@ qd_stack_error qd_stack_push_ptr(qd_stack* stack, void* value) {
 	stack->data[stack->size].value.p = value;
 	stack->data[stack->size].type = QD_STACK_TYPE_PTR;
 	stack->data[stack->size].is_error_tainted = false;
+	stack->data[stack->size].ptr_kind = QD_PTR_UNKNOWN;
 	stack->size++;
 	return QD_STACK_OK;
+}
+
+qd_stack_error qd_stack_push_raw(qd_stack* stack, void* value) {
+	const qd_stack_error err = qd_stack_push_ptr(stack, value);
+	if (err == QD_STACK_OK) {
+		stack->data[stack->size - 1].ptr_kind = QD_PTR_RAW;
+	}
+	return err;
 }
 
 qd_stack_error qd_stack_push_str(qd_stack* stack, const char* value) {

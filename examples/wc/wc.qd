@@ -30,9 +30,9 @@ const VERSION = "1.0.0"
 // that prints its count, `column` or `skip`, so a row tests nothing.
 var asked_help:i64 = 0
 var asked_version:i64 = 0
-var col_l:ptr = 0
-var col_w:ptr = 0
-var col_c:ptr = 0
+var col_l:fn(i64 --) = &column
+var col_w:fn(i64 --) = &column
+var col_c:fn(i64 --) = &column
 
 // Running totals over every file read.
 var total_l:i64 = 0
@@ -94,7 +94,7 @@ fn stdin() { "" "/dev/stdin" report }
 
 // No count asked for means all three
 fn all_if_none(l:i64 w:i64 c:i64 -- l:i64 w:i64 c:i64) { pick pick pick or or not if { drop2 drop 1 1 1 } }
-fn shown(yes:i64 -- word:ptr) { if { &column } else { &skip } }
+fn shown(yes:i64 -- word:fn(i64 --)) { if { &column } else { &skip } }
 
 // Read every flag once, then let go of them
 fn options(f:flag::Flag -- ) {

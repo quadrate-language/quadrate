@@ -133,6 +133,25 @@ namespace Qd {
 			return mResolvedType;
 		}
 
+		// Name resolution qualifies the receiver of a method named like a builtin
+		void setQualifiedReceiverType(const std::string& type) {
+			mReceiverType = type;
+		}
+
+		// Whether the validator saw a string among what this instruction takes. None only when
+		// it checked the instruction and every time found none; a node it never checked, as
+		// one made after validation, is Unchecked. Native code holds a string as an address, and
+		// may only hand one to an instruction that is None.
+		enum class StringOperands {
+			Unchecked,
+			None,
+			Some
+		};
+
+		StringOperands stringOperands() const {
+			return mStringOperands;
+		}
+
 	private:
 		// Semantic validation setters (only accessible by SemanticValidator)
 		void setIsMethodCall(bool isMethod) {
@@ -159,6 +178,14 @@ namespace Qd {
 			mResolvedType = type;
 		}
 
+		void noteOperands(bool anyString) {
+			if (anyString) {
+				mStringOperands = StringOperands::Some;
+			} else if (mStringOperands == StringOperands::Unchecked) {
+				mStringOperands = StringOperands::None;
+			}
+		}
+
 		std::string mName;
 		std::string mTypeParam;
 		IAstNode* mParent;
@@ -172,6 +199,7 @@ namespace Qd {
 		bool mPropagateOnError = false;
 		bool mCalleeFallible = false;
 		std::string mResolvedType;
+		StringOperands mStringOperands = StringOperands::Unchecked;
 		std::vector<CastDirection> mParameterCasts;
 	};
 }

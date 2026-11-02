@@ -282,6 +282,53 @@ if command -v clang > /dev/null 2>&1 && command -v ld > /dev/null 2>&1; then
     fi
 fi
 
+# A call to another module's word keeps the caller's native version when the word has one.
+# Whether it did depended on declaration order: the program is declared before its modules, so
+# `bits::mask` had no native version yet when `add32` was looked at, and sha256, built of such
+# words, ran entirely on the runtime stack.
+printf 'use bits\nfn add32(a:i64 b:i64 -- r:i64) { + 32 bits::mask }\nfn main() { 1 2 add32 print nl }\n' > native_across.qd
+if ! output=$("$QUADC" --dump-ir native_across.qd -o native_across 2>&1); then
+    fail "a call to bits::mask did not compile" "$output"
+elif ! grep -q 'add32_native' <<< "$output"; then
+    fail "a function calling bits::mask lost its native version"
+else
+    pass "a function calling bits::mask keeps its native version"
+fi
+
+# A word of several results has a native version, and so does a word that calls one
+printf 'fn divmod(a:i64 b:i64 -- q:i64 r:i64) { dup2 / rrot %% }\nfn digits(n:i64 -- s:i64) { 0 swap loop { dup 0 == if { break } 10 divmod rot + swap } drop }\nfn main() { 123 digits print nl }\n' > several_results.qd
+if ! output=$("$QUADC" --dump-ir several_results.qd -o several_results 2>&1); then
+    fail "a word of several results did not compile" "$output"
+elif ! grep -q 'divmod_native' <<< "$output" || ! grep -q 'digits_native' <<< "$output"; then
+    fail "a word of several results, or its caller, has no native version"
+else
+    pass "a word of several results and its caller have native versions"
+fi
+
+# A function taking a ptr among numbers has a native version; one that prints the ptr has not
+printf 'use mem\ndef word(buf:ptr i:i64 -- v:i64) { buf i 8 * mem::get_i64 }\ndef shown(buf:ptr -- ) { buf print nl }\nfn main() { 16 mem::alloc! -> b  7 b 0 mem::set_i64  b 0 word print nl  b mem::free }\n' > native_ptr.qd
+if ! output=$("$QUADC" --dump-ir native_ptr.qd -o native_ptr 2>&1); then
+    fail "a function taking a ptr did not compile" "$output"
+elif ! grep -q 'word_native' <<< "$output"; then
+    fail "a function taking a ptr has no native version"
+elif grep -q 'shown_native' <<< "$output"; then
+    fail "a function printing a ptr has a native version, which would print it as an integer"
+else
+    pass "a function taking a ptr has a native version, unless it prints it"
+fi
+
+# A function reading a str by len and nth has a native version; one comparing strings has not
+printf 'fn lines(s:str -- n:i64) { 0 swap fn { 10 == + } each }\ndef same(a:str b:str -- yes:i64) { a b == }\nfn main() { "a\\nb" lines print "x" "x" same print nl }\n' > native_str.qd
+if ! output=$("$QUADC" --dump-ir native_str.qd -o native_str 2>&1); then
+    fail "a function taking a str did not compile" "$output"
+elif ! grep -q 'lines_native' <<< "$output"; then
+    fail "a function reading a str by len and nth has no native version"
+elif grep -q 'same_native' <<< "$output"; then
+    fail "a function comparing strings has a native version, which would compare addresses"
+else
+    pass "a function reading a str has a native version, unless it uses it as a string"
+fi
+
 # ===================================================================
 # Summary
 # ===================================================================

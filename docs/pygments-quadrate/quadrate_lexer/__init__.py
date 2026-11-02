@@ -28,7 +28,7 @@ class QuadrateLexer(RegexLexer):
     # Built-in stack operations
     builtins_stack = (
         'dup', 'dup2', 'drop',
-        'swap', 'over', 'rot', 'rrot', 'tuck', 'drop2', 'nip',
+        'swap', 'over', 'rot', 'rrot', 'rot4', 'rrot4', 'tuck', 'drop2', 'nip',
         'pick',
     )
 

@@ -117,7 +117,7 @@ int usr_strings_data(qd_context* ctx) {
 	const char* data = qd_string_data(s);
 	// Push the raw pointer — caller's local variable still holds a reference
 	// so the string data remains valid
-	qd_push_p(ctx, (void*)data);
+	qd_push_raw(ctx, (void*)data);
 	qd_string_release(s);
 	return (int){0};
 }

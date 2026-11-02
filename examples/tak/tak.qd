@@ -7,10 +7,9 @@
 
 inline fn dup3(a:i64 b:i64 c:i64 -- a:i64 b:i64 c:i64 a:i64 b:i64 c:i64) { pick pick pick }
 inline fn dec(x:i64 y:i64 z:i64 -- w:i64 y:i64 z:i64) { fn { 1 - } dip2 }
-inline fn bury(a:i64 b:i64 c:i64 d:i64 -- d:i64 a:i64 b:i64 c:i64) { swap fn { swap fn { swap } dip } dip }
 
 // One of the three inner calls, left under the triple, which turns to the next call's order
-inline fn step(x:i64 y:i64 z:i64 -- r:i64 y:i64 z:i64 x:i64) { dup3 dec tak bury rot }
+inline fn step(x:i64 y:i64 z:i64 -- r:i64 y:i64 z:i64 x:i64) { dup3 dec tak rrot4 rot }
 
 fn tak(x:i64 y:i64 z:i64 -- r:i64) { pick pick swap < if { step step step drop drop drop tak } else { nip nip } }
 

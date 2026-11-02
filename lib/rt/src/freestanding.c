@@ -323,6 +323,16 @@ int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high) {
 int qd_push_p(qd_context* ctx, void* value) {
 	qd_stack_element_t e;
 	e.type = QD_STACK_TYPE_PTR;
+	e.ptr_kind = QD_PTR_UNKNOWN;
+	e.value.p = value;
+	return push_elem(ctx, e);
+}
+
+// Nothing is counted here, so raw and unknown are alike; the slot says which all the same
+int qd_push_raw(qd_context* ctx, void* value) {
+	qd_stack_element_t e;
+	e.type = QD_STACK_TYPE_PTR;
+	e.ptr_kind = QD_PTR_RAW;
 	e.value.p = value;
 	return push_elem(ctx, e);
 }
@@ -521,6 +531,7 @@ int qd_castp(qd_context* ctx) {
 	qd_stack_element_t* top = &st->data[st->size - 1];
 	top->value.p = (void*)(unsigned long)top->value.i;
 	top->type = QD_STACK_TYPE_PTR;
+	top->ptr_kind = QD_PTR_UNKNOWN;
 	return 0;
 }
 

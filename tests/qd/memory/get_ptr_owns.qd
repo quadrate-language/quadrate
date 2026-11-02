@@ -1,0 +1,19 @@
+// mem::get_ptr takes a reference for what it reads back, as a slot owns what it holds. It did
+// not, so dropping a struct read back released a reference never taken, and a few reads later
+// the struct was freed while memory still pointed at it.
+use mem
+
+struct Box {
+	v:i64
+}
+
+fn main() {
+	16 mem::alloc! -> buf
+	Box { v = 42 } -> b
+	b buf 0 mem::set_ptr
+	0 100 1 for i { buf 0 mem::get_ptr drop }
+	buf 0 mem::get_ptr -> again
+	again as Box <<v print nl
+	b <<v print nl
+	buf mem::free
+}

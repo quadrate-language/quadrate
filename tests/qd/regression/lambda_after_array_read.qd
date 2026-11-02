@@ -1,0 +1,10 @@
+// A function value bound to a local is released as a function value, even when its body's last
+// read was an array: the "last pushed was an array" note the body left was taken for the
+// function value pushed after it, which was then retained as an array, and crashed.
+var acc = []i64
+
+fn main() {
+	[1 2 3] fn { acc swap append -> acc } each
+	acc len print nl
+	acc fn { print " " print } each nl
+}

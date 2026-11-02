@@ -604,6 +604,19 @@ static int nth_array(qd_context* ctx, void* p, int64_t index) {
 	return 0;
 }
 
+int64_t qd_string_nth(qd_context* ctx, qd_string_t* s, int64_t index) {
+	const size_t n = qd_string_char_length(s);
+	if (index < 0 || (size_t)index >= n) {
+		QDRT_FATAL(ctx, "nth", "Index %" PRId64 " out of bounds (length %zu)", index, n);
+	}
+	const size_t off = qd_string_char_offset(s, (size_t)index);
+	return decode_char((const unsigned char*)s->data + off, s->length - off);
+}
+
+int64_t qd_string_len(qd_string_t* s) {
+	return (int64_t)qd_string_char_length(s);
+}
+
 int qd_nth(qd_context* ctx) {
 	qd_stack_element_t v;
 	int64_t index;

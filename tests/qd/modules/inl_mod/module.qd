@@ -1,0 +1,18 @@
+// Inline words of a module, called from outside it as inl_mod::name
+pub const Scale = 10
+
+pub struct Pair {
+	a: i64
+	b: i64
+}
+
+fn bump(n:i64 -- m:i64) { 1 + }
+
+// Its own function and constant, named by their qualified names where it is spliced
+pub inline fn scaled(n:i64 -- m:i64) { bump Scale * }
+
+// Another inline word of the module, spliced in turn
+pub inline fn twice_scaled(n:i64 -- m:i64) { scaled scaled }
+
+// A field is resolved relative to the module, so this one stays a call
+pub inline fn first(p:Pair -- a:i64) { <<a }
