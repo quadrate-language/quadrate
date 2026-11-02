@@ -50,6 +50,16 @@
       "examples": ["f flag::destroy"]
     },
     {
+      "name": "either",
+      "signature": "(f:Flag) either(short:str long:str -- present:i64)",
+      "failable": false,
+      "description": "Check if a boolean flag is given in either of its spellings.",
+      "params": [{"name": "f", "type": "ptr", "description": "Flag struct"}, {"name": "short", "type": "str", "description": "Short spelling (e.g., \"-v\")"}, {"name": "long", "type": "str", "description": "Long spelling (e.g., \"--verbose\")"}],
+      "returns": [{"name": "present", "type": "i64", "description": "1 if either is found, 0 otherwise"}],
+      "errors": [],
+      "examples": ["f \"-v\" \"--verbose\" flag::either if { \"verbose\" print nl }"]
+    },
+    {
       "name": "float",
       "signature": "(f:Flag) float(name:str -- value:f64)",
       "failable": true,

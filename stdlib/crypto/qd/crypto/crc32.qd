@@ -71,10 +71,12 @@ pub def (c:Crc32) update(data:str -- c2:Crc32) {
 		crc32_make_table -> tbl
 	}
 
-	data len -> slen
+	// Bytes, not characters: a string is checksummed as the UTF-8 it holds
+	data strings::byte_len -> slen
+	data strings::data -> bytes
 
 	0 slen 1 for i {
-		data i strings::char_at -> byte
+		bytes i mem::get_byte -> byte
 		state byte bits::xor 255 bits::and -> index
 		tbl index 8 * mem::get_i64 state 8 bits::shr bits::xor -> state
 	}

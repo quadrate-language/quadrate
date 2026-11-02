@@ -90,17 +90,12 @@ define do_build
 	@# library in place under a quadc that has it loaded crashed it at exit.
 	@install -m 755 $(1)/lib/rt/libqdrt.so dist/lib/
 	@install -m 755 $(1)/lib/qd/libqd.so dist/lib/
+	@# What links libqdrt.so or libqd.so finds it in dist/lib by the runpath meson gives it
 	@for cmd in $(CMDS); do \
 		install -m 755 $(1)/cmd/$$cmd/$$cmd dist/bin/; \
-		if command -v patchelf >/dev/null 2>&1; then \
-			patchelf --set-rpath '$$ORIGIN/../lib' dist/bin/$$cmd 2>/dev/null || true; \
-		fi; \
 	done
 	@if [ -f $(1)/cmd/quadrepl/quadrepl ]; then \
 		install -m 755 $(1)/cmd/quadrepl/quadrepl dist/bin/; \
-		if command -v patchelf >/dev/null 2>&1; then \
-			patchelf --set-rpath '$$ORIGIN/../lib' dist/bin/quadrepl 2>/dev/null || true; \
-		fi; \
 	else echo "Note: quadrepl not built (readline not found)"; fi
 	@echo "Creating static libraries..."
 	@(cd $(1)/lib/rt && ar rcs librt.a $$(ar -t librt_static.a) && cp librt.a ../../../../dist/lib/quadrate/) && echo "  librt.a"

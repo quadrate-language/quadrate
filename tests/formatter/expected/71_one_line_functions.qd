@@ -1,0 +1,29 @@
+// A function written on one line stays on one line, its body formatted as any other.
+// One spread over several lines stays spread, and a comment in the body opens it up,
+// so that nothing after a `//` could be the closing brace. One-liners written together stay
+// together; a blank line between them is kept.
+fn blank(c:i64 -- yes:i64) { dup 32 == swap 9 13 within or }
+pub fn sq(x:i64 -- y:i64) { dup * }
+fn maybe(n:i64 shown:i64 -- ) { if { print } else { drop } }
+fn lines(s:str -- n:i64) { 0 swap fn { 10 == + } each }
+fn url( -- s:str) { "http://example.com" }
+
+fn noted(x:i64 -- y:i64) {
+	1 + /* one more */
+}
+
+def bound(a:i64 b:i64 -- s:i64) { a b + }
+
+fn spread(x:i64 -- y:i64) {
+	1 +
+}
+
+fn split(x:i64 -- y:i64) {
+	1 +
+	2 *
+}
+
+fn one( -- n:i64) { 1 }
+
+fn two( -- n:i64) { 2 }
+fn main() { 3 sq print nl }

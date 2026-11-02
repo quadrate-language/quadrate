@@ -48,8 +48,9 @@ $ quad run csvcut.qd -d ';' 1,3 semi.csv
 
 ## Features demonstrated
 
-- File I/O via `io::read_file` and stdin via `io::readline` loop
-- CSV parsing with double-quoted field handling (incl. escaped `""`)
-- Manual `argv` walking
-- `sb::StringBuilder` for efficient row assembly
-- `mem::alloc` / `mem::set_i64` / `mem::get_i64` for the column-index array
+- File I/O via `io::read_file`, stdin read the same way from `/dev/stdin`
+- CSV parsing with double-quoted field handling (incl. escaped `""`), as one-line words over a
+  cursor kept in globals (`ch`, `at`, `next`, `to_delim`, `closing`), the way a Forth parser keeps one
+- Arguments parsed by a `fold` whose value says what the next argument is
+- The column spec through `strings::split`, `map` and `filter`
+- An array held by a global, through a struct with an array field

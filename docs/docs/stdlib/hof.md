@@ -6,40 +6,15 @@
 
 Higher-Order Function combinators.
 
-The combinators every program uses -- `dip`, `keep`, `bi`, `tri`, `both`, `times`, `each`,
-`map`, `filter`, `fold`, `find`, `any` and `all` -- are builtins, and need no `use`. This
-module has the rest: `when` and `unless`, which run a function value on a condition;
-`bi_star`, which runs two function values on two values; and `fold_right`.
+The combinators every program uses -- `dip`, `keep`, `bi`, `tri`, `bi_star`, `tri_star`,
+`both`, `times`, `each`, `map`, `filter`, `fold`, `find`, `any` and `all` -- are builtins, and
+need no `use`. This module has the rest: `when` and `unless`, which run a function value on a
+condition, and `fold_right`.
 
 Every one is generic, and `when` and `unless` take their function value with a stack
 variable, `..a`, so it may have any arity.
 
 ## Functions
-
-### `fn` bi_star
-
-Run two function values on two values, the first on the first and the second on the second. Factor's `bi*`: `f` runs under `y`, then `g` on `y`.
-
-**Signature:** `(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)`
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x` | `T` | First value |
-| `y` | `T` | Second value |
-| `f` | `fn(T -- U)` | Function value for `x` |
-| `g` | `fn(T -- U)` | Function value for `y` |
-
-| Output | Type | Description |
-|--------|------|-------------|
-| `a` | `U` | What `f` leaves for `x` |
-| `b` | `U` | What `g` leaves for `y` |
-
-**Example:**
-
-```qd
-3 4 fn { 1 + } fn { 2 * } hof::bi_star  // Stack: 4 8
-```
----
 
 ### `fn` fold_right
 

@@ -1,0 +1,14 @@
+// A program's function may share a name with one in a module it uses. Dead-code elimination
+// matched functions by bare name, so the program's `clamp` made math's look reachable; math's
+// was compiled, but what it calls -- min and max -- was never collected, and the build failed
+// with them declared and not defined.
+use math
+
+fn clamp(k:i64 -- k:i64) { dup 0 < if { drop 0 } dup 11 > if { drop 11 } }
+
+fn main() {
+	-5 clamp print nl
+	15 clamp print nl
+	7 clamp print nl
+	2.5 0.0 1.0 math::clamp print nl
+}

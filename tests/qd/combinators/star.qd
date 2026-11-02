@@ -1,0 +1,38 @@
+use strings
+
+// bi_star and tri_star: one function value for each value, the first on the first. Each runs
+// once, on the stack where it is: the first on what is under the rest, which it may reach into.
+fn show(n:i64 -- ) {
+	print " " print
+}
+
+fn main() {
+	// Written in place, and inlined
+	3 4 fn { 1 + } fn { 2 * } bi_star
+	print " " print print nl
+	1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star
+	print " " print print " " print print nl
+
+	// Bodies that leave nothing run in order, first to last
+	7 8 9 fn { show } fn { show } fn { show } tri_star nl
+
+	// The first reaches under the others: 1 2 + under the 3
+	1 2 3 fn { + } fn { 10 * } bi_star
+	print " " print print nl
+
+	// Bodies that leave more than they take
+	5 6 fn { dup } fn { dup * } bi_star
+	print " " print print " " print print nl
+
+	// Function values from locals are called, and checked by their types
+	fn { 1 + } -> inc
+	fn (i64 -- i64) { 100 * } -> scale
+	5 6 inc scale bi_star
+	print " " print print nl
+	1 2 3 inc inc scale tri_star
+	print " " print print " " print print nl
+
+	// Other types, kept apart
+	"a" 2.5 fn { "b" strings::concat } fn { 2.0 * } bi_star
+	print " " print print nl
+}

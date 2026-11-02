@@ -1183,6 +1183,9 @@ TEST(CombinatorsWithTheirFunctionValueInPlace) {
 			"clone copies an array");
 	ASSERT(std::strcmp(top(emptied(interp), "[1 5 12] 2 fn { 4 > } scan"), "2") == 0, "scan over an array");
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 fn { + } keep2 drop drop"), "3") == 0, "keep2");
+	ASSERT(std::strcmp(top(emptied(interp), "3 4 fn { 1 + } fn { 2 * } bi_star -"), "-4") == 0, "bi_star");
+	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star + +"), "140") == 0,
+			"tri_star");
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 drop2"), "1") == 0, "drop2");
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 tuck drop drop"), "2") == 0, "tuck");
 	ASSERT(std::strcmp(top(emptied(interp), "1 2 3 rrot"), "2") == 0, "rrot");

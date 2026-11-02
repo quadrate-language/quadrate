@@ -16,13 +16,9 @@ fn bravo() {
 }
 
 fn main() {
-	// Spawn two threads
-	&alpha thread::spawn! -> t1
-	&bravo thread::spawn! -> t2
-
-	// Wait for both to complete
-	t1 join!
-	t2 join!
+	// Spawn two threads, then wait for both to complete, the first first
+	&alpha thread::spawn! &bravo thread::spawn!
+	swap join! join!
 
 	"done" print nl
 }

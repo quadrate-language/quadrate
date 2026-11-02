@@ -11,17 +11,6 @@ struct State {
 	pitch: f64
 }
 
-pub fn altitude(state:State -- alt:f64) {
-	<<pos -> p
-	p length EarthRadius -
-}
-
-pub fn speed(state:State -- spd:f64) {
-	<<vel -> v
-	v length
-}
-
-pub fn pos_magnitude(state:State -- r:f64) {
-	<<pos -> p
-	p length
-}
+pub fn altitude(state:State -- alt:f64) { <<pos length EarthRadius - }
+pub fn speed(state:State -- spd:f64) { <<vel length }
+pub fn pos_magnitude(state:State -- r:f64) { <<pos length }

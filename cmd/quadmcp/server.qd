@@ -262,12 +262,12 @@ fn main() {
 		f flag::destroy
 	}
 
-	f "--help" flag::boolean f "-h" flag::boolean or if {
+	f "-h" "--help" flag::either if {
 		print_usage
 		return
 	}
 
-	f "--version" flag::boolean f "-v" flag::boolean or if {
+	f "-v" "--version" flag::either if {
 		"quadmcp " print BUILD_VERSION print nl
 		return
 	}

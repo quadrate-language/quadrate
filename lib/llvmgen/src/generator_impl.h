@@ -98,6 +98,7 @@
 #include <string>
 #include <system_error>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace Qd {
@@ -297,19 +298,29 @@ namespace Qd {
 		// Module constants
 		std::map<std::string, std::string> moduleConstants;
 
-		// Module-level mutable variables declared with `var`. Map a name to the
-		// LLVM global that holds the value. Reads of the identifier lower to a
-		// load from this global; `-> name` writes lower to a store. Populated
-		// alongside moduleConstants during the initial module pass.
-		std::map<std::string, llvm::GlobalVariable*> moduleGlobalVars;
-		std::map<std::string, std::string> moduleGlobalVarTypes; // name -> type string
+		// Module-level mutable variables declared with `var`: the LLVM global that holds the
+		// value, and its type. Reads of the identifier lower to a load from the global;
+		// `-> name` writes lower to a store. Keyed as moduleConstants is, and read through
+		// findGlobalVar.
+		struct GlobalVar {
+			llvm::GlobalVariable* gv;
+			std::string type;
+		};
+
+		std::map<std::string, GlobalVar> moduleGlobalVars;
 
 		// Module-level vars whose initializer allocates -- a struct construction or a
 		// string literal. Both need a runtime init sequence in `main`: a struct calls
 		// qd_struct_alloc and writes fields at runtime, and a refcounted string needs a
 		// heap header no LLVM static initializer can express. The IAstNode* is the
-		// initializer node held by the var node.
-		std::vector<std::pair<llvm::GlobalVariable*, IAstNode*>> pendingHeapGlobalInits;
+		// initializer node held by the var node, read in the module that declared it.
+		struct PendingGlobalInit {
+			llvm::GlobalVariable* gv;
+			IAstNode* init;
+			std::string module;
+		};
+
+		std::vector<PendingGlobalInit> pendingHeapGlobalInits;
 
 		// Module ASTs
 		std::vector<std::pair<std::string, IAstNode*>> moduleASTs;
@@ -398,6 +409,7 @@ namespace Qd {
 
 		struct StructLayout {
 			std::string name;
+			std::string module; // the module it is declared in, empty for the program's own
 			std::vector<FieldInfo> fields;
 			size_t totalSize;
 			bool isPublic;
@@ -528,6 +540,8 @@ namespace Qd {
 		bool generateCapturedPush(const std::string& name, llvm::Value* ctx);
 		bool generateIteratorPush(const std::string& name, llvm::Value* ctx);
 		bool generateGlobalVarPush(const std::string& name, llvm::Value* ctx);
+		const std::string* findConstant(const std::string& name) const;
+		const GlobalVar* findGlobalVar(const std::string& name) const;
 		bool generateConstantPush(const std::string& name, llvm::Value* ctx);
 		bool generateFunctionAliasPush(const std::string& name, llvm::Value* ctx);
 		// The user function an identifier calls, or "" when it calls none

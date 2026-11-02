@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <quadrate/qc/ast_node_type_alias.h>
+#include <quadrate/qc/inline_words.h>
 #include <quadrate/qc/lower_combinators.h>
 #include <spawn.h>
 #include <sstream>
@@ -694,12 +695,12 @@ namespace Qd {
 			// A d128 constant or global is a boxed value, which the compile-time stack has no
 			// way to hold.
 			if (localNames.find(identName) == localNames.end()) {
-				auto constIt = moduleConstants.find(identName);
-				if (constIt != moduleConstants.end() && isD128LiteralText(constIt->second)) {
+				const std::string* constant = findConstant(identName);
+				if (constant && isD128LiteralText(*constant)) {
 					return false;
 				}
-				auto globalIt = moduleGlobalVarTypes.find(identName);
-				if (globalIt != moduleGlobalVarTypes.end() && globalIt->second == "d128") {
+				const GlobalVar* global = findGlobalVar(identName);
+				if (global && global->type == "d128") {
 					return false;
 				}
 			}
@@ -1193,9 +1194,10 @@ namespace Qd {
 		// its LLVM global, so user code sees a fully constructed value. Uses the
 		// runtime stack path explicitly (useCompileTimeStack is still false here).
 		for (auto& pending : pendingHeapGlobalInits) {
-			llvm::GlobalVariable* gv = pending.first;
-			IAstNode* initNode = pending.second;
-			generateNode(initNode, ctx);
+			llvm::GlobalVariable* gv = pending.gv;
+			currentModuleName = pending.module;
+			generateNode(pending.init, ctx);
+			currentModuleName = "";
 
 			// Pop the just-pushed struct pointer and store into the global.
 			llvm::Value* initStackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "init_stack_ptr_ptr");
@@ -2380,39 +2382,33 @@ namespace Qd {
 	}
 
 	void LlvmGenerator::Impl::collectConstants(IAstNode* root) {
-		// Collect constants from all modules
+		// A module's constants and enum variants are keyed by their qualified name only:
+		// findConstant reads an unqualified one in the module that wrote it. Keyed by the bare
+		// name as well, they were found from everywhere, ahead of the program's own functions
+		// -- `use flag` brought unicode's `space`, and a `fn space` in the program pushed 32.
+		// A merged file shares the program's namespace, so it alone is keyed by the bare name.
 		for (const auto& modulePair : moduleASTs) {
 			const std::string& moduleName = modulePair.first;
 			IAstNode* moduleRoot = modulePair.second;
 			if (!moduleRoot) {
 				continue;
 			}
-
+			const bool merged = mergedModules.count(moduleName) > 0;
 			for (auto* child : moduleRoot->children()) {
 				if (auto constNode = dynamic_cast<AstNodeConstant*>(child)) {
-					// Store constant with scope::name key
-					std::string fullName = moduleName + "::" + constNode->name();
-					moduleConstants[fullName] = constNode->value();
-					// Also store without scope for module-internal access
-					moduleConstants[constNode->name()] = constNode->value();
+					moduleConstants[moduleName + "::" + constNode->name()] = constNode->value();
+					if (merged) {
+						moduleConstants[constNode->name()] = constNode->value();
+					}
 				}
-			}
-		}
-
-		// Collect enum variants from all modules
-		for (const auto& modulePair : moduleASTs) {
-			const std::string& moduleName = modulePair.first;
-			IAstNode* moduleRoot = modulePair.second;
-			if (!moduleRoot) {
-				continue;
-			}
-			for (auto* child : moduleRoot->children()) {
 				if (auto enumNode = dynamic_cast<AstNodeEnumDeclaration*>(child)) {
 					for (const auto& variant : enumNode->variants()) {
-						std::string val = std::to_string(variant.value);
-						std::string enumScoped = enumNode->name() + "::" + variant.name;
-						moduleConstants[enumScoped] = val;
+						const std::string val = std::to_string(variant.value);
+						const std::string enumScoped = enumNode->name() + "::" + variant.name;
 						moduleConstants[moduleName + "::" + enumScoped] = val;
+						if (merged) {
+							moduleConstants[enumScoped] = val;
+						}
 					}
 				}
 			}
@@ -2440,26 +2436,35 @@ namespace Qd {
 		// each as an LLVM global variable with the parsed initializer.
 		// Reads/writes are lowered in generateIdentifier and
 		// generateLocalOne respectively.
-		std::vector<IAstNode*> allRootsForGlobals;
-		allRootsForGlobals.push_back(root);
+		//
+		// A module's globals are its own, keyed `module::name` and read bare only in it, as
+		// findConstant reads constants. Keyed by the bare name, two modules' `var count`s
+		// were one global, and a module's global hid the program's function of that name. A
+		// merged file shares the program's namespace, so its globals keep the bare name.
+		std::vector<std::pair<IAstNode*, std::string>> allRootsForGlobals;
+		allRootsForGlobals.emplace_back(root, "");
 		for (const auto& modulePair : moduleASTs) {
 			if (modulePair.second) {
-				allRootsForGlobals.push_back(modulePair.second);
+				const bool merged = mergedModules.count(modulePair.first) > 0;
+				allRootsForGlobals.emplace_back(modulePair.second, merged ? "" : modulePair.first);
 			}
 		}
-		for (auto* rootIt : allRootsForGlobals) {
+		for (const auto& [rootIt, owner] : allRootsForGlobals) {
 			for (auto* child : rootIt->children()) {
 				auto* varNode = dynamic_cast<AstNodeGlobalVar*>(child);
 				if (!varNode) {
 					continue;
 				}
 
+				const std::string key = owner.empty() ? varNode->name() : owner + "::" + varNode->name();
 				// Skip if already collected from a different root.
-				if (moduleGlobalVars.count(varNode->name())) {
+				if (moduleGlobalVars.count(key)) {
 					continue;
 				}
 
 				const std::string& name = varNode->name();
+				// The program's globals keep their plain symbol, which assembly may name
+				const std::string symbol = "qd_global_" + (owner.empty() ? name : owner + "_" + name);
 				const std::string& typeName = varNode->typeName();
 				const std::string value = varNode->value();
 
@@ -2493,10 +2498,9 @@ namespace Qd {
 					init = llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(slotValueTy),
 							{builder->getInt64(low), builder->getInt64(high)});
 					auto* gv = new llvm::GlobalVariable(
-							*module, slotValueTy, /*isConstant=*/false, varLinkage, init, "qd_global_" + name);
+							*module, slotValueTy, /*isConstant=*/false, varLinkage, init, symbol);
 					gv->setAlignment(llvm::Align(8));
-					moduleGlobalVars[name] = gv;
-					moduleGlobalVarTypes[name] = typeName;
+					moduleGlobalVars[key] = {gv, typeName};
 					continue;
 				}
 
@@ -2506,11 +2510,9 @@ namespace Qd {
 				if (varNode->initializerNode() != nullptr) {
 					ty = ptrTy;
 					init = llvm::ConstantPointerNull::get(ptrTy);
-					auto* gv = new llvm::GlobalVariable(
-							*module, ty, /*isConstant=*/false, varLinkage, init, "qd_global_" + name);
-					moduleGlobalVars[name] = gv;
-					moduleGlobalVarTypes[name] = typeName;
-					pendingHeapGlobalInits.emplace_back(gv, varNode->initializerNode());
+					auto* gv = new llvm::GlobalVariable(*module, ty, /*isConstant=*/false, varLinkage, init, symbol);
+					moduleGlobalVars[key] = {gv, typeName};
+					pendingHeapGlobalInits.push_back({gv, varNode->initializerNode(), owner});
 					continue;
 				}
 
@@ -2538,10 +2540,8 @@ namespace Qd {
 					init = builder->getInt64(static_cast<uint64_t>(iv));
 				}
 
-				auto* gv = new llvm::GlobalVariable(
-						*module, ty, /*isConstant=*/false, varLinkage, init, "qd_global_" + name);
-				moduleGlobalVars[name] = gv;
-				moduleGlobalVarTypes[name] = typeName;
+				auto* gv = new llvm::GlobalVariable(*module, ty, /*isConstant=*/false, varLinkage, init, symbol);
+				moduleGlobalVars[key] = {gv, typeName};
 			}
 		}
 	}
@@ -2664,6 +2664,10 @@ namespace Qd {
 				continue;
 			}
 
+			// What a body names is read in its module here too: deciding whether a function
+			// gets a native version reads its constants and globals
+			currentModuleName = moduleName;
+
 			for (auto* child : moduleRoot->children()) {
 				if (auto funcNode = dynamic_cast<AstNodeFunctionDeclaration*>(child)) {
 					// Track return struct type for module functions (same logic as main file)
@@ -2694,11 +2698,13 @@ namespace Qd {
 
 					// Declare the function (creates LLVM function and registers in userFunctions)
 					if (!declareFunction(funcNode, moduleName)) {
+						currentModuleName = "";
 						return false;
 					}
 				}
 			}
 		}
+		currentModuleName = "";
 		return true;
 	}
 
@@ -2907,7 +2913,12 @@ namespace Qd {
 	// Whether a function is reachable from the program, under any name a call can reach it by
 	bool LlvmGenerator::Impl::isReachable(AstNodeFunctionDeclaration* funcNode, const std::string& moduleName,
 			const std::string& qualifiedName) const {
-		return reachableFunctions.count(qualifiedName) || reachableFunctions.count(funcNode->name()) ||
+		// A bare name reaches a function only where a bare name can call it: in a merged file,
+		// which shares the program's names, or as a method, called on its receiver. Matched from
+		// anywhere, a program's own `fn clamp` reached math's, whose callees were never collected
+		// -- the bare name was already marked -- and min and max were left declared, undefined.
+		const bool bareCalls = mergedModules.count(moduleName) > 0 || funcNode->hasReceiver();
+		return reachableFunctions.count(qualifiedName) || (bareCalls && reachableFunctions.count(funcNode->name())) ||
 			   (funcNode->hasReceiver() &&
 					   (reachableFunctions.count(funcNode->receiverType() + "::" + funcNode->name()) ||
 							   reachableFunctions.count(moduleName + "::" + funcNode->name())));
@@ -3093,6 +3104,7 @@ namespace Qd {
 		// Also add with the actual module name for user function lookups
 		mImpl->moduleSourceFiles[moduleName] = mImpl->sourceFileName;
 		lowerCombinators(root);
+		inlineWords(root);
 		return mImpl->generateProgram(root);
 	}
 
@@ -3102,6 +3114,7 @@ namespace Qd {
 			mImpl = std::make_unique<Impl>("quadrate_module");
 		}
 		lowerCombinators(moduleRoot);
+		inlineWords(moduleRoot);
 		mImpl->moduleASTs.push_back({moduleName, moduleRoot});
 		if (!sourceFileName.empty()) {
 			mImpl->moduleSourceFiles[moduleName] = sourceFileName;

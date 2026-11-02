@@ -65,7 +65,7 @@ class QuadrateLexer(RegexLexer):
     # Built-in misc
     builtins_misc = (
         'err', 'ok', 'fail', 'panic', 'call', 'free',
-        'dip', 'dip2', 'keep', 'keep2', 'bi', 'tri', 'both', 'times', 'each', 'map', 'filter', 'fold', 'find', 'index', 'scan', 'any', 'all',
+        'dip', 'dip2', 'keep', 'keep2', 'bi', 'tri', 'bi_star', 'tri_star', 'both', 'times', 'each', 'map', 'filter', 'fold', 'find', 'index', 'scan', 'any', 'all',
     )
 
     # Math functions (from math library)

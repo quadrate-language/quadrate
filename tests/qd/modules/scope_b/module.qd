@@ -1,0 +1,23 @@
+// The same names as scope_a, other values.
+pub const Width = 20
+pub const Label = "b"
+
+pub fn width( -- n:i64) {
+	Width
+}
+
+pub fn label( -- s:str) {
+	Label
+}
+
+var count:i64 = 100
+var greeting:str = "hello from b"
+
+pub fn bump( -- n:i64) {
+	count 1 + -> count
+	count
+}
+
+pub fn greet( -- s:str) {
+	greeting
+}

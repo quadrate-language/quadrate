@@ -9,133 +9,38 @@
 use flag
 use io
 use math
-use mem
 use os
 use strconv
 use strings
 use unicode
 
-// Calculator stack - using an explicit array
-pub struct Stack {
-	data:     ptr
-	size:     i64
-	capacity: i64
+const Capacity = 1024
+
+// The calculator's stack: its cells, and how many are in use. A global cannot hold an array
+// itself, so it holds this.
+struct Cells {
+	at: []f64 = [1024]f64
 }
 
-fn stack_new( -- s:ptr) {
-	1024 -> cap
-	cap 8 * mem::alloc! -> data
-	Stack {
-		data = data
-		size = 0
-		capacity = cap
-	}
-}
+var cells = Cells {}
+var depth:i64 = 0
 
-fn stack_free(s:ptr -- ) {
-	<<data mem::free
-}
+fn push(v:f64 -- ) { depth Capacity >= if { drop "dc: stack overflow" print nl } else { cells <<at depth rot set depth 1 + -> depth } }
+fn pop( -- v:f64) { depth 0 <= if { "dc: stack empty" print nl 0.0 } else { depth 1 - -> depth cells <<at depth nth } }
+fn top( -- v:f64) { cells <<at depth 1 - nth }
+fn nth_down(i:i64 -- v:f64) { cells <<at swap depth 1 - swap - nth }
+fn operands( -- a:f64 b:f64) { pop pop swap }
 
-def stack_push(s:ptr val:f64 -- ) {
-	s <<size -> sz
-	s <<capacity -> cap
-	sz cap >= if {
-		// Stack overflow - just ignore for now
-		"dc: stack overflow" print nl
-	} else {
-		val s <<data sz 8 * mem::set_f64
-		s sz 1 + >>size drop
-	}
-}
+// Whether there are n values to work on, saying so when there are not
+fn enough(n:i64 -- ok:i64) { depth swap >= dup not if { "dc: stack empty" print nl } }
 
-def stack_pop(s:ptr -- val:f64) {
-	s <<size -> sz
-	sz 0 <= if {
-		"dc: stack empty" print nl
-		0.0
-	} else {
-		sz 1 - -> sz
-		s sz >>size drop
-		s <<data sz 8 * mem::get_f64
-	}
-}
+// Whether the top value is fit to work on, saying msg when it is not
+fn nonzero(msg:str -- ok:i64) { top 0.0 != dup if { nip } else { swap print nl } }
+fn nonneg(msg:str -- ok:i64) { top 0.0 >= dup if { nip } else { swap print nl } }
 
-def stack_peek(s:ptr -- val:f64) {
-	s <<size -> sz
-	sz 0 <= if {
-		0.0
-	} else {
-		s <<data sz 1 - 8 * mem::get_f64
-	}
-}
+fn version() { "dc 0.1.0 (Quadrate)" print nl }
 
-fn stack_depth(s:ptr -- n:i64) {
-	<<size
-}
-
-fn stack_clear(s:ptr -- ) {
-	0 >>size drop
-}
-
-// Check if stack has at least n items, print error if not
-def stack_check(s:ptr n:i64 -- ok:i64) {
-	s <<size n >= -> ok
-	ok 0 == if {
-		"dc: stack empty" print nl
-	}
-	ok
-}
-
-// Check if value is non-zero, print error if not
-def check_nonzero(val:f64 msg:str -- ok:i64) {
-	val 0.0 != -> ok
-	ok 0 == if {
-		msg print nl
-	}
-	ok
-}
-
-// Check if value is non-negative, print error if not
-def check_nonneg(val:f64 msg:str -- ok:i64) {
-	val 0.0 >= -> ok
-	ok 0 == if {
-		msg print nl
-	}
-	ok
-}
-
-def stack_dup(s:ptr -- ) {
-	s 1 stack_check if {
-		s <<size -> sz
-		s <<data sz 1 - 8 * mem::get_f64 -> val
-		s val stack_push
-	}
-}
-
-def stack_swap(s:ptr -- ) {
-	s 2 stack_check if {
-		s <<size -> sz
-		s <<data sz 1 - 8 * mem::get_f64 -> a
-		s <<data sz 2 - 8 * mem::get_f64 -> b
-		b s <<data sz 1 - 8 * mem::set_f64
-		a s <<data sz 2 - 8 * mem::set_f64
-	}
-}
-
-def stack_pick(s:ptr n:i64 -- val:f64) {
-	s <<size -> sz
-	n sz >= n 0 < or if {
-		0.0
-	} else {
-		s <<data sz 1 - n - 8 * mem::get_f64
-	}
-}
-
-fn print_version() {
-	"dc 0.1.0 (Quadrate)" print nl
-}
-
-fn print_help() {
+fn help() {
 	"Usage: dc [OPTION] [file ...]" print nl
 	"  -e, --expression=EXPR    evaluate expression" print nl
 	"  -f, --file=FILE          evaluate contents of file" print nl
@@ -145,335 +50,96 @@ fn print_help() {
 	"Report bugs at:  https://github.com/quadrate-language/quadrate/issues" print nl
 }
 
-def is_number(tok:str -- result:i64) {
-	0 -> first
-	0 -> second
-	0 -> result
-	tok len 0 > if {
-		tok 0 strings::char_at -> first
-		first unicode::is_digit if {
-			1 -> result
-		} else {
-			first unicode::underscore == first unicode::minus == or if {
-				tok len 1 > if {
-					tok 1 strings::char_at -> second
-					second unicode::is_digit -> result
-				}
-			}
-		}
-	}
-	result
+// Operators: each a line, and `known` whether there is one for c
+
+fn modulo(a:f64 b:f64 -- r:f64) { dup2 / math::floor * - }
+
+fn power(a:f64 b:f64 -- r:f64) {
+	dup dup math::floor != if { "Runtime warning: non-zero scale in exponent" print nl math::floor }
+	math::pow
 }
 
-def process_token(s:ptr tok:str -- ) {
-	tok is_number -> is_num
-	is_num if {
-		tok 0 strings::char_at -> first
-		first unicode::underscore == if {
-			tok 1 tok len 1 - strings::substring! strconv::parse_float! -> val
-			s 0.0 val - stack_push
-		} else {
-			tok strconv::parse_float! -> val
-			s val stack_push
-		}
-	}
-	is_num 0 == if {
-		tok len 0 > if {
-			s tok process_operator
-		}
+fn divmod(a:f64 b:f64 -- ) { dup2 / math::floor dup push * - push }
+fn show_all() { 0 depth fn { dup nth_down print nl 1 + } times drop }
+
+fn known(c:i64 -- yes:i64) {
+	switch {
+		unicode::plus { 2 enough if { operands + push } 1 }
+		unicode::minus { 2 enough if { operands - push } 1 }
+		unicode::asterisk { 2 enough if { operands * push } 1 }
+		unicode::slash { 2 enough if { "dc: divide by zero" nonzero if { operands / push } } 1 }
+		unicode::percent { 2 enough if { "dc: remainder by zero" nonzero if { operands modulo push } } 1 }
+		unicode::caret { 2 enough if { operands power push } 1 }
+		unicode::v { 1 enough if { "dc: square root of negative number" nonneg if { pop math::sqrt push } } 1 }
+		unicode::p { 1 enough if { top print nl } 1 }
+		unicode::n { 1 enough if { pop print } 1 }
+		unicode::f { show_all 1 }
+		unicode::z { depth cast<f64> push 1 }
+		unicode::tilde { 2 enough if { "dc: divide by zero" nonzero if { operands divmod } } 1 }
+		unicode::c { 0 -> depth 1 }
+		unicode::d { 1 enough if { top push } 1 }
+		unicode::r { 2 enough if { pop pop swap push push } 1 }
+		unicode::q { 0 os::exit 1 }
+		_ { 0 }
 	}
 }
 
-def process_operator(s:ptr op:str -- ) {
-	0 -> n
-	0.0 -> a
-	0.0 -> b
-	0.0 -> q
-	0.0 -> r
-	"" -> octal
-	op 0 strings::char_at switch {
-		unicode::plus {
-			s 2 stack_check if {
-				s stack_pop -> b
-				s stack_pop -> a
-				s a b + stack_push
-			}
-		}
-		unicode::minus {
-			s 2 stack_check if {
-				s stack_pop -> b
-				s stack_pop -> a
-				s a b - stack_push
-			}
-		}
-		unicode::asterisk {
-			s 2 stack_check if {
-				s stack_pop -> b
-				s stack_pop -> a
-				s a b * stack_push
-			}
-		}
-		unicode::slash {
-			s 2 stack_check if {
-				s stack_peek "dc: divide by zero" check_nonzero if {
-					s stack_pop -> b
-					s stack_pop -> a
-					s a b / stack_push
-				}
-			}
-		}
-		unicode::percent {
-			s 2 stack_check if {
-				s stack_peek "dc: remainder by zero" check_nonzero if {
-					s stack_pop -> b
-					s stack_pop -> a
-					// Remainder for floats: a - floor(a/b)*b
-					a a b / math::floor b * - -> r
-					s r stack_push
-				}
-			}
-		}
-		unicode::caret {
-			s 2 stack_check if {
-				s stack_pop -> b
-				s stack_pop -> a
-				// Check if exponent is non-integer, floor it if so
-				b b math::floor != if {
-					"Runtime warning: non-zero scale in exponent" print nl
-					b math::floor -> b
-				}
-				a b math::pow -> r
-				s r stack_push
-			}
-		}
-		unicode::v {
-			s 1 stack_check if {
-				s stack_peek "dc: square root of negative number" check_nonneg if {
-					s stack_pop -> a
-					a math::sqrt -> r
-					s r stack_push
-				}
-			}
-		}
-		unicode::p {
-			s 1 stack_check if {
-				s stack_peek print nl
-			}
-		}
-		unicode::n {
-			s 1 stack_check if {
-				s stack_pop print
-			}
-		}
-		unicode::f {
-			// Print full stack from top to bottom
-			s stack_depth -> n
-			0 n 1 for it {
-				s it stack_pick print nl
-			}
-		}
-		unicode::z {
-			// Push stack depth
-			s stack_depth cast<f64> -> a
-			s a stack_push
-		}
-		unicode::tilde {
-			// Divmod: push both quotient and remainder
-			s 2 stack_check if {
-				s stack_peek "dc: divide by zero" check_nonzero if {
-					s stack_pop -> b
-					s stack_pop -> a
-					a b / math::floor -> q
-					// Remainder = a - q*b
-					a q b * - -> r
-					s q stack_push
-					s r stack_push
-				}
-			}
-		}
-		unicode::c {
-			s stack_clear
-		}
-		unicode::d {
-			s 1 stack_check if {
-				s stack_dup
-			}
-		}
-		unicode::r {
-			s 2 stack_check if {
-				s stack_swap
-			}
-		}
-		unicode::q {
-			0 os::exit
-		}
-		_ {
-			op 0 strings::char_at 8 strconv::format_int -> octal
-			"dc: '" print op print "' (0" print octal print ") unimplemented" print nl
-		}
+fn unimplemented(op:str -- ) {
+	"dc: '" print dup print "' (0" print 0 strings::char_at 8 strconv::format_int print ") unimplemented" print nl
+}
+
+fn operator(op:str -- ) { dup 0 strings::char_at known if { drop } else { unimplemented } }
+
+// Tokens: a number is a digit first, or an _ or - and then a digit; _ makes it negative
+
+fn digit_at(tok:str i:i64 -- yes:i64) { over len over > if { strings::char_at unicode::is_digit } else { drop2 0 } }
+fn signed(tok:str -- yes:i64) { 0 strings::char_at dup unicode::underscore == swap unicode::minus == or }
+
+fn is_number(tok:str -- yes:i64) {
+	dup 0 digit_at if { drop 1 } else { dup len 1 > if { dup signed swap 1 digit_at and } else { drop 0 } }
+}
+
+fn number(tok:str -- ) {
+	dup 0 strings::char_at unicode::underscore == if {
+		1 over len 1 - strings::substring! strconv::parse_float! 0.0 swap -
+	} else {
+		strconv::parse_float!
+	}
+	push
+}
+
+fn token(tok:str -- ) { dup is_number if { number } else { dup len 0 > if { operator } else { drop } } }
+
+// Lines: everything from # on is a comment, and tokens are separated by spaces
+
+fn uncomment(input:str -- input:str) { dup "#" strings::index_of dup 0 >= if { 0 swap strings::substring! } else { drop } }
+fn line(input:str -- ) { uncomment strings::trim " " strings::split! fn { token } each }
+
+fn run_file(path:str -- ) {
+	dup io::read_file switch {
+		Ok { nip strings::lines! fn { line } each }
+		io::ErrRead { drop "dc: could not read file: " print print nl 1 os::exit }
+		_ { drop "dc: could not open file: " print print nl 1 os::exit }
 	}
 }
 
-def process_line(s:ptr input:str -- ) {
-	0 -> comment_pos
-	"" -> trimmed
-	"" -> token
-	0 -> space_pos
-	// Strip comments (everything from # to end of line)
-	input "#" strings::index_of -> comment_pos
-	comment_pos 0 >= if {
-		input 0 comment_pos strings::substring! -> input
-	}
-	input strings::trim -> trimmed
-
-	// Process space-separated tokens
-	loop {
-		trimmed len 0 <= if {
-			break
-		}
-		trimmed " " strings::index_of -> space_pos
-		space_pos 0 < if {
-			// No more spaces - process remaining as last token
-			s trimmed process_token
-			break
-		}
-		// Extract token before space
-		trimmed 0 space_pos strings::substring! -> token
-		token len 0 > if {
-			s token process_token
-		}
-		// Skip past space and continue
-		trimmed space_pos 1 + trimmed len space_pos - 1 - strings::substring! -> trimmed
-	}
-}
-
-def run_file(s:ptr path:str -- ) {
-	0 -> bytes_read
-	"" -> content
-	"" -> line
-	0 -> newline_pos
-
-	// Allocate 64KB buffer for file content
-	65536 mem::alloc! -> buf
-
-	path io::Read io::open switch {
-		Ok {
-			-> file file buf 65536 io::read switch {
-				Ok {
-					-> bytes_read file io::close buf bytes_read mem::to_string -> content
-				}
-				_ {
-					drop
-					file io::close "dc: could not read file: " print path print nl buf mem::free 1 os::exit
-				}
-			}
-		}
-		_ {
-			drop
-			"dc: could not open file: " print path print nl
-			buf mem::free
-			1 os::exit
-		}
-	}
-
-	buf mem::free
-
-	// Process content line by line
-	loop {
-		content len 0 <= if {
-			break
-		}
-		content "\n" strings::index_of -> newline_pos
-		newline_pos 0 < if {
-			// No more newlines - process remaining as last line
-			s content process_line
-			break
-		} else {
-			// Extract line before newline
-			content 0 newline_pos strings::substring! -> line
-			s line process_line
-			// Skip past newline and continue
-			content newline_pos 1 + content len newline_pos - 1 - strings::substring! -> content
-		}
-	}
-}
-
-def repl(s:ptr -- ) {
-	"" -> input
+fn repl() {
 	loop {
 		io::readline switch {
-			Ok {
-				-> more -> input
-				more 0 == if {
-					// End of input
-					input drop
-					0 os::exit
-				}
-				s input process_line input drop
-			}
-			_ {
-				drop drop
-				// A genuine read failure
-				1 os::exit
-			}
+			Ok { if { line } else { drop 0 os::exit } }
+			_ { drop2 1 os::exit }
 		}
 	}
 }
 
 fn main() {
-	stack_new -> s
-	defer {
-		s stack_free
-	}
-
-	os::args flag::parse -> f
-	defer {
-		f flag::destroy
-	}
-
-	f "--help" flag::boolean if {
-		print_help
-		0 os::exit
-	}
-	f "-h" flag::boolean if {
-		print_help
-		0 os::exit
-	}
-
-	f "--version" flag::boolean if {
-		print_version
-		0 os::exit
-	}
-	f "-V" flag::boolean if {
-		print_version
-		0 os::exit
-	}
-
-	// Check for -e / -- expression
-	"" -> expr
-	f "-e" flag::boolean if {
-		f "-e" flag::string! -> expr
-		s expr process_line
-		0 os::exit
-	}
-	f "--expression" flag::boolean if {
-		f "--expression" flag::string! -> expr
-		s expr process_line
-		0 os::exit
-	}
-
-	// Check for -f / -- file
-	"" -> filepath
-	f "-f" flag::boolean if {
-		f "-f" flag::string! -> filepath
-		s filepath run_file
-		0 os::exit
-	}
-	f "--file" flag::boolean if {
-		f "--file" flag::string! -> filepath
-		s filepath run_file
-		0 os::exit
-	}
-
-	s repl
+	os::args flag::parse
+	dup "-h" "--help" flag::either if { help 0 os::exit }
+	dup "-V" "--version" flag::either if { version 0 os::exit }
+	dup "-e" flag::boolean if { dup "-e" flag::string! line 0 os::exit }
+	dup "--expression" flag::boolean if { dup "--expression" flag::string! line 0 os::exit }
+	dup "-f" flag::boolean if { dup "-f" flag::string! run_file 0 os::exit }
+	dup "--file" flag::boolean if { dup "--file" flag::string! run_file 0 os::exit }
+	flag::destroy
+	repl
 }

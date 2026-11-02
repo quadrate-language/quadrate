@@ -3,9 +3,7 @@ fn one() {
 	2 print nl
 }
 
-fn two() {
-	3 print nl
-}
+fn two() { 3 print nl }
 
 test "shares" {
 	4 print

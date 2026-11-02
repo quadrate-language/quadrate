@@ -5,6 +5,7 @@ qc_sources = files(
 		'src/ast_declarations.cc',
 		'src/ast_types.cc',
 		'src/ast_printer.cc',
+		'src/inline_words.cc',
 		'src/lower_combinators.cc',
 		'src/migrate.cc',
 		'src/colors.cc',

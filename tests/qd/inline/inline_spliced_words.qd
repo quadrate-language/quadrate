@@ -1,0 +1,31 @@
+// An `inline fn` whose body can stand in its caller is spliced there, copy by copy. Each copy
+// gets locals of its own for what lowering made of its combinators, a word that calls itself
+// keeps the call, and a caller with a local named like something the word uses keeps a call.
+const Base = 100
+
+inline fn dup3(a:i64 b:i64 c:i64 -- a:i64 b:i64 c:i64 a:i64 b:i64 c:i64) { pick pick pick }
+inline fn dec(x:i64 y:i64 z:i64 -- w:i64 y:i64 z:i64) { fn { 1 - } dip2 }
+inline fn bury(a:i64 b:i64 c:i64 d:i64 -- d:i64 a:i64 b:i64 c:i64) { swap fn { swap fn { swap } dip } dip }
+inline fn step(x:i64 y:i64 z:i64 -- r:i64 y:i64 z:i64 x:i64) { dup3 dec tak bury rot }
+fn tak(x:i64 y:i64 z:i64 -- r:i64) { pick pick swap < if { step step step drop drop drop tak } else { nip nip } }
+
+inline fn sign(n:i64 -- s:i64) { dup 0 < if { drop -1 } else { 0 > if { 1 } else { 0 } } }
+inline fn name(n:i64 -- s:str) { switch { 0 { "zero" } 1 { "one" } _ { "many" } } }
+inline fn based(n:i64 -- m:i64) { Base + }
+inline fn sum(a:[]i64 -- n:i64) { 0 swap fn { + } each }
+inline fn halve_to_one(n:i64 -- k:i64) { 0 swap loop { dup 1 <= until 2 / fn { 1 + } dip } drop }
+inline fn countdown(n:i64 -- ) { dup 0 > if { dup print " " print 1 - countdown } else { drop } }
+
+fn main() {
+	18 12 6 tak print nl
+	24 16 8 tak print nl
+	-5 sign print " " print 0 sign print " " print 7 sign print nl
+	0 name print " " print 1 name print " " print 9 name print nl
+	1 based 2 based + print nl
+	[1 2 3 4] sum [10 20] sum + print nl
+	1024 halve_to_one print " " print 1 halve_to_one print nl
+	3 countdown nl
+	// A local named Base: `based` means the constant, so it is called, not spliced
+	7 -> Base
+	Base based print nl
+}

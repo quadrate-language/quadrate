@@ -59,12 +59,22 @@ namespace Qd {
 			return mCast;
 		}
 
+		// The struct it writes, as the validator knew it; empty when it did not
+		const std::string& structType() const {
+			return mStructType;
+		}
+
+		void setStructType(const std::string& structType) {
+			mStructType = structType;
+		}
+
 		void setCast(CastDirection cast) {
 			mCast = cast;
 		}
 
 	private:
 		std::string mFieldName;
+		std::string mStructType;
 		CastDirection mCast = CastDirection::NONE;
 		IAstNode* mParent;
 		size_t mLine;

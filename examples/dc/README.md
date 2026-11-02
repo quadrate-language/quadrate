@@ -19,6 +19,8 @@ q          # quit
 ## Features
 
 - Interactive REPL
-- Standard library usage (`flag::`, `io::`, `mem::`, etc.)
+- Standard library usage (`flag::`, `io::`, `strings::`, etc.)
+- Stack code throughout: the calculator's stack in globals, and a word of a line for each
+  operator
 - Command-line argument parsing
 - File I/O

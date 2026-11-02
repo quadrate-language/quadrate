@@ -13,6 +13,8 @@ TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
 QUADC="${QUADC:-build/debug/cmd/quadc/quadc}"
 if [[ "$QUADC" != /* ]]; then
     QUADC="$(pwd)/$QUADC"
@@ -254,6 +256,30 @@ if [[ $? -eq 0 && -x libm_import ]]; then
     pass "a plain .so import still links"
 else
     fail "a plain .so import failed to link" "$actual"
+fi
+
+# ===================================================================
+# A freestanding program links against the freestanding runtime
+# ===================================================================
+# Nothing else builds one: the runtime stopped compiling when the hosted context gained a
+# jmp_buf, and stack code needed words it never had, unnoticed until the kernel example was
+# built. Stack words, a local, and a loop, linked with what the runtime defines, leave nothing
+# undefined.
+if command -v clang > /dev/null 2>&1 && command -v ld > /dev/null 2>&1; then
+    printf 'fn _start() {\n\t1 2 3 rot drop2 dup over swap nip 4 pick drop2 tuck drop2 drop\n\t7 -> x\n\tx drop\n\tloop { }\n}\n' > bare.qd
+    if ! output=$("$QUADC" --freestanding --target x86_64-unknown-none-elf bare.qd -o bare.o 2>&1); then
+        fail "a freestanding program did not compile" "$output"
+    elif ! output=$(clang --target=x86_64-unknown-none-elf -ffreestanding -fno-builtin -nostdlib \
+            -fno-stack-protector -mno-red-zone -O2 -I"$REPO_ROOT/lib/rt/include" \
+            -c "$REPO_ROOT/lib/rt/src/freestanding.c" -o rt.o 2>&1); then
+        fail "the freestanding runtime did not compile" "$output"
+    elif ! output=$(ld -r -o linked.o bare.o rt.o 2>&1); then
+        fail "a freestanding program did not link" "$output"
+    elif [[ -n "$(nm -u linked.o)" ]]; then
+        fail "a freestanding program left symbols undefined" "$(nm -u linked.o | tr '\n' ' ')"
+    else
+        pass "a freestanding program links against the freestanding runtime"
+    fi
 fi
 
 # ===================================================================

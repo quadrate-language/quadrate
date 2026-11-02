@@ -76,8 +76,15 @@ test "crc32 verify" {
 	"Hello" 12345 crypto::crc32_verify 0 testing::assert_eq
 }
 
-// NOTE: sha512 tests omitted - the pure-Quadrate sha512 implementation
-// produces incorrect output (does not match RFC 6234 test vectors).
+test "sha512 basic" {
+	// RFC 6234's "abc" vector, and the empty string
+	"abc" crypto::sha512!
+	"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+	testing::assert_eq
+	"" crypto::sha512!
+	"cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+	testing::assert_eq
+}
 
 test "md5 streaming multi-chunk" {
 	crypto::Md5 {} -> h
@@ -107,4 +114,16 @@ test "crc32 single characters" {
 test "sha256 long input" {
 	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" crypto::sha256! -> result
 	result "ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df154668eb" testing::assert_eq
+}
+
+test "a string is hashed as its UTF-8 bytes" {
+	// These read characters and hashed each codepoint as one byte, so any non-ASCII text came
+	// out wrong. The expected values are Python's hashlib and zlib over the same bytes.
+	"héllo wörld ☃" -> s
+	s crypto::sha256! "197a152db0d9da8d291382523cbe9fc690eaed31f5b9d597814c825624770688" testing::assert_eq
+	s crypto::md5! "7db2ea56c00e114f436840ec0e9d5e74" testing::assert_eq
+	s crypto::sha512!
+	"0f388788670e046a62adebf5137828845700a38f0cbf959298af82ed02e84523f55bb0928370cf86b77652c61241d2416bd174ee26523d66bd5fab9063140e23"
+	testing::assert_eq
+	s crypto::crc32 1930577422 testing::assert_eq
 }

@@ -18,418 +18,237 @@ const MsPerSimSec = 50
 // Update interval in simulated seconds
 const PrintInterval = 10
 const PrintIntervalF = 10.0
+const Payload = 15000.0
 
-def progress_bar(pct:f64 width:f64 -- bar:str) {
-	pct width * 100.0 / math::floor -> filled
-	filled 0.0 < if {
-		0.0 -> filled
-	}
-	filled width > if {
-		width -> filled
-	}
-
-	"[" -> bar
-	0.0 -> i
-	loop {
-		i filled >= if {
-			break
-		}
-		bar "#" strings::concat -> bar
-		i 1.0 + -> i
-	}
-	loop {
-		i width >= if {
-			break
-		}
-		bar "-" strings::concat -> bar
-		i 1.0 + -> i
-	}
-	bar "]" strings::concat -> bar
-	bar
-}
-
-def print_telemetry(stage_name:str t:f64 alt:f64 vel:f64 fuel:f64 max_fuel:f64 pitch:f64 first:i64 -- ) {
-	alt 1000.0 / -> alt_km
-	fuel max_fuel / 100.0 * -> fuel_pct
-	fuel 1000.0 / -> fuel_t
-	pitch math::rad_to_deg -> pitch_deg
-
-	// Move cursor up 2 lines if not first print
-	first 0 == if {
-		CursorUp2 print
-	}
-
-	// Line 1: Stage, time, altitude, velocity
-	"\r" print
-	term::Bold print term::Cyan print
-	stage_name print
-	term::Reset print
-
-	t "  T+%5.0fs" fmt::sprintf print
-
-	" | Alt: " print
-	alt_km 100.0 < if {
-		term::Yellow print
-	}
-	alt_km 100.0 >= if {
-		term::Green print
-	}
-	alt_km "%6.1f km" fmt::sprintf print
-	term::Reset print
-
-	" | Vel: " print
-	term::BrightWhite print
-	vel "%5.0f m/s" fmt::sprintf print
-	term::Reset print
-
-	" | Pitch: " print
-	pitch_deg "%4.1f deg" fmt::sprintf print
-	ClearLine print nl
-
-	// Line 2: Fuel bar
-	fuel_pct 20.0 progress_bar -> bar
-	"       Fuel: " print
-	fuel_pct 20.0 < if {
-		term::Red print
-	}
-	fuel_pct 20.0 >= fuel_pct 50.0 < and if {
-		term::Yellow print
-	}
-	fuel_pct 50.0 >= if {
-		term::Green print
-	}
-	bar print
-	term::Reset print
-	fuel_pct fuel_t " %5.1f%% (%5.1f t)" fmt::printf
-	ClearLine print
-	io::flush
-}
-
-def print_header(msg:str -- ) {
-	nl
-	term::Bold print term::BrightYellow print
-	"=== " print msg print " ===" print
-	term::Reset print
-	nl nl
-}
-
-fn main() {
-	term::Bold print term::BrightCyan print
-	"=== Falcon 9 3D Simulation ===" print
-	term::Reset print nl
-	term::Dim print
-	"Earth-Centered Inertial coordinates | Realtime display" print
-	term::Reset print nl nl
-
-	// Stage 1: Merlin 1D engines
-	Engine {
+// Stage 1: 9 Merlin 1D engines
+var stage1 = Stage {
+	dry_mass = 22200.0
+	fuel_mass = 395700.0
+	eng = Engine {
 		thrust = 845000.0
 		isp_vac = 311.0
 		isp_sl = 282.0
 		mass = 470.0
-	} -> m1d
-	Stage {
-		dry_mass = 22200.0
-		fuel_mass = 395700.0
-		eng = m1d
-		eng_count = 9.0
-		diameter = 3.7
-		cd = 0.3
-	} -> stage1
+	}
+	eng_count = 9.0
+	diameter = 3.7
+	cd = 0.3
+}
 
-	// Stage 2: Merlin Vacuum
-	Engine {
+// Stage 2: Merlin Vacuum
+var stage2 = Stage {
+	dry_mass = 4000.0
+	fuel_mass = 107500.0
+	eng = Engine {
 		thrust = 981000.0
 		isp_vac = 348.0
 		isp_sl = 200.0
 		mass = 490.0
-	} -> mvac
-	Stage {
-		dry_mass = 4000.0
-		fuel_mass = 107500.0
-		eng = mvac
-		eng_count = 1.0
-		diameter = 3.7
-		cd = 0.3
-	} -> stage2
+	}
+	eng_count = 1.0
+	diameter = 3.7
+	cd = 0.3
+}
 
-	15000.0 -> payload
+// The vehicle, and when the display last showed it
+var state = State {
+	t = 0.0
+	pos = math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
+	vel = math::Vec3 { x = 0.0 y = 0.0 z = 0.0 }
+	mass = 0.0
+	fuel = 0.0
+	pitch = 0.0
+}
+var last_display:f64 = 0.0
+var first_print:i64 = 1
+
+fn at_most(x:f64 hi:f64 -- x:f64) { dup2 > if { nip } else { drop } }
+fn at_least(x:f64 lo:f64 -- x:f64) { dup2 < if { nip } else { drop } }
+fn set_pitch(p:f64 -- ) { state swap >>pitch drop }
+
+// ---------------------------------------------------------------------------
+// Display
+// ---------------------------------------------------------------------------
+
+fn bar(filled:i64 rest:i64 -- s:str) { "-" swap strings::repeat swap "#" swap strings::repeat swap strings::concat "[" swap strings::concat "]" strings::concat }
+
+// A bar of width cells, pct percent of them filled
+fn progress_bar(pct:f64 width:f64 -- bar:str) {
+	swap over * 100.0 / math::floor 0.0 at_least over at_most
+	swap over - cast<i64> swap cast<i64> swap bar
+}
+
+fn header(msg:str -- ) { nl term::Bold print term::BrightYellow print "=== " print print " ===" print term::Reset print nl nl }
+fn alt_color(km:f64 -- ) { dup 100.0 < if { term::Yellow print } 100.0 >= if { term::Green print } }
+fn fuel_color(pct:f64 -- ) { dup 20.0 < if { term::Red print } dup 20.0 >= over 50.0 < and if { term::Yellow print } 50.0 >= if { term::Green print } }
+
+// Stage, time, altitude, velocity and pitch
+fn flight_line(name:str -- ) {
+	first_print 0 == if { CursorUp2 print }
+	"\r" print term::Bold print term::Cyan print print term::Reset print
+	state <<t "  T+%5.0fs" fmt::sprintf print
+	" | Alt: " print state altitude 1000.0 / dup alt_color "%6.1f km" fmt::sprintf print term::Reset print
+	" | Vel: " print term::BrightWhite print state speed "%5.0f m/s" fmt::sprintf print term::Reset print
+	" | Pitch: " print state <<pitch math::rad_to_deg "%4.1f deg" fmt::sprintf print
+	ClearLine print nl
+}
+
+// The fuel left, of max_fuel, as a bar
+fn fuel_line(max_fuel:f64 -- ) {
+	state <<fuel swap / 100.0 *
+	"       Fuel: " print dup fuel_color dup 20.0 progress_bar print term::Reset print
+	state <<fuel 1000.0 / " %5.1f%% (%5.1f t)" fmt::printf
+	ClearLine print io::flush
+}
+
+// Every PrintInterval simulated seconds, the telemetry, then a pause for the realtime effect
+fn show(name:str max_fuel:f64 -- ) {
+	state <<t last_display - PrintIntervalF >= if {
+		swap flight_line fuel_line
+		0 -> first_print
+		state <<t -> last_display
+		MsPerSimSec PrintInterval * time::Millisecond * time::sleep
+	} else {
+		drop2
+	}
+}
+
+// T+, altitude and velocity, under a title
+fn event(format:str -- ) {
+	nl term::Bold print term::BrightRed print
+	fn { state <<t state altitude 1000.0 / state speed } dip fmt::sprintf print
+	term::Reset print nl
+}
+
+// ---------------------------------------------------------------------------
+// Flight
+// ---------------------------------------------------------------------------
+
+fn fly(stage:Stage -- ) { state step -> state }
+
+// Stage 1: pitch over from 90 degrees after 1 km, by 80 degrees over the next 60 km, to no less than 10
+fn gravity_turn() {
+	state altitude dup 1000.0 > if { 1000.0 - 60000.0 / 80.0 * 90.0 swap - 10.0 at_least math::deg_to_rad set_pitch } else { drop }
+}
+
+fn stage1_burn() {
+	loop {
+		state <<fuel 0.0 > state <<t 300.0 <= and while
+		gravity_turn
+		stage1 fly
+		"S1" stage1 <<fuel_mass show
+	}
+}
+
+// Stage 2 above 80 km: pitch for the vertical acceleration that brings the radial velocity to
+// zero at burnout, between 5 and 45 degrees
+fn radial_velocity( -- v:f64) { state <<pos normalize state <<vel dot }
+fn engine_accel( -- a:f64) { stage2 <<eng <<thrust state <<mass / }
+fn local_g( -- g:f64) { MuEarth state <<pos length dup * / }
+
+fn time_left( -- t:f64) {
+	state <<fuel stage2 <<eng dup <<thrust swap <<isp_vac G0 * / / 10.0 at_least
+}
+
+fn guidance() {
+	state altitude 80000.0 > if {
+		engine_accel
+		radial_velocity -1.0 * time_left / local_g +
+		over at_most over -1.0 * at_least
+		swap / 1.0 at_most -1.0 at_least math::asin
+		5.0 math::deg_to_rad at_least 45.0 math::deg_to_rad at_most
+		set_pitch
+	}
+}
+
+fn stage2_burn() {
+	loop {
+		state <<fuel 0.0 > state <<t 700.0 <= and while
+		guidance
+		stage2 fly
+		"S2" stage2 <<fuel_mass show
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Orbit analysis
+// ---------------------------------------------------------------------------
+
+fn horizontal_velocity( -- v:f64) { state <<vel length dup * radial_velocity dup * - math::sqrt }
+fn apo( -- m:f64) { state apoapsis }
+fn peri( -- m:f64) { state periapsis }
+fn inc_deg( -- d:f64) { state inclination math::rad_to_deg }
+fn warn(msg:str color:str -- ) { print print term::Reset print nl }
+
+fn orbit_status() {
+	peri 100000.0 > if {
+		term::Bold print "*** STABLE ORBIT ACHIEVED! ***" term::BrightGreen warn
+		term::Green print
+		apo 1000.0 / peri 1000.0 / inc_deg "Orbit: %.0f x %.0f km @ %.1f deg" fmt::sprintf print
+		term::Reset print nl
+	}
+	peri 100000.0 <= apo 0.0 >= and if {
+		peri 0.0 > if { "WARNING: Periapsis in atmosphere" term::BrightYellow warn }
+		peri 0.0 <= if { "WARNING: Suborbital trajectory!" term::BrightRed warn }
+	}
+	apo 0.0 < if { "Escape trajectory - no orbit" term::BrightYellow warn }
+}
+
+fn orbit_analysis() {
+	nl term::Bold print term::BrightMagenta print "=== ORBIT ANALYSIS ===" print term::Reset print nl nl
+	term::Dim print
+	horizontal_velocity "Horizontal velocity: %.0f m/s\n" fmt::printf
+	radial_velocity "Radial velocity: %.0f m/s\n" fmt::printf
+	term::Reset print nl
+	state eccentricity "Eccentricity: %.4f\n" fmt::printf
+	inc_deg "Inclination: %.2f deg\n" fmt::printf
+	nl
+	apo 0.0 < if {
+		"ESCAPE TRAJECTORY" term::BrightYellow warn
+	} else {
+		apo 1000.0 / "Apoapsis: %.1f km\n" fmt::printf
+		peri 1000.0 / "Periapsis: %.1f km\n" fmt::printf
+	}
+	nl
+	orbit_status
+	nl
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+fn launch_mass( -- m:f64) { stage1 stage_wet stage2 stage_wet + Payload + }
+
+fn main() {
+	term::Bold print term::BrightCyan print "=== Falcon 9 3D Simulation ===" print term::Reset print nl
+	term::Dim print "Earth-Centered Inertial coordinates | Realtime display" print term::Reset print nl nl
 
 	stage1 stage_thrust 1000.0 / "Stage 1: %.0f kN (9x Merlin 1D)\n" fmt::printf
 	stage2 stage_thrust 1000.0 / "Stage 2: %.0f kN (1x Merlin Vac)\n" fmt::printf
 	nl
-
-	stage1 stage_wet stage2 stage_wet + payload + -> init_mass
-
-	init_mass 1000.0 / "Launch mass: %.1f tons" fmt::sprintf print nl
+	launch_mass 1000.0 / "Launch mass: %.1f tons" fmt::sprintf print nl
 	EarthRotVel "Earth rotation boost: %.1f m/s" fmt::sprintf print nl
 
-	// Initial: on equator at +X, velocity in +Y (prograde)
-	math::Vec3 {
-		x = EarthRadius
-		y = 0.0
-		z = 0.0
-	}
-	-> init_pos
-	math::Vec3 {
-		x = 0.0
-		y = EarthRotVel
-		z = 0.0
-	}
-	-> init_vel
+	// On the equator at +X, moving in +Y with the Earth's rotation, pointing straight up
+	0.0 EarthRadius 0.0 0.0 math::Vec3 0.0 EarthRotVel 0.0 math::Vec3 launch_mass stage1 <<fuel_mass 90.0 math::deg_to_rad State
+	-> state
 
-	State {
-		t = 0.0
-		pos = init_pos
-		vel = init_vel
-		mass = init_mass
-		fuel = stage1 <<fuel_mass
-		pitch = 90.0 math::deg_to_rad
-	} -> state
-
-	"STAGE 1 IGNITION" print_header
-
-	0.1 -> dt
-	0.0 -> last_display
-	stage1 <<fuel_mass -> s1_max_fuel
-	1 -> first_print
-
-	// Stage 1 burn
-	loop {
-		state <<fuel 0.0 <= state <<t 300.0 > or if {
-			break
-		}
-
-		state altitude -> alt
-
-		// Gravity turn profile
-		alt 1000.0 > if {
-			alt 1000.0 - 60000.0 / 80.0 * 90.0 swap - -> target_deg
-			target_deg 10.0 < if {
-				10.0 -> target_deg
-			}
-			target_deg math::deg_to_rad -> new_pitch
-
-			state <<pos -> p_copy
-			state <<vel -> v_copy
-
-			State {
-				t = state <<t
-				pos = p_copy
-				vel = v_copy
-				mass = state <<mass
-				fuel = state <<fuel
-				pitch = new_pitch
-			} -> state
-		}
-
-		stage1 state dt step -> state
-
-		// Update display periodically
-		state <<t last_display - PrintIntervalF >= if {
-			"S1" state <<t state altitude state speed state <<fuel s1_max_fuel state <<pitch first_print print_telemetry
-			0 -> first_print
-			state <<t -> last_display
-
-			// Sleep for realtime effect
-			MsPerSimSec PrintInterval * time::Millisecond * time::sleep
-		}
-	}
-
-	// Show MECO
-	nl
-	term::Bold print term::BrightRed print
-	state <<t state altitude 1000.0 / state speed
-	"T+%.0fs  === MECO ===  Alt: %.1f km  Vel: %.0f m/s" fmt::sprintf print
-	term::Reset print nl
-
+	"STAGE 1 IGNITION" header
+	stage1_burn
+	"T+%.0fs  === MECO ===  Alt: %.1f km  Vel: %.0f m/s" event
 	time::Second 2 * time::sleep
 
-	// Stage separation
-	"STAGE SEPARATION" print_header
-	state <<mass stage1 stage_dry - -> sep_mass
-
-	state <<pos -> p_sep
-	state <<vel -> v_sep
-
-	State {
-		t = state <<t
-		pos = p_sep
-		vel = v_sep
-		mass = sep_mass
-		fuel = stage2 <<fuel_mass
-		pitch = state <<pitch
-	} -> state
-
+	"STAGE SEPARATION" header
+	state state <<mass stage1 stage_dry - >>mass stage2 <<fuel_mass >>fuel drop
 	time::Second time::sleep
 
-	"STAGE 2 IGNITION" print_header
-
+	"STAGE 2 IGNITION" header
 	0.0 -> last_display
-	stage2 <<fuel_mass -> s2_max_fuel
 	1 -> first_print
-
-	// Stage 2 burn with guidance
-	loop {
-		state <<fuel 0.0 <= state <<t 700.0 > or if {
-			break
-		}
-
-		state altitude -> alt
-
-		alt 80000.0 > if {
-			// Compute radial velocity
-			state <<pos -> p_now
-			p_now length -> r_now
-			p_now normalize -> up_now
-			state <<vel -> v_now
-			up_now v_now dot -> v_rad
-
-			state <<fuel -> fuel_now
-			state <<mass -> mass_now
-
-			stage2 <<eng -> eng2
-			eng2 <<thrust eng2 <<isp_vac G0 * / -> mdot
-			fuel_now mdot / -> t_rem
-			t_rem 10.0 < if {
-				10.0 -> t_rem
-			}
-
-			eng2 <<thrust mass_now / -> accel
-			MuEarth r_now r_now * / -> g_now
-
-			// Target vertical acceleration to zero radial velocity at burnout
-			v_rad -1.0 * t_rem / g_now + -> a_vert
-			a_vert accel > if {
-				accel -> a_vert
-			}
-			a_vert accel -1.0 * < if {
-				accel -1.0 * -> a_vert
-			}
-
-			a_vert accel / -> sin_p
-			sin_p 1.0 > if {
-				1.0 -> sin_p
-			}
-			sin_p -1.0 < if {
-				-1.0 -> sin_p
-			}
-			sin_p math::asin -> target_pitch
-
-			target_pitch 5.0 math::deg_to_rad < if {
-				5.0 math::deg_to_rad -> target_pitch
-			}
-			target_pitch 45.0 math::deg_to_rad > if {
-				45.0 math::deg_to_rad -> target_pitch
-			}
-
-			state <<pos -> p_g
-			state <<vel -> v_g
-
-			State {
-				t = state <<t
-				pos = p_g
-				vel = v_g
-				mass = state <<mass
-				fuel = state <<fuel
-				pitch = target_pitch
-			} -> state
-		}
-
-		stage2 state dt step -> state
-
-		// Update display periodically
-		state <<t last_display - PrintIntervalF >= if {
-			"S2" state <<t state altitude state speed state <<fuel s2_max_fuel state <<pitch first_print print_telemetry
-			0 -> first_print
-			state <<t -> last_display
-
-			// Sleep for realtime effect
-			MsPerSimSec PrintInterval * time::Millisecond * time::sleep
-		}
-	}
-
-	// Show SECO
-	nl
-	term::Bold print term::BrightRed print
-	state <<t state altitude 1000.0 / state speed
-	"T+%.0fs  === SECO ===  Alt: %.1f km  Vel: %.0f m/s" fmt::sprintf print
-	term::Reset print nl
-
+	stage2_burn
+	"T+%.0fs  === SECO ===  Alt: %.1f km  Vel: %.0f m/s" event
 	time::Second 2 * time::sleep
 
-	// Orbit Analysis
-	nl
-	term::Bold print term::BrightMagenta print
-	"=== ORBIT ANALYSIS ===" print
-	term::Reset print nl nl
-
-	// Final velocity components
-	state <<pos -> p_f
-	p_f normalize -> up_f
-	state <<vel -> v_f
-	up_f v_f dot -> v_rad_f
-	v_f length -> v_tot
-	v_tot v_tot * v_rad_f v_rad_f * - math::sqrt -> v_hor_f
-
-	term::Dim print
-	v_hor_f "Horizontal velocity: %.0f m/s\n" fmt::printf
-	v_rad_f "Radial velocity: %.0f m/s\n" fmt::printf
-	term::Reset print
-	nl
-
-	state eccentricity -> ecc
-	state inclination math::rad_to_deg -> inc
-	state apoapsis -> apo
-	state periapsis -> peri
-
-	// Convert to km for display
-	apo 1000.0 / -> apo_km
-	peri 1000.0 / -> peri_km
-
-	ecc "Eccentricity: %.4f\n" fmt::printf
-	inc "Inclination: %.2f deg\n" fmt::printf
-	nl
-
-	// Print apoapsis/periapsis
-	apo 0.0 < if {
-		term::BrightYellow print
-		"ESCAPE TRAJECTORY" print
-		term::Reset print nl
-	}
-	apo 0.0 >= if {
-		apo_km "Apoapsis: %.1f km\n" fmt::printf
-		peri_km "Periapsis: %.1f km\n" fmt::printf
-	}
-
-	nl
-
-	// Check orbit status and print result
-	peri 100000.0 > if {
-		term::Bold print term::BrightGreen print
-		"*** STABLE ORBIT ACHIEVED! ***" print
-		term::Reset print nl
-		term::Green print
-		apo_km peri_km inc "Orbit: %.0f x %.0f km @ %.1f deg" fmt::sprintf print
-		term::Reset print nl
-	}
-	peri 100000.0 <= apo 0.0 >= and if {
-		peri 0.0 > if {
-			term::BrightYellow print
-			"WARNING: Periapsis in atmosphere" print
-			term::Reset print nl
-		}
-		peri 0.0 <= if {
-			term::BrightRed print
-			"WARNING: Suborbital trajectory!" print
-			term::Reset print nl
-		}
-	}
-	apo 0.0 < if {
-		term::BrightYellow print
-		"Escape trajectory - no orbit" print
-		term::Reset print nl
-	}
-
-	nl
+	orbit_analysis
 }

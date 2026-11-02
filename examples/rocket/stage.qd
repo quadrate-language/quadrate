@@ -15,16 +15,8 @@ struct Stage {
 	cd:        f64
 }
 
-pub fn stage_thrust(s:Stage -- t:f64) {
-	fn { <<eng <<thrust } fn { <<eng_count } bi *
-}
+pub fn stage_thrust(s:Stage -- t:f64) { fn { <<eng <<thrust } fn { <<eng_count } bi * }
 
-pub def stage_wet(s:Stage -- m:f64) {
-	s <<eng -> e
-	s <<dry_mass e <<mass s <<eng_count * + s <<fuel_mass +
-}
-
-pub def stage_dry(s:Stage -- m:f64) {
-	s <<eng -> e
-	s <<dry_mass e <<mass s <<eng_count * +
-}
+// The stage's own mass and its engines', with and without its fuel
+pub fn stage_dry(s:Stage -- m:f64) { dup <<dry_mass over <<eng <<mass rot <<eng_count * + }
+pub fn stage_wet(s:Stage -- m:f64) { dup stage_dry swap <<fuel_mass + }

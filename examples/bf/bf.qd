@@ -9,97 +9,60 @@ use unicode
 
 const TapeSize = 30000
 
+// The machine: the program and where in it we are, the tape and where on it
+var code:str = ""
+var ip:i64 = 0
+var tape:ptr = 0
+var dp:i64 = 0
+
+fn op( -- c:i64) { code ip strings::char_at }
+fn cell( -- b:i64) { tape dp mem::get_byte }
+fn put(b:i64 -- ) { tape dp mem::set_byte }
+fn bump(n:i64 -- ) { cell + 255 bits::and put }
+
+// A byte from stdin: the first character of the next line, or 0 at the end
+fn read_byte( -- b:i64) { io::readline! swap dup len 0 > rot 0 != and if { 0 strings::char_at } else { drop 0 } }
+
+// To the matching bracket: the depth goes up at a bracket facing the way we go, down at one
+// facing back, and we stop where it reaches 0
+fn nest_fwd(d:i64 -- d:i64) { op switch { unicode::lbracket { 1 + } unicode::rbracket { 1 - } } }
+fn nest_back(d:i64 -- d:i64) { op switch { unicode::rbracket { 1 + } unicode::lbracket { 1 - } } }
+fn skip_fwd() { 1 loop { ip 1 + -> ip nest_fwd dup 0 == until } drop }
+fn skip_back() { 1 loop { ip 1 - -> ip nest_back dup 0 == until } drop }
+
+fn exec(c:i64 -- ) {
+	switch {
+		unicode::gt { dp 1 + -> dp }
+		unicode::lt { dp 1 - -> dp }
+		unicode::plus { 1 bump }
+		unicode::minus { -1 bump }
+		unicode::dot { cell strings::from_char print }
+		unicode::comma { read_byte put }
+		unicode::lbracket { cell 0 == if { skip_fwd } }
+		unicode::rbracket { cell 0 != if { skip_back } }
+	}
+}
+
+fn run() {
+	loop {
+		ip code len < while
+		op exec
+		ip 1 + -> ip
+	}
+}
+
 fn main() {
-	os::args -> args
-	args len 1 < if {
+	os::args dup len 1 < if {
 		"usage: bf <program.bf>" print nl
 		1 os::exit
 	}
-	args 0 nth -> filename
-	args free
-
-	filename io::read_file! -> code
-	code len -> code_len
+	dup 0 nth swap free
+	io::read_file! -> code
 
 	TapeSize mem::alloc! -> tape
 	defer {
 		tape mem::free
 	}
 	tape TapeSize mem::zero
-
-	0 -> ip // instruction pointer
-	0 -> dp // data pointer
-
-	loop {
-		ip code_len >= if {
-			break
-		}
-
-		code ip strings::char_at switch {
-			unicode::gt {
-				dp ++ -> dp
-			}
-			unicode::lt {
-				dp -- -> dp
-			}
-			unicode::plus {
-				tape dp mem::get_byte ++ 255 bits::and tape dp mem::set_byte
-			}
-			unicode::minus {
-				tape dp mem::get_byte -- 255 bits::and tape dp mem::set_byte
-			}
-			unicode::dot {
-				tape dp mem::get_byte strings::from_char print
-			}
-			unicode::comma {
-				io::readline! -> more -> line
-				more 0 != line len 0 > and if {
-					line 0 strings::char_at
-				} else {
-					0
-				}
-				tape dp mem::set_byte
-			}
-			unicode::lbracket {
-				tape dp mem::get_byte 0 == if {
-					1
-					loop {
-						dup 0 == if {
-							drop break
-						}
-						ip ++ -> ip
-						code ip strings::char_at switch {
-							unicode::lbracket {
-								++
-							}
-							unicode::rbracket {
-								--
-							}
-						}
-					}
-				}
-			}
-			unicode::rbracket {
-				tape dp mem::get_byte 0 != if {
-					1
-					loop {
-						dup 0 == if {
-							drop break
-						}
-						ip -- -> ip
-						code ip strings::char_at switch {
-							unicode::rbracket {
-								++
-							}
-							unicode::lbracket {
-								--
-							}
-						}
-					}
-				}
-			}
-		}
-
-		ip ++ -> ip
-	}
+	run
 }

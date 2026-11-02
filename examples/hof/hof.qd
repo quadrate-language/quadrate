@@ -1,9 +1,12 @@
 /// Combinators
 ///
-/// The builtin combinators -- dip, keep, bi, tri, both, times, each, map, filter, fold and the
-/// searching words any, all, find, index -- with their function values written in place as
-/// `fn { }`, and `when`/`unless` from the hof module.
+/// The builtin combinators -- dip, keep, bi, tri, bi_star, tri_star, both, times, each, map,
+/// filter, fold and the searching words any, all, find, index -- with their function values
+/// written in place as `fn { }`, and `when`/`unless` from the hof module.
 use hof
+
+// The array the examples below work on: a word that leaves it, as a Forth constant would
+fn numbers( -- a:[]i64) { [1 2 3 4 5 6] }
 
 fn main() {
 	"=== Combinators ===" print nl
@@ -21,8 +24,8 @@ fn main() {
 	// keep: run a function value and keep the value
 	"keep - run it and keep the value:" print nl
 	"  5 doubled, keeping 5: " print
-	5 fn { 2 * } keep -> orig -> result
-	"result=" print result print ", original=" print orig print nl
+	5 fn { 2 * } keep
+	swap "result=" print print ", original=" print print nl
 	nl
 
 	// dip: run a function value under the top value
@@ -33,6 +36,16 @@ fn main() {
 	"  Stack [1, 2, 3], add the two under the 3: " print
 	1 2 3 fn { + } dip
 	"top=" print print ", below=" print print nl
+	nl
+
+	// bi_star and tri_star: one function value for each value
+	"bi_star, tri_star - one function value for each value:" print nl
+	"  3 plus one, 4 doubled: " print
+	3 4 fn { 1 + } fn { 2 * } bi_star
+	swap print " and " print print nl
+	"  1, 2 and 3 times ten, twenty and thirty: " print
+	1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star
+	rot print ", " print swap print ", " print print nl
 	nl
 
 	// both: run one function value on two values
@@ -62,7 +75,6 @@ fn main() {
 
 	// Over arrays
 	"each, map, filter, fold - over arrays:" print nl
-	[1 2 3 4 5 6] -> numbers
 	"  Each: " print
 	numbers fn { print " " print } each nl
 	"  Squares: " print
@@ -96,11 +108,10 @@ fn main() {
 
 	// Practical: validate an age
 	"Practical: validate an age" print nl
-	25 -> age
-	age fn { 18 >= } fn { 120 <= } bi and if {
-		"  Age " print age print " is valid!" print nl
+	25 dup fn { 18 >= } fn { 120 <= } bi and if {
+		"  Age " print print " is valid!" print nl
 	} else {
-		"  Age " print age print " is invalid!" print nl
+		"  Age " print print " is invalid!" print nl
 	}
 
 	nl

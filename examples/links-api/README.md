@@ -31,7 +31,9 @@ curl -X POST http://localhost:8080/echo -d '{"hello":"world"}'
 
 - HTTP server with routing and path parameters (`http` module)
 - JSON building with key-value pairs (`json` module)
-- String builder for efficient concatenation (`sb` module)
+- A JSON array from `map` and `strings::join`, and a search with `each`, the matches gathered
+  on the stack
+- Stack code throughout: every handler a `fn` with the request context on the stack
 - Query parameter parsing
 - Switch-based dispatch
 - Error responses with status codes (400, 404)

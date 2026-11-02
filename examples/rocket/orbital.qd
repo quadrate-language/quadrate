@@ -2,57 +2,25 @@
 // (uses directory-based namespace - no explicit local imports needed)
 use math
 
-def orbital_energy(state:State -- energy:f64) {
-	state <<vel length -> vmag
-	state <<pos length -> r
-	vmag vmag * 2.0 / MuEarth r / -
+// Specific orbital energy: v²/2 - μ/r
+fn orbital_energy(state:State -- energy:f64) { dup <<vel length dup * 2.0 / swap <<pos length MuEarth swap / - }
+
+// |(v × (r × v)) / μ - r / |r||
+fn eccentricity(state:State -- ecc:f64) {
+	dup <<pos swap <<vel    // r v
+	over over cross         // r v h
+	cross 1.0 MuEarth / scale
+	swap normalize subtract length
 }
 
-def eccentricity(state:State -- ecc:f64) {
-	state <<vel -> v
-	state <<pos -> r
+fn semi_major(state:State -- a:f64) { orbital_energy dup 0.0 >= if { drop -1.0 } else { MuEarth swap -2.0 * / } }
 
-	// h = r × v
-	r v cross -> h
-
-	// e = (v × h) / μ - r / |r|
-	v h cross -> vh
-	vh 1.0 MuEarth / scale -> term1
-	r normalize -> term2
-	term1 term2 subtract -> e_vec
-	e_vec length
+pub fn apoapsis(state:State -- alt:f64) {
+	dup eccentricity dup 1.0 >= if { drop2 -1.0 } else { swap semi_major swap 1.0 swap + * EarthRadius - }
 }
 
-fn semi_major(state:State -- a:f64) {
-	orbital_energy -> energy
-	energy 0.0 >= if {
-		-1.0
-	} else {
-		MuEarth energy -2.0 * /
-	}
+pub fn periapsis(state:State -- alt:f64) {
+	dup eccentricity swap semi_major dup 0.0 < if { drop2 -1.0 } else { swap 1.0 swap - * EarthRadius - }
 }
 
-pub def apoapsis(state:State -- alt:f64) {
-	state eccentricity -> ecc
-	ecc 1.0 >= if {
-		-1.0
-	} else {
-		state semi_major -> a
-		a 1.0 ecc + * EarthRadius -
-	}
-}
-
-pub def periapsis(state:State -- alt:f64) {
-	state eccentricity -> ecc
-	state semi_major -> a
-	a 0.0 < if {
-		-1.0
-	} else {
-		a 1.0 ecc - * EarthRadius -
-	}
-}
-
-pub fn inclination(state:State -- inc:f64) {
-	fn { <<pos } fn { <<vel } bi cross -> h
-	h <<z h length / math::acos
-}
+pub fn inclination(state:State -- inc:f64) { fn { <<pos } fn { <<vel } bi cross dup <<z swap length / math::acos }

@@ -38,7 +38,9 @@
 #include <quadrate/rt/context.h>
 #include <quadrate/rt/exec_result.h>
 #include <quadrate/rt/qd_struct.h>
+#if __STDC_HOSTED__
 #include <setjmp.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -1022,8 +1024,10 @@ int qd_version_api(void);
 
 /** @} */ // end of Version group
 
+#if __STDC_HOSTED__
 /** @brief The context's recovery jump buffer, for setjmp() */
 jmp_buf* qd_recovery_buf(qd_context* ctx);
+#endif
 
 /** @brief Arm recovery: a fatal runtime error longjmps to qd_recovery_buf() instead of exiting.
  *  The context stays usable, but the stack may have changed: qd_div pops before testing for zero. */

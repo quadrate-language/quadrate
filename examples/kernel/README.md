@@ -28,7 +28,9 @@ Needs `qemu-system-x86_64`.
 - `sys::ld8`/`sys::ld16`/`sys::ld64` for direct memory reads
 - `sys::outb`/`sys::inb` for I/O port access
 - `sys::cli`/`sys::sti`/`sys::hlt` for interrupt control
-- GDT and IDT setup from Quadrate (64-bit entries)
+- GDT and IDT setup from Quadrate, each entry built as the 64-bit words it is and stored whole
+- Stack code throughout: one-line words over the VGA cells and the cursor, `times` for the
+  loops, and a `switch` for scancodes
 - PIC remapping and interrupt dispatch
 - PIT timer tick counter
 - PS/2 keyboard with scancode-to-ASCII translation

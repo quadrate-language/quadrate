@@ -452,6 +452,16 @@ BUILTIN(bi, "( ..a x p q -- ..c )", "Runs p on x, then q on x again, each on wha
 /// @example 5 fn { 1 + } fn { 2 * } fn { 3 - } tri  // 6 10 2
 BUILTIN(tri, "( ..a x p q r -- ..d )", "Runs p, q and r on x in turn, as bi runs two.")
 
+/// Runs p on x, with what is under x, then q on y: Factor's bi*.
+/// @signature ( ..a x y p q -- ..c )
+/// @example 3 4 fn { 1 + } fn { 2 * } bi_star  // 4 8
+BUILTIN(bi_star, "( ..a x y p q -- ..c )", "Runs p on x, with what is under x, then q on y: Factor's bi*.")
+
+/// Runs p on x, q on y and r on z, as bi_star runs two.
+/// @signature ( ..a x y z p q r -- ..d )
+/// @example 1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star  // 10 40 90
+BUILTIN(tri_star, "( ..a x y z p q r -- ..d )", "Runs p on x, q on y and r on z, as bi_star runs two.")
+
 /// Runs q on x, then on y.
 /// @signature ( ..a x y q -- ..c )
 /// @example 3 4 fn { 10 * } both  // 30 40

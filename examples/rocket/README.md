@@ -17,3 +17,5 @@ quad run main.qd
 - Real-time terminal display with progress bars
 - Orbital analysis (apoapsis, periapsis, eccentricity)
 - Multi-file project structure (physics, integrator, orbital mechanics)
+- Stack code throughout: the vehicle and stages in globals, the physics as one-line words
+  (`gravity`, `thrust_dir`, `drag_accel`), and guidance clamped with `at_least` and `at_most`

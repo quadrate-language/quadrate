@@ -1,4 +1,5 @@
-// Type checking for the combinators: dip, keep, bi, tri, both, times, each, map, filter, fold.
+// Type checking for the combinators: dip, keep, bi, tri, bi_star, tri_star, both, times, each,
+// map, filter, fold.
 //
 // A combinator is checked by doing what it does to the modelled stack. A function value it runs
 // is either written in place -- a `fn { }` immediately before it, whose body is then walked
@@ -33,6 +34,12 @@ namespace Qd {
 			}
 			if (name == "tri") {
 				return "a value and three function values";
+			}
+			if (name == "bi_star") {
+				return "two values and two function values";
+			}
+			if (name == "tri_star") {
+				return "three values and three function values";
 			}
 			if (name == "both" || name == "dip2" || name == "keep2") {
 				return "two values and a function value";
@@ -313,6 +320,17 @@ namespace Qd {
 			for (const Quotation& q : quotations) {
 				push(xType, xStruct);
 				run(q, typeStack, structTypeStack);
+			}
+		} else if (name == "bi_star" || name == "tri_star") {
+			// One function value for each value, the first under the rest: Factor's bi* and tri*
+			std::vector<StackValueType> types(quotations.size());
+			std::vector<std::string> structs(quotations.size());
+			for (size_t k = quotations.size(); k > 0; k--) {
+				pop(types[k - 1], structs[k - 1]);
+			}
+			for (size_t k = 0; k < quotations.size(); k++) {
+				push(types[k], structs[k]);
+				run(quotations[k], typeStack, structTypeStack);
 			}
 		} else if (name == "both") {
 			StackValueType yType;

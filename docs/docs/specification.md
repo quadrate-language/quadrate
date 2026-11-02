@@ -958,7 +958,7 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ```
 
 - `pub`: Makes function publicly accessible from other modules
-- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions.
+- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions. An `inline fn` called in the file that declares it SHOULD be replaced by its body where the body can stand in the caller unchanged -- a stack `fn`, neither fallible, generic nor a method, whose body declares no local and has no `return` or `defer` -- so that a word factored into smaller words costs what it would written out in one piece, whatever results the smaller words leave.
 - `fn`: The inputs stay on the stack for the body to work on (§4.4); names on them are
   documentation and are not in scope, so naming is optional and naming some inputs and not others
   is permitted.
@@ -1416,6 +1416,8 @@ values from the top of the stack and the values they work on from below them:
 | `keep2` | `( ..a x y q -- ..b x y )` | `q` on `x` and `y`, then pushes them back |
 | `bi` | `( ..a x p q -- ..c )` | `p` on `x`, then `q` on `x` pushed again |
 | `tri` | `( ..a x p q r -- ..d )` | `p`, `q` and `r` on `x` in turn, as `bi` does |
+| `bi_star` | `( ..a x y p q -- ..c )` | `p` on `x` and what is under it, then `q` on `y` pushed back |
+| `tri_star` | `( ..a x y z p q r -- ..d )` | `p` on `x`, `q` on `y` and `r` on `z`, as `bi_star` does |
 | `both` | `( ..a x y q -- ..c )` | `q` on `x`, then `q` on `y` |
 | `times` | `( ..a n q -- ..a )` | `q` `n` times |
 | `each` | `( ..a arr q -- ..a )` | `q` with each element of `arr` pushed, in order |
@@ -1429,7 +1431,8 @@ values from the top of the stack and the values they work on from below them:
 | `scan` | `( arr start q -- i )` | as `index`, from position `start` on; a negative `start` is 0 |
 
 A combinator MUST be type-checked by doing what it does to the modelled stack: a function value
-it runs on the stack (`dip`, `dip2`, `keep`, `keep2`, `bi`, `tri`, `both`, `times`, `each`) MAY take and leave
+it runs on the stack (`dip`, `dip2`, `keep`, `keep2`, `bi`, `tri`, `bi_star`, `tri_star`, `both`, `times`,
+`each`) MAY take and leave
 any number of values, and its effect is applied where it runs. The function value of `times` and
 `each` runs again on what it leaves, so it MUST leave the stack as it found it, in depth and in
 types. That of `map`, `filter`, `any`, `all`, `find`, `index` and `scan` MUST take one value
@@ -2525,7 +2528,7 @@ enum_decl       = ["pub"] "enum" identifier "{" { enum_variant } "}" ;
 enum_variant    = identifier [ "=" integer ] ;
 type_alias_decl = ["pub"] "type" identifier "=" type ;
 struct_decl     = ["pub"] ["packed"] "struct" identifier [type_params] "{" { field_decl } "}" ;
-fn_decl         = ["pub"] { "inline" | "let" } "fn" identifier [type_params] signature ["!"] block ;
+fn_decl         = ["pub"] ["inline"] ( "fn" | "def" ) identifier [type_params] signature ["!"] block ;
 import_decl     = "import" string "as" string "{" { import_fn } "}" ;
 test_decl       = "test" string block ;
 

@@ -11,7 +11,9 @@
 #define QD_QUADRATE_RUNTIME_CONTEXT_H
 
 #include <quadrate/rt/stack.h>
+#if __STDC_HOSTED__
 #include <setjmp.h>
+#endif
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -76,9 +78,12 @@ typedef struct {
 	// Recovery state. On the context rather than file scope: lib/qd may link
 	// the shared runtime while lib/interp links the static one, and statics
 	// would then exist twice in one process. Appended so codegen's GEP of
-	// field 0 is unaffected.
+	// field 0 is unaffected. A freestanding build has no setjmp, and nothing to recover
+	// to: a raised error halts there.
+#if __STDC_HOSTED__
 	jmp_buf recovery_buf; ///< Armed by qd_recovery_arm()
 	bool recovery_armed;  ///< Whether a fatal error unwinds instead of exiting
+#endif
 
 	/**
 	 * @brief Count of assertion failures since the last reset (0 = none)

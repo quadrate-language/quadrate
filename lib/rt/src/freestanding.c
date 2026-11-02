@@ -310,6 +310,16 @@ int qd_push_f(qd_context* ctx, double value) {
 	return push_elem(ctx, e);
 }
 
+// A d128 is held in its stack slot, so it is pushed without the decimal library. Code generation
+// calls this for a local whose type is only known when it runs, though nothing in a freestanding
+// program makes one.
+int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high) {
+	qd_stack_element_t e;
+	e.type = QD_STACK_TYPE_D128;
+	e.value.d = (qd_d128_t){{low, high}};
+	return push_elem(ctx, e);
+}
+
 int qd_push_p(qd_context* ctx, void* value) {
 	qd_stack_element_t e;
 	e.type = QD_STACK_TYPE_PTR;
@@ -350,6 +360,70 @@ int qd_pop_p(qd_context* ctx, void** value) {
 	if (value) {
 		*value = e.value.p;
 	}
+	return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Stack words the code generator calls rather than inlines. An element is
+// copied as it is: nothing in a freestanding program is reference counted.
+// ---------------------------------------------------------------------------
+
+// The n-th element from the top, 1 being the top; halts when there are fewer
+static qd_stack_element_t* from_top(qd_context* ctx, size_t n) {
+	qd_stack* st = ctx->st;
+	if (st->size < n) {
+		qd_freestanding_halt();
+	}
+	return &st->data[st->size - n];
+}
+
+int qd_dup(qd_context* ctx) {
+	return push_elem(ctx, *from_top(ctx, 1));
+}
+
+int qd_dup2(qd_context* ctx) {
+	const qd_stack_element_t a = *from_top(ctx, 2);
+	const qd_stack_element_t b = *from_top(ctx, 1);
+	push_elem(ctx, a);
+	return push_elem(ctx, b);
+}
+
+int qd_over(qd_context* ctx) {
+	return push_elem(ctx, *from_top(ctx, 2));
+}
+
+int qd_pick(qd_context* ctx) {
+	return push_elem(ctx, *from_top(ctx, 3));
+}
+
+int qd_drop(qd_context* ctx) {
+	from_top(ctx, 1);
+	ctx->st->size--;
+	return 0;
+}
+
+int qd_nip(qd_context* ctx) {
+	qd_stack_element_t* a = from_top(ctx, 2);
+	a[0] = a[1];
+	ctx->st->size--;
+	return 0;
+}
+
+int qd_swap(qd_context* ctx) {
+	qd_stack_element_t* a = from_top(ctx, 2);
+	const qd_stack_element_t t = a[0];
+	a[0] = a[1];
+	a[1] = t;
+	return 0;
+}
+
+// ( a b c -- b c a )
+int qd_rot(qd_context* ctx) {
+	qd_stack_element_t* a = from_top(ctx, 3);
+	const qd_stack_element_t t = a[0];
+	a[0] = a[1];
+	a[1] = a[2];
+	a[2] = t;
 	return 0;
 }
 

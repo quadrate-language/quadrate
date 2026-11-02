@@ -124,9 +124,9 @@ test "tri" {
 	c 7 testing::assert_eq
 }
 
-test "hof::bi_star" {
-	// bi_star applies different functions to two values
-	3 4 fn (i64 -- i64) { 1 + } fn (i64 -- i64) { 2 * } hof::bi_star
+test "bi_star" {
+	// bi_star applies different functions to two values; a builtin, as tri is
+	3 4 fn (i64 -- i64) { 1 + } fn (i64 -- i64) { 2 * } bi_star
 	-> b -> a
 	a 4 testing::assert_eq   // 3 + 1 = 4
 	b 8 testing::assert_eq   // 4 * 2 = 8

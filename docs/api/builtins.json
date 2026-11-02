@@ -28,6 +28,8 @@
         {"name": "keep2", "signature": "(..a x y q -- ..b x y)", "description": "Runs q on the top two values, then puts them back on top."},
         {"name": "bi", "signature": "(..a x p q -- ..c)", "description": "Runs p on x, then q on x again, each on what the last left."},
         {"name": "tri", "signature": "(..a x p q r -- ..d)", "description": "Runs p, q and r on x in turn, as bi runs two."},
+        {"name": "bi_star", "signature": "(..a x y p q -- ..c)", "description": "Runs p on x, with what is under x, then q on y: Factor's bi*."},
+        {"name": "tri_star", "signature": "(..a x y z p q r -- ..d)", "description": "Runs p on x, q on y and r on z, as bi_star runs two."},
         {"name": "both", "signature": "(..a x y q -- ..c)", "description": "Runs q on x, then on y."},
         {"name": "times", "signature": "(..a n q -- ..a)", "description": "Runs q n times; it must leave the stack as it found it."},
         {"name": "each", "signature": "(..a arr q -- ..a)", "description": "Runs q with each element, or character of a string, on top; it must leave the stack as it found it."},

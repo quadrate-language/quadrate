@@ -340,6 +340,11 @@ namespace Qd {
 				}
 				return "comment";
 			}
+			case IAstNode::Type::FUNCTION_DECLARATION: {
+				// One-line functions written together stay together, as a block of short words
+				std::string body;
+				return oneLineBody(static_cast<AstNodeFunctionDeclaration*>(node), body) ? "fn_line" : "fn_start";
+			}
 			default:
 				return "fn_start";
 			}
@@ -350,16 +355,17 @@ namespace Qd {
 			if (prevType.empty()) {
 				return;
 			}
+			const bool prevFn = prevType == "fn_start" || prevType == "fn_line";
+			const bool curFn = curType == "fn_start" || curType == "fn_line";
 			bool needsBlank = false;
 			if (prevType == "shebang") {
 				needsBlank = true;
-			} else if (prevType == "use" && (curType == "const" || curType == "fn_start")) {
+			} else if (prevType == "use" && (curType == "const" || curFn)) {
 				needsBlank = true;
-			} else if (prevType == "const" && curType == "fn_start") {
+			} else if (prevType == "const" && curFn) {
 				needsBlank = true;
-			} else if (prevType == "fn_start" &&
-					   (curType == "fn_start" || curType == "use" || curType == "const" || curType == "comment")) {
-				needsBlank = true;
+			} else if (prevFn && (curFn || curType == "use" || curType == "const" || curType == "comment")) {
+				needsBlank = !(prevType == "fn_line" && curType == "fn_line");
 			}
 
 			// Preserve blank lines from original source between same-type declarations.
@@ -678,6 +684,10 @@ namespace Qd {
 		void emitFunctionDecl(AstNodeFunctionDeclaration* node) {
 			emitIndent();
 			emitFunctionSignature(node);
+			if (std::string body; oneLineBody(node, body)) {
+				mOutput << " { " << body << " }\n";
+				return;
+			}
 			mOutput << " {\n";
 			mIndent++;
 			if (node->body()) {
@@ -686,6 +696,41 @@ namespace Qd {
 			mIndent--;
 			emitIndent();
 			mOutput << "}\n";
+		}
+
+		// A function written on one line keeps to it, when its body, formatted, is still one line
+		// with no comment in it. A word the size of a phrase reads as one; spread over three
+		// lines, a file of them hides how it is factored. Nothing is joined that was written apart.
+		bool oneLineBody(AstNodeFunctionDeclaration* node, std::string& body) {
+			if (!node->body()) {
+				return false;
+			}
+			const BlockRange range = findBlockRange(node->body());
+			if (!range.found || range.openLine != range.closeLine || range.openLine != node->line()) {
+				return false;
+			}
+			std::ostringstream rendered;
+			std::swap(mOutput, rendered);
+			const int savedIndent = mIndent;
+			mIndent = 0;
+			emitBlockBody(node->body());
+			mIndent = savedIndent;
+			std::swap(mOutput, rendered);
+
+			body = rtrim(rendered.str());
+			if (body.empty() || body.find('\n') != std::string::npos) {
+				return false;
+			}
+			bool inStr = false;
+			for (size_t i = 0; i < body.length(); i++) {
+				if (quoteToggles(body, i, inStr)) {
+					inStr = !inStr;
+				} else if (!inStr && body[i] == '/' && i + 1 < body.length() &&
+						   (body[i + 1] == '/' || body[i + 1] == '*')) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		void emitFunctionSignature(AstNodeFunctionDeclaration* node) {
@@ -1200,8 +1245,16 @@ namespace Qd {
 					}
 					// Normalize body: add spaces around standalone operators
 					std::string normBody;
+					bool nInStr = false;
 					for (size_t b = 0; b < body.length(); b++) {
 						char bc = body[b];
+						if (quoteToggles(body, b, nInStr)) {
+							nInStr = !nInStr;
+						}
+						if (nInStr) {
+							normBody += bc;
+							continue;
+						}
 						if ((bc == '*' || bc == '/' || bc == '+' || bc == '-' || bc == '%') && b > 0) {
 							if (!std::isspace(static_cast<unsigned char>(body[b - 1]))) {
 								normBody += ' ';

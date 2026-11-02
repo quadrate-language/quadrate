@@ -1,0 +1,45 @@
+// A module's constants and globals are its own: read bare only inside it, so two
+// modules may share a name, and neither shadows a function of the program's. A bare name from
+// a module used to be found everywhere, ahead of the program's functions -- `use
+// flag` brought unicode's `space`, and a `fn space` in the program pushed 32.
+use flag
+use scope_a
+use scope_b
+
+fn Width( -- n:i64) {
+	99
+}
+
+fn space( -- n:i64) {
+	7
+}
+
+fn count( -- n:i64) {
+	-1
+}
+
+fn main() {
+	Width print nl
+	space print nl
+	scope_a::width print nl
+	scope_b::width print nl
+	scope_a::label print nl
+	scope_b::label print nl
+	scope_a::Width print nl
+	scope_b::Width print nl
+	scope_a::slow print nl
+	scope_a::Mode::Fast scope_a::named print nl
+	scope_a::slow scope_a::named print nl
+	10 scope_a::wide print nl
+	20 scope_a::wide print nl
+	scope_a::Box {} <<w print nl
+	[2]scope_a::Box 1 nth <<w print nl
+	scope_a::bump print nl
+	scope_a::bump print nl
+	scope_b::bump print nl
+	count print nl
+	scope_a::greet print nl
+	scope_b::greet print nl
+	scope_a::box_w print nl
+	4 scope_a::rated print nl
+}

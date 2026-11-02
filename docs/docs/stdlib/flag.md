@@ -87,6 +87,29 @@ f flag::destroy
 ```
 ---
 
+#### `fn` either
+
+Check if a boolean flag is given in either of its spellings.
+
+**Signature:** `(f:Flag) either(short:str long:str -- present:i64)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `f` | `ptr` | Flag struct |
+| `short` | `str` | Short spelling (e.g., "-v") |
+| `long` | `str` | Long spelling (e.g., "--verbose") |
+
+| Output | Type | Description |
+|--------|------|-------------|
+| `present` | `i64` | 1 if either is found, 0 otherwise |
+
+**Example:**
+
+```qd
+f "-v" "--verbose" flag::either if { "verbose" print nl }
+```
+---
+
 #### `fn` float
 
 Get float value of a flag.

@@ -1,14 +1,17 @@
-def tak(x:i64 y:i64 z:i64 -- result:i64) {
-	y x < if {
-		x -- y z tak
-		y -- z x tak
-		z -- x y tak
-		tak
-	} else {
-		z
-	}
-}
+// The Takeuchi function, as stack code. Each call takes three values and uses each of them
+// three times, which is where stack code is hardest; it factors into words of a line each.
+// The helpers are `inline`, so each call is replaced by the words it is made of, and tak
+// runs as fast as it would written out in one piece.
+//
+// tak(x, y, z) = y < x ? tak(tak(x-1, y, z), tak(y-1, z, x), tak(z-1, x, y)) : z
 
-fn main() {
-	8 4 7 tak print nl
-}
+inline fn dup3(a:i64 b:i64 c:i64 -- a:i64 b:i64 c:i64 a:i64 b:i64 c:i64) { pick pick pick }
+inline fn dec(x:i64 y:i64 z:i64 -- w:i64 y:i64 z:i64) { fn { 1 - } dip2 }
+inline fn bury(a:i64 b:i64 c:i64 d:i64 -- d:i64 a:i64 b:i64 c:i64) { swap fn { swap fn { swap } dip } dip }
+
+// One of the three inner calls, left under the triple, which turns to the next call's order
+inline fn step(x:i64 y:i64 z:i64 -- r:i64 y:i64 z:i64 x:i64) { dup3 dec tak bury rot }
+
+fn tak(x:i64 y:i64 z:i64 -- r:i64) { pick pick swap < if { step step step drop drop drop tak } else { nip nip } }
+
+fn main() { 8 4 7 tak print nl }

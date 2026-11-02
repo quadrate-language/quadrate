@@ -1,6 +1,6 @@
 {
   "name": "hof",
-  "description": "Higher-Order Function combinators.  The combinators every program uses -- `dip`, `keep`, `bi`, `tri`, `both`, `times`, `each`, `map`, `filter`, `fold`, `find`, `any` and `all` -- are builtins, and need no `use`. This module has the rest: `when` and `unless`, which run a function value on a condition; `bi_star`, which runs two function values on two values; and `fold_right`.  Every one is generic, and `when` and `unless` take their function value with a stack variable, `..a`, so it may have any arity.",
+  "description": "Higher-Order Function combinators.  The combinators every program uses -- `dip`, `keep`, `bi`, `tri`, `bi_star`, `tri_star`, `both`, `times`, `each`, `map`, `filter`, `fold`, `find`, `any` and `all` -- are builtins, and need no `use`. This module has the rest: `when` and `unless`, which run a function value on a condition, and `fold_right`.  Every one is generic, and `when` and `unless` take their function value with a stack variable, `..a`, so it may have any arity.",
   "constants": [
 
   ],
@@ -8,16 +8,6 @@
 
   ],
   "functions": [
-    {
-      "name": "bi_star",
-      "signature": "(x:T y:T f:fn(T -- U) g:fn(T -- U) -- a:U b:U)",
-      "failable": false,
-      "description": "Run two function values on two values, the first on the first and the second on the second. Factor's `bi*`: `f` runs under `y`, then `g` on `y`.",
-      "params": [{"name": "x", "type": "T", "description": "First value"}, {"name": "y", "type": "T", "description": "Second value"}, {"name": "f", "type": "fn(T -- U)", "description": "Function value for `x`"}, {"name": "g", "type": "fn(T -- U)", "description": "Function value for `y`"}],
-      "returns": [{"name": "a", "type": "U", "description": "What `f` leaves for `x`"}, {"name": "b", "type": "U", "description": "What `g` leaves for `y`"}],
-      "errors": [],
-      "examples": ["3 4 fn { 1 + } fn { 2 * } hof::bi_star  // Stack: 4 8"]
-    },
     {
       "name": "fold_right",
       "signature": "(arr:[]T acc:A f:fn(T A -- A) -- result:A)",

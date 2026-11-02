@@ -1,0 +1,12 @@
+// A global initialized with a struct of another module: `math::Vec3 { ... }` was read as a
+// constant named `math` followed by garbage, though a struct literal elsewhere may be qualified.
+use math
+
+var origin = math::Vec3 { x = 1.0 y = 2.0 z = 3.0 }
+
+fn main() {
+	origin <<y print nl
+	origin 0.5 >>z drop
+	origin <<z print nl
+	origin length_sq print nl
+}

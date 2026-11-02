@@ -20,6 +20,8 @@ qd_shared = shared_library('qd',
 		include_directories: [qd_inc, qdrt_src_inc],
 		dependencies: [qdrt_dep, qc_dep, llvmgen_dep],
 		cpp_args: qd_cpp_args,
+		# libqdrt.so beside it once copied to dist/lib
+		build_rpath: '$ORIGIN',
 		install_rpath: '$ORIGIN',
 		install: false
 )

@@ -19,6 +19,19 @@ test "flag::boolean finds flag" {
 	f "--help" flag::boolean 1 testing::assert_eq
 }
 
+test "flag::either finds either spelling" {
+	flag::Flag {
+		argc = 2
+		argv = "\n-v\n--debug\n"
+	} -> f
+
+	f "-v" "--verbose" flag::either 1 testing::assert_eq
+	f "-d" "--debug" flag::either 1 testing::assert_eq
+	f "-q" "--quiet" flag::either 0 testing::assert_eq
+	// The flag stays usable afterwards
+	f "--debug" flag::boolean 1 testing::assert_eq
+}
+
 test "flag::boolean not found" {
 	flag::Flag {
 		argc = 2

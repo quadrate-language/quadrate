@@ -1,0 +1,64 @@
+// Its constants, read bare in here and qualified from outside. scope_b has a
+// `Width` of its own, and the program a function of that name.
+pub const Width = 10
+pub const Label = "a"
+
+pub enum Mode {
+	Fast
+	Slow
+}
+
+pub struct Box {
+	w: i64 = Width
+}
+
+pub fn width( -- n:i64) {
+	Width
+}
+
+pub fn label( -- s:str) {
+	Label
+}
+
+pub fn slow( -- m:i64) {
+	Mode::Slow
+}
+
+pub fn wide(n:i64 -- yes:i64) {
+	switch {
+		Width { 1 }
+		_ { 0 }
+	}
+}
+
+pub fn named(m:i64 -- s:str) {
+	switch {
+		Mode::Fast { "fast" }
+		Mode::Slow { "slow" }
+		_ { "?" }
+	}
+}
+
+// Its globals, which scope_b's of the same names do not touch
+var count:i64 = 0
+var greeting:str = "hello from a"
+var box = Box { w = 3 }
+pub const Rate = 2.5d
+
+pub fn bump( -- n:i64) {
+	count 1 + -> count
+	count
+}
+
+pub fn greet( -- s:str) {
+	greeting
+}
+
+pub fn box_w( -- n:i64) {
+	box <<w
+}
+
+// An i64 function reading a d128 constant: not one for the native path
+pub fn rated(x:i64 -- y:i64) {
+	Rate * cast<i64>
+}

@@ -28,7 +28,6 @@ const VGA_BASE = 0xB8000
 const VGA_COLS = 80
 const VGA_ROWS = 25
 const ATTR_WHITE = 0x0F
-const ATTR_HI = 0x0F00
 const BLANK = 0x0F20
 
 const PIC1_CMD = 0x20
@@ -47,144 +46,65 @@ const SC_BACKSPACE = 0x0E
 const SC_ENTER = 0x1C
 
 // ---------------------------------------------------------------------------
-// VGA text mode
+// VGA text mode: 80x25 cells of a character byte and an attribute byte
 // ---------------------------------------------------------------------------
-def vga_put(row:i64 col:i64 ch:i64 -- ) {
-	VGA_BASE row VGA_COLS * col + 2 * + 0 ch sys::st8
-	VGA_BASE row VGA_COLS * col + 2 * + 1 ATTR_WHITE sys::st8
-}
+fn at(row:i64 col:i64 -- i:i64) { swap VGA_COLS * + }
+fn cell(i:i64 -- addr:i64) { 2 * VGA_BASE + }
+fn vga_put(row:i64 col:i64 ch:i64 -- ) { rrot at cell tuck 0 rot sys::st8 1 ATTR_WHITE sys::st8 }
+fn blank(i:i64 -- ) { cell 0 BLANK sys::st16 }
+fn vga_clear() { 0 VGA_COLS VGA_ROWS * fn { dup blank 1 + } times drop }
 
-fn vga_clear() {
-	0 -> i
-	loop {
-		i VGA_COLS VGA_ROWS * >= if { break }
-		VGA_BASE i 2 * + 0 BLANK sys::st16
-		i 1 + -> i
-	}
-}
-
+// The cell a row below, moved up into this one
+fn lift(i:i64 -- ) { dup VGA_COLS + cell 0 sys::ld16 swap cell 0 rot sys::st16 }
 fn vga_scroll() {
-	// Copy rows 1-24 to rows 0-23
-	0 -> dst
-	loop {
-		dst VGA_COLS VGA_ROWS 1 - * >= if { break }
-		VGA_BASE dst 2 * + VGA_COLS 2 * + 0 sys::ld16 -> ch
-		VGA_BASE dst 2 * + 0 ch sys::st16
-		dst 1 + -> dst
-	}
-	// Clear last row
-	0 -> col
-	loop {
-		col VGA_COLS >= if { break }
-		VGA_BASE VGA_ROWS 1 - VGA_COLS * col + 2 * + 0 BLANK sys::st16
-		col 1 + -> col
-	}
-}
-
-def vga_print_str(row:i64 col:i64 s_addr:i64 len:i64 -- ) {
-	0 -> i
-	loop {
-		i len >= if { break }
-		s_addr i + 0 sys::ld8 -> ch
-		row col i + ch vga_put
-		i 1 + -> i
-	}
+	0 VGA_COLS VGA_ROWS 1 - * fn { dup lift 1 + } times drop
+	VGA_ROWS 1 - VGA_COLS * VGA_COLS fn { dup blank 1 + } times drop
 }
 
 // ---------------------------------------------------------------------------
-// Cursor helpers
+// Cursor, kept where the interrupt stubs can see it
 // ---------------------------------------------------------------------------
-fn cursor_get_row( -- row:i64) {
-	hw::cursor_row_addr 0 sys::ld64
-}
+fn cursor_get_row( -- row:i64) { hw::cursor_row_addr 0 sys::ld64 }
+fn cursor_get_col( -- col:i64) { hw::cursor_col_addr 0 sys::ld64 }
+fn cursor( -- row:i64 col:i64) { cursor_get_row cursor_get_col }
+fn cursor_set(row:i64 col:i64 -- ) { hw::cursor_col_addr 0 rot sys::st64 hw::cursor_row_addr 0 rot sys::st64 }
 
-fn cursor_get_col( -- col:i64) {
-	hw::cursor_col_addr 0 sys::ld64
-}
-
-def cursor_set(row:i64 col:i64 -- ) {
-	hw::cursor_row_addr 0 row sys::st64
-	hw::cursor_col_addr 0 col sys::st64
-}
-
-fn cursor_advance() {
-	cursor_get_row -> row
-	cursor_get_col -> col
-	col 1 + -> col
-	col VGA_COLS >= if {
-		0 -> col
-		row 1 + -> row
-	}
-	row VGA_ROWS >= if {
-		vga_scroll
-		VGA_ROWS 1 - -> row
-	}
-	row col cursor_set
-}
-
-fn cursor_newline() {
-	cursor_get_row 1 + -> row
-	row VGA_ROWS >= if {
-		vga_scroll
-		VGA_ROWS 1 - -> row
-	}
-	row 0 cursor_set
-}
+// A row past the last scrolls the screen up, and is the last
+fn on_screen(row:i64 -- row:i64) { dup VGA_ROWS >= if { drop vga_scroll VGA_ROWS 1 - } }
+fn cursor_advance() { cursor 1 + dup VGA_COLS >= if { drop 1 + 0 } swap on_screen swap cursor_set }
+fn cursor_newline() { cursor_get_row 1 + on_screen 0 cursor_set }
 
 // ---------------------------------------------------------------------------
-// GDT setup
+// Descriptor tables. Each entry is built as the 64-bit words it is, and the
+// table's pointer is its size less one and its address.
 // ---------------------------------------------------------------------------
-def gdt_set_entry(base:i64 idx:i64 seg_base:i64 seg_limit:i64 access:i64 flags:i64 -- ) {
-	base idx 8 * + -> off
-	off 0 + 0 seg_limit 0xFF bits::and sys::st8
-	off 1 + 0 seg_limit 8 bits::shr 0xFF bits::and sys::st8
-	off 2 + 0 seg_base 0xFF bits::and sys::st8
-	off 3 + 0 seg_base 8 bits::shr 0xFF bits::and sys::st8
-	off 4 + 0 seg_base 16 bits::shr 0xFF bits::and sys::st8
-	off 5 + 0 access sys::st8
-	off 6 + 0 seg_limit 16 bits::shr 0x0F bits::and flags 4 bits::shl bits::or sys::st8
-	off 7 + 0 seg_base 24 bits::shr 0xFF bits::and sys::st8
-}
+fn table_pointer(table:i64 size:i64 desc:i64 -- desc:i64) { tuck 0 rot sys::st16 tuck 2 + 0 rot sys::st64 }
+
+// A GDT segment descriptor: limit 0-15, base 0-23, access, limit 16-19 with the flags, base 24-31
+fn limit_bits(limit:i64 -- d:i64) { dup 0xFFFF bits::and swap 16 bits::shr 0x0F bits::and 48 bits::shl bits::or }
+fn base_bits(base:i64 -- d:i64) { dup 0xFFFFFF bits::and 16 bits::shl swap 24 bits::shr 0xFF bits::and 56 bits::shl bits::or }
+fn descriptor(base:i64 limit:i64 access:i64 flags:i64 -- d:i64) { 52 bits::shl swap 40 bits::shl bits::or rot base_bits bits::or swap limit_bits bits::or }
+fn gdt_entry(gdt:i64 idx:i64 d:i64 -- ) { rrot 8 * + 0 rot sys::st64 }
 
 fn setup_gdt() {
-	hw::gdt_addr -> gdt
-	hw::gdt_desc_addr -> desc
-	gdt 0 0 0 0 0 gdt_set_entry
-	gdt 1 0 0xFFFFF 0x9A 0x0A gdt_set_entry
-	gdt 2 0 0xFFFFF 0x92 0x0A gdt_set_entry
-	desc 0 23 sys::st16
-	desc 2 + 0 gdt sys::st64
-	desc hw::lgdt
+	hw::gdt_addr
+	dup 0 0 0 0 0 descriptor gdt_entry
+	dup 1 0 0xFFFFF 0x9A 0x0A descriptor gdt_entry
+	dup 2 0 0xFFFFF 0x92 0x0A descriptor gdt_entry
+	23 hw::gdt_desc_addr table_pointer hw::lgdt
 }
 
-// ---------------------------------------------------------------------------
-// IDT setup (x86_64: 16-byte entries)
-// ---------------------------------------------------------------------------
-def idt_set_entry(base:i64 idx:i64 handler:i64 selector:i64 type_attr:i64 -- ) {
-	base idx 16 * + -> off
-	off 0 + 0 handler 0xFFFF bits::and sys::st16
-	off 2 + 0 selector sys::st16
-	off 4 + 0 0 sys::st8
-	off 5 + 0 type_attr sys::st8
-	off 6 + 0 handler 16 bits::shr 0xFFFF bits::and sys::st16
-	off 8 + 0 handler 32 bits::shr 0xFFFFFFFF bits::and sys::st32
-	off 12 + 0 0 sys::st32
+// An x86_64 interrupt gate, 16 bytes: offset 0-15, selector, type, offset 16-31; then offset 32-63
+fn gate_low(handler:i64 -- d:i64) {
+	dup 0xFFFF bits::and swap 16 bits::shr 0xFFFF bits::and 48 bits::shl bits::or
+	SEG_KCODE 16 bits::shl bits::or IDT_PRESENT_INT32 40 bits::shl bits::or
 }
+fn gate_high(handler:i64 -- d:i64) { 32 bits::shr 0xFFFFFFFF bits::and }
+fn idt_entry(handler:i64 addr:i64 -- ) { over gate_low over 0 rot sys::st64 swap gate_high swap 8 + 0 rot sys::st64 }
 
 fn setup_idt() {
-	hw::idt_addr -> idt
-	hw::idt_desc_addr -> desc
-	hw::isr_table_addr -> isrs
-	0 -> i
-	loop {
-		i 48 >= if { break }
-		isrs i 8 * sys::ld64 -> handler
-		idt i handler SEG_KCODE IDT_PRESENT_INT32 idt_set_entry
-		i 1 + -> i
-	}
-	desc 0 4095 sys::st16
-	desc 2 + 0 idt sys::st64
-	desc hw::lidt
+	0 48 fn { dup hw::isr_table_addr swap 8 * sys::ld64 over 16 * hw::idt_addr + idt_entry 1 + } times drop
+	hw::idt_addr 4095 hw::idt_desc_addr table_pointer hw::lidt
 }
 
 // ---------------------------------------------------------------------------
@@ -207,114 +127,96 @@ fn remap_pic() {
 // Interrupt handler
 // ---------------------------------------------------------------------------
 pub fn handle_interrupt() {
-	hw::int_num_addr 0 sys::ld64 -> int_no
-	int_no 32 == if { handle_timer }
-	int_no 33 == if { handle_keyboard }
-	int_no 40 >= if { PIC2_CMD PIC_EOI sys::outb }
-	int_no 32 >= if { PIC1_CMD PIC_EOI sys::outb }
+	hw::int_num_addr 0 sys::ld64
+	dup 32 == if { handle_timer }
+	dup 33 == if { handle_keyboard }
+	dup 40 >= if { PIC2_CMD PIC_EOI sys::outb }
+	32 >= if { PIC1_CMD PIC_EOI sys::outb }
 }
 
 // ---------------------------------------------------------------------------
 // Timer
 // ---------------------------------------------------------------------------
-fn handle_timer() {
-	hw::tick_addr -> addr
-	addr 0 sys::ld64 1 + -> ticks
-	addr 0 ticks sys::st64
-}
+fn handle_timer() { hw::tick_addr 0 over 0 sys::ld64 1 + sys::st64 }
 
 // ---------------------------------------------------------------------------
 // Keyboard
 // ---------------------------------------------------------------------------
-def scancode_to_ascii(sc:i64 -- ch:i64) {
-	sc 0x02 == if { 49 return }
-	sc 0x03 == if { 50 return }
-	sc 0x04 == if { 51 return }
-	sc 0x05 == if { 52 return }
-	sc 0x06 == if { 53 return }
-	sc 0x07 == if { 54 return }
-	sc 0x08 == if { 55 return }
-	sc 0x09 == if { 56 return }
-	sc 0x0A == if { 57 return }
-	sc 0x0B == if { 48 return }
-	sc 0x0C == if { 45 return }
-	sc 0x0D == if { 61 return }
-	sc 0x10 == if { 113 return }
-	sc 0x11 == if { 119 return }
-	sc 0x12 == if { 101 return }
-	sc 0x13 == if { 114 return }
-	sc 0x14 == if { 116 return }
-	sc 0x15 == if { 121 return }
-	sc 0x16 == if { 117 return }
-	sc 0x17 == if { 105 return }
-	sc 0x18 == if { 111 return }
-	sc 0x19 == if { 112 return }
-	sc 0x1E == if { 97 return }
-	sc 0x1F == if { 115 return }
-	sc 0x20 == if { 100 return }
-	sc 0x21 == if { 102 return }
-	sc 0x22 == if { 103 return }
-	sc 0x23 == if { 104 return }
-	sc 0x24 == if { 106 return }
-	sc 0x25 == if { 107 return }
-	sc 0x26 == if { 108 return }
-	sc 0x27 == if { 59 return }
-	sc 0x2C == if { 122 return }
-	sc 0x2D == if { 120 return }
-	sc 0x2E == if { 99 return }
-	sc 0x2F == if { 118 return }
-	sc 0x30 == if { 98 return }
-	sc 0x31 == if { 110 return }
-	sc 0x32 == if { 109 return }
-	sc 0x33 == if { 44 return }
-	sc 0x34 == if { 46 return }
-	sc 0x35 == if { 47 return }
-	sc 0x39 == if { 32 return }
-	0
+fn ascii(sc:i64 -- ch:i64) {
+	switch {
+		0x02 { 49 }
+		0x03 { 50 }
+		0x04 { 51 }
+		0x05 { 52 }
+		0x06 { 53 }
+		0x07 { 54 }
+		0x08 { 55 }
+		0x09 { 56 }
+		0x0A { 57 }
+		0x0B { 48 }
+		0x0C { 45 }
+		0x0D { 61 }
+		0x10 { 113 }
+		0x11 { 119 }
+		0x12 { 101 }
+		0x13 { 114 }
+		0x14 { 116 }
+		0x15 { 121 }
+		0x16 { 117 }
+		0x17 { 105 }
+		0x18 { 111 }
+		0x19 { 112 }
+		0x1E { 97 }
+		0x1F { 115 }
+		0x20 { 100 }
+		0x21 { 102 }
+		0x22 { 103 }
+		0x23 { 104 }
+		0x24 { 106 }
+		0x25 { 107 }
+		0x26 { 108 }
+		0x27 { 59 }
+		0x2C { 122 }
+		0x2D { 120 }
+		0x2E { 99 }
+		0x2F { 118 }
+		0x30 { 98 }
+		0x31 { 110 }
+		0x32 { 109 }
+		0x33 { 44 }
+		0x34 { 46 }
+		0x35 { 47 }
+		0x39 { 32 }
+		_ { 0 }
+	}
 }
 
-fn handle_keyboard() {
-	0x60 sys::inb -> scancode
-	scancode 0x80 bits::and 0 != if { return }
+fn backspace() { cursor dup 0 > if { 1 - dup2 32 vga_put cursor_set } else { drop2 } }
+fn type_char(ch:i64 -- ) { cursor rot vga_put cursor_advance }
 
-	// Backspace
-	scancode SC_BACKSPACE == if {
-		cursor_get_row -> row
-		cursor_get_col -> col
-		col 0 > if {
-			col 1 - -> col
-			row col 32 vga_put
-			row col cursor_set
-		}
-		return
+fn key(sc:i64 -- ) {
+	dup switch {
+		SC_BACKSPACE { drop backspace }
+		SC_ENTER { drop cursor_newline print_prompt }
+		_ { ascii dup 0 == if { drop } else { type_char } }
 	}
-
-	// Enter
-	scancode SC_ENTER == if {
-		cursor_newline
-		print_prompt
-		return
-	}
-
-	scancode scancode_to_ascii -> ch
-	ch 0 == if { return }
-
-	cursor_get_row -> row
-	cursor_get_col -> col
-	row col ch vga_put
-	cursor_advance
 }
 
+// A key's release has the high bit set, and is not a key
+fn handle_keyboard() { 0x60 sys::inb dup 0x80 bits::and 0 == if { key } else { drop } }
+
 // ---------------------------------------------------------------------------
-// Prompt
+// Prompt and banner
 // ---------------------------------------------------------------------------
-fn print_prompt() {
-	cursor_get_row -> row
-	cursor_get_col -> col
-	row col 62 vga_put
-	col 1 + -> col
-	row col 32 vga_put
-	row col 1 + cursor_set
+fn print_prompt() { cursor dup2 62 vga_put 1 + dup2 32 vga_put 1 + cursor_set }
+
+// A character of the top row, at col, and the next col
+fn say(col:i64 ch:i64 -- col:i64) { over 0 swap rot vga_put 1 + }
+
+fn banner() {
+	0 72 say 101 say 108 say 108 say 111 say 44 say 32 say
+	81 say 117 say 97 say 100 say 114 say 97 say 116 say 101 say 32 say
+	107 say 101 say 114 say 110 say 101 say 108 say 33 say drop
 }
 
 // ---------------------------------------------------------------------------
@@ -326,31 +228,7 @@ fn _start() {
 	setup_gdt
 	setup_idt
 	remap_pic
-
-	// Banner
-	0xB8000 0  0x0F48 sys::st16
-	0xB8000 2  0x0F65 sys::st16
-	0xB8000 4  0x0F6C sys::st16
-	0xB8000 6  0x0F6C sys::st16
-	0xB8000 8  0x0F6F sys::st16
-	0xB8000 10 0x0F2C sys::st16
-	0xB8000 12 0x0F20 sys::st16
-	0xB8000 14 0x0F51 sys::st16
-	0xB8000 16 0x0F75 sys::st16
-	0xB8000 18 0x0F61 sys::st16
-	0xB8000 20 0x0F64 sys::st16
-	0xB8000 22 0x0F72 sys::st16
-	0xB8000 24 0x0F61 sys::st16
-	0xB8000 26 0x0F74 sys::st16
-	0xB8000 28 0x0F65 sys::st16
-	0xB8000 30 0x0F20 sys::st16
-	0xB8000 32 0x0F6B sys::st16
-	0xB8000 34 0x0F65 sys::st16
-	0xB8000 36 0x0F72 sys::st16
-	0xB8000 38 0x0F6E sys::st16
-	0xB8000 40 0x0F65 sys::st16
-	0xB8000 42 0x0F6C sys::st16
-	0xB8000 44 0x0F21 sys::st16
+	banner
 
 	// Prompt on row 2
 	2 0 cursor_set

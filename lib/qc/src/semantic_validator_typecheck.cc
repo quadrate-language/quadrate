@@ -3141,6 +3141,9 @@ namespace Qd {
 			reportError(fieldAccess, msg.c_str());
 			fieldType = StackValueType::ANY;
 		} else if (knownFields != nullptr) {
+			// Code generation has only hints about what is on the stack, and a struct that came
+			// in as a `fn` input and was `dup`ed has left none
+			fieldAccess->setStructType(structType);
 			auto fieldIt = knownFields->find(fieldName);
 			if (fieldIt != knownFields->end()) {
 				fieldType = resolveFieldType(structType, fieldName, fieldStructType);
@@ -3210,6 +3213,7 @@ namespace Qd {
 		StackValueType valueType = typeStack.back();
 		const auto* knownFields = structType.empty() ? nullptr : lookupStructFieldTypes(structType);
 		if (knownFields != nullptr) {
+			fieldSet->setStructType(structType);
 			auto fieldIt = knownFields->find(fieldName);
 			if (fieldIt == knownFields->end()) {
 				std::string msg = "Field '" + fieldName + "' does not exist in struct '" + structType + "'";

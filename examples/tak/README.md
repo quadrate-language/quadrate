@@ -11,5 +11,7 @@ quad run tak.qd
 ## Features
 
 - Triple recursion
-- Local variables with `-> var`
-- Stack-based parameter passing
+- Stack code with three inputs, each used three times, factored into one-line words:
+  `step` makes one of the inner calls and turns the triple to the next one's order
+- `inline fn`: each call to a helper is replaced by its body, so the factored version runs as
+  fast as one written out in a piece

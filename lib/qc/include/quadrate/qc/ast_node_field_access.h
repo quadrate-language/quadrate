@@ -55,8 +55,18 @@ namespace Qd {
 			return mFieldName;
 		}
 
+		// The struct it reads, as the validator knew it; empty when it did not
+		const std::string& structType() const {
+			return mStructType;
+		}
+
+		void setStructType(const std::string& structType) {
+			mStructType = structType;
+		}
+
 	private:
 		std::string mFieldName;
+		std::string mStructType;
 		IAstNode* mParent;
 		size_t mLine;
 		size_t mColumn;

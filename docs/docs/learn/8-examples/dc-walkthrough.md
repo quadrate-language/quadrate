@@ -5,8 +5,10 @@ modeled on the Unix `dc` tool. It's a uniquely fitting example for a
 stack-based language: `dc` itself is a stack machine, so we're building
 a stack machine inside a stack machine.
 
-This walkthrough explains how it works, section by section. Reading the full
-source in `examples/dc/dc.qd` alongside this page is recommended.
+It is also written the way stack code is meant to be written: no named
+parameters, almost no locals, and words of a line or two that each do one
+thing. This walkthrough explains how it works, section by section. Reading the
+full source in `examples/dc/dc.qd` alongside this page is recommended.
 
 ## What dc does
 
@@ -28,180 +30,96 @@ $ dc -e "2 3 * 4 + p"
 10
 ```
 
-## The stack
+## The calculator's stack
 
-The program's fundamental data structure is a `Stack` of f64 values:
-
-```qd
-pub struct Stack {
-    data:     ptr
-    size:     i64
-    capacity: i64
-}
-```
-
-- `data` is a raw memory buffer
-- `size` is how many values are currently stored
-- `capacity` is how many the buffer can hold
-
-The buffer is allocated once with a fixed capacity (1024 slots) and never
-grows. If it fills up, we print an error and drop the push.
-
-## Allocation and basic operations
-
-`stack_new` allocates the buffer and constructs the struct:
+The calculator keeps its own stack of `f64` values, separate from Quadrate's:
+a fixed array of cells, and a count of how many are in use. Both are globals,
+because every operator works on them. A global cannot hold an array itself, so
+it holds a struct that does:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-fn stack_new( -- s:ptr) {
-    1024 -> cap
-    cap 8 * mem::alloc! -> data
-    Stack {
-        data = data
-        size = 0
-        capacity = cap
-    }
+struct Cells {
+	at: []f64 = [1024]f64
 }
+
+var cells = Cells {}
+var depth:i64 = 0
 ```
 
-Read left to right:
+`[1024]f64` is an array of 1024 zeros. It never grows: a push onto a full
+stack prints an error and is dropped.
 
-1. Bind `1024` to the local `cap`
-2. Allocate `cap * 8` bytes (each f64 is 8 bytes) into `data`
-3. Construct a `Stack` with those fields
+## Push, pop and friends
 
-`stack_push` writes a value at the current top, then increments `size`:
+Every word that touches the stack is a line:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-def stack_push(s:ptr val:f64 -- ) {
-    s <<size -> sz
-    s <<capacity -> cap
-    sz cap >= if {
-        "dc: stack overflow" print nl
-    } else {
-        val s <<data sz 8 * mem::set_f64
-        s sz 1 + >>size drop
-    }
-}
+fn push(v:f64 -- ) { depth Capacity >= if { drop "dc: stack overflow" print nl } else { cells <<at depth rot set depth 1 + -> depth } }
+fn pop( -- v:f64) { depth 0 <= if { "dc: stack empty" print nl 0.0 } else { depth 1 - -> depth cells <<at depth nth } }
+fn top( -- v:f64) { cells <<at depth 1 - nth }
+fn operands( -- a:f64 b:f64) { pop pop swap }
 ```
 
-Key syntax:
+Read `push` from the left, watching Quadrate's stack:
 
-- `s <<size` reads the `size` field from struct `s`
-- `s sz 1 + >>size drop` sets `size` to `sz + 1`. `>>field` leaves the struct on
-  the stack for chaining, and the `drop` discards it — we don't need it back.
-- `val s <<data sz 8 * mem::set_f64` writes `val` at offset `sz * 8` in `data`
+1. `v` is on the stack when `push` starts. A `fn` leaves its inputs there;
+   the `v:f64` in the signature only documents it.
+2. `cells <<at` reads the array out of the struct: `v arr`.
+3. `depth` pushes the index of the first free cell: `v arr i`.
+4. `rot` brings `v` to the top: `arr i v`, which is what `set` takes.
+5. `depth 1 + -> depth` stores the new count. `->` into a global is an
+   assignment, like Forth's `!`.
 
-`stack_pop` is the mirror image — decrement `size`, read the value:
+`operands` pops the two values an operator works on. `b` comes off first,
+because it was pushed last, so `swap` puts them back in source order: `a b`.
+
+Before an operator pops anything, it checks there is something to pop:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-def stack_pop(s:ptr -- val:f64) {
-    s <<size -> sz
-    sz 0 <= if {
-        "dc: stack empty" print nl
-        0.0
-    } else {
-        sz 1 - -> sz
-        s sz >>size drop
-        s <<data sz 8 * mem::get_f64
-    }
-}
+fn enough(n:i64 -- ok:i64) { depth swap >= dup not if { "dc: stack empty" print nl } }
+fn nonzero(msg:str -- ok:i64) { top 0.0 != dup if { nip } else { swap print nl } }
 ```
 
-## Parsing a token
-
-`is_number` decides whether a token is a number or an operator. dc uses
-underscore `_` as the negative sign (since `-` is subtraction):
-
-<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
-```qd
-def is_number(tok:str -- result:i64) {
-    0 -> result
-    tok len 0 > if {
-        tok 0 strings::char_at -> first
-        first unicode::is_digit if {
-            1 -> result
-        } else {
-            first unicode::underscore == first unicode::minus == or if {
-                tok len 1 > if {
-                    tok 1 strings::char_at -> second
-                    second unicode::is_digit -> result
-                }
-            }
-        }
-    }
-    result
-}
-```
-
-The pattern is:
-
-- If first char is a digit, it's a number
-- If first char is `_` or `-` and second char is a digit, it's a negative
-  number
-- Otherwise, it's an operator
-
-`process_token` dispatches based on this:
-
-<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
-```qd
-def process_token(s:ptr tok:str -- ) {
-    tok is_number -> is_num
-    is_num if {
-        tok 0 strings::char_at -> first
-        first unicode::underscore == if {
-            // dc convention: `_5` means -5
-            tok 1 tok len 1 - strings::substring! cast<f64> -> val
-            s 0.0 val - stack_push
-        } else {
-            tok cast<f64> -> val
-            s val stack_push
-        }
-    }
-    is_num 0 == if {
-        tok len 0 > if {
-            s tok process_operator
-        }
-    }
-}
-```
-
-Notice how numbers with an `_` prefix are handled by extracting the digits
-after the underscore and negating.
+`enough` leaves a flag, and says why when it is false. `nonzero` looks at the
+top value without popping it, so a division can refuse a zero divisor before
+it has taken anything off the stack.
 
 ## The operator table
 
-`process_operator` is where the actual calculator lives. It's a big `switch`
-on the first character of the operator token:
+The calculator proper is one `switch` on the first character of an operator.
+Each arm is a line, and leaves `1` to say the operator is known:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-def process_operator(s:ptr op:str -- ) {
-    op 0 strings::char_at switch {
-        unicode::plus {
-            s 2 stack_check if {
-                s stack_pop -> b
-                s stack_pop -> a
-                s a b + stack_push
-            }
-        }
-        unicode::minus {
-            // ...
-        }
-        // ... many more cases
-    }
+fn known(c:i64 -- yes:i64) {
+	switch {
+		unicode::plus { 2 enough if { operands + push } 1 }
+		unicode::slash { 2 enough if { "dc: divide by zero" nonzero if { operands / push } } 1 }
+		unicode::v { 1 enough if { "dc: square root of negative number" nonneg if { pop math::sqrt push } } 1 }
+		unicode::p { 1 enough if { top print nl } 1 }
+		unicode::r { 2 enough if { pop pop swap push push } 1 }
+		// ... and the rest
+		_ { 0 }
+	}
 }
 ```
 
-Each case:
+`2 enough if { operands + push }` reads as what it does: if there are two
+values, take them, add them, push the sum. Anything longer than a line gets a
+word of its own:
 
-1. Checks the stack has enough operands (`stack_check`)
-2. Pops operands — note the order: **b pops first** because it was pushed
-   last, so `a b` reflects the source order `a` then `b`
-3. Performs the operation
-4. Pushes the result
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
+```qd
+fn modulo(a:f64 b:f64 -- r:f64) { dup2 / math::floor * - }
+fn divmod(a:f64 b:f64 -- ) { dup2 / math::floor dup push * - push }
+```
+
+`modulo` is `a - floor(a / b) * b`: `dup2` keeps `a b` for later, `/` and
+`math::floor` make the quotient, `*` multiplies it by `b`, and `-` takes that
+from `a`. `divmod` is the same computation, pushing the quotient on the way.
 
 The operators implemented:
 
@@ -221,125 +139,87 @@ The operators implemented:
 | `z` | Push stack depth |
 | `q` | Quit |
 
-### Edge cases
+An operator `known` has no arm for is reported, with its character in octal as
+GNU `dc` does:
 
-Division and remainder check for zero denominators:
-
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-unicode::slash {
-    s 2 stack_check if {
-        s stack_peek "dc: divide by zero" check_nonzero if {
-            s stack_pop -> b
-            s stack_pop -> a
-            s a b / stack_push
-        }
-    }
-}
+fn operator(op:str -- ) { dup 0 strings::char_at known if { drop } else { unimplemented } }
 ```
 
-`stack_peek` reads the top without popping — that way we can check the
-divisor before committing to pop both operands. `check_nonzero` prints an
-error and returns 0 if the value is zero; the `if` only proceeds on a
-non-zero check.
+## Parsing a token
 
-### Printing the whole stack (`f`)
+A token is a number when it starts with a digit, or with `_` or `-` and then a
+digit. dc writes negative numbers with `_`, since `-` is subtraction:
 
+<!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-unicode::f {
-    s stack_depth -> n
-    0 n 1 for it {
-        s it stack_pick print nl
-    }
+fn digit_at(tok:str i:i64 -- yes:i64) { over len over > if { strings::char_at unicode::is_digit } else { drop2 0 } }
+
+fn is_number(tok:str -- yes:i64) {
+	dup 0 digit_at if { drop 1 } else { dup len 1 > if { dup signed swap 1 digit_at and } else { drop 0 } }
 }
+
+fn token(tok:str -- ) { dup is_number if { number } else { dup len 0 > if { operator } else { drop } } }
 ```
 
-`stack_pick(s, n)` returns the value at position `n` from the top. Iterating
-`it` from 0 to `n-1` walks the stack from top to bottom.
+`digit_at` asks whether there is a digit at position `i`, and answers `0`
+rather than reading past the end. `token` sends a number to `number`, which
+parses and pushes it, and anything else to `operator`.
 
 ## Processing a line
 
-`process_line` tokenizes an input line and processes each token:
+A line is a comment-stripped, trimmed string of tokens separated by spaces:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-def process_line(s:ptr input:str -- ) {
-    // Strip anything after `#` (comments)
-    input "#" strings::index_of -> comment_pos
-    comment_pos 0 >= if {
-        input 0 comment_pos strings::substring! -> input
-    }
-    input strings::trim -> trimmed
-
-    loop {
-        trimmed len 0 <= if { break }
-        trimmed " " strings::index_of -> space_pos
-        space_pos 0 < if {
-            s trimmed process_token
-            break
-        }
-        trimmed 0 space_pos strings::substring! -> token
-        token len 0 > if {
-            s token process_token
-        }
-        trimmed space_pos 1 + trimmed len space_pos - 1 - strings::substring! -> trimmed
-    }
-}
+fn uncomment(input:str -- input:str) { dup "#" strings::index_of dup 0 >= if { 0 swap strings::substring! } else { drop } }
+fn line(input:str -- ) { uncomment strings::trim " " strings::split! fn { token } each }
 ```
 
-The loop repeatedly:
-
-1. Finds the next space
-2. Extracts the token before it
-3. Processes it
-4. Advances past the space
-
-If there's no space, the remaining string is the last token.
+`strings::split!` makes an array of the tokens, and `each` runs `token` on
+every one. Two spaces in a row make an empty token, which `token` drops. A file
+is a list of lines: `run_file` reads it whole and runs `line` on each one of
+`strings::lines!`.
 
 ## The REPL
 
-The interactive loop just reads lines from stdin until EOF:
+The interactive loop reads lines from stdin until the end of input:
 
 <!-- doccheck: skip excerpt from examples/dc/dc.qd, shown piece by piece; the whole program is built by the example suite -->
 ```qd
-def repl(s:ptr -- ) {
-    loop {
-        io::readline switch {
-            Ok {
-                -> more -> input
-                more 0 == if { input drop  0 os::exit }
-                s input process_line  input drop
-            }
-            _  { 1 os::exit }
-        }
-    }
+fn repl() {
+	loop {
+		io::readline switch {
+			Ok { if { line } else { drop 0 os::exit } }
+			_ { drop2 1 os::exit }
+		}
+	}
 }
 ```
 
-`io::readline` returns a line plus a `more` flag. `more 0` is end of input -- not an
-error, just the end -- and exits cleanly; the `_` arm is a genuine read failure
-and exits non-zero.
+`io::readline` leaves a line and a `more` flag. In the `Ok` arm the flag is on
+top, so `if` tests it directly: while there is more, the line is run; at the
+end of input the empty line is dropped and the program exits cleanly. The `_`
+arm is a genuine read failure, and exits non-zero.
 
 ## Main and flags
-
-`main` parses command-line flags with the `flag` module:
 
 <!-- doccheck: skip excerpt of examples/dc/dc.qd; helpers live in the full file -->
 ```qd
 fn main() {
-    stack_new -> s
-    defer { s stack_free }
-
-    os::args flag::parse -> f
-    defer { f flag::destroy }
-
-    // ... check each flag
+	os::args flag::parse
+	dup "-h" "--help" flag::either if { help 0 os::exit }
+	dup "-V" "--version" flag::either if { version 0 os::exit }
+	dup "-e" flag::boolean if { dup "-e" flag::string! line 0 os::exit }
+	// ... --expression, -f and --file the same way
+	flag::destroy
+	repl
 }
 ```
 
-Two `defer` blocks ensure the stack's buffer and the flag parser are freed
-when `main` exits, even if an earlier branch calls `os::exit`.
-
-The flag logic is straightforward:
+The parsed flags stay on the stack while `main` asks about them, each question
+starting with a `dup` so the flags are still there for the next one.
 
 - `-h` / `--help` → print help and exit
 - `-V` / `--version` → print version and exit
@@ -349,19 +229,17 @@ The flag logic is straightforward:
 
 ## What this example teaches
 
-- **Struct definition with fields** and the `<<field` / `>>field` access
-  syntax
-- **Raw memory operations** via the `mem` module for implementing data
-  structures
+- **Words of a line**: almost every function is one line, and reads as what
+  it does, `2 enough if { operands + push }`
+- **Inputs on the stack**: a `fn` leaves its inputs there, and the names in
+  its signature are documentation
+- **Globals for state every word shares**, assigned with `->` as Forth's `!`
+  stores
+- **An array behind a struct**, for a global that needs one
 - **Dispatch on character** using `switch` and `unicode::` constants
-- **Named parameters** as locals — the `s` and `tok` parameters are referenced
-  by name inside the function, not pulled off the stack
-- **`defer`** for cleanup that runs no matter how the function exits
-- **`io::readline switch`** for result-based error handling
+- **Combinators over data**: `each` over the tokens of a line and the lines of
+  a file, `times` to print the stack
 - **Stack-based thinking** at its purest: the program IS a stack machine,
   and the implementation mirrors that directly
 
-This is a complete, working CLI tool in about 470 lines. The stack-based
-style made the operator dispatch especially natural — in most languages, each
-operator's implementation would be wrapped in function-call syntax; here,
-operators look like operators.
+This is a complete, working CLI tool in 140 lines.

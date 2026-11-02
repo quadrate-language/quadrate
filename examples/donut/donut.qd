@@ -4,6 +4,17 @@
 // Run: quadc donut.qd -r
 // Press Ctrl+C to stop
 use math
+use strings
+
+// Luminance 0 to 11, darkest first; anything else is background
+const Shades = ".,-~:;=!*#$@"
+
+fn clamp(k:i64 -- k:i64) { dup 0 < if { drop 0 } dup 11 > if { drop 11 } }
+fn glyph(k:i64 -- ) { dup 12 < if { Shades swap strings::char_at strings::from_char } else { drop " " } print }
+
+// One frame from the output buffer, a row of 80 to a line: a cell whose index is a multiple
+// of 80 is where a line ends, and is not drawn
+fn frame(o:[]i64 -- ) { "\x1b[H" print 0 swap fn { over 80 % 0 != if { glyph } else { drop nl } 1 + } each drop nl }
 
 fn main() {
 	0.5 -> A  // X rotation
@@ -52,14 +63,7 @@ fn main() {
 				y 0 > y 22 < and x 0 > and x 80 < and if {
 					D z q nth > if {
 						z q D set
-						N cast<i64> -> k
-						k 0 < if {
-							0 -> k
-						}
-						k 11 > if {
-							11 -> k
-						}
-						o q k set
+						o q N cast<i64> clamp set
 					}
 				}
 
@@ -68,55 +72,7 @@ fn main() {
 			j 0.07 + -> j
 		}
 
-		// Render frame
-		"\x1b[H" print  // Cursor home
-		0 1761 1 for it {
-			it 80 % 0 != if {
-				o it nth switch {
-					0 {
-						"." print
-					}
-					1 {
-						"," print
-					}
-					2 {
-						"-" print
-					}
-					3 {
-						"~" print
-					}
-					4 {
-						":" print
-					}
-					5 {
-						";" print
-					}
-					6 {
-						"=" print
-					}
-					7 {
-						"!" print
-					}
-					8 {
-						"*" print
-					}
-					9 {
-						"#" print
-					}
-					10 {
-						"$" print
-					}
-					11 {
-						"@" print
-					}
-					_ {
-						" " print
-					}
-				}
-			} else {
-				nl
-			}
-		}
+		o frame
 
 		A 0.04 + -> A
 		B 0.02 + -> B

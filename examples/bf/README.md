@@ -15,3 +15,5 @@ quad run bf.qd -- hello.bf
 - File I/O for loading programs
 - Manual memory management with `mem::alloc` and `mem::free`
 - `defer` for cleanup
+- The machine's state in global variables, with one-line words over it (`op`, `cell`, `put`),
+  as a Forth interpreter would keep it

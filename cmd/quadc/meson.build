@@ -19,6 +19,8 @@ if llvmgen_dep.found()
 		quadc_sources,
 		include_directories: [qdrt_src_inc, version_inc],
 		dependencies: [qc_dep, qdcli_dep, llvmgen_dep, qdrt_dep, jansson_dep],
+		# libqdrt.so beside it once copied to dist/bin; meson's own entry finds it in the build tree
+		build_rpath: '$ORIGIN/../lib',
 		install: false
 	)
 

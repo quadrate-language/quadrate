@@ -2,16 +2,8 @@
 // (uses directory-based namespace - no explicit local imports needed)
 use math
 
-def atm_density(alt:f64 -- rho:f64) {
-	alt 0.0 < if {
-		AtmRho0
-	} else {
-		alt AtmHeight >= if {
-			0.0
-		} else {
-			alt AtmScale / -1.0 * math::exp AtmRho0 *
-		}
-	}
+fn atm_density(alt:f64 -- rho:f64) {
+	dup 0.0 < if { drop AtmRho0 } else { dup AtmHeight >= if { drop 0.0 } else { AtmScale / -1.0 * math::exp AtmRho0 * } }
 }
 
 struct Deriv {
@@ -20,74 +12,50 @@ struct Deriv {
 	dm: f64
 }
 
-pub def compute_deriv(stage:Stage state:State -- d:Deriv) {
-	state <<pos -> pos
-	state <<vel -> vel
-	state <<mass -> mass
-	state <<fuel -> fuel
-	state <<pitch -> pitch
+// Gravity: -μ/r³ toward the centre
+fn gravity(pos:math::Vec3 -- g:math::Vec3) { dup length dup dup * * MuEarth swap / -1.0 * scale }
 
-	state altitude -> alt
-	vel length -> vmag
-	pos length -> r
+// The velocity less its radial part
+fn horizontal(pos:math::Vec3 vel:math::Vec3 -- vh:math::Vec3) { swap normalize tuck over dot rot swap scale subtract }
 
-	// Gravity: g = -mu/r³ * pos
-	pos MuEarth r r * r * / -1.0 * scale -> g_accel
-
-	// Up vector (normalized position)
-	pos normalize -> up
-
-	// Radial velocity component
-	up vel dot -> v_rad
-
-	// Horizontal velocity (perpendicular to radial)
-	vel up v_rad scale subtract -> v_horiz
-	v_horiz length -> h_mag
-
-	// Thrust direction
-	math::vec3_zero -> thrust_dir
-	h_mag 0.001 > if {
-		// East unit vector (horizontal direction)
-		v_horiz normalize -> east
-		// thrust = sin(pitch)*up + cos(pitch)*east
-		up pitch math::sin scale
-		east pitch math::cos scale
-		+ normalize -> thrust_dir
+// sin(pitch) up and cos(pitch) east, or straight up while there is no east to speak of
+fn thrust_dir(state:State -- dir:math::Vec3) {
+	dup <<pos normalize swap
+	dup <<pos over <<vel horizontal
+	dup length 0.001 > if {
+		normalize swap <<pitch
+		rot over math::sin scale
+		rrot math::cos scale add normalize
 	} else {
-		up -> thrust_dir
-	}
-
-	// Thrust acceleration
-	math::vec3_zero -> thrust_accel
-	fuel 0.0 > if {
-		thrust_dir stage stage_thrust mass / scale -> thrust_accel
-	}
-
-	// Drag
-	math::vec3_zero -> drag_accel
-	alt atm_density -> rho
-	vmag 0.001 > rho 0.0 > and if {
-		stage <<diameter 2.0 / -> rad
-		math::Pi rad rad * * -> area
-		0.5 rho * vmag vmag * * stage <<cd * area * -> drag_mag
-		vel normalize -> vel_unit
-		vel_unit neg -> drag_dir
-		drag_dir drag_mag mass / scale -> drag_accel
-	}
-
-	// Total acceleration
-	g_accel thrust_accel + drag_accel + -> accel
-
-	// Mass flow
-	0.0 -> dm
-	fuel 0.0 > if {
-		stage <<eng -> e
-		stage stage_thrust e <<isp_vac G0 * / -1.0 * -> dm
-	}
-
-	Deriv {
-		dp = vel
-		dv = accel
-		dm = dm
+		drop2
 	}
 }
+
+fn thrust_accel(stage:Stage state:State -- a:math::Vec3) {
+	dup <<fuel 0.0 > if { dup thrust_dir rot stage_thrust rot <<mass / scale } else { drop2 math::vec3_zero }
+}
+
+fn area(stage:Stage -- a:f64) { <<diameter 2.0 / dup * math::Pi swap * }
+
+// ½ρv² Cd A
+fn drag_force(stage:Stage rho:f64 vmag:f64 -- f:f64) { dup * swap 0.5 swap * swap * over <<cd * swap area * }
+
+fn drag_accel(stage:Stage state:State -- a:math::Vec3) {
+	dup altitude atm_density over <<vel length
+	dup 0.001 > pick 0.0 > and if {
+		fn { swap } dip2 drag_force swap
+		dup <<vel normalize neg rot rot <<mass / scale
+	} else {
+		drop2 drop2 math::vec3_zero
+	}
+}
+
+fn accel(stage:Stage state:State -- a:math::Vec3) {
+	dup <<pos gravity rrot dup2 thrust_accel rrot drag_accel fn { add } dip add
+}
+
+fn mass_flow(stage:Stage state:State -- dm:f64) {
+	<<fuel 0.0 > if { dup stage_thrust swap <<eng <<isp_vac G0 * / -1.0 * } else { drop 0.0 }
+}
+
+pub fn compute_deriv(stage:Stage state:State -- d:Deriv) { dup2 accel rrot dup2 mass_flow rot drop swap <<vel rrot Deriv }

@@ -6,7 +6,8 @@ fn main() {
 	"Press Ctrl+C to exit gracefully..." print nl
 	nl
 
-	0 -> count
+	// The count of rounds worked, on the stack under the loop
+	0
 	loop {
 		signal::SigInt signal::pending if {
 			nl
@@ -15,9 +16,10 @@ fn main() {
 			break
 		}
 
-		count 1 + -> count
-		"Working... [" print count print "]" print nl
+		1 +
+		"Working... [" print dup print "]" print nl
 
 		time::Second time::sleep
 	}
+	drop
 }

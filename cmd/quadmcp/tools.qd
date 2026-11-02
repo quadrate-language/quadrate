@@ -687,6 +687,7 @@ fn tool_trace_stack(args:str -- result:str) {
 		output "  x y q dip2    run q under x and y, then push them back\n" strings::concat -> output
 		output "  x y q keep2   run q on x and y, then push them back\n" strings::concat -> output
 		output "  x p q bi      run p on x, then q on x (tri: three)\n" strings::concat -> output
+		output "  x y p q bi_star  run p on x, then q on y (tri_star: three)\n" strings::concat -> output
 		output "  x y q both    run q on x, then on y\n" strings::concat -> output
 		output "  n q times     run q n times\n" strings::concat -> output
 		output "  arr q each    run q with each element on top\n" strings::concat -> output

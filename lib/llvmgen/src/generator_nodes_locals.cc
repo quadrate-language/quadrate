@@ -88,9 +88,8 @@ namespace Qd {
 		// generateIdentifier — together they prevent the optimizer from
 		// elide-and-forward across function-call boundaries.
 		{
-			auto gvIt = moduleGlobalVars.find(name);
-			if (gvIt != moduleGlobalVars.end()) {
-				llvm::GlobalVariable* gv = gvIt->second;
+			if (const GlobalVar* global = findGlobalVar(name)) {
+				llvm::GlobalVariable* gv = global->gv;
 
 				auto storeVolatile = [&](llvm::Value* v) {
 					auto* s = builder->CreateStore(v, gv);
@@ -104,7 +103,7 @@ namespace Qd {
 					return;
 				}
 
-				const std::string& typeName = moduleGlobalVarTypes[name];
+				const std::string& typeName = global->type;
 				llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr_for_g");
 				llvm::Value* stackPtr = builder->CreateLoad(ptrTy, stackPtrPtr, "stack_for_g");
 				llvm::AllocaInst* tmp = builder->CreateAlloca(stackElementTy, nullptr, name + "_g_tmp");

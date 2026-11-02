@@ -20,9 +20,12 @@ namespace Qd {
 		}
 		builder->CreateCall(
 				fatalRecoverFn, {ctx, llvm::ConstantPointerNull::get(ptrTy), builder->CreateGlobalString(detail)});
-		// What the program printed came before the failure, so it goes out first
-		auto fflushFn = module->getOrInsertFunction("fflush", llvm::FunctionType::get(int32Ty, {ptrTy}, false));
-		builder->CreateCall(fflushFn, {llvm::ConstantPointerNull::get(ptrTy)});
+		// What the program printed came before the failure, so it goes out first. A freestanding
+		// program has no stdio to flush.
+		if (!freestandingMode) {
+			auto fflushFn = module->getOrInsertFunction("fflush", llvm::FunctionType::get(int32Ty, {ptrTy}, false));
+			builder->CreateCall(fflushFn, {llvm::ConstantPointerNull::get(ptrTy)});
+		}
 		auto errorMsg = builder->CreateGlobalString(message);
 		builder->CreateCall(writeFn, {builder->getInt32(2), errorMsg, builder->getInt64(strlen(message))});
 		builder->CreateCall(printStackTraceFn, {ctx});

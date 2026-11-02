@@ -869,6 +869,8 @@ Subtracts 1 from a number.
 | [`keep2`](#keep2) | `( ..a x y q -- ..b x y )` | Runs q on the top two values, then puts them back on top. |
 | [`bi`](#bi) | `( ..a x p q -- ..c )` | Runs p on x, then q on x again, each on what the last left. |
 | [`tri`](#tri) | `( ..a x p q r -- ..d )` | Runs p, q and r on x in turn, as bi runs two. |
+| [`bi_star`](#bi_star) | `( ..a x y p q -- ..c )` | Runs p on x, with what is under x, then q on y: Factor's bi*. |
+| [`tri_star`](#tri_star) | `( ..a x y z p q r -- ..d )` | Runs p on x, q on y and r on z, as bi_star runs two. |
 | [`both`](#both) | `( ..a x y q -- ..c )` | Runs q on x, then on y. |
 | [`times`](#times) | `( ..a n q -- ..a )` | Runs q n times; it must leave the stack as it found it. |
 | [`each`](#each) | `( ..a arr q -- ..a )` | Runs q with each element, or character of a string, on top; it must leave the stack as it found it. |
@@ -975,6 +977,34 @@ Runs p, q and r on x in turn, as bi runs two.
 
 ```qd
 5 fn { 1 + } fn { 2 * } fn { 3 - } tri  // 6 10 2
+```
+
+---
+
+#### bi_star
+
+Runs p on x, with what is under x, then q on y: Factor's bi*.
+
+**Signature:** `( ..a x y p q -- ..c )`
+
+**Example:**
+
+```qd
+3 4 fn { 1 + } fn { 2 * } bi_star  // 4 8
+```
+
+---
+
+#### tri_star
+
+Runs p on x, q on y and r on z, as bi_star runs two.
+
+**Signature:** `( ..a x y z p q r -- ..d )`
+
+**Example:**
+
+```qd
+1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star  // 10 40 90
 ```
 
 ---

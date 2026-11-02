@@ -5,6 +5,8 @@
 //   x y q dip2         -> $y -> $x  Q  $x $y
 //   x y q keep2        -> $y -> $x  $x $y Q  $x $y
 //   x p q bi           -> $x  $x P  $x Q                 (tri likewise)
+//   x y p q bi_star    -> $y  P  $y Q
+//   x y z p q r tri_star -> $z -> $y  P  $y Q  $z R
 //   x y q both         -> $q -> $y -> $x  $x $q call  $y $q call
 //   n q times          -> $n  0 $n 1 for $i { Q }
 //   arr q each         -> $a  0 $a len 1 for $i { $a $i nth Q }
@@ -363,6 +365,20 @@ namespace Qd {
 					out.push_back(local(x));
 					for (size_t q = 0; q < count; q++) {
 						out.push_back(ident(x));
+						run(out, q);
+					}
+				} else if (name == "bi_star" || name == "tri_star") {
+					// The first value stays where it is, under the rest: P runs on it there
+					std::vector<std::string> above;
+					for (size_t q = 1; q < count; q++) {
+						above.push_back(hidden("v") + "_" + std::to_string(q));
+					}
+					for (size_t k = above.size(); k > 0; k--) {
+						out.push_back(local(above[k - 1]));
+					}
+					run(out, 0);
+					for (size_t q = 1; q < count; q++) {
+						out.push_back(ident(above[q - 1]));
 						run(out, q);
 					}
 				} else if (name == "both") {

@@ -68,7 +68,7 @@ isr_table:
 // Runtime stack layout (x86_64):
 //   ctx+0:  qd_stack* st
 //   st+0:   data ptr    st+8: capacity    st+16: size
-//   element: 16 bytes (value:i64, type:i32, tainted:i8, pad:3)
+//   element: 24 bytes (value: 16, as a d128 is held in it; type:i32 at 16; tainted:i8 at 20)
 .section .text
 
 // Pop i64 from runtime stack. ctx in %rdi → value in %rax. Clobbers %rcx, %rdx.
@@ -78,7 +78,8 @@ isr_table:
 	decq %rdx
 	movq %rdx, 16(%rcx)         // size--
 	movq (%rcx), %rax           // rax = data
-	shlq $4, %rdx               // rdx = size * 16
+	leaq (%rdx,%rdx,2), %rdx
+	shlq $3, %rdx               // rdx = size * 24
 	movq (%rax,%rdx), %rax      // rax = data[size].value
 .endm
 
@@ -87,11 +88,11 @@ isr_table:
 	movq (%rdi), %rcx           // rcx = ctx->st
 	movq 16(%rcx), %rdx         // rdx = size
 	movq (%rcx), %rax           // rax = data
-	movq %rdx, %r8
-	shlq $4, %r8                // r8 = size * 16
+	leaq (%rdx,%rdx,2), %r8
+	shlq $3, %r8                // r8 = size * 24
 	movq %rsi, (%rax,%r8)       // data[size].value = rsi
-	movl $0, 8(%rax,%r8)        // type = INT
-	movb $0, 12(%rax,%r8)       // tainted = false
+	movl $0, 16(%rax,%r8)       // type = INT
+	movb $0, 20(%rax,%r8)       // tainted = false
 	incq %rdx
 	movq %rdx, 16(%rcx)         // size++
 .endm

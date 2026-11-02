@@ -79,6 +79,16 @@ pub fn (f:Flag) boolean(name:str -- present:i64) {
 	f <<argv pattern strings::contains
 }
 
+/// Check if a boolean flag is given in either of its spellings.
+/// @param f ptr Flag struct
+/// @param short str Short spelling (e.g., "-v")
+/// @param long str Long spelling (e.g., "--verbose")
+/// @return present i64 1 if either is found, 0 otherwise
+/// @example f "-v" "--verbose" flag::either if { "verbose" print nl }
+pub fn (f:Flag) either(short:str long:str -- present:i64) {
+	f swap boolean swap f swap boolean or
+}
+
 /// Get string value of a flag.
 /// @param f ptr Flag struct
 /// @param name str Flag name

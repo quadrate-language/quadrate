@@ -96,6 +96,25 @@ fn main() {
 }
 ```
 
+### bi_star and tri_star
+
+Run **one function value for each value**: the first on the first, the second on the second.
+`tri_star` does it for three.
+
+```qd
+fn main() {
+	3 4 fn { 1 + } fn { 2 * } bi_star
+	print nl print nl  // 8 then 4
+
+	1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star
+	print nl print nl print nl  // 90 then 40 then 10
+}
+```
+
+The first function value runs on what is under the others, so it can reach further down, and one
+that leaves nothing is fine: `l w c fn { show } fn { show } fn { show } tri_star` prints three
+values in order.
+
 ### both
 
 Run the **same** function value on **two** values.
@@ -236,8 +255,8 @@ fn main() {
 
 ## The `hof` module
 
-`hof` has the less common ones: `when` and `unless`, which run a function value on a condition;
-`bi_star`, which runs two function values on two values; and `fold_right`.
+`hof` has the less common ones: `when` and `unless`, which run a function value on a condition,
+and `fold_right`.
 
 ```qd
 use hof
@@ -245,7 +264,6 @@ use hof
 fn main() {
 	5 1 fn { 2 * } hof::when print nl  // 10
 	5 0 fn { 2 * } hof::when print nl  // 5
-	3 4 fn { 1 + } fn { 2 * } hof::bi_star print nl print nl  // 8 then 4
 }
 ```
 
@@ -294,14 +312,15 @@ fn main() {
 
 ## Comparison with Factor
 
-Quadrate's combinators are [Factor](https://factorcode.org/)'s, and so are their names, with
-one exception:
+Quadrate's combinators are [Factor](https://factorcode.org/)'s, and so are their names, except
+where Factor's has a character a Quadrate name cannot:
 
 | Factor | Quadrate |
 |--------|----------|
 | `[ 2 * ]` | `fn { 2 * }` |
 | `5 [ 2 * ] [ 3 + ] bi` | `5 fn { 2 * } fn { 3 + } bi` |
 | `3 4 [ sq ] bi@` | `3 4 fn { dup * } both` |
+| `3 4 [ 1 + ] [ 2 * ] bi*` | `3 4 fn { 1 + } fn { 2 * } bi_star` |
 | `{ 1 2 3 } 0 [ + ] reduce` | `[1 2 3] 0 fn { + } fold` |
 
 A function value used by a combinator cannot be fallible: the combinator would have nowhere to

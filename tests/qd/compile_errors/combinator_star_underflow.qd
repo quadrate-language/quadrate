@@ -1,0 +1,4 @@
+// Test: bi_star needs a value for each function value
+fn main() {
+	1 fn { 1 + } fn { 2 * } bi_star drop drop
+}

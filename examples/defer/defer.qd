@@ -14,9 +14,9 @@ fn create_resource(id:i64 -- r:ptr) {
 	dup 100 * Resource
 }
 
-def destroy_resource(r:ptr -- ) {
-	"  Destroying resource " print r <<id print nl
-	r free
+fn destroy_resource(r:ptr -- ) {
+	"  Destroying resource " print dup <<id print nl
+	free
 }
 
 // Basic defer example
@@ -55,7 +55,8 @@ fn multiple_defers() {
 fn resource_cleanup() {
 	"Resource cleanup with defer:" print nl
 
-	// Create resources
+	// Create resources. A defer block runs when the function exits, so it reaches what it
+	// cleans up by name: each resource is bound to one.
 	1 create_resource -> r1
 	"  Created resource 1" print nl
 

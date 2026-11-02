@@ -1,10 +1,11 @@
 // fn { } has no signature: the braces get one space inside, and a lambda inside one is
-// normalised on the same pass
+// normalised on the same pass; an operator inside a string in one is left alone
 fn main() {
 	5 fn{2*} call drop
 	fn {   + } -> add
 	fn{} drop
 	1 fn{fn{1+} call} call drop
+	fn{"-" print "a*b\"+" print} call
 	fn {
 		dup *
 	} -> sq

@@ -129,6 +129,7 @@ namespace Qd {
 		} else {
 			layout.name = structDecl->name();
 		}
+		layout.module = moduleName;
 		layout.isPublic = structDecl->isPublic();
 		layout.isPacked = structDecl->isPacked();
 		layout.totalSize = 0;
@@ -576,6 +577,10 @@ namespace Qd {
 			structTypeName = lastStructConstructed;
 			lastStructConstructed.clear(); // Consume it
 		}
+		// What the validator knew beats a hint, when it names a struct known here
+		if (!fieldAccess->structType().empty() && findStructDefinition(fieldAccess->structType())) {
+			structTypeName = fieldAccess->structType();
+		}
 
 		// Pop the struct pointer from the stack
 		llvm::Value* stackPtrPtr = builder->CreateStructGEP(contextStructTy, ctx, 0, "stack_ptr");
@@ -800,11 +805,15 @@ namespace Qd {
 		// Stack-based field set: stack has [struct, value] (value on top)
 		// Pop value first, then pop struct, set field, push struct back
 
-		// Determine struct type from context
+		// Determine struct type from context, and from what the validator knew when it names a
+		// struct known here
 		if (!lastFieldAccessResultType.empty()) {
 			structTypeName = lastFieldAccessResultType;
 		} else if (!lastStructConstructed.empty()) {
 			structTypeName = lastStructConstructed;
+		}
+		if (!fieldSet->structType().empty() && findStructDefinition(fieldSet->structType())) {
+			structTypeName = fieldSet->structType();
 		}
 
 		// Into the field's own representation before it is stored
@@ -1048,11 +1057,14 @@ namespace Qd {
 		}
 		const StructLayout& layout = *layoutPtr;
 		generateFilledArray(ctx, [&] {
+			// A default is read in the module that wrote it, wherever the struct is built
+			const std::string caller = std::exchange(currentModuleName, layout.module);
 			for (const auto& field : layout.fields) {
 				for (IAstNode* defaultNode : field.defaultValue) {
 					generateNode(defaultNode, ctx);
 				}
 			}
+			currentModuleName = caller;
 			generateStructConstruction(layout.name, ctx);
 		});
 	}

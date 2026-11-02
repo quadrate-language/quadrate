@@ -1,0 +1,26 @@
+// A struct that came in as a `fn` input and was `dup`ed is read and written by its declared
+// type. Code generation took the type from a hint left by whatever pushed it, and a `dup` of
+// an input leaves none, so with two structs that have an `x`, `<<x` was ambiguous.
+struct Point {
+	x: f64
+	y: f64
+}
+
+struct Size {
+	x: i64
+	y: i64
+}
+
+fn (p:Point) gap(other:Point -- d:f64) {
+	dup <<x p <<x - swap <<y p <<y - +
+}
+
+fn area(s:Size -- n:i64) { dup <<x swap <<y * }
+fn widen(s:Size -- s:Size) { dup <<x 1 + >>x }
+
+fn main() {
+	Point { x = 1.0 y = 2.0 } -> a
+	Point { x = 4.0 y = 6.0 } a gap print nl
+	Size { x = 3 y = 4 } area print nl
+	Size { x = 3 y = 4 } widen dup <<x print nl area print nl
+}

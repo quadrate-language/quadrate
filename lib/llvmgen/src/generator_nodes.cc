@@ -445,12 +445,12 @@ namespace Qd {
 	// an intervening function call that stores the global (AlwaysInliner can produce that
 	// pattern when a helper is inlined multiple times into main).
 	bool LlvmGenerator::Impl::generateGlobalVarPush(const std::string& name, llvm::Value* ctx) {
-		auto gvIt = moduleGlobalVars.find(name);
-		if (gvIt == moduleGlobalVars.end()) {
+		const GlobalVar* global = findGlobalVar(name);
+		if (!global) {
 			return false;
 		}
-		llvm::GlobalVariable* gv = gvIt->second;
-		const std::string& typeName = moduleGlobalVarTypes[name];
+		llvm::GlobalVariable* gv = global->gv;
+		const std::string& typeName = global->type;
 
 		// Classify for load/push: any non-scalar name (including struct
 		// types from `var p = Point { ... }`) is treated as a pointer.
@@ -525,13 +525,36 @@ namespace Qd {
 		return true;
 	}
 
+	// A constant or enum variant by the name the code being generated spells it with. In a
+	// module, a bare name is that module's own; a qualified one is looked up as written.
+	const std::string* LlvmGenerator::Impl::findConstant(const std::string& name) const {
+		if (!currentModuleName.empty() && mergedModules.count(currentModuleName) == 0) {
+			if (auto it = moduleConstants.find(currentModuleName + "::" + name); it != moduleConstants.end()) {
+				return &it->second;
+			}
+			if (name.find("::") == std::string::npos) {
+				return nullptr;
+			}
+		}
+		auto it = moduleConstants.find(name);
+		return it != moduleConstants.end() ? &it->second : nullptr;
+	}
+
+	// A `var` by the name the code being generated spells it with, which in a module is that
+	// module's own. A global is never named from outside its module.
+	const LlvmGenerator::Impl::GlobalVar* LlvmGenerator::Impl::findGlobalVar(const std::string& name) const {
+		const bool inModule = !currentModuleName.empty() && mergedModules.count(currentModuleName) == 0;
+		auto it = moduleGlobalVars.find(inModule ? currentModuleName + "::" + name : name);
+		return it != moduleGlobalVars.end() ? &it->second : nullptr;
+	}
+
 	// A `const`, pushed as its spelling says
 	bool LlvmGenerator::Impl::generateConstantPush(const std::string& name, llvm::Value* ctx) {
-		auto constIt = moduleConstants.find(name);
-		if (constIt == moduleConstants.end()) {
+		const std::string* found = findConstant(name);
+		if (!found) {
 			return false;
 		}
-		const std::string& value = constIt->second;
+		const std::string& value = *found;
 
 		// Compile-time stack path for numeric constants
 		if (useCompileTimeStack) {
@@ -1301,11 +1324,11 @@ namespace Qd {
 	// A named constant or enum variant, compared as the literal it stands for
 	llvm::Value* LlvmGenerator::Impl::generateNamedConstantMatch(
 			const std::string& name, const SwitchScrutinee& scrutinee) {
-		auto constIt = moduleConstants.find(name);
-		if (constIt == moduleConstants.end()) {
+		const std::string* found = findConstant(name);
+		if (!found) {
 			return nullptr;
 		}
-		const std::string& value = constIt->second;
+		const std::string& value = *found;
 		if (!value.empty() && value[0] == '"') {
 			return generateStringCaseMatch(value, scrutinee);
 		}

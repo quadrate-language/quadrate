@@ -15,12 +15,11 @@
 
 use http
 use json
-use sb
 use strconv
 use strings
 
-// Data store as constants (4 links)
-const COUNT = 4
+// The data store: the links' ids, and for each its url and title
+fn ids( -- a:[]i64) { [0 1 2 3] }
 
 fn get_url(id:i64 -- url:str) {
 	switch {
@@ -42,92 +41,64 @@ fn get_title(id:i64 -- title:str) {
 	}
 }
 
-def link_json(id:i64 -- result:str) {
-	"id" id json::kv_int -> s
-	s "url" id get_url json::kv json::join -> s
-	s "title" id get_title json::kv json::join -> s
-	s json::obj
+fn link_json(id:i64 -- s:str) {
+	"id" over json::kv_int
+	"url" pick get_url json::kv json::join
+	"title" rot get_title json::kv json::join
+	json::obj
 }
 
-def handle_root(c:ptr -- ) {
-	"service" "links-api" json::kv -> s
-	s "version" "1.0" json::kv json::join -> s
-	s "links" COUNT json::kv_int json::join -> s
-	c 200 s json::obj http::json
+fn links_json(ids:[]i64 -- s:str) { fn { link_json } map "," strings::join! json::arr }
+
+// The ids whose title holds q, which is already lower case
+fn matching(q:str -- found:[]i64) {
+	[]i64 ids fn { pick over get_title strings::lower swap strings::contains if { append } else { drop } } each nip
 }
 
-def handle_list(c:ptr -- ) {
-	sb::new -> out
-	out "[" append -> out
-	0 -> i
-	loop {
-		i COUNT < if {
-			i 0 > if { out "," append -> out }
-			out i link_json append -> out
-			i 1 + -> i
-		} else {
-			break
-		}
-	}
-	out "]" append -> out
-	out build -> body
-	c 200 body http::json
+// Each handler takes the request context and answers it
+
+fn handle_root(c:ptr -- ) {
+	200
+	"service" "links-api" json::kv
+	"version" "1.0" json::kv json::join
+	"links" ids len json::kv_int json::join
+	json::obj http::json
 }
 
-def handle_get_one(c:ptr -- ) {
-	c "id" http::param 10 strconv::parse_int! -> id
-	id 0 >= id COUNT < and if {
-		c 200 id link_json http::json
+fn handle_list(c:ptr -- ) { 200 ids links_json http::json }
+
+fn handle_get_one(c:ptr -- ) {
+	dup "id" http::param 10 strconv::parse_int!
+	dup 0 ids len 1 - within if {
+		link_json 200 swap http::json
 	} else {
-		c 404 "{\"error\":\"not found\"}" http::json
+		drop 404 "{\"error\":\"not found\"}" http::json
 	}
 }
 
-def handle_search(c:ptr -- ) {
-	c "q" http::query_param -> query
-	query len 0 == if {
-		c 400 "{\"error\":\"missing q parameter\"}" http::json
+fn handle_search(c:ptr -- ) {
+	dup "q" http::query_param dup len 0 == if {
+		drop 400 "{\"error\":\"missing q parameter\"}" http::json
 	} else {
-		sb::new -> out
-		out "[" append -> out
-		0 -> i
-		1 -> first
-		query strings::lower -> q
-		loop {
-			i COUNT < if {
-				i get_title strings::lower q strings::contains if {
-					first 0 == if { out "," append -> out }
-					out i link_json append -> out
-					0 -> first
-				}
-				i 1 + -> i
-			} else {
-				break
-			}
-		}
-		out "]" append -> out
-		out build -> body
-		c 200 body http::json
+		strings::lower matching links_json 200 swap http::json
 	}
 }
 
-def handle_echo(c:ptr -- ) {
-	c http::request_body -> body
-	body len 0 == if {
-		c 400 "{\"error\":\"empty body\"}" http::json
+fn handle_echo(c:ptr -- ) {
+	dup http::request_body dup len 0 == if {
+		drop 400 "{\"error\":\"empty body\"}" http::json
 	} else {
-		c 200 body http::json
+		200 swap http::json
 	}
 }
 
 fn main() {
-	http::engine -> e
-
-	e "/" &handle_root http::GET
-	e "/links" &handle_list http::GET
-	e "/links/:id" &handle_get_one http::GET
-	e "/search" &handle_search http::GET
-	e "/echo" &handle_echo http::POST
+	http::engine
+	dup "/" &handle_root http::GET
+	dup "/links" &handle_list http::GET
+	dup "/links/:id" &handle_get_one http::GET
+	dup "/search" &handle_search http::GET
+	dup "/echo" &handle_echo http::POST
 
 	"Links API listening on :8080" print nl
 	"  GET  /              - service info" print nl
@@ -136,6 +107,6 @@ fn main() {
 	"  GET  /search?q=...  - search by title" print nl
 	"  POST /echo          - echo JSON body back" print nl
 
-	e ":8080" http::run!
-	e http::free_engine
+	dup ":8080" http::run!
+	http::free_engine
 }

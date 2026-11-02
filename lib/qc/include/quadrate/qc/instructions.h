@@ -31,8 +31,8 @@ namespace Qd {
 			// following what each does on the modelled stack; lowered to locals, `for` and `call`
 			// before code generation, with a function value written in place inlined. `call` is the
 			// simplest, and runs one once.
-			"all", "any", "bi", "both", "call", "dip", "dip2", "each", "filter", "find", "fold", "index", "keep",
-			"keep2", "map", "scan", "times", "tri",
+			"all", "any", "bi", "bi_star", "both", "call", "dip", "dip2", "each", "filter", "find", "fold", "index",
+			"keep", "keep2", "map", "scan", "times", "tri", "tri_star",
 			// Arrays, and strings read as sequences of characters by len and nth. Creation is a
 			// literal -- `[10]i64`, `[]i64` -- not an instruction; see REMOVED_INSTRUCTIONS below.
 			"append", "len", "nth", "set",
@@ -207,6 +207,7 @@ namespace Qd {
 			{"all", 1, 1},
 			{"any", 1, 1},
 			{"bi", 2, 1},
+			{"bi_star", 2, 2},
 			{"both", 1, 2},
 			{"dip", 1, 1},
 			{"dip2", 1, 2},
@@ -221,6 +222,7 @@ namespace Qd {
 			{"scan", 1, 2},
 			{"times", 1, 1},
 			{"tri", 3, 1},
+			{"tri_star", 3, 3},
 	};
 
 	inline const Combinator* findCombinator(const std::string& name) {

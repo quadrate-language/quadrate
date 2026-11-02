@@ -233,6 +233,16 @@ namespace Qd {
 						scanner, "env() is not supported in var initializers (use a const and reference it)");
 				return;
 			}
+			// A struct of another module, `math::Vec3 { ... }`, as a struct literal anywhere
+			// else may name one
+			if (peekNextNonWhitespace(scanner) == U':') {
+				u8t_scanner_scan(scanner);
+				if (u8t_scanner_scan(scanner) != ':' || u8t_scanner_scan(scanner) != U8T_IDENTIFIER) {
+					errorReporter->reportError(scanner, "Expected a struct name after '::' in var initializer");
+					return;
+				}
+				refName += "::" + std::string(u8t_scanner_token_text(scanner, &n));
+			}
 			// Distinguish struct construction (`StructName { ... }`) from
 			// a const reference by peeking the next non-whitespace char.
 			char32_t peekCh = peekNextNonWhitespace(scanner);

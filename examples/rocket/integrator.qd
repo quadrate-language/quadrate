@@ -1,27 +1,16 @@
 // Euler integrator for simulation stepping
 // (uses directory-based namespace - no explicit imports needed)
-pub def step(stage:Stage state:State dt:f64 -- new:State) {
-	stage state compute_deriv -> d
 
-	// Update position: pos + dp * dt
-	state <<pos d <<dp dt scale + -> new_pos
+// Seconds simulated per step
+const Dt = 0.1
 
-	// Update velocity: vel + dv * dt
-	state <<vel d <<dv dt scale + -> new_vel
-
-	// Update mass and fuel
-	state <<mass d <<dm dt * + -> new_mass
-	state <<fuel d <<dm dt * + -> new_fuel
-	new_fuel 0.0 < if {
-		0.0 -> new_fuel
-	}
-
-	State {
-		t = state <<t dt +
-		pos = new_pos
-		vel = new_vel
-		mass = new_mass
-		fuel = new_fuel
-		pitch = state <<pitch
-	}
+// The state Dt later: each quantity advanced by its rate of change, the fuel never below empty
+pub fn step(stage:Stage state:State -- new:State) {
+	tuck compute_deriv swap clone
+	dup <<t Dt + >>t
+	dup <<pos pick <<dp Dt scale add >>pos
+	dup <<vel pick <<dv Dt scale add >>vel
+	dup <<mass pick <<dm Dt * + >>mass
+	dup <<fuel pick <<dm Dt * + dup 0.0 < if { drop 0.0 } >>fuel
+	nip
 }
