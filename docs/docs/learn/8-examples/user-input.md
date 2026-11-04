@@ -101,13 +101,12 @@ use os
 
 fn main() {
 	os::args -> args
-	args len -> argc
 
-	argc 0 == if {
+	args len 0 == if {
 		"No arguments provided" print nl
 	} else {
 		"Arguments:" print nl
-		0 argc 1 for i {
+		0 args len 1 for i {
 			"  " print i 1 + print ": " print args i nth print nl
 		}
 	}

@@ -55,7 +55,7 @@ import "libmem.a" as "mem" {
 	/// @return address ptr Aligned memory address
 	/// @error ErrAlloc Allocation failed
 	/// @error ErrInvalidArg Invalid alignment or size
-	/// @example 64 1024 mem::alloc_aligned! -> buf  // 64-byte aligned
+	/// @example 64 1024 mem::alloc_aligned!  // 64-byte aligned buf
 	pub fn alloc_aligned(alignment:i64 bytes:i64 -- address:ptr)!
 
 	/// Set a byte at offset.
@@ -219,7 +219,7 @@ import "libmem.a" as "mem" {
 	/// @param text str Source string
 	/// @return buffer ptr Allocated buffer
 	/// @return length i64 String length
-	/// @example "hello" mem::from_string -> len -> buf
+	/// @example "hello" mem::from_string -> buf len
 	pub fn from_string(text:str -- buffer:ptr length:i64)
 }
 

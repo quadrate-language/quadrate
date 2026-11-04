@@ -54,12 +54,10 @@ loop {
 ## Building a tree
 
 ```qd
-json::new_object -> o
-o "n" 42 json::new_int json::put! -> o
-o "xs" json::new_array -> xs
-xs "a" json::new_string json::push! -> xs
-xs json::put! -> o
-o json::stringify print nl        // {"n":42,"xs":["a"]}
+json::new_object
+"n" 42 json::new_int json::put!
+"xs" json::new_array "a" json::new_string json::push! json::put!
+json::stringify print nl        // {"n":42,"xs":["a"]}
 ```
 
 ## Functions

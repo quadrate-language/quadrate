@@ -365,7 +365,7 @@ Swap byte order of a 16-bit value.
 **Example:**
 
 ```qd
-0x1234 bytes::swap16 -> result  // 0x3412
+0x1234 bytes::swap16  // 0x3412
 ```
 
 ---
@@ -387,7 +387,7 @@ Swap byte order of a 32-bit value.
 **Example:**
 
 ```qd
-0x12345678 bytes::swap32 -> result  // 0x78563412
+0x12345678 bytes::swap32  // 0x78563412
 ```
 
 ---
@@ -409,7 +409,7 @@ Swap byte order of a 64-bit value.
 **Example:**
 
 ```qd
-0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201
+0x0102030405060708 bytes::swap64  // 0x0807060504030201
 ```
 
 ---

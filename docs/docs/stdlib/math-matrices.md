@@ -227,7 +227,7 @@ Create a look-at view matrix.
 **Example:**
 
 ```qd
-eye target up math::mat4_look_at -> view
+eye target up math::mat4_look_at  // view
 ```
 ---
 
@@ -251,7 +251,7 @@ Create a perspective projection matrix.
 **Example:**
 
 ```qd
-1.047 1.777 0.1 100.0 math::mat4_perspective -> proj
+1.047 1.777 0.1 100.0 math::mat4_perspective  // proj
 ```
 ---
 
@@ -277,7 +277,7 @@ Create an orthographic projection matrix.
 **Example:**
 
 ```qd
--1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic -> proj
+-1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic  // proj
 ```
 ---
 
@@ -298,7 +298,7 @@ Create rotation matrix from quaternion.
 **Example:**
 
 ```qd
-q math::mat4_from_quat -> rot_mat
+q math::mat4_from_quat  // rot_mat
 ```
 
 ### Methods
@@ -320,7 +320,7 @@ Matrix multiplication.
 **Example:**
 
 ```qd
-m other_m mul -> product
+m other_m mul  // product
 ```
 ---
 
@@ -337,7 +337,7 @@ Matrix determinant.
 **Example:**
 
 ```qd
-m determinant -> det
+m determinant  // det
 ```
 ---
 
@@ -354,7 +354,7 @@ Matrix inverse.
 **Example:**
 
 ```qd
-m inverse -> m_inv
+m inverse  // m_inv
 ```
 ---
 
@@ -392,7 +392,7 @@ Transform a Vec3 point by this matrix (w=1).
 **Example:**
 
 ```qd
-m point transform_point -> transformed
+m point transform_point  // transformed
 ```
 ---
 
@@ -413,7 +413,7 @@ Transform a Vec4 by this matrix.
 **Example:**
 
 ```qd
-m other4 transform_vec4 -> transformed
+m other4 transform_vec4  // transformed
 ```
 
 ## Quat
@@ -466,7 +466,7 @@ Create quaternion from axis and angle.
 **Example:**
 
 ```qd
-axis 1.57 math::quat_from_axis_angle -> q
+axis 1.57 math::quat_from_axis_angle  // q
 ```
 ---
 
@@ -489,7 +489,7 @@ Create quaternion from Euler angles (XYZ order).
 **Example:**
 
 ```qd
-0.0 1.57 0.0 math::quat_from_euler -> q
+0.0 1.57 0.0 math::quat_from_euler  // q
 ```
 
 ### Methods
@@ -600,7 +600,7 @@ Inverse of this quaternion.
 **Example:**
 
 ```qd
-q inverse -> q_inv
+q inverse  // q_inv
 ```
 ---
 
@@ -617,7 +617,7 @@ Squared length of quaternion.
 **Example:**
 
 ```qd
-q length_sq -> len_sq
+q length_sq  // len_sq
 ```
 ---
 
@@ -639,7 +639,7 @@ Spherical linear interpolation to another quaternion.
 **Example:**
 
 ```qd
-q other_q 0.5 slerp -> mid
+q other_q 0.5 slerp  // mid
 ```
 ---
 
@@ -660,5 +660,5 @@ Rotate a Vec3 by this quaternion.
 **Example:**
 
 ```qd
-q point rotate_vec3 -> rotated
+q point rotate_vec3  // rotated
 ```

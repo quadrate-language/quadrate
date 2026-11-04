@@ -58,9 +58,8 @@ fn main() {
 		io::close
 	} else {
 		drop
-		err -> code -> msg
-		"code: " print code print nl     // 2
-		"message: " print msg print nl  // io::open: No such file or directory
+		err "code: " print print nl     // 2
+		"message: " print print nl  // io::open: No such file or directory
 	}
 }
 ```
@@ -72,11 +71,11 @@ fn main() {
 Functions that can fail are marked with `!` after the signature:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" 2 panic
 	}
-	a b /
+	/
 }
 ```
 
@@ -99,7 +98,7 @@ def divide(a:i64 b:i64 -- result:i64)! {
     ```qd
     // doccheck: skip -- the shape of a switch on a status
     path io::Read io::open switch {
-        Ok { -> file  file io::close }
+        Ok { io::close }
         io::ErrNotFound { drop  "not found" print nl }   // drop the null handle
     }
     ```
@@ -111,9 +110,8 @@ Use `switch` to match on specific error codes:
 ```qd
 "/tmp/config.txt" io::Read io::open switch {
 	Ok {
-		-> file
 		"File opened!" print nl
-		file io::close
+		io::close
 	}
 	io::ErrNotFound {
 		drop
@@ -156,16 +154,14 @@ Handle specific errors:
 fn read_config( -- data:str)! {
 	"/etc/app/config.txt" io::Read io::open switch {
 		Ok {
-			-> file
 			// Read file contents...
-			file io::close
+			io::close
 		}
 		io::ErrNotFound {
 			"config not found" io::ErrNotFound panic
 		}
 		_ {
-			err -> code -> msg
-			msg code panic
+			err panic
 		}
 	}
 }
@@ -177,8 +173,8 @@ Handle errors without matching specific codes:
 
 <!-- doccheck: continues -->
 ```qd
-def compute(x:i64 -- result:i64)! {
-	x 2 divide fail if {
+fn compute(x:i64 -- result:i64)! {
+	2 divide fail if {
 		"compute failed" 2 panic
 	}
 	// Success: the result is on the stack
@@ -191,8 +187,8 @@ Abort the program if an error occurs:
 
 <!-- doccheck: continues -->
 ```qd
-def compute(x:i64 -- result:i64)! {
-	x 2 divide!  // Aborts program if divide fails
+fn compute(x:i64 -- result:i64)! {
+	2 divide!  // Aborts program if divide fails
 	10 +
 }
 ```
@@ -205,8 +201,8 @@ Automatically propagate errors to the calling function:
 
 <!-- doccheck: continues -->
 ```qd
-def compute(x:i64 -- result:i64)! {
-	x 2 divide?  // Propagates error to caller if divide fails
+fn compute(x:i64 -- result:i64)! {
+	2 divide?  // Propagates error to caller if divide fails
 	10 +
 }
 ```
@@ -217,8 +213,8 @@ This is equivalent to the more verbose pattern:
 
 <!-- doccheck: continues -->
 ```qd
-def compute(x:i64 -- result:i64)! {
-	x 2 divide switch {
+fn compute(x:i64 -- result:i64)! {
+	2 divide switch {
 		Ok { }
 		_ { err panic }
 	}
@@ -266,8 +262,8 @@ strings::ErrAlloc        // 3 - Memory allocation failed
 ```qd
 use io
 
-def process(path:str -- result:i64)! {
-	path io::Read io::open switch {
+fn process(path:str -- result:i64)! {
+	io::Read io::open switch {
 		Ok {
 			-> file
 			defer {
@@ -283,8 +279,7 @@ def process(path:str -- result:i64)! {
 			"permission denied" io::ErrPermission panic
 		}
 		_ {
-			err -> code -> msg
-			msg code panic
+			err panic
 		}
 	}
 }

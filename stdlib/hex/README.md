@@ -17,27 +17,21 @@ use hex
 
 fn main() {
     // Encode to uppercase hex
-    "Hello" hex::encode -> h
-    h print nl  // "48656C6C6F"
+    "Hello" hex::encode print nl  // "48656C6C6F"
 
     // Encode to lowercase hex
-    "Hello" hex::encode_lower -> h2
-    h2 print nl  // "48656c6c6f"
+    "Hello" hex::encode_lower print nl  // "48656c6c6f"
 
     // Decode hex string
-    "48656C6C6F" hex::decode -> s
-    s print nl  // "Hello"
+    "48656C6C6F" hex::decode print nl  // "Hello"
 
     // Single byte operations
-    65 hex::encode_byte -> b
-    b print nl  // "41"
+    65 hex::encode_byte print nl  // "41"
 
-    "41" hex::decode_byte -> v
-    v print nl  // 65
+    "41" hex::decode_byte print nl  // 65
 
     // Validation
-    "48656C6C6F" hex::is_valid -> valid
-    valid print nl  // 1
+    "48656C6C6F" hex::is_valid print nl  // 1
 }
 ```
 

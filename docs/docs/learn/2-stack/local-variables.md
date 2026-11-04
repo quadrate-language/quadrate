@@ -25,10 +25,12 @@ fn diff_of_squares(x:i64 y:i64 -- result:i64) {
 }
 ```
 
-**With local variables:**
+**With local variables** (bind the inputs with `->` at the top of the function, top of stack
+first):
 
 ```qd
-def diff_of_squares(x:i64 y:i64 -- result:i64) {
+fn diff_of_squares(x:i64 y:i64 -- result:i64) {
+	-> y -> x
 	x y - x y + *
 }
 ```
@@ -146,7 +148,8 @@ fn main() {
 ### Computing intermediate results
 
 ```qd
-def quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
+fn quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
+	-> x -> c -> b -> a
 	a x dup * * -> ax2   // ax^2
 	b x * -> bx         // bx
 	ax2 bx + c +        // ax^2 + bx + c

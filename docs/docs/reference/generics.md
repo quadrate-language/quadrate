@@ -7,9 +7,7 @@ Generic functions allow you to write type-flexible code that works with multiple
 Use angle brackets `<T>` to define type parameters:
 
 ```qd
-def identity<T>(x:T -- y:T) {
-    x
-}
+fn identity<T>(x:T -- y:T) { }
 ```
 
 ## Basic usage
@@ -17,9 +15,7 @@ def identity<T>(x:T -- y:T) {
 The compiler automatically infers types based on the arguments:
 
 ```qd
-def identity<T>(x:T -- y:T) {
-    x
-}
+fn identity<T>(x:T -- y:T) { }
 
 fn main() {
     42 identity print nl        // Works with i64
@@ -33,15 +29,11 @@ fn main() {
 Functions can have multiple type parameters:
 
 ```qd
-def pair<A, B>(a:A b:B -- a:A b:B) {
-    a b
-}
+fn pair<A, B>(a:A b:B -- a:A b:B) { }
 
 fn main() {
     1 "one" pair
-    -> s
-    -> n
-    n print " " print s print nl  // 1 one
+    swap print " " print print nl  // 1 one
 }
 ```
 
@@ -50,8 +42,8 @@ fn main() {
 ### Exchange
 
 ```qd
-def exchange<T>(a:T b:T -- b:T a:T) {
-    b a
+fn exchange<T>(a:T b:T -- b:T a:T) {
+    swap
 }
 
 fn main() {
@@ -64,12 +56,12 @@ fn main() {
 ### Apply
 
 ```qd
-def apply<T>(x:T f:fn(T -- T) -- result:T) {
-    x f call
+fn apply<T>(x:T f:fn(T -- T) -- result:T) {
+    call
 }
 
 fn main() {
-    5 def (n:i64 -- r:i64) { n 2 * } apply print nl  // 10
+    5 fn (n:i64 -- r:i64) { 2 * } apply print nl  // 10
 }
 ```
 
@@ -91,7 +83,7 @@ fn main() {
 The compiler infers types at the call site. Each call can use different types:
 
 ```qd
-def identity<T>(x:T -- y:T) { x }
+fn identity<T>(x:T -- y:T) { }
 
 fn main() {
     42 identity print nl     // T = i64

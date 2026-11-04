@@ -16,8 +16,7 @@
 ///
 ///     fn main() {
 ///         // Spawn and join a thread
-///         &worker thread::spawn! -> t
-///         t join!
+///         &worker thread::spawn! join!
 ///
 ///         // Mutex for synchronization
 ///         thread::mutex_new! -> m
@@ -291,7 +290,7 @@ pub fn (ch:Channel) try_send(val:i64 -- success:i64) {
 ///
 /// @return val i64 Received value (0 if failed)
 /// @return success i64 1 if received, 0 if would block
-/// @example ch try_recv -> success -> val
+/// @example ch try_recv -> val success
 pub fn (ch:Channel) try_recv( -- val:i64 success:i64) {
 	ch <<handle thread::raw_chan_try_recv
 }

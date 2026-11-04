@@ -1,6 +1,6 @@
 {
   "name": "thread",
-  "description": "Thread module - threading primitives using C11 threads.  Provides: - Thread: spawn, join, detach threads - Mutex: mutual exclusion locks - Channel: Go-style channels for thread communication - WaitGroup: wait for multiple threads to complete  ## Example      use thread      fn worker() {         \"Hello from thread!\" print nl     }      fn main() {         // Spawn and join a thread         &worker thread::spawn! -> t         t join!          // Mutex for synchronization         thread::mutex_new! -> m         m lock!         m unlock!         m free          // Channel for communication         10 thread::chan_buffered! -> ch         ch 42 send!         ch recv! -> val         ch free          // WaitGroup to wait for multiple threads         thread::wg_new! -> wg         wg 2 add         wg done         wg done         wg wait!         wg free     }",
+  "description": "Thread module - threading primitives using C11 threads.  Provides: - Thread: spawn, join, detach threads - Mutex: mutual exclusion locks - Channel: Go-style channels for thread communication - WaitGroup: wait for multiple threads to complete  ## Example      use thread      fn worker() {         \"Hello from thread!\" print nl     }      fn main() {         // Spawn and join a thread         &worker thread::spawn! join!          // Mutex for synchronization         thread::mutex_new! -> m         m lock!         m unlock!         m free          // Channel for communication         10 thread::chan_buffered! -> ch         ch 42 send!         ch recv! -> val         ch free          // WaitGroup to wait for multiple threads         thread::wg_new! -> wg         wg 2 add         wg done         wg done         wg wait!         wg free     }",
   "constants": [
     {
       "name": "ErrChannel",
@@ -438,7 +438,7 @@
       "params": [],
       "returns": [{"name": "val", "type": "i64", "description": "Received value (0 if failed)"}, {"name": "success", "type": "i64", "description": "1 if received, 0 if would block"}],
       "errors": [],
-      "examples": ["ch try_recv -> success -> val"]
+      "examples": ["ch try_recv -> val success"]
     },
     {
       "name": "try_send",

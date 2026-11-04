@@ -153,10 +153,11 @@ c d + -> den
 num den /
 ```
 
-Or use named parameters in the function signature:
+Or bind the function's inputs with `->` at the top of its body:
 
 ```qd
-def compute(a:f64 b:f64 c:f64 d:f64 -- result:f64) {
+fn compute(a:f64 b:f64 c:f64 d:f64 -- result:f64) {
+    -> d -> c -> b -> a
     a b *           // push the bound locals by name
     c d +
     /
@@ -207,11 +208,11 @@ Step by step:
 
 ```qd
 fn sum_of_squares(nums:[]i64 -- total:i64) {
-    0                     // Stack: [nums, total]
-    0 pick len 1 for i {
-        over i nth dup * +
+    -> nums
+    0
+    0 nums len 1 for i {
+        nums i nth dup * +
     }
-    nip
 }
 
 fn average_of_squares(nums:[]i64 -- result:f64) {
@@ -221,10 +222,10 @@ fn average_of_squares(nums:[]i64 -- result:f64) {
 
 Walkthrough:
 
-- `0` — initialize the accumulator on top of `nums`
-- `0 pick len 1 for i` — `pick` copies `nums` from under the two zeros; iterate `i` from 0 to len-1 with step 1
-- `over i nth dup * +` — get the i-th element, square it, add it to total
-- `nip` — drop `nums`, leaving the total
+- `-> nums` — bind the array, since the loop reads it on every pass
+- `0` — the running total starts on the stack
+- `0 nums len 1 for i` — iterate `i` from 0 to len-1 with step 1
+- `nums i nth dup * +` — get the i-th element, square it, add it to the total
 - `average_of_squares` keeps a copy of `nums` for its length, then casts both to f64 and divides
 
 ## The key insight

@@ -662,28 +662,24 @@ use engine
 
 // Called every frame
 fn update() {
-    engine::self -> id
-
     // Get current position
-    id engine::get_pos -> y -> x
+    engine::self dup engine::get_pos -> y -> x
 
     // Simple movement: move right over time
-    engine::delta_time 100.0 * -> speed
-    id speed 0.0 engine::move
+    engine::delta_time 100.0 * 0.0 engine::move
 
     // Log position every update
     "Player position: " print x print ", " print y print nl
 }
 
-def take_damage(amount:i64 -- ) {
+fn take_damage(amount:i64 -- ) {
     engine::self -> id
-    id amount engine::damage
+    id swap engine::damage
 
-    id engine::get_health -> hp
-    hp 0 > if {
-        "Ouch! Health remaining: " print hp print nl
+    id engine::get_health dup 0 > if {
+        "Ouch! Health remaining: " print print nl
     } else {
-        "Player defeated!" engine::log
+        drop "Player defeated!" engine::log
     }
 }
 ```
@@ -693,6 +689,10 @@ def take_damage(amount:i64 -- ) {
 // scripts/enemy.qd
 // Enemy AI script
 use engine
+
+fn step(delta:f64 len:f64 -- v:f64) {
+    / engine::delta_time * 50.0 *
+}
 
 fn update() {
     engine::self -> id
@@ -711,16 +711,12 @@ fn update() {
         "Enemy attacks player!" engine::log
         0 10 engine::damage
     } else {
-        // Move toward player
-        player_x my_x - -> dx
-        player_y my_y - -> dy
-
-        // Normalize and scale by speed
+        // Move toward player, normalized and scaled by speed
         dist 0.001 + -> len  // Avoid divide by zero
-        dx len / engine::delta_time * 50.0 * -> move_x
-        dy len / engine::delta_time * 50.0 * -> move_y
-
-        id move_x move_y engine::move
+        id
+        player_x my_x - len step
+        player_y my_y - len step
+        engine::move
     }
 }
 ```
@@ -939,7 +935,7 @@ function value, so the native's parameter is declared with the function type it 
 use engine
 
 fn process() {
-    10 def(x:i64 -- r:i64) { x 2 * } engine::with_callback print nl  // 40
+    10 fn (x:i64 -- r:i64) { 2 * } engine::with_callback print nl  // 40
 }
 ```
 
@@ -1018,8 +1014,7 @@ fn halve(x:i64 -- ) {
         print nl
     } else {
         drop                  // the zero placeholder
-        err -> code -> msg
-        msg print nl          // engine::checked_half: 7 is odd
+        err drop print nl     // engine::checked_half: 7 is odd
     }
 }
 ```

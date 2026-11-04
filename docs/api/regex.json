@@ -32,7 +32,7 @@
       "params": [{"name": "s", "type": "str", "description": "String to search"}, {"name": "max", "type": "i64", "description": "Maximum matches to find (-1 for unlimited)"}],
       "returns": [{"name": "results", "type": "ptr", "description": "Array of i64 pairs [start0, end0, start1, end1, ...]"}, {"name": "count", "type": "i64", "description": "Number of matches found"}],
       "errors": [],
-      "examples": ["\"[0-9]+\" regex::compile -> re  re \"a1b22c333\" -1 regex::find_all -> count -> results"]
+      "examples": ["\"[0-9]+\" regex::compile \"a1b22c333\" -1 regex::find_all -> results count"]
     },
     {
       "name": "find",
@@ -42,7 +42,7 @@
       "params": [{"name": "s", "type": "str", "description": "String to search"}],
       "returns": [{"name": "start", "type": "i64", "description": "Start index of match (-1 if none)"}, {"name": "end", "type": "i64", "description": "End index of match, exclusive (-1 if none)"}],
       "errors": [],
-      "examples": ["\"[0-9]+\" regex::compile -> re  re \"abc123def\" regex::find -> end -> start"]
+      "examples": ["\"[0-9]+\" regex::compile \"abc123def\" regex::find -> start end"]
     },
     {
       "name": "is_match",
@@ -62,7 +62,7 @@
       "params": [{"name": "s", "type": "str", "description": "String to search"}],
       "returns": [{"name": "count", "type": "i64", "description": "Number of matches"}],
       "errors": [],
-      "examples": ["\"[0-9]+\" regex::compile -> re  re \"a1b22c333\" regex::match_count -> n"]
+      "examples": ["\"[0-9]+\" regex::compile \"a1b22c333\" regex::match_count -> n"]
     },
     {
       "name": "matches",
@@ -92,7 +92,7 @@
       "params": [{"name": "s", "type": "str", "description": "Input string"}, {"name": "repl", "type": "str", "description": "Replacement string"}],
       "returns": [{"name": "result", "type": "str", "description": "String with all matches replaced"}],
       "errors": [],
-      "examples": ["\"[0-9]+\" regex::compile -> re  re \"abc123def456\" \"#\" regex::replace -> result"]
+      "examples": ["\"[0-9]+\" regex::compile \"abc123def456\" \"#\" regex::replace -> result"]
     }
   ]
 }

@@ -62,17 +62,16 @@ fn main() {
     http::engine -> e
 
     // Register routes
-    e "/" def(c:http::Ctx -- ) {
-        c 200 "Hello, World!" http::string
+    e "/" fn (c:http::Ctx -- ) {
+        200 "Hello, World!" http::string
     } http::GET
 
-    e "/users/:id" def(c:http::Ctx -- ) {
-        c "id" http::param -> id
-        c 200 id http::string
+    e "/users/:id" fn (c:http::Ctx -- ) {
+        dup "id" http::param 200 swap http::string
     } http::GET
 
-    e "/api/data" def(c:http::Ctx -- ) {
-        c 200 "{\"ok\":true}" http::json
+    e "/api/data" fn (c:http::Ctx -- ) {
+        200 "{\"ok\":true}" http::json
     } http::POST
 
     // Start server
@@ -91,15 +90,15 @@ fn main() {
     http::engine -> e
 
     // Global middleware
-    e def(c:http::Ctx -- ) {
-        c "X-Server" "Quadrate" http::set_header
+    e fn (c:http::Ctx -- ) {
+        "X-Server" "Quadrate" http::set_header
     } http::use
 
     // API group
     e "/api" http::group -> api
 
-    api "/users" def(c:http::Ctx -- ) {
-        c 200 "[]" http::json
+    api "/users" fn (c:http::Ctx -- ) {
+        200 "[]" http::json
     } http::group_GET
 
     e ":8080" http::run!
@@ -116,8 +115,8 @@ fn main() {
     http::engine -> e
 
     // Serve files from ./public at /static/*
-    e "/static/*" def(c:http::Ctx -- ) {
-        c "/static" "./public" http::static
+    e "/static/*" fn (c:http::Ctx -- ) {
+        "/static" "./public" http::static
     } http::GET
 
     e ":8080" http::run!

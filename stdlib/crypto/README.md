@@ -18,7 +18,7 @@ use crypto
 use crypto
 
 fn main() {
-    "Hello" crypto::sha256 print nl
+    "Hello" crypto::sha256! print nl
     // prints: 185f8db32271fe25f561a6fc938b2e264306ec304eda518007d1764826381969
 }
 ```
@@ -29,7 +29,7 @@ fn main() {
 use crypto
 
 fn main() {
-    "Hello" crypto::sha512 print nl
+    "Hello" crypto::sha512! print nl
 }
 ```
 
@@ -39,7 +39,7 @@ fn main() {
 use crypto
 
 fn main() {
-    "Hello" crypto::md5 print nl
+    "Hello" crypto::md5! print nl
     // prints: 8b1a9953c4611296a827abf8c47804d7
 }
 ```
@@ -57,10 +57,10 @@ fn main() {
 
 ## Functions
 
-- `sha256(data:str -- hash:str)` - Compute SHA-256 hash (64 hex chars)
-- `sha512(data:str -- hash:str)` - Compute SHA-512 hash (128 hex chars)
-- `md5(data:str -- hash:str)` - Compute MD5 hash (32 hex chars)
-- `crc32(data:str -- checksum:int)` - Compute CRC32 checksum
+- `sha256(data:str -- hash:str)!` - Compute SHA-256 hash (64 hex chars)
+- `sha512(data:str -- hash:str)!` - Compute SHA-512 hash (128 hex chars)
+- `md5(data:str -- hash:str)!` - Compute MD5 hash (32 hex chars)
+- `crc32(data:str -- checksum:i64)` - Compute CRC32 checksum
 
 ## Streaming API
 
@@ -70,11 +70,9 @@ For large data, use the streaming API:
 use crypto
 
 fn main() {
-    crypto::sha256_init -> ctx
-    ctx "Hello " crypto::sha256_update
-    ctx "World" crypto::sha256_update
-    ctx crypto::sha256_final -> hash
-    hash print nl
+    crypto::Sha256 {} "Hello " update! "World" update!
+    dup finish! print nl
+    release
 }
 ```
 

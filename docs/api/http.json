@@ -497,7 +497,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path. Supports"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function receiving Ctx"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/\" def(c:http::Ctx -- ) { c 200 \"Hello\" http::string } http::GET"]
+      "examples": ["e \"/\" fn (c:http::Ctx -- ) { 200 \"Hello\" http::string } http::GET"]
     },
     {
       "name": "get_header",
@@ -547,7 +547,7 @@
       "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "path", "type": "str", "description": "Route path (relative to group prefix)"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api \"/users\" def(c:http::Ctx -- ) { c 200 \"users\" http::string } http::group_GET"]
+      "examples": ["api \"/users\" fn (c:http::Ctx -- ) { 200 \"users\" http::string } http::group_GET"]
     },
     {
       "name": "group_POST",
@@ -577,7 +577,7 @@
       "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "middleware", "type": "fn(Ctx --)", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api def(c:http::Ctx -- ) { c \"X-Group\" \"api\" http::set_header } http::group_use"]
+      "examples": ["api fn (c:http::Ctx -- ) { \"X-Group\" \"api\" http::set_header } http::group_use"]
     },
     {
       "name": "handle_one",
@@ -667,7 +667,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/api/users\" def(c:http::Ctx -- ) { c 200 \"created\" http::string } http::POST"]
+      "examples": ["e \"/api/users\" fn (c:http::Ctx -- ) { 200 \"created\" http::string } http::POST"]
     },
     {
       "name": "PUT",
@@ -717,7 +717,7 @@
       "params": [{"name": "req", "type": "ptr", "description": "Request object"}],
       "returns": [{"name": "resp", "type": "Response", "description": "Response struct with status, headers, body"}],
       "errors": [{"code": "ErrInvalidUrl", "description": "The URL is not http:// or https://, or is malformed"}, {"code": "ErrConnect", "description": "Host not found, unreachable or refusing connections"}, {"code": "ErrTls", "description": "The TLS handshake failed, or the certificate is not trusted"}, {"code": "ErrSend", "description": "The request could not be sent"}, {"code": "ErrReceive", "description": "The connection failed before the response was complete"}, {"code": "ErrParse", "description": "The reply is not an HTTP response"}],
-      "examples": ["req http::send! -> resp  resp <<status print"]
+      "examples": ["req http::send! <<status print"]
     },
     {
       "name": "set_header",
@@ -777,7 +777,7 @@
       "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "prefix", "type": "str", "description": "URL prefix to strip (e.g., \"/static\")"}, {"name": "fs_path", "type": "str", "description": "Filesystem directory path (e.g., \"./public\")"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/static/*\" def (c:http::Ctx -- ) { c \"/static\" \"./public\" http::static } http::GET"]
+      "examples": ["e \"/static/*\" fn (c:http::Ctx -- ) { \"/static\" \"./public\" http::static } http::GET"]
     },
     {
       "name": "static_file",
@@ -817,7 +817,7 @@
       "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "middleware", "type": "fn(Ctx --)", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e def(c:http::Ctx -- ) { c \"X-Server\" \"Quadrate\" http::set_header } http::use"]
+      "examples": ["e fn (c:http::Ctx -- ) { \"X-Server\" \"Quadrate\" http::set_header } http::use"]
     }
   ]
 }

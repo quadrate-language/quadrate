@@ -31,7 +31,7 @@ import "libtty.a" as "tty" {
 	/// Returns 0, 0 if not a terminal.
 	/// @return rows i64 Terminal height in rows
 	/// @return cols i64 Terminal width in columns
-	/// @example tty::size -> cols -> rows
+	/// @example tty::size -> rows cols
 	pub fn size( -- rows:i64 cols:i64)
 
 	/// Get terminal width in columns.

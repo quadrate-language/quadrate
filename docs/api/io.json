@@ -155,7 +155,7 @@
       "params": [{"name": "handle", "type": "ptr", "description": "File handle"}],
       "returns": [{"name": "handle", "type": "ptr", "description": "File handle (unchanged)"}, {"name": "is_eof", "type": "i64", "description": "1 if at EOF, 0 otherwise"}],
       "errors": [],
-      "examples": ["f io::eof -> at_end -> f"]
+      "examples": ["f io::eof -> f at_end"]
     },
     {
       "name": "flush",
@@ -205,7 +205,7 @@
       "params": [],
       "returns": [{"name": "line", "type": "str", "description": "The line read, without its trailing newline"}, {"name": " "" at end of input", "type": "", "description": ""}, {"name": "more", "type": "i64", "description": "1 if a line was read, 0 at end of input"}],
       "errors": [{"code": "ErrRead", "description": "The underlying read failed"}],
-      "examples": ["io::readline switch { Ok { -> more -> line line print nl } _ { drop drop } }"]
+      "examples": ["io::readline switch { Ok { drop print nl } _ { drop drop } }"]
     },
     {
       "name": "seek",

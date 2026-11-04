@@ -64,7 +64,7 @@ import "libnet.a" as "net" {
 	/// @error ErrReceive Failed to receive data
 	/// @error ErrTimeout The timeout set with set_timeout ran out
 	/// @error ErrInvalidArg max_bytes is out of range
-	/// @example sock 1024 net::receive! -> n -> data
+	/// @example sock 1024 net::receive! -> data n
 	pub fn receive(socket:i64 max_bytes:i64 -- data:str bytes_read:i64)!
 
 	/// Shutdown socket for reading/writing.
@@ -103,6 +103,6 @@ import "libnet.a" as "net" {
 	/// @return addr str Remote IP address
 	/// @return port i64 Remote port number
 	/// @error ErrInvalidArg Failed to get peer address
-	/// @example sock net::get_peer_addr! -> port -> addr
+	/// @example sock net::get_peer_addr! -> addr port
 	pub fn get_peer_addr(socket:i64 -- addr:str port:i64)!
 }

@@ -22,9 +22,7 @@ After installing a package, use it like any other module:
 use compress
 
 fn main() {
-    "Hello, World!" compress::gzip! -> compressed
-    compressed compress::gunzip! -> decompressed
-    decompressed print nl
+    "Hello, World!" compress::gzip! compress::gunzip! print nl
 }
 ```
 
@@ -75,12 +73,9 @@ fn main() {
     // Query with prepared statement
     "SELECT id, name, age FROM users" db sqlite::prepare! -> stmt
 
-    stmt sqlite::step! -> has_row
-    has_row 1 == if {
-        0 stmt sqlite::column_int -> id
-        1 stmt sqlite::column_text -> name
-        2 stmt sqlite::column_int -> age
-        name print " is " print age print " years old" print nl
+    stmt sqlite::step! 1 == if {
+        1 stmt sqlite::column_text print " is " print
+        2 stmt sqlite::column_int print " years old" print nl
     }
 
     stmt sqlite::finalize
@@ -97,15 +92,14 @@ Compression with gzip:
 use compress
 
 fn main() {
-    "Hello, World! This is a test string for compression." -> data
+    "Hello, World! This is a test string for compression."
 
     // Compress
-    data compress::gzip! -> compressed
-    "Compressed size: " print compressed len print nl
+    compress::gzip!
+    "Compressed size: " print dup len print nl
 
     // Decompress
-    compressed compress::gunzip! -> decompressed
-    decompressed print nl
+    compress::gunzip! print nl
 }
 ```
 

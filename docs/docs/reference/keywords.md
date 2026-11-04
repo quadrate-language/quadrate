@@ -103,12 +103,12 @@ value with `call`, is not inlined. Best suited for small wrapper functions where
 overhead would dominate the function body.
 
 ```qd
-inline def double(x:i64 -- result:i64) {
-	x 2 *
+inline fn double(x:i64 -- result:i64) {
+	2 *
 }
 
-pub inline def incr(x:i64 -- result:i64) {
-	x 1 +
+pub inline fn incr(x:i64 -- result:i64) {
+	1 +
 }
 ```
 
@@ -239,12 +239,13 @@ Inside a `loop` or `for`: takes a flag and leaves the innermost loop when it is 
 condition is whatever precedes it, so at the top of the body it makes a classic while loop.
 
 ```qd
-0 -> i
+0
 loop {
-	i 5 < while
-	i print nl
-	i 1 + -> i
+	dup 5 < while
+	dup print nl
+	1 +
 }
+drop
 ```
 
 ### until
@@ -253,11 +254,12 @@ Inside a `loop` or `for`: takes a flag and leaves the innermost loop when it is 
 of the body it makes a do-while loop, which runs at least once.
 
 ```qd
-0 -> k
+0
 loop {
-	k 1 + -> k
-	k 3 >= until
+	1 +
+	dup 3 >= until
 }
+drop
 ```
 
 ### break
@@ -301,12 +303,12 @@ fn do_work( -- ) {
 `loop` and `switch` arms — which makes the guard-clause style available:
 
 ```qd
-def classify(n:i64 -- label:str) {
-	n 0 < if {
-		"negative"
+fn classify(n:i64 -- label:str) {
+	dup 0 < if {
+		drop "negative"
 		return
 	}
-	n 0 == if {
+	0 == if {
 		"zero"
 		return
 	}
@@ -413,7 +415,7 @@ Use `pub type` to export from a module.
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-def keep_if(arr:IntArray pred:Predicate -- result:[]i64) { ... }
+fn keep_if(arr:IntArray pred:Predicate -- result:[]i64) { ... }
 ```
 
 An array or function alias does not yet work as a declared output (the body's `[]i64` is
@@ -448,7 +450,7 @@ success case.
 
 ```qd
 "test.txt" io::read_file switch {
-	Ok { -> content content print }
+	Ok { print }
 	_ { drop "error" print nl }
 }
 ```
@@ -460,7 +462,7 @@ match that code.
 
 ```qd
 "test.txt" io::read_file switch {
-	Ok { -> content content print }
+	Ok { print }
 	Err { drop "generic error" print nl }
 	_ { drop "error reading file" print nl }
 }

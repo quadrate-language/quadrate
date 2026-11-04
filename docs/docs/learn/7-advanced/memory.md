@@ -142,7 +142,8 @@ struct StringBuffer {
 	capacity:i64
 }
 
-def sb_new(capacity:i64 -- sb:StringBuffer) {
+fn sb_new(capacity:i64 -- sb:StringBuffer) {
+	-> capacity
 	capacity mem::alloc! -> data
 	StringBuffer {
 		data = data
@@ -155,7 +156,8 @@ fn sb_free(sb:StringBuffer -- ) {
 	<<data mem::free
 }
 
-def sb_append_byte(sb:StringBuffer byte:i64 -- ) {
+fn sb_append_byte(sb:StringBuffer byte:i64 -- ) {
+	-> byte -> sb
 	sb <<len sb <<capacity >= if {
 		// Need to grow
 		sb  sb <<data sb <<capacity 2 * mem::realloc!  >>data drop
@@ -195,7 +197,8 @@ struct Pool {
 	used:i64
 }
 
-def pool_new(size:i64 -- pool:Pool) {
+fn pool_new(size:i64 -- pool:Pool) {
+	-> size
 	size mem::alloc! -> memory
 	Pool {
 		memory = memory
@@ -204,7 +207,8 @@ def pool_new(size:i64 -- pool:Pool) {
 	}
 }
 
-def pool_alloc(pool:Pool bytes:i64 -- offset:i64) {
+fn pool_alloc(pool:Pool bytes:i64 -- offset:i64) {
+	-> bytes -> pool
 	pool <<used bytes + pool <<size <= if {
 		pool <<used
 		pool pool <<used bytes + >>used drop

@@ -271,7 +271,7 @@ Register GET route.   - :param for path parameters (e.g., "/users/:id")   - /* f
 **Example:**
 
 ```qd
-e "/" def(c:http::Ctx -- ) { c 200 "Hello" http::string } http::GET
+e "/" fn (c:http::Ctx -- ) { 200 "Hello" http::string } http::GET
 ```
 
 ---
@@ -345,7 +345,7 @@ Register GET on group.
 **Example:**
 
 ```qd
-api "/users" def(c:http::Ctx -- ) { c 200 "users" http::string } http::group_GET
+api "/users" fn (c:http::Ctx -- ) { 200 "users" http::string } http::group_GET
 ```
 
 ---
@@ -380,7 +380,7 @@ Add middleware to group.
 **Example:**
 
 ```qd
-api def(c:http::Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
+api fn (c:http::Ctx -- ) { "X-Group" "api" http::set_header } http::group_use
 ```
 
 ---
@@ -568,7 +568,7 @@ Register POST route.
 **Example:**
 
 ```qd
-e "/api/users" def(c:http::Ctx -- ) { c 200 "created" http::string } http::POST
+e "/api/users" fn (c:http::Ctx -- ) { 200 "created" http::string } http::POST
 ```
 
 ---
@@ -765,7 +765,7 @@ Serve files from a directory. Maps URL paths to filesystem paths. Use with a wil
 **Example:**
 
 ```qd
-e "/static/*" def (c:http::Ctx -- ) { c "/static" "./public" http::static } http::GET
+e "/static/*" fn (c:http::Ctx -- ) { "/static" "./public" http::static } http::GET
 ```
 
 ---
@@ -841,7 +841,7 @@ Add middleware to engine. Middleware runs before route handlers on every request
 **Example:**
 
 ```qd
-e def(c:http::Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
+e fn (c:http::Ctx -- ) { "X-Server" "Quadrate" http::set_header } http::use
 ```
 ## Ctx
 
@@ -922,6 +922,6 @@ Execute HTTP request. A chunked response body is decoded. The `Host` header carr
 **Example:**
 
 ```qd
-req http::send! -> resp  resp <<status print
+req http::send! <<status print
 ```
 

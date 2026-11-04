@@ -16,7 +16,7 @@ use regex
 use regex
 
 fn main() {
-    "w.*d" "hello world" regex::is_match print nl   // 1
+    "h.*d" "hello world" regex::is_match print nl   // 1
 
     "[0-9]+" regex::compile -> re
     re "abc123def" regex::find -> end -> start
@@ -28,9 +28,9 @@ fn main() {
 
 ## Functions
 
-- `is_match(pattern:str s:str -- result:i64)` - 1 if the pattern matches anywhere in s
+- `is_match(pattern:str s:str -- result:i64)` - 1 if the pattern matches the whole of s
 - `compile(pattern:str -- re:Regex)` - Compile a pattern once, for repeated use
-- `(re:Regex) matches(s:str -- result:i64)` - 1 if the compiled pattern matches anywhere in s
+- `(re:Regex) matches(s:str -- result:i64)` - 1 if the compiled pattern matches the whole of s
 - `(re:Regex) find(s:str -- start:i64 end:i64)` - Byte range of the first match, end exclusive; -1 -1 if none
 - `(re:Regex) find_all(s:str max:i64 -- results:ptr count:i64)` - Start/end pairs of every match; free `results` with `mem::free`
 - `(re:Regex) replace(s:str repl:str -- result:str)` - Replace every match

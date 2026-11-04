@@ -36,7 +36,7 @@ The command-line arguments, excluding the program name.
 **Example:**
 
 ```qd
-os::args -> args  args len  // argc
+os::args len  // argc
 ```
 
 ---
@@ -206,7 +206,7 @@ Execute a command and capture all output. Simpler alternative to os::popen when 
 **Example:**
 
 ```qd
-"echo hello" os::exec! -> exitcode  // stdout
+"echo hello" os::exec!  // stdout exitcode
 ```
 
 ---
@@ -345,7 +345,7 @@ Match files using glob pattern. Supports *, ?, and ** for recursive matching.
 **Example:**
 
 ```qd
-"*.qd" os::glob! -> count  // entries
+"*.qd" os::glob!  // entries count
 ```
 
 ---
@@ -461,7 +461,7 @@ List directory contents.
 **Example:**
 
 ```qd
-"/tmp" os::list! -> count -> entries  // `->` binds the top of the stack first
+"/tmp" os::list!  // entries count
 ```
 
 ---
@@ -532,7 +532,7 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 **Example:**
 
 ```qd
-"ls -la" def (line:str -- ) { line print nl } os::popen!  // code
+"ls -la" fn (line:str -- ) { print nl } os::popen!  // code
 ```
 
 ---
@@ -753,5 +753,5 @@ Walk a directory tree recursively. Calls callback for each file and directory.
 **Example:**
 
 ```qd
-"/tmp" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
+"/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { drop2 print nl } os::walk!
 ```

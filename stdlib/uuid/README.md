@@ -21,12 +21,10 @@ fn main() {
     id print nl  // e.g., "550e8400-e29b-41d4-a716-446655440000"
 
     // Generate with specific seed (reproducible)
-    12345 uuid::v4_seeded -> id2
-    id2 print nl
+    12345 uuid::v4_seeded print nl
 
     // Validate UUID format
-    id uuid::is_valid -> valid
-    valid print nl  // 1
+    id uuid::is_valid print nl  // 1
 }
 ```
 

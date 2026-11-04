@@ -159,8 +159,7 @@ one, and the result may be of another type:
 
 ```qd
 fn main() {
-	[1 2 3] fn { dup * } map -> squares
-	squares 2 nth print nl  // 9
+	[1 2 3] fn { dup * } map 2 nth print nl  // 9
 	[1 2 3] fn { cast<str> } map 0 nth print nl  // 1
 }
 ```

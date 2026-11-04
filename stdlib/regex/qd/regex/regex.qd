@@ -764,7 +764,7 @@ def match_from(re:Nfa s:str from:i64 -- start:i64 end:i64) {
 /// @param s str String to search
 /// @return start i64 Start index of match (-1 if none)
 /// @return end i64 End index of match, exclusive (-1 if none)
-/// @example "[0-9]+" regex::compile -> re  re "abc123def" regex::find -> end -> start
+/// @example "[0-9]+" regex::compile "abc123def" regex::find -> start end
 pub fn (self:Regex) find(s:str -- start:i64 end:i64) {
 	self <<re swap 0 match_from
 }
@@ -775,7 +775,7 @@ pub fn (self:Regex) find(s:str -- start:i64 end:i64) {
 /// @param max i64 Maximum matches to find (-1 for unlimited)
 /// @return results ptr Array of i64 pairs [start0, end0, start1, end1, ...]
 /// @return count i64 Number of matches found
-/// @example "[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> count -> results
+/// @example "[0-9]+" regex::compile "a1b22c333" -1 regex::find_all -> results count
 pub def (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 	self <<re -> re
 	// Allocate initial results array (grow as needed)
@@ -819,7 +819,7 @@ pub def (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 /// @param s str Input string
 /// @param repl str Replacement string
 /// @return result str String with all matches replaced
-/// @example "[0-9]+" regex::compile -> re  re "abc123def456" "#" regex::replace -> result
+/// @example "[0-9]+" regex::compile "abc123def456" "#" regex::replace -> result
 pub def (self:Regex) replace(s:str repl:str -- result:str) {
 	self <<re -> re
 	s len -> slen
@@ -868,7 +868,7 @@ pub def (self:Regex) replace(s:str repl:str -- result:str) {
 /// Count non-overlapping matches in string.
 /// @param s str String to search
 /// @return count i64 Number of matches
-/// @example "[0-9]+" regex::compile -> re  re "a1b22c333" regex::match_count -> n
+/// @example "[0-9]+" regex::compile "a1b22c333" regex::match_count -> n
 pub def (self:Regex) match_count(s:str -- count:i64) {
 	self <<re -> re
 	0 -> count

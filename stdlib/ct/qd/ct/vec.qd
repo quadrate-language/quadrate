@@ -83,7 +83,7 @@ pub def (v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)! {
 /// Pop and return the last element.
 /// Panics if the vector is empty.
 /// Returns both the element and the updated vector.
-/// @example v pop! -> v -> elem  // the vector is on top, the element under it
+/// @example v pop! -> elem v2
 pub fn (v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)! {
 	v <<len -> len
 	v <<data -> data

@@ -120,7 +120,7 @@ Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and 
 **Example:**
 
 ```qd
-"example.com" 443 net::connect! -> sock  sock "example.com" tls::connect!  // conn
+"example.com" 443 net::connect! "example.com" tls::connect!  // conn
 ```
 
 ---
@@ -148,7 +148,7 @@ Receive data from TLS connection. Data is decrypted after reception. When the pe
 **Example:**
 
 ```qd
-conn 4096 tls::receive! -> n  // data
+conn 4096 tls::receive!  // data n
 ```
 
 ---

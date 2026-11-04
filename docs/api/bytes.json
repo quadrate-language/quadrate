@@ -156,7 +156,7 @@
       "params": [{"name": "value", "type": "i64", "description": "16-bit value"}],
       "returns": [{"name": "result", "type": "i64", "description": "Byte-swapped value"}],
       "errors": [],
-      "examples": ["0x1234 bytes::swap16 -> result  // 0x3412"]
+      "examples": ["0x1234 bytes::swap16  // 0x3412"]
     },
     {
       "name": "swap32",
@@ -166,7 +166,7 @@
       "params": [{"name": "value", "type": "i64", "description": "32-bit value"}],
       "returns": [{"name": "result", "type": "i64", "description": "Byte-swapped value"}],
       "errors": [],
-      "examples": ["0x12345678 bytes::swap32 -> result  // 0x78563412"]
+      "examples": ["0x12345678 bytes::swap32  // 0x78563412"]
     },
     {
       "name": "swap64",
@@ -176,7 +176,7 @@
       "params": [{"name": "value", "type": "i64", "description": "64-bit value"}],
       "returns": [{"name": "result", "type": "i64", "description": "Byte-swapped value"}],
       "errors": [],
-      "examples": ["0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201"]
+      "examples": ["0x0102030405060708 bytes::swap64  // 0x0807060504030201"]
     },
     {
       "name": "write_u16_be",

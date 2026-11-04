@@ -103,12 +103,12 @@ import "libos.a" as "os" {
 	/// @return count i64 Number of entries
 	/// @error ErrNotFound File not found
 	/// @error ErrNotDirectory Path is not a directory
-	/// @example "/tmp" os::list! -> count -> entries  // `->` binds the top of the stack first
+	/// @example "/tmp" os::list! -> entries count
 	pub fn list(path:str -- entries:[]str count:i64)!
 
 	/// The command-line arguments, excluding the program name.
 	/// @return args []str Array of argument strings
-	/// @example os::args -> args  args len -> argc
+	/// @example os::args len -> argc
 	pub fn args( -- args:[]str)
 
 	/// The program name (argv[0]).
@@ -123,7 +123,7 @@ import "libos.a" as "os" {
 	/// @param callback fn(str --) Called with each line
 	/// @return exitcode i64 Command exit status
 	/// @error ErrIo Failed to execute command
-	/// @example "ls -la" def (line:str -- ) { line print nl } os::popen! -> code
+	/// @example "ls -la" fn (line:str -- ) { print nl } os::popen! -> code
 	pub fn popen(cmd:str callback:fn(str --) -- exitcode:i64)!
 
 	/// Execute a command and capture all output.
@@ -133,7 +133,7 @@ import "libos.a" as "os" {
 	/// @return exitcode i64 Command exit status
 	/// @error ErrIo Failed to execute command
 	/// @error ErrOutOfMemory Out of memory
-	/// @example "echo hello" os::exec! -> exitcode -> stdout
+	/// @example "echo hello" os::exec! -> stdout exitcode
 	pub fn exec(cmd:str -- stdout:str exitcode:i64)!
 
 	/// Get the current process ID.
@@ -166,7 +166,7 @@ import "libos.a" as "os" {
 	/// @param callback fn(str i64 i64 --) Called with each path, whether it is a directory, and its depth
 	/// @error ErrNotFound Path not found
 	/// @error ErrNotDirectory Path is not a directory
-	/// @example "/tmp" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
+	/// @example "/tmp" fn (p:str is_dir:i64 depth:i64 -- ) { drop2 print nl } os::walk!
 	pub fn walk(path:str callback:fn(str i64 i64 --) -- )!
 
 	/// Match files using glob pattern.
@@ -174,7 +174,7 @@ import "libos.a" as "os" {
 	/// @param pattern str Glob pattern
 	/// @return entries []str Array of matching paths
 	/// @return count i64 Number of matches
-	/// @example "*.qd" os::glob! -> count -> entries
+	/// @example "*.qd" os::glob! -> entries count
 	pub fn glob(pattern:str -- entries:[]str count:i64)!
 
 	/// Create a unique temporary directory.

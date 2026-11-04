@@ -41,8 +41,7 @@ struct Config {
 }
 
 fn main() {
-	Config {} -> cfg           // all defaults
-	cfg <<max_retries print nl  // 3
+	Config {} <<max_retries print nl  // 3
 }
 ```
 
@@ -103,8 +102,8 @@ as `http::Ctx`:
 ```qd
 use http
 
-def handler(c:http::Ctx -- ) {
-	c <<body -> body
+fn handler(c:http::Ctx -- ) {
+	<<body -> body
 }
 ```
 
@@ -181,8 +180,7 @@ fn (c:Circle) area( -- a:f64) {
 }
 
 fn main() {
-	Circle { radius = 5.0 } -> c
-	c area print nl  // 78.5397
+	Circle { radius = 5.0 } area print nl  // 78.5397
 }
 ```
 
@@ -204,15 +202,15 @@ struct Point {
 	y:f64
 }
 
-def (p:Point) translate(dx:f64 dy:f64 -- result:Point) {
+fn (p:Point) translate(dx:f64 dy:f64 -- result:Point) {
+	-> dy -> dx
 	p p <<x dx + >>x p <<y dy + >>y
 }
 
 fn main() {
-	Point { x = 1.0 y = 2.0 } -> p
-	p 3.0 4.0 translate -> p
-	p <<x print nl  // 4
-	p <<y print nl  // 6
+	Point { x = 1.0 y = 2.0 } 3.0 4.0 translate
+	dup <<x print nl  // 4
+	<<y print nl      // 6
 }
 ```
 
@@ -234,8 +232,7 @@ fn bump( -- result:i64) {
 }
 
 fn main() {
-	Counter { value = 10 } -> c
-	c bump print nl  // 11 (method)
+	Counter { value = 10 } bump print nl  // 11 (method)
 	bump print nl    // 999 (global)
 }
 ```
@@ -252,8 +249,7 @@ struct Box<T> {
 }
 
 fn main() {
-	Box<i64> { value = 42 } -> b
-	b <<value print nl  // 42
+	Box<i64> { value = 42 } <<value print nl  // 42
 }
 ```
 

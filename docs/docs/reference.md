@@ -268,7 +268,7 @@ Inside a loop: takes a flag and leaves the innermost loop when it is false (zero
 **Example:**
 
 ```qd
-0 -> i  loop { i 5 < while  i print nl  i 1 + -> i }
+0 loop { dup 5 < while  dup print nl  1 + } drop
 ```
 
 
@@ -281,7 +281,7 @@ Inside a loop: takes a flag and leaves the innermost loop when it is true (non-z
 **Example:**
 
 ```qd
-loop { read_line -> line  line process  line "quit" == until }
+loop { read_line dup process  "quit" == until }
 ```
 
 

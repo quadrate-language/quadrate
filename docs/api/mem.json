@@ -30,7 +30,7 @@
       "params": [{"name": "alignment", "type": "i64", "description": "Alignment boundary (must be power of 2, e.g., 16, 32, 64)"}, {"name": "bytes", "type": "i64", "description": "Number of bytes to allocate"}],
       "returns": [{"name": "address", "type": "ptr", "description": "Aligned memory address"}],
       "errors": [{"code": "ErrAlloc", "description": "Allocation failed"}, {"code": "ErrInvalidArg", "description": "Invalid alignment or size"}],
-      "examples": ["64 1024 mem::alloc_aligned! -> buf  // 64-byte aligned"]
+      "examples": ["64 1024 mem::alloc_aligned!  // 64-byte aligned buf"]
     },
     {
       "name": "alloc",
@@ -90,7 +90,7 @@
       "params": [{"name": "text", "type": "str", "description": "Source string"}],
       "returns": [{"name": "buffer", "type": "ptr", "description": "Allocated buffer"}, {"name": "length", "type": "i64", "description": "String length"}],
       "errors": [],
-      "examples": ["\"hello\" mem::from_string -> len -> buf"]
+      "examples": ["\"hello\" mem::from_string -> buf len"]
     },
     {
       "name": "get_any",

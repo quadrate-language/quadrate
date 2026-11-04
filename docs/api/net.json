@@ -85,7 +85,7 @@
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}],
       "returns": [{"name": "addr", "type": "str", "description": "Remote IP address"}, {"name": "port", "type": "i64", "description": "Remote port number"}],
       "errors": [{"code": "ErrInvalidArg", "description": "Failed to get peer address"}],
-      "examples": ["sock net::get_peer_addr! -> port -> addr"]
+      "examples": ["sock net::get_peer_addr! -> addr port"]
     },
     {
       "name": "listen",
@@ -115,7 +115,7 @@
       "params": [{"name": "socket", "type": "i64", "description": "Socket descriptor"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive, from 1 to 1048576"}],
       "returns": [{"name": "data", "type": "str", "description": "Received data"}, {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}],
       "errors": [{"code": "ErrReceive", "description": "Failed to receive data"}, {"code": "ErrTimeout", "description": "The timeout set with set_timeout ran out"}, {"code": "ErrInvalidArg", "description": "max_bytes is out of range"}],
-      "examples": ["sock 1024 net::receive! -> n -> data"]
+      "examples": ["sock 1024 net::receive! -> data n"]
     },
     {
       "name": "send",

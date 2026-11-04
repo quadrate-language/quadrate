@@ -29,9 +29,9 @@ fn worker() {
 }
 
 fn main() {
-	&worker thread::spawn! -> t
+	&worker thread::spawn!
 	// Do other work...
-	t join!  // Block until worker finishes
+	join!  // Block until worker finishes
 }
 ```
 
@@ -45,8 +45,7 @@ fn worker() {
 }
 
 fn main() {
-	&worker thread::spawn! -> t
-	t detach!  // The thread runs on its own; main does not wait for it
+	&worker thread::spawn! detach!  // The thread runs on its own; main does not wait for it
 	10 thread::sleep
 }
 ```
@@ -65,9 +64,9 @@ fn worker() {
 }
 
 fn main() {
-	[]thread::Thread -> threads
-	3 fn { threads &worker thread::spawn! append -> threads } times
-	threads fn { join! } each
+	[]thread::Thread
+	3 fn { &worker thread::spawn! append } times
+	fn { join! } each
 	"All done" print nl
 }
 ```

@@ -57,9 +57,8 @@ excluding the program name, and `os::program_name` gives argv[0]:
 use os
 
 fn main() {
-	os::args -> args
-	args len print nl
-	args free
+	os::args dup len print nl
+	free
 }
 ```
 

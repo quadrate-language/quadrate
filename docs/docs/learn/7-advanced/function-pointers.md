@@ -96,7 +96,8 @@ fn main() {
 Use function values for callbacks:
 
 ```qd
-def for_each(arr:[]i64 callback:fn(i64 --) -- ) {
+fn for_each(arr:[]i64 callback:fn(i64 --) -- ) {
+	-> callback -> arr
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
@@ -121,10 +122,11 @@ by hand, as a function taking a function value.
 ### Map
 
 ```qd
-def map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
-	[arr len]i64
+fn map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
+	-> f -> arr
+	[]i64
 	0 arr len 1 for i {
-		dup i arr i nth f call set
+		arr i nth f call append
 	}
 }
 
@@ -142,23 +144,14 @@ fn main() {
 ### Filter
 
 ```qd
-def filter_ints(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
-	// Count matches
-	0
-	0 arr len 1 for i {
-		arr i nth pred call if { 1 + }
-	}
-	-> count
-
-	// Create result
-	[count]i64 0
+fn filter_ints(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
+	-> pred -> arr
+	[]i64
 	0 arr len 1 for i {
 		arr i nth pred call if {
-			dup2 arr i nth set
-			1 +
+			arr i nth append
 		}
 	}
-	drop
 }
 
 fn is_even(x:i64 -- result:i64) {
@@ -177,7 +170,8 @@ fn main() {
 ### Reduce
 
 ```qd
-def reduce(arr:[]i64 initial:i64 f:fn(i64 i64 -- i64) -- result:i64) {
+fn reduce(arr:[]i64 initial:i64 f:fn(i64 i64 -- i64) -- result:i64) {
+	-> f -> initial -> arr
 	initial
 	0 arr len 1 for i {
 		arr i nth f call
@@ -230,14 +224,8 @@ Dispatch based on a selector:
 
 ```qd
 fn handle_cmd(cmd:i64 -- ) {
-	[4]fn(--) -> handlers
-	handlers 0 &cmd_help set
-	handlers 1 &cmd_list set
-	handlers 2 &cmd_add set
-	handlers 3 &cmd_quit set
-
 	dup 0 3 within if {
-		handlers swap nth call
+		[&cmd_help &cmd_list &cmd_add &cmd_quit] swap nth call
 	} else {
 		drop "Unknown command" print nl
 	}

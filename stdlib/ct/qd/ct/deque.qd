@@ -141,7 +141,7 @@ pub def (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 }
 
 /// Remove and return the front element.
-/// @example d pop_front! -> d -> val  // the deque is on top, the element under it
+/// @example d pop_front! -> val d2
 pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
@@ -164,7 +164,7 @@ pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 }
 
 /// Remove and return the back element.
-/// @example d pop_back! -> d -> val  // the deque is on top, the element under it
+/// @example d pop_back! -> val d2
 pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 

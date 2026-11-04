@@ -81,7 +81,7 @@ Find all non-overlapping matches. Returns array of start/end pairs and count. Ca
 **Example:**
 
 ```qd
-"[0-9]+" regex::compile -> re  re "a1b22c333" -1 regex::find_all -> count  // results
+"[0-9]+" regex::compile "a1b22c333" -1 regex::find_all  // results count
 ```
 
 ---
@@ -104,7 +104,7 @@ Find first match in string. Returns start and end (exclusive) indices. Returns -
 **Example:**
 
 ```qd
-"[0-9]+" regex::compile -> re  re "abc123def" regex::find -> end  // start
+"[0-9]+" regex::compile "abc123def" regex::find  // start end
 ```
 
 ---
@@ -126,7 +126,7 @@ Count non-overlapping matches in string.
 **Example:**
 
 ```qd
-"[0-9]+" regex::compile -> re  re "a1b22c333" regex::match_count  // n
+"[0-9]+" regex::compile "a1b22c333" regex::match_count  // n
 ```
 
 ---
@@ -179,6 +179,6 @@ Replace all matches with replacement string.
 **Example:**
 
 ```qd
-"[0-9]+" regex::compile -> re  re "abc123def456" "#" regex::replace  // result
+"[0-9]+" regex::compile "abc123def456" "#" regex::replace  // result
 ```
 

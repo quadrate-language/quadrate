@@ -151,7 +151,8 @@ fn transaction()! {
 ### Logging
 
 ```qd
-def traced_operation(name:str -- ) {
+fn traced_operation(name:str -- ) {
+	-> name
 	"Entering " print name print nl
 	defer {
 		"Exiting " print name print nl

@@ -38,8 +38,7 @@ Provides:
 
     fn main() {
         // Spawn and join a thread
-        &worker thread::spawn! -> t
-        t join!
+        &worker thread::spawn! join!
 
         // Mutex for synchronization
         thread::mutex_new! -> m
@@ -409,7 +408,7 @@ Try to receive without blocking.
 **Example:**
 
 ```qd
-ch try_recv -> success  // val
+ch try_recv  // val success
 ```
 
 ---

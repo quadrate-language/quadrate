@@ -1,6 +1,6 @@
 {
   "name": "ct",
-  "description": "Generic container types: Vec, Map, Set, Queue, Deque and Pair.  A container is created with a struct literal whose fields are all zero or null; there is no constructor function, and the first insertion allocates. A method that changes a container returns it, and that result must be captured (`v 10 push! -> v`). Call `release` on a Vec, Map, Set, Queue or Deque when done to free its memory.  Example:   use ct    fn main() {   \tct::Vec<i64> { data = null len = 0 cap = 0 } -> v   \tv 10 push! -> v   \tv 20 push! -> v   \tv 0 get! print nl                       // 10   \tv release    \tct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m   \tm \"alice\" 42 insert! -> m   \tm \"alice\" get! print nl                 // 42   \tm release    \tct::Set { keys = null states = null len = 0 cap = 0 } -> s   \ts \"alice\" add! -> s   \ts \"alice\" contains print nl             // 1   \ts release    \tct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q   \tq 1 enqueue! -> q   \tq 2 enqueue! -> q   \tq dequeue! -> q -> first   \tfirst print nl                          // 1   \tq release    \tct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d   \td 1 push_back! -> d   \td 0 push_front! -> d   \td peek_front! print nl                  // 0   \td release    \tct::Pair<i64, str> { first = 42 second = \"hello\" } -> p   \tp unpack -> b -> a   \ta print \" \" print b print nl            // 42 hello   }",
+  "description": "Generic container types: Vec, Map, Set, Queue, Deque and Pair.  A container is created with a struct literal whose fields are all zero or null; there is no constructor function, and the first insertion allocates. A method that changes a container returns it, and that result must be used: chain the next call on it (`10 push! 20 push!`) or re-bind it (`v 10 push! -> v`). Call `release` on a Vec, Map, Set, Queue or Deque when done to free its memory.  Example:   use ct    fn main() {   \tct::Vec<i64> { data = null len = 0 cap = 0 }   \t10 push! 20 push!   \tdup 0 get! print nl                     // 10   \trelease    \tct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 }   \t\"alice\" 42 insert!   \tdup \"alice\" get! print nl               // 42   \trelease    \tct::Set { keys = null states = null len = 0 cap = 0 }   \t\"alice\" add!   \tdup \"alice\" contains print nl           // 1   \trelease    \tct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 }   \t1 enqueue! 2 enqueue!   \tdequeue! swap print nl                  // 1   \trelease    \tct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 }   \t1 push_back! 0 push_front!   \tdup peek_front! print nl                // 0   \trelease    \tct::Pair<i64, str> { first = 42 second = \"hello\" }   \tunpack swap print \" \" print print nl    // 42 hello   }",
   "constants": [
 
   ],
@@ -105,7 +105,7 @@
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": ["q dequeue! -> q -> val  // the queue is on top, the element under it"]
+      "examples": ["q dequeue! -> val q2"]
     },
     {
       "name": "enqueue",
@@ -305,7 +305,7 @@
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": ["d pop_back! -> d -> val  // the deque is on top, the element under it"]
+      "examples": ["d pop_back! -> val d2"]
     },
     {
       "name": "pop_front",
@@ -315,7 +315,7 @@
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": ["d pop_front! -> d -> val  // the deque is on top, the element under it"]
+      "examples": ["d pop_front! -> val d2"]
     },
     {
       "name": "pop",
@@ -325,7 +325,7 @@
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": ["v pop! -> v -> elem  // the vector is on top, the element under it"]
+      "examples": ["v pop! -> elem v2"]
     },
     {
       "name": "push_back",
@@ -465,7 +465,7 @@
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": ["p unpack -> b -> a  // second on top, so it binds first"]
+      "examples": ["p unpack -> a b"]
     }
   ]
 }

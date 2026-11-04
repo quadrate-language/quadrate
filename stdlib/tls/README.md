@@ -27,10 +27,8 @@ fn main() {
     "example.com" 443 net::connect! -> sock
     sock "example.com" tls::connect! -> conn
 
-    conn "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n" tls::send! -> sent
-    conn 4096 tls::receive! -> response -> n
-
-    response print nl
+    conn "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n" tls::send! -> _
+    conn 4096 tls::receive! -> _ print nl
 
     conn tls::close
     sock net::close

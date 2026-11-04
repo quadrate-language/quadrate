@@ -101,7 +101,7 @@ Get terminal dimensions. Returns 0, 0 if not a terminal.
 **Example:**
 
 ```qd
-tty::size -> cols  // rows
+tty::size  // rows cols
 ```
 
 ---

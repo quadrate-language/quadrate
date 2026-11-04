@@ -17,12 +17,10 @@ use base64
 
 fn main() {
     // Encode to base64
-    "Hello" base64::encode -> encoded
-    encoded print nl  // "SGVsbG8="
+    "Hello" base64::encode print nl  // "SGVsbG8="
 
     // Decode from base64
-    "SGVsbG8=" base64::decode -> decoded
-    decoded print nl  // "Hello"
+    "SGVsbG8=" base64::decode print nl  // "Hello"
 }
 ```
 

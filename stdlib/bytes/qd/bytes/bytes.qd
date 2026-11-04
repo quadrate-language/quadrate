@@ -194,7 +194,7 @@ pub def write_u64_le(buf:ptr offset:i64 value:i64 -- ) {
 /// Swap byte order of a 16-bit value.
 /// @param value i64 16-bit value
 /// @return result i64 Byte-swapped value
-/// @example 0x1234 bytes::swap16 -> result  // 0x3412
+/// @example 0x1234 bytes::swap16  // 0x3412
 pub fn swap16(value:i64 -- result:i64) {
 	fn { 8 bits::shr 255 bits::and } fn { 255 bits::and 8 bits::shl } bi bits::or
 }
@@ -202,7 +202,7 @@ pub fn swap16(value:i64 -- result:i64) {
 /// Swap byte order of a 32-bit value.
 /// @param value i64 32-bit value
 /// @return result i64 Byte-swapped value
-/// @example 0x12345678 bytes::swap32 -> result  // 0x78563412
+/// @example 0x12345678 bytes::swap32  // 0x78563412
 pub def swap32(value:i64 -- result:i64) {
 	value 24 bits::shr 255 bits::and
 	value 16 bits::shr 255 bits::and 8 bits::shl bits::or
@@ -213,7 +213,7 @@ pub def swap32(value:i64 -- result:i64) {
 /// Swap byte order of a 64-bit value.
 /// @param value i64 64-bit value
 /// @return result i64 Byte-swapped value
-/// @example 0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201
+/// @example 0x0102030405060708 bytes::swap64  // 0x0807060504030201
 pub def swap64(value:i64 -- result:i64) {
 	value 56 bits::shr 255 bits::and
 	value 48 bits::shr 255 bits::and 8 bits::shl bits::or

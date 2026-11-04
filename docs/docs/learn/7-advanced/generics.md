@@ -42,8 +42,7 @@ struct Box<T> {
 }
 
 fn main() {
-	Box<i64> { value = 42 } -> b
-	b <<value print nl  // 42
+	Box<i64> { value = 42 } <<value print nl  // 42
 }
 ```
 

@@ -98,6 +98,8 @@ In a `def` every input must be named, since each one is bound. Naming an input i
 
 **When to use which:**
 - **Plain `fn`** — the default: the body is a stack expression over its inputs
+- **`fn` with `->`** — when a few inputs are needed by name: bind them at the top of the body,
+  top of stack first (`-> y2 -> x2` binds the last two inputs and leaves the rest on the stack)
 - **`def`** — when the inputs are used several times or in an order the stack makes awkward,
   and names read better than shuffling
 
@@ -182,8 +184,8 @@ Booleans are represented as `i64` (0 = false, non-zero = true).
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-def format_price(price:f64 currency:str -- formatted:str) {
-	// ... implementation using price and currency
+fn format_price(price:f64 currency:str -- formatted:str) {
+	// ... implementation
 }
 ```
 

@@ -79,7 +79,7 @@ In function signatures:
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-def process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
+fn process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 	// ...
 }
 ```
@@ -87,8 +87,8 @@ def process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 With function types:
 
 ```qd
-def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
-	x f call
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+	call
 }
 ```
 
@@ -153,8 +153,8 @@ struct Dog {
 	name:str
 }
 
-def get_name(d:Dog -- name:str) {
-	d <<name
+fn get_name(d:Dog -- name:str) {
+	<<name
 }
 
 fn main() {

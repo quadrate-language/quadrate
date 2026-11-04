@@ -131,11 +131,11 @@ The compiler checks that you pass the right array type and that `nth` returns th
 
 ```qd
 fn sum(arr:[]i64 -- total:i64) {
+	-> arr
 	0
-	0 pick len 1 for i {
-		over i nth +
+	0 arr len 1 for i {
+		arr i nth +
 	}
-	nip
 }
 
 fn main() {
@@ -151,11 +151,11 @@ fn larger(a:i64 b:i64 -- c:i64) {
 }
 
 fn max(arr:[]i64 -- result:i64) {
-	dup 0 nth
-	0 pick len 1 for i {
-		over i nth larger
+	-> arr
+	arr 0 nth
+	0 arr len 1 for i {
+		arr i nth larger
 	}
-	nip
 }
 
 fn main() {
@@ -166,7 +166,8 @@ fn main() {
 ### Count matches
 
 ```qd
-def count_if(arr:[]i64 value:i64 -- count:i64) {
+fn count_if(arr:[]i64 value:i64 -- count:i64) {
+	-> value -> arr
 	0
 	0 arr len 1 for i {
 		arr i nth value == if {
@@ -209,12 +210,12 @@ fn main() {
 Arrays are references. To copy:
 
 ```qd
-def copy_array(src:[]i64 -- dst:[]i64) {
-	[src len]i64 -> dst
+fn copy_array(src:[]i64 -- dst:[]i64) {
+	-> src
+	[src len]i64
 	0 src len 1 for i {
-		dst i src i nth set
+		dup i src i nth set
 	}
-	dst
 }
 
 fn main() {
@@ -234,10 +235,10 @@ fn main() {
 
 ```qd
 fn fill(arr:[]i64 value:i64 -- ) {
-	0 pick len 1 for i {
-		over i pick set
+	-> value -> arr
+	0 arr len 1 for i {
+		arr i value set
 	}
-	drop2
 }
 
 fn main() {
@@ -254,7 +255,8 @@ fn main() {
 ### Reverse array
 
 ```qd
-def reverse(arr:[]i64 -- ) {
+fn reverse(arr:[]i64 -- ) {
+	-> arr
 	0 -> i
 	arr len 1 - -> j
 	loop {
@@ -281,24 +283,14 @@ fn main() {
 ### Filter array
 
 ```qd
-def filter_positive(arr:[]i64 -- result:[]i64) {
-	// First count positives
-	0 -> count
+fn filter_positive(arr:[]i64 -- result:[]i64) {
+	-> arr
+	[]i64
 	0 arr len 1 for i {
 		arr i nth 0 > if {
-			count ++ -> count
+			arr i nth append
 		}
 	}
-	// Create result array
-	[count]i64 -> result
-	0 -> j
-	0 arr len 1 for i {
-		arr i nth 0 > if {
-			result j arr i nth set
-			j ++ -> j
-		}
-	}
-	result
 }
 
 fn main() {

@@ -105,7 +105,7 @@ Check if at end of file. An invalid handle is never at the end.
 **Example:**
 
 ```qd
-f io::eof -> at_end  // f
+f io::eof  // f at_end
 ```
 
 ---
@@ -230,7 +230,7 @@ Read a line from stdin.  Running out of input is not an error -- it is how a rea
 **Example:**
 
 ```qd
-io::readline switch { Ok { -> more -> line line print nl } _ { drop drop } }
+io::readline switch { Ok { drop print nl } _ { drop drop } }
 ```
 
 ---

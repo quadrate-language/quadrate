@@ -72,9 +72,9 @@ This means:
 - **Before**: Stack has `[..., a, b]`
 - **After**: Stack has `[..., result]`
 
-The arguments stay where the caller put them, for `+` to take; the names are documentation. A
-`def` binds them instead: `a` and `b` are consumed into locals on entry, and the body would
-say `a b +`.
+The arguments stay where the caller put them, for `+` to take; the names are documentation. To
+use them by name, the body binds them first: `-> b -> a` takes them off the stack into locals,
+and the body would then say `a b +`.
 
 The `--` separates inputs from outputs.
 

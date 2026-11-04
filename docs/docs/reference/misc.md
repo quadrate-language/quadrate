@@ -41,13 +41,12 @@ of the combinators, which run function values in the patterns stack code repeats
 **Signature:** `(fn -- ...)`
 
 ```qd
-def double(x:i64 -- result:i64) {
-	x 2 *
+fn double(x:i64 -- result:i64) {
+	2 *
 }
 
 fn main() {
-	&double -> f
-	5 f call print nl  // 10
+	5 &double call print nl  // 10
 }
 ```
 
@@ -69,7 +68,7 @@ nothing captured. A `fn { }` literal is a function value too.
 Push the arguments, then the function value, then `call`:
 
 ```qd
-// For: def addition(a:i64 b:i64 -- sum:i64)
+// For: fn addition(a:i64 b:i64 -- sum:i64)
 3 4 &addition call print nl  // 7
 ```
 
@@ -80,14 +79,15 @@ Push the arguments, then the function value, then `call`:
 ### Callbacks
 
 ```qd
-def for_each(arr:[]i64 callback:fn(i64 --) -- ) {
+fn for_each(arr:[]i64 callback:fn(i64 --) -- ) {
+	-> callback -> arr
 	0 arr len 1 for i {
 		arr i nth callback call
 	}
 }
 
-def print_item(x:i64 -- ) {
-	x print " " print
+fn print_item(x:i64 -- ) {
+	print " " print
 }
 
 fn main() {
@@ -99,16 +99,16 @@ fn main() {
 ### Function tables
 
 ```qd
-def op_add(a:i64 b:i64 -- r:i64) {
-	a b +
+fn op_add(a:i64 b:i64 -- r:i64) {
+	+
 }
 
-def op_sub(a:i64 b:i64 -- r:i64) {
-	a b -
+fn op_sub(a:i64 b:i64 -- r:i64) {
+	-
 }
 
-def op_mul(a:i64 b:i64 -- r:i64) {
-	a b *
+fn op_mul(a:i64 b:i64 -- r:i64) {
+	*
 }
 
 fn main() {
@@ -126,7 +126,8 @@ fn main() {
 ### Higher-order functions
 
 ```qd
-def map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
+fn map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
+	-> f -> arr
 	[arr len]i64 -> result
 	0 arr len 1 for i {
 		result i arr i nth f call set
@@ -134,7 +135,7 @@ def map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 	result
 }
 
-def square(x:i64 -- r:i64) { x x * }
+fn square(x:i64 -- r:i64) { dup * }
 
 fn main() {
 	[1 2 3 4 5] &square map_ints -> squared

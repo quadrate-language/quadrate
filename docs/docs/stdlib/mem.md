@@ -61,7 +61,7 @@ Allocate aligned memory. The returned pointer is aligned to the specified bounda
 **Example:**
 
 ```qd
-64 1024 mem::alloc_aligned! -> buf  // 64-byte aligned
+64 1024 mem::alloc_aligned!  // 64-byte aligned buf
 ```
 
 ---
@@ -188,7 +188,7 @@ Convert string to buffer.
 **Example:**
 
 ```qd
-"hello" mem::from_string -> len  // buf
+"hello" mem::from_string  // buf len
 ```
 
 ---

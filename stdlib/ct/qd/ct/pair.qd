@@ -39,7 +39,7 @@ pub fn (p:Pair<T, U>) second<T, U>( -- b:U) {
 
 /// Unpack a pair onto the stack.
 /// Returns both elements: first is deeper, second on top.
-/// @example p unpack -> b -> a  // second on top, so it binds first
+/// @example p unpack -> a b
 pub fn (p:Pair<T, U>) unpack<T, U>( -- a:T b:U) {
 	p <<first
 	p <<second

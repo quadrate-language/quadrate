@@ -116,7 +116,7 @@ import "libio.a" as "io" {
 	/// @param handle ptr File handle
 	/// @return handle ptr File handle (unchanged)
 	/// @return is_eof i64 1 if at EOF, 0 otherwise
-	/// @example f io::eof -> at_end -> f
+	/// @example f io::eof -> f at_end
 	pub fn eof(handle:ptr -- handle:ptr is_eof:i64)
 
 	/// Read a line from stdin.
@@ -127,7 +127,7 @@ import "libio.a" as "io" {
 	/// @return line str The line read, without its trailing newline; "" at end of input
 	/// @return more i64 1 if a line was read, 0 at end of input
 	/// @error ErrRead The underlying read failed
-	/// @example io::readline switch { Ok { -> more -> line line print nl } _ { drop drop } }
+	/// @example io::readline switch { Ok { drop print nl } _ { drop drop } }
 	pub fn readline( -- line:str more:i64)!
 
 	/// Read entire file contents, to the end of the file: a pipe, or a file under /proc

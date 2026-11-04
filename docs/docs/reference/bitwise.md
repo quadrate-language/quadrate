@@ -117,18 +117,18 @@ const FlagExec = 4
 
 fn main() {
 	// Set flags
-	FlagRead FlagWrite bits::or -> permissions
+	FlagRead FlagWrite bits::or
 
 	// Check a flag
-	permissions FlagRead bits::and 0 != if {
+	dup FlagRead bits::and 0 != if {
 		"Has read permission" print nl
 	}
 
 	// Clear a flag
-	permissions FlagWrite bits::not bits::and -> permissions
+	FlagWrite bits::not bits::and
 
 	// Toggle a flag
-	permissions FlagExec bits::xor -> permissions
-	permissions print nl  // 5
+	FlagExec bits::xor
+	print nl  // 5
 }
 ```

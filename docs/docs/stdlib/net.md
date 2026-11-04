@@ -118,7 +118,7 @@ Get the remote address and port of a connected socket.
 **Example:**
 
 ```qd
-sock net::get_peer_addr! -> port  // addr
+sock net::get_peer_addr!  // addr port
 ```
 
 ---
@@ -201,7 +201,7 @@ Receive data from socket. At the end of the stream, the data is "" and bytes_rea
 **Example:**
 
 ```qd
-sock 1024 net::receive! -> n  // data
+sock 1024 net::receive!  // data n
 ```
 
 ---

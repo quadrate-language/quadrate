@@ -233,7 +233,8 @@ fn main() {
 		print nl
 	} else {
 		drop
-		err swap "Error: " print print " (code " print print ")" print nl
+		err -> code -> msg
+		"Error: " print msg print " (code " print code print ")" print nl
 	}
 }
 ```
@@ -309,7 +310,8 @@ To inspect the error details, use `err` in the error branch:
 	}
 	_ {
 		drop
-		err swap "Error: " print print " (code " print print ")" print nl
+		err -> code -> msg
+		"Error: " print msg print " (code " print code print ")" print nl
 	}
 }
 ```

@@ -17,12 +17,10 @@ use uri
 
 fn main() {
     // Percent-encode a string
-    "hello world" uri::encode -> encoded
-    encoded print nl  // "hello%20world"
+    "hello world" uri::encode print nl  // "hello%20world"
 
     // Decode a percent-encoded string
-    "hello%20world" uri::decode -> decoded
-    decoded print nl  // "hello world"
+    "hello%20world" uri::decode print nl  // "hello world"
 
     // Parse a URI
     "https://example.com:8080/path?q=1#top" uri::parse -> u
@@ -33,12 +31,10 @@ fn main() {
     u <<query print nl   // "q=1"
 
     // Query parameter access
-    "foo=bar&x=1" "foo" uri::query_get -> val
-    val print nl  // "bar"
+    "foo=bar&x=1" "foo" uri::query_get print nl  // "bar"
 
     // Build a URI from components
-    u uri::build -> url
-    url print nl
+    u uri::build print nl
 }
 ```
 

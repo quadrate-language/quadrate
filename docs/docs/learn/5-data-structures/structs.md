@@ -265,8 +265,9 @@ fn (p:Point) magnitude( -- m:f64) {
 }
 
 fn (p:Point) move(dx:f64 dy:f64 -- ) {
-	p <<y + p swap >>y drop
-	p <<x + p swap >>x drop
+	-> dy -> dx
+	p p <<x dx + >>x drop
+	p p <<y dy + >>y drop
 }
 
 fn main() {
@@ -319,7 +320,8 @@ struct Point {
 	y:f64
 }
 
-def point_distance(p1:Point p2:Point -- d:f64) {
+fn point_distance(p1:Point p2:Point -- d:f64) {
+	-> p2 -> p1
 	p2 <<x p1 <<x - dup *
 	p2 <<y p1 <<y - dup *
 	+ math::sqrt
@@ -373,15 +375,11 @@ fn node_new(value:i64 -- node:Node) {
 }
 
 fn main() {
-	10 node_new -> first
-	20 node_new -> second
-	30 node_new -> third
-
-	first second >>next -> first
-	second third >>next -> second
+	30 node_new
+	20 node_new swap >>next
+	10 node_new swap >>next
 
 	// Traverse
-	first
 	loop {
 		dup null != while
 		dup <<value print nl
@@ -401,13 +399,15 @@ struct Stack {
 	capacity:i64
 }
 
-def stack_new(capacity:i64 -- s:Stack) {
+fn stack_new(capacity:i64 -- s:Stack) {
+	-> capacity
 	[capacity]i64 0 capacity Stack
 }
 
-def stack_push(s:Stack value:i64 -- ) {
+fn stack_push(s:Stack value:i64 -- ) {
+	-> value -> s
 	s <<data s <<top value set
-	s s <<top 1 + >>top -> s
+	s s <<top 1 + >>top drop
 }
 
 fn stack_pop(s:Stack -- value:i64) {
@@ -437,26 +437,15 @@ struct Point {
 	y:f64
 }
 
-def points_equal(a:Point b:Point -- equal:i64) {
+fn points_equal(a:Point b:Point -- equal:i64) {
+	-> b -> a
 	a <<x b <<x == a <<y b <<y == and
 }
 
 fn main() {
-	Point {
-		x = 1.0
-		y = 2.0
-	} -> p1
-	Point {
-		x = 1.0
-		y = 2.0
-	} -> p2
-	Point {
-		x = 3.0
-		y = 4.0
-	} -> p3
-
-	p1 p2 points_equal print nl  // 1 (true)
-	p1 p3 points_equal print nl  // 0 (false)
+	Point { x = 1.0 y = 2.0 }
+	dup Point { x = 1.0 y = 2.0 } points_equal print nl  // 1 (true)
+	Point { x = 3.0 y = 4.0 } points_equal print nl      // 0 (false)
 }
 ```
 

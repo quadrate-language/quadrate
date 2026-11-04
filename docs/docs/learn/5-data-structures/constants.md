@@ -123,8 +123,8 @@ struct Node {
 	next:*Node
 }
 
-Node { value = 1 next = null } -> a
-a <<next null == if { "end of list" print nl }
+Node { value = 1 next = null }
+<<next null == if { "end of list" print nl }
 ```
 
 ## Naming convention

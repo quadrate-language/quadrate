@@ -56,7 +56,7 @@
       "params": [],
       "returns": [{"name": "rows", "type": "i64", "description": "Terminal height in rows"}, {"name": "cols", "type": "i64", "description": "Terminal width in columns"}],
       "errors": [],
-      "examples": ["tty::size -> cols -> rows"]
+      "examples": ["tty::size -> rows cols"]
     },
     {
       "name": "width",

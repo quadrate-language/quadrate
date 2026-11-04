@@ -260,7 +260,8 @@ Process items, log failures:
 
 <!-- doccheck: skip pattern sketch: process_item stands for a program's own fallible word -->
 ```qd
-def process_batch(items:[]i64 -- processed:i64 failed:i64) {
+fn process_batch(items:[]i64 -- processed:i64 failed:i64) {
+	-> items
 	0 -> processed
 	0 -> failed
 

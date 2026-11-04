@@ -122,8 +122,8 @@ more, empty, line at the end.
 use io
 use strings
 
-def count_words(path:str -- words:i64 lines:i64 chars:i64)! {
-	path io::read_file? -> content
+fn count_words(path:str -- words:i64 lines:i64 chars:i64)! {
+	io::read_file? -> content
 
 	content len -> chars
 	content strings::lines? -> line_array
@@ -177,10 +177,10 @@ fn copy_file(src:str dst:str -- total:i64)! {
 
 	0
 	loop {
-		src_file buf BufferSize io::read?
-		dup 0 == if { drop break }
-		dup dst_file buf rot io::write? drop
-		+
+		src_file buf BufferSize io::read? -> bytes_read
+		bytes_read 0 == if { break }
+		dst_file buf bytes_read io::write? drop
+		bytes_read +
 	}
 }
 

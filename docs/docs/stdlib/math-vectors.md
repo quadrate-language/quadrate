@@ -277,7 +277,7 @@ Distance to another Vec2.
 **Example:**
 
 ```qd
-v2 other2 distance -> d
+v2 other2 distance  // d
 ```
 ---
 
@@ -294,7 +294,7 @@ Angle of this vector from positive X axis.
 **Example:**
 
 ```qd
-v2 angle -> a
+v2 angle  // a
 ```
 ---
 
@@ -315,7 +315,7 @@ Rotate this vector by an angle.
 **Example:**
 
 ```qd
-v2 1.57 rotate -> rotated
+v2 1.57 rotate  // rotated
 ```
 ---
 
@@ -332,7 +332,7 @@ Get perpendicular vector (90 degrees counterclockwise rotation).
 **Example:**
 
 ```qd
-v2 perpendicular -> perp
+v2 perpendicular  // perp
 ```
 
 ## Vec3
@@ -697,7 +697,7 @@ Distance to another Vec3.
 **Example:**
 
 ```qd
-v3 other3 distance -> d
+v3 other3 distance  // d
 ```
 ---
 
@@ -718,7 +718,7 @@ Angle between this vector and another.
 **Example:**
 
 ```qd
-v3 other3 angle_between -> a
+v3 other3 angle_between  // a
 ```
 
 ## Vec4
@@ -902,7 +902,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v4 length_sq -> len_sq
+v4 length_sq  // len_sq
 ```
 ---
 
@@ -919,7 +919,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v4 neg -> neg_v
+v4 neg  // neg_v
 ```
 ---
 
@@ -941,5 +941,5 @@ Linear interpolation to another Vec4.
 **Example:**
 
 ```qd
-v4 other4 0.5 lerp -> mid
+v4 other4 0.5 lerp  // mid
 ```

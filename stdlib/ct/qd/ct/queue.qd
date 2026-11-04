@@ -95,7 +95,7 @@ pub def (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 /// Remove and return the front element.
 /// Returns error if queue is empty.
 /// Returns the value and updated queue.
-/// @example q dequeue! -> q -> val  // the queue is on top, the element under it
+/// @example q dequeue! -> val q2
 pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 	q <<len -> len
 

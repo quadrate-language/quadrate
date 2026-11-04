@@ -90,7 +90,7 @@
       "params": [{"name": "socket", "type": "i64", "description": "TCP socket from net::connect"}, {"name": "hostname", "type": "str", "description": "Server hostname for SNI and certificate verification"}],
       "returns": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}],
       "errors": [{"code": "ErrCertificate", "description": "The certificate is untrusted, expired, or for another name"}, {"code": "ErrConnect", "description": "The handshake failed for another reason"}],
-      "examples": ["\"example.com\" 443 net::connect! -> sock  sock \"example.com\" tls::connect! -> conn"]
+      "examples": ["\"example.com\" 443 net::connect! \"example.com\" tls::connect! -> conn"]
     },
     {
       "name": "receive",
@@ -100,7 +100,7 @@
       "params": [{"name": "conn", "type": "ptr", "description": "TLS connection handle"}, {"name": "max_bytes", "type": "i64", "description": "Maximum bytes to receive, from 1 to 1048576"}],
       "returns": [{"name": "data", "type": "str", "description": "Received and decrypted data"}, {"name": "bytes_read", "type": "i64", "description": "Actual bytes received"}],
       "errors": [{"code": "ErrRead", "description": "The read failed, or the connection ended without a TLS close"}],
-      "examples": ["conn 4096 tls::receive! -> n -> data"]
+      "examples": ["conn 4096 tls::receive! -> data n"]
     },
     {
       "name": "send",

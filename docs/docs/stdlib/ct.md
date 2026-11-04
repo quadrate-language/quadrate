@@ -18,8 +18,9 @@ Generic container types: Vec, Map, Set, Queue, Deque and Pair.
 
 A container is created with a struct literal whose fields are all zero or null; there is no
 constructor function, and the first insertion allocates. A method that changes a container
-returns it, and that result must be captured (`v 10 push! -> v`). Call `release` on a Vec,
-Map, Set, Queue or Deque when done to free its memory.
+returns it, and that result must be used: chain the next call on it (`10 push! 20 push!`)
+or re-bind it (`v 10 push! -> v`). Call `release` on a Vec, Map, Set, Queue or Deque when
+done to free its memory.
 
 **Example:**
 
@@ -27,38 +28,33 @@ Map, Set, Queue or Deque when done to free its memory.
 use ct
 
 fn main() {
-	ct::Vec<i64> { data = null len = 0 cap = 0 } -> v
-	v 10 push! -> v
-	v 20 push! -> v
-	v 0 get! print nl                       // 10
-	v release
+	ct::Vec<i64> { data = null len = 0 cap = 0 }
+	10 push! 20 push!
+	dup 0 get! print nl                     // 10
+	release
 
-	ct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
-	m "alice" 42 insert! -> m
-	m "alice" get! print nl                 // 42
-	m release
+	ct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 }
+	"alice" 42 insert!
+	dup "alice" get! print nl               // 42
+	release
 
-	ct::Set { keys = null states = null len = 0 cap = 0 } -> s
-	s "alice" add! -> s
-	s "alice" contains print nl             // 1
-	s release
+	ct::Set { keys = null states = null len = 0 cap = 0 }
+	"alice" add!
+	dup "alice" contains print nl           // 1
+	release
 
-	ct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
-	q 1 enqueue! -> q
-	q 2 enqueue! -> q
-	q dequeue! -> q -> first
-	first print nl                          // 1
-	q release
+	ct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 }
+	1 enqueue! 2 enqueue!
+	dequeue! swap print nl                  // 1
+	release
 
-	ct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
-	d 1 push_back! -> d
-	d 0 push_front! -> d
-	d peek_front! print nl                  // 0
-	d release
+	ct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 }
+	1 push_back! 0 push_front!
+	dup peek_front! print nl                // 0
+	release
 
-	ct::Pair<i64, str> { first = 42 second = "hello" } -> p
-	p unpack -> b -> a
-	a print " " print b print nl            // 42 hello
+	ct::Pair<i64, str> { first = 42 second = "hello" }
+	unpack swap print " " print print nl    // 42 hello
 }
 ```
 
@@ -143,7 +139,7 @@ Remove and return the back element.
 **Example:**
 
 ```qd
-d pop_back! -> d -> val  // the deque is on top, the element under it
+d pop_back!  // val d2
 ```
 
 ---
@@ -157,7 +153,7 @@ Remove and return the front element.
 **Example:**
 
 ```qd
-d pop_front! -> d -> val  // the deque is on top, the element under it
+d pop_front!  // val d2
 ```
 
 ---
@@ -364,7 +360,7 @@ Unpack a pair onto the stack. Returns both elements: first is deeper, second on 
 **Example:**
 
 ```qd
-p unpack -> b -> a  // second on top, so it binds first
+p unpack  // a b
 ```
 
 ## Queue
@@ -392,7 +388,7 @@ Remove and return the front element. Returns error if queue is empty. Returns th
 **Example:**
 
 ```qd
-q dequeue! -> q -> val  // the queue is on top, the element under it
+q dequeue!  // val q2
 ```
 
 ---
@@ -641,7 +637,7 @@ Pop and return the last element. Panics if the vector is empty. Returns both the
 **Example:**
 
 ```qd
-v pop! -> v -> elem  // the vector is on top, the element under it
+v pop!  // elem v2
 ```
 
 ---

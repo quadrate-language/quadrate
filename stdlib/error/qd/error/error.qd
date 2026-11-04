@@ -12,22 +12,21 @@
 /// This module is a thin layer over the channel, not a replacement for it: raising is still
 /// `panic`, and a call site still says `!`, `?`, or reads the result with `if` or `switch`.
 ///
-/// @example
-/// use error
+/// Example:
+///   use error
 ///
-/// def parse_port(s:str -- port:i64)! {
-///     s "" == if { "port is empty" 1 panic }
-///     8080
-/// }
+///   fn parse_port(s:str -- port:i64)! {
+///       "" == if { "port is empty" 1 panic }
+///       8080
+///   }
 ///
-/// fn main() {
-///     "" parse_port if {
-///         print nl
-///     } else {
-///         error::last -> e
-///         e <<message print nl
-///     }
-/// }
+///   fn main() {
+///       "" parse_port ok if {
+///           print nl
+///       } else {
+///           drop error::last <<message print nl
+///       }
+///   }
 /// doccheck: page-context
 /// doccheck: page-setup "disk full" 5 error::new -> e
 

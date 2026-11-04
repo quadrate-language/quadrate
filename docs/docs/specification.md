@@ -469,8 +469,7 @@ and reject a struct, an array or a function value stored into a `[]ptr`, as they
 Functions and structs can be parameterized over types:
 
 ```quadrate
-def identity<T>(x:T -- y:T) {
-    x
+fn identity<T>(x:T -- y:T) {
 }
 
 struct Box<T> {
@@ -495,8 +494,8 @@ A **function value** is a named function or an anonymous function (§7.5) held a
 type MUST be written with the typed `fn(...)` syntax:
 
 ```quadrate
-def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
-    x f call
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+    call
 }
 
 // Get a function value
@@ -529,7 +528,7 @@ fn under<..a, ..b, T>(..a x:T q:fn(..a -- ..b) -- ..b x:T) {
 }
 
 fn main() {
-    1 2 3 def (a:i64 b:i64 -- s:i64) { a b + } under   // 3 3: + runs under the 3
+    1 2 3 fn (a:i64 b:i64 -- s:i64) { + } under   // 3 3: + runs under the 3
     print " " print print nl
 }
 ```
@@ -571,8 +570,8 @@ from its parameters (§10.3), and a stack variable has no depth until the call.
 A value of type `any` carries its type with it, so a parameter of type `any` accepts every value. Passing an `any` on to a parameter of a definite type is checked when the call runs: the value MUST hold that type, or an `i64` where the parameter takes `f64` or `d128`, which widens as a plain `i64` argument does. Anything else MUST stop the program with a type mismatch naming the function and the parameter.
 
 ```quadrate
-def next(x:i64 -- r:i64) { x 1 + }
-def relay(a:any -- r:i64) { a next }
+fn next(x:i64 -- r:i64) { 1 + }
+fn relay(a:any -- r:i64) { next }
 
 1 relay print nl       // 2
 "two" relay print nl   // fatal: Type mismatch for parameter 1 (expected int, got str)
@@ -963,8 +962,7 @@ struct Token {
     value:i64
 }
 
-Token { kind = TokenType::Int value = 42 } -> t
-t <<kind TokenType::Int == if { "integer token" print nl }
+Token { kind = TokenType::Int value = 42 } <<kind TokenType::Int == if { "integer token" print nl }
 ```
 
 #### 5.4.7 Compile-Time Validation
@@ -1086,8 +1084,8 @@ reject a program whose arms disagree:
 
 ```quadrate
 // doccheck: expect-error arms leave 1 and 2 values respectively
-def pick(c:i64 -- r:i64) {
-    c if {
+fn choose(c:i64 -- r:i64) {
+    if {
         1
     } else {
         2 3
@@ -1095,7 +1093,7 @@ def pick(c:i64 -- r:i64) {
 }
 
 fn main() {
-    1 pick print nl
+    1 choose print nl
 }
 ```
 
@@ -1116,9 +1114,9 @@ drops them, and an arm that forgets is the mismatch this rule reports:
 
 ```quadrate
 // doccheck: expect-error the success arm consumes the result, the failure arm leaves it
-def divide(a:i64 b:i64 -- result:i64)! {
-    b 0 == if { "division by zero" -1 panic }
-    a b /
+fn divide(a:i64 b:i64 -- result:i64)! {
+    dup 0 == if { "division by zero" -1 panic }
+    /
 }
 
 fn main() {
@@ -1180,11 +1178,9 @@ looking backwards, so values below it on the stack are no concern of the loop's.
 body the word is written decides the shape of the loop:
 
 ```quadrate
-0 -> i
-loop { i 5 < while  i print nl  i 1 + -> i }     // tested first: may run no times
+0 loop { dup 5 < while  dup print nl  1 + } drop    // tested first: may run no times
 
-0 -> k
-loop { k 1 + -> k  k 3 >= until }                 // tested last: runs at least once
+0 loop { 1 + dup 3 >= until } drop                  // tested last: runs at least once
 ```
 
 Leaving by `while` or `until` is a `break` taken with the stack as it stands after the flag is
@@ -1268,8 +1264,8 @@ after a point from which the function already returned, MUST NOT run:
 
 <!-- doccheck: skip pattern sketch: acquire and release stand for a program's own words -->
 ```quadrate
-def open_maybe(c:i64 -- ) {
-    c if {
+fn open_maybe(c:i64 -- ) {
+    if {
         acquire -> r
         defer { r release }    // registered only when c is non-zero
     }
@@ -1329,12 +1325,10 @@ Functions are called by name; arguments must already be on stack:
 ### 7.3 Generic Functions
 
 ```quadrate
-def identity<T>(x:T -- y:T) {
-    x
+fn identity<T>(x:T -- y:T) {
 }
 
-def pair<A, B>(a:A b:B -- first:A second:B) {
-    a b
+fn pair<A, B>(a:A b:B -- first:A second:B) {
 }
 ```
 
@@ -1421,7 +1415,7 @@ def (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 
 **Fallible**:
 ```quadrate
-0 def (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call ok if {
+0 fn (x:i64 -- r:i64)! { dup 0 == if { "divide by zero" 1 panic } 100 swap / } call ok if {
     print nl
 } else {
     drop "caught" print nl       // Prints caught
@@ -1582,7 +1576,7 @@ it accepts as a value elsewhere — including a nested struct literal, an array 
 anonymous function:
 
 ```quadrate
-Box { items = [1 2 3]  f = def (x:i64 -- r:i64) { x 10 * } }
+Box { items = [1 2 3]  f = fn (x:i64 -- r:i64) { 10 * } }
 ```
 
 The same holds for the elements of an array literal (3.2.2).
@@ -1803,16 +1797,16 @@ Where a directory sits does not matter: one named `lib` or `tests` is a namespac
 Functions that can fail MUST be marked with `!`:
 
 ```quadrate
-def divide(a:i64 b:i64 -- result:i64)! {
-    b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+    dup 0 == if {
         "division by zero" -1 panic
     }
-    a b /
+    /
 }
 ```
 
-Note that `a` and `b` are named parameters, so they are bound on entry and already consumed
-from the stack (§4.4); the body refers to them by name rather than manipulating the stack.
+Note that `a` and `b` are inputs of a `fn`, so they stay on the stack (§4.4); the names
+document them, and the body works on the values directly.
 
 ### 10.2 The `panic` Instruction
 
@@ -1841,8 +1835,8 @@ program when a code computed at run time turns out to be `0`.
 **Propagate error (`?` operator):**
 <!-- doccheck: continues -->
 ```quadrate
-def wrapper(a:i64 b:i64 -- result:i64)! {
-    a b divide?     // Propagates error to caller if divide fails
+fn wrapper(a:i64 b:i64 -- result:i64)! {
+    divide?     // Propagates error to caller if divide fails
     2 *
 }
 ```
@@ -1901,8 +1895,7 @@ use io
 fn main() {
     "/no/such/file" io::Read io::open switch {
         Ok {
-            -> handle
-            handle io::close
+            io::close
         }
         io::ErrNotFound {
             drop
@@ -1954,16 +1947,16 @@ read the error state, so a native that only pushed a code would make `switch` se
 A complete program exercising the call-site forms against one fallible function:
 
 ```quadrate
-def divide(a:i64 b:i64 -- result:i64)! {
-    b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+    dup 0 == if {
         "division by zero" -1 panic
     }
-    a b /
+    /
 }
 
 // `?` propagates: doubled is fallible too, so a failure in divide returns from it immediately.
-def doubled(a:i64 b:i64 -- result:i64)! {
-    a b divide?
+fn doubled(a:i64 b:i64 -- result:i64)! {
+    divide?
     2 *
 }
 
@@ -1980,8 +1973,8 @@ fn main() {
     }
 
     // 3. the status kept as a value
-    10 0 divide -> status drop
-    "status: " print status print nl
+    10 0 divide nip
+    "status: " print print nl
 
     // 4. ! aborts the program on failure; here it succeeds
     "20/4 = " print 20 4 divide! print nl
@@ -2231,8 +2224,8 @@ Use `defer` for explicit cleanup:
 
 <!-- doccheck: skip excerpt: the body is elided and io is used without an import, to keep defer in view -->
 ```quadrate
-def process(path:str -- )! {
-    path io::Read io::open!
+fn process(path:str -- )! {
+    io::Read io::open!
     -> file
     defer { file io::close }
 

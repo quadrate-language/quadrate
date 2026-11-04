@@ -206,7 +206,9 @@ Build up a result:
 
 ```qd
 fn sum_to_n(n:i64 -- sum:i64) {
-	0 1 rot 1 + 1 for i {
+	-> n
+	0
+	1 n 1 + 1 for i {
 		i +
 	}
 }
@@ -221,7 +223,8 @@ fn main() {
 Search with early exit:
 
 ```qd
-def contains(arr:[]i64 value:i64 -- found:i64) {
+fn contains(arr:[]i64 value:i64 -- found:i64) {
+	-> value -> arr
 	0
 	0 arr len 1 for i {
 		arr i nth value == if {
@@ -243,11 +246,11 @@ fn main() {
 
 ```qd
 fn sum_array(arr:[]i64 -- total:i64) {
+	-> arr
 	0
-	0 pick len 1 for i {
-		over i nth +
+	0 arr len 1 for i {
+		arr i nth +
 	}
-	nip
 }
 ```
 
@@ -255,13 +258,13 @@ fn sum_array(arr:[]i64 -- total:i64) {
 
 ```qd
 fn count_positive(arr:[]i64 -- count:i64) {
+	-> arr
 	0
-	0 pick len 1 for i {
-		over i nth 0 > if {
+	0 arr len 1 for i {
+		arr i nth 0 > if {
 			1 +
 		}
 	}
-	nip
 }
 ```
 

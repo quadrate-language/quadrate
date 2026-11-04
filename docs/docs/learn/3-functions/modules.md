@@ -47,7 +47,8 @@ struct Point {
 	y:f64
 }
 
-def point_add(a:Point b:Point -- c:Point) {
+fn point_add(a:Point b:Point -- c:Point) {
+	-> b -> a
 	Point { x = a <<x b <<x + y = a <<y b <<y + }
 }
 ```
