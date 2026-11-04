@@ -163,7 +163,7 @@ struct File {
 	path:str
 }
 
-def file_open(path:str -- f:ptr)! {
+def file_open(path:str -- f:File)! {
 	path io::Read io::open switch {
 		Ok {
 			-> handle  // bind handle
@@ -178,7 +178,7 @@ def file_open(path:str -- f:ptr)! {
 	}
 }
 
-def file_close(f:ptr -- ) {
+def file_close(f:File -- ) {
 	f <<handle io::close
 }
 

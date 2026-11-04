@@ -1,19 +1,19 @@
 // Test: Test HTTP engine creation and route registration
 use http
 
-def handle_root(c:ptr -- ) {
+def handle_root(c:http::Ctx -- ) {
 	c 200 "Hello" http::string
 }
 
-def handle_users(c:ptr -- ) {
+def handle_users(c:http::Ctx -- ) {
 	c 200 "Users list" http::string
 }
 
-def handle_users_post(c:ptr -- ) {
+def handle_users_post(c:http::Ctx -- ) {
 	c 201 "Created" http::string
 }
 
-def handle_user_by_id(c:ptr -- ) {
+def handle_user_by_id(c:http::Ctx -- ) {
 	c "id" http::param -> id
 	c 200 id http::string
 }

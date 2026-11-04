@@ -257,8 +257,8 @@ namespace Qd {
 		// printing a value does. Pushing a local retains it, so without this the original
 		// ends the scope one owner up and is never freed -- which is what a struct with no
 		// refcounted fields at all still leaked.
-		builder->CreateCall(qdPtrReleaseFn, {src});
-		builder->CreateCall(pushPtrFn, {ctx, copy});
+		builder->CreateCall(releaseStructFn, {src});
+		builder->CreateCall(pushStructFn, {ctx, copy});
 
 		// The copy is the same struct type as the original, so whatever follows -- `<<field`,
 		// `-> name`, a method call -- resolves against it the way it would after `nth`.

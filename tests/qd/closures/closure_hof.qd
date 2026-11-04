@@ -1,5 +1,5 @@
 // Test: Higher-order function with closure
-def apply(x:i64 f:ptr -- r:i64) {
+def apply(x:i64 f:fn(i64 -- i64) -- r:i64) {
     x f call
 }
 

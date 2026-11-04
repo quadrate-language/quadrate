@@ -7,12 +7,12 @@ struct PersonWithInt {
 	value:i64
 }
 
-def get_float_value(obj:ptr -- v:f64) {
-	obj as PersonWithFloat <<value
+def get_float_value(obj:PersonWithFloat -- v:f64) {
+	obj <<value
 }
 
-def get_int_value(obj:ptr -- v:i64) {
-	obj as PersonWithInt <<value
+def get_int_value(obj:PersonWithInt -- v:i64) {
+	obj <<value
 }
 
 fn test_same_field() {
@@ -20,7 +20,7 @@ fn test_same_field() {
 	PersonWithFloat { value = 3.14 } -> p1
 	p1 get_float_value print nl
 
-	// Int version - using as to disambiguate
+	// Int version - the parameter type says which struct
 	PersonWithInt { value = 42 } -> p2
 	p2 get_int_value print nl
 }

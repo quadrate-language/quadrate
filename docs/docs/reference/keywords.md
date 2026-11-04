@@ -31,7 +31,7 @@ Language keywords for declarations, control flow, and more.
 | [`import`](#import) | Imports a native C library |
 | [`enum`](#enum) | Declares an enumeration type |
 | [`type`](#type) | Declares a type alias |
-| [`as`](#as) | Type narrowing cast / import module namespace |
+| [`as`](#as) | Names the module in an `import` |
 | [`null`](#null) | Null pointer literal (0) |
 | [`$"..."`](#string-interpolation) | String interpolation |
 | [`Ok`](#ok) | The status of a call that succeeded (0) |
@@ -374,27 +374,9 @@ import "libmath.a" as "math" {
 
 ### as
 
-Has two uses:
-
-**1. Type narrowing cast** — Narrows a `ptr` value to a specific struct type for field access. This is compile-time only with no runtime cost.
-
-```qd
-use http
-
-def get_body(c:ptr -- body:str) {
-	c as http::Ctx <<body
-}
-```
-
-When multiple structs share a field name and the compiler cannot determine the type, `as` disambiguates:
-
-```qd
-c as MyStruct <<value      // access <<value on MyStruct specifically
-c as MyStruct -> typed_c  // bind as typed local for subsequent accesses
-typed_c <<value            // type is known, no ambiguity
-```
-
-**2. Import namespace** — Specifies the module namespace in an `import` statement. See [import](#import).
+Names the module an `import` declares its words in. See [import](#import). It used to also
+narrow a `ptr` to a struct type; a `ptr` is raw memory now and never holds one, so that use
+has been removed.
 
 ### enum
 

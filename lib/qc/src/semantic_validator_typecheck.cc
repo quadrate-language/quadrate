@@ -11,7 +11,6 @@
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_array_literal.h>
-#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_defer.h>
@@ -187,7 +186,9 @@ namespace Qd {
 	}
 
 	// The struct type a pointer result inherits from a pointer argument in the same position
-	// when the signature declares none: `def f(p:ptr -- q:ptr)` passing a `Point` through.
+	// when the signature declares none: `def f(p:ptr -- q:ptr)` passing a `Point` through. Only
+	// from an argument declared `ptr` as well: one declared with its own type is not passed
+	// through, and `get(re:Nfa i:i64 -- cc:ptr)` used to read as returning the Nfa.
 	static std::string passThroughStructType(
 			const FunctionSignature& sig, size_t produceIdx, const std::vector<std::string>& consumedStructTypes) {
 		size_t producedPtrBefore = 0;
@@ -200,7 +201,10 @@ namespace Qd {
 		for (size_t ci = 0; ci < sig.consumes.size() && ci < consumedStructTypes.size(); ci++) {
 			if (sig.consumes[ci] == StackValueType::PTR) {
 				if (ptrIdx == producedPtrBefore) {
-					return consumedStructTypes[ci];
+					auto declared = sig.parameterTypeNames.find(ci);
+					const bool untyped = declared == sig.parameterTypeNames.end() || declared->second.empty() ||
+										 declared->second == "ptr";
+					return untyped ? consumedStructTypes[ci] : std::string();
 				}
 				ptrIdx++;
 			}
@@ -250,10 +254,12 @@ namespace Qd {
 			}
 			if (actual.empty()) {
 				if (actualType == StackValueType::PTR && expected.compare(0, 3, "fn(") == 0) {
-					std::string warnMsg = "Untyped 'ptr' passed to function '" + displayName + "': Parameter " +
-										  std::to_string(idx + 1) + " expects '" + expected +
-										  "'. Consider adding a type annotation";
-					reportWarning(site, warnMsg.c_str());
+					// A `ptr` is raw memory, never a function value: calling it would jump into data
+					std::string msg = "Type error in function '" + displayName + "': Parameter " +
+									  std::to_string(idx + 1) + " expects the function value '" + expected +
+									  "' but got a raw 'ptr'";
+					reportError(site, msg.c_str());
+					ok = false;
 				}
 				continue; // nothing known about the argument
 			}
@@ -468,11 +474,11 @@ namespace Qd {
 			return true;
 		}
 		if (expected == "ptr") {
-			if (isArrayTypeName(actual)) {
-				why = rawPtrArrayWhy(actual);
-				return true;
+			if (actual == "ptr") {
+				return false;
 			}
-			return false;
+			why = rawPtrWhy(actual);
+			return true;
 		}
 		if (fieldTypesCompatible(expected, actual)) {
 			return false;
@@ -1464,6 +1470,18 @@ namespace Qd {
 			return;
 		}
 
+		// `[n]fn(...)`: n slots for function values, empty until set. A `[]ptr` holds raw memory
+		// only, so this is where a table of functions goes.
+		if (elem.compare(0, 3, "fn(") == 0) {
+			if (!isValidTypeName(elem)) {
+				std::string errorMsg = "Unknown element type \'";
+				errorMsg += elem;
+				errorMsg += "\' in array literal";
+				reportError(lit, errorMsg.c_str());
+			}
+			return;
+		}
+
 		const std::string resolved = resolveTypeAliasChain(elem);
 
 		const auto* fieldTypes = lookupStructFieldTypes(resolved);
@@ -1669,15 +1687,17 @@ namespace Qd {
 					break;
 				}
 
-				// Extract the function signature from input/output parameters
+				// Extract the function signature from input/output parameters, keeping each declared
+				// type: built from the coarse stack types alone, `def(c:http::Ctx -- )` had the type
+				// `fn(ptr --)` and matched no handler parameter
 				FunctionSignature sig;
 				for (const auto& paramNode : anonFunc->inputParameters()) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
-					sig.consumes.push_back(stringToStackValueType(param->typeString()));
+					addSignatureInput(sig, param->typeString(), "");
 				}
 				for (const auto& paramNode : anonFunc->outputParameters()) {
 					AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
-					sig.produces.push_back(stringToStackValueType(param->typeString()));
+					addSignatureOutput(sig, param->typeString(), "");
 				}
 				// `fn(...)` type strings cannot carry it, so a lambda's fallibility reaches the
 				// call site only through the pending signature -- the same route a named
@@ -1710,16 +1730,6 @@ namespace Qd {
 				}
 				// Stop processing this block — code after return is unreachable
 				return;
-			}
-
-			case IAstNode::Type::AS_CAST: {
-				// Type narrowing cast: updates struct type on top of stack
-				// No push/pop — just changes the type annotation
-				AstNodeAsCast* asCast = static_cast<AstNodeAsCast*>(child);
-				if (!structTypeStack.empty()) {
-					structTypeStack.back() = asCast->typeName();
-				}
-				break;
 			}
 
 			case IAstNode::Type::CONDITIONAL_BREAK: {

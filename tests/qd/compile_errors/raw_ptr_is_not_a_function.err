@@ -1,0 +1,1 @@
+error: Type error in function 'apply': Parameter 2 expects the function value 'fn(i64 -- i64)' but got a raw 'ptr'

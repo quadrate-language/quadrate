@@ -3,6 +3,7 @@
 #include "quadrate/thread/thread.h"
 
 #include <quadrate/rt/context.h>
+#include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/runtime.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,14 +26,10 @@ static int thread_entry(void* arg) {
 		return 1;
 	}
 
-	// Cast and call the function pointer
-	// Functions in Quadrate have signature: int (*)(qd_context*)
-	typedef int (*qd_function_ptr)(qd_context*);
-	qd_function_ptr func;
-	memcpy(&func, &data->func, sizeof(func));
-
-	if (func) {
-		func(thread_ctx);
+	// The function value, and the reference spawn was handed with it
+	if (data->func) {
+		qd_call_value(thread_ctx, data->func);
+		qd_struct_release(data->func);
 	}
 
 	qd_free_context(thread_ctx);
@@ -40,7 +37,7 @@ static int thread_entry(void* arg) {
 	return 0;
 }
 
-// spawn(func:ptr -- thread:ptr)!
+// spawn(func:fn(--) -- thread:ptr)!
 int usr_thread_raw_spawn(qd_context* ctx) {
 	void* func;
 	qd_args(ctx, "thread::spawn", "p", &func);
@@ -70,7 +67,7 @@ int usr_thread_raw_spawn(qd_context* ctx) {
 	thread->joined = false;
 	thread->detached = false;
 
-	qd_push_p(ctx, thread);
+	qd_push_raw(ctx, thread);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -159,7 +156,7 @@ int usr_thread_raw_mutex_new(qd_context* ctx) {
 	}
 
 	mutex->initialized = true;
-	qd_push_p(ctx, mutex);
+	qd_push_raw(ctx, mutex);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -291,7 +288,7 @@ int usr_thread_raw_chan_new(qd_context* ctx) {
 		return qd_fail(ctx, THREAD_ERR_CHANNEL, "channel::new: failed to create channel");
 	}
 
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -310,7 +307,7 @@ int usr_thread_raw_chan_buffered(qd_context* ctx) {
 		return qd_fail(ctx, THREAD_ERR_CHANNEL, "channel::buffered: failed to create channel");
 	}
 
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -597,7 +594,7 @@ int usr_thread_raw_wg_new(qd_context* ctx) {
 	}
 
 	wg->count = 0;
-	qd_push_p(ctx, wg);
+	qd_push_raw(ctx, wg);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -695,12 +692,12 @@ int usr_thread_raw_once_new(qd_context* ctx) {
 
 	once->completed = false;
 
-	qd_push_p(ctx, once);
+	qd_push_raw(ctx, once);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
 
-// do(func:ptr once:ptr -- )
+// do(func:fn(--) once:ptr -- )
 int usr_thread_raw_once_do(qd_context* ctx) {
 	void* func_p;
 	void* handle;
@@ -708,6 +705,7 @@ int usr_thread_raw_once_do(qd_context* ctx) {
 
 	qd_once* once = (qd_once*)handle;
 	if (!once) {
+		qd_struct_release(func_p);
 		return (int){0};
 	}
 
@@ -717,15 +715,13 @@ int usr_thread_raw_once_do(qd_context* ctx) {
 		mtx_unlock(&once->mutex);
 
 		// Call the function outside the lock (safe for reentrancy)
-		typedef int (*qd_function_ptr)(qd_context*);
-		qd_function_ptr func;
-		memcpy(&func, &func_p, sizeof(func));
-		if (func) {
-			func(ctx);
+		if (func_p) {
+			qd_call_value(ctx, func_p);
 		}
 	} else {
 		mtx_unlock(&once->mutex);
 	}
+	qd_struct_release(func_p);
 
 	return (int){0};
 }
@@ -821,7 +817,7 @@ int usr_thread_raw_barrier_new(qd_context* ctx) {
 	barrier->count = 0;
 	barrier->generation = 0;
 
-	qd_push_p(ctx, barrier);
+	qd_push_raw(ctx, barrier);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -912,7 +908,7 @@ int usr_thread_raw_rwlock_new(qd_context* ctx) {
 	rw->writers_waiting = 0;
 	rw->writer_active = false;
 
-	qd_push_p(ctx, rw);
+	qd_push_raw(ctx, rw);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }

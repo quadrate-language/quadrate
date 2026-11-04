@@ -149,6 +149,7 @@ struct Local {
 	int64_t i = 0;
 	double f = 0.0;
 	void* p = nullptr;
+	uint8_t kind = 0; // the pointer's kind, as its stack slot carried it
 	qd_d128_t d{};
 	std::string s;
 };
@@ -339,7 +340,7 @@ namespace {
 			// 'true' and 'Ok' are 1, 'false' and 'Err' are 0
 			return qd_push_i(interp->ctx, Qd::predefinedConstantValue(text)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::NULL_PTR:
-			return qd_push_p(interp->ctx, nullptr) == 0;
+			return qd_push_raw(interp->ctx, nullptr) == 0;
 		}
 
 		interp->error = "unknown literal kind";
@@ -396,12 +397,21 @@ namespace {
 		}
 	}
 
-	// Every binding a frame holds owns a reference, so dropping one gives it up.
-	// The runtime's generic release knows an array from a struct from a raw
-	// pointer, which is why a frame need not track which it has.
+	// A pointer binding as the stack slot it came from, kind and all
+	qd_stack_element_t pointerSlot(const Local& value) {
+		qd_stack_element_t slot{};
+		slot.value.p = value.p;
+		slot.type = QD_STACK_TYPE_PTR;
+		slot.ptr_kind = value.kind;
+		return slot;
+	}
+
+	// Every binding a frame holds owns a reference, so dropping one gives it up, as the kind
+	// of pointer it is says
 	void releaseLocal(Local& value) {
 		if (value.type == QD_STACK_TYPE_PTR && value.p != nullptr) {
-			qd_ptr_release(value.p);
+			const qd_stack_element_t slot = pointerSlot(value);
+			qd_release_slot(&slot);
 			value.p = nullptr;
 		}
 	}
@@ -423,6 +433,7 @@ namespace {
 		slot.i = 0;
 		slot.f = 0.0;
 		slot.p = nullptr;
+		slot.kind = 0;
 		slot.s.clear();
 
 		switch (element.type) {
@@ -434,6 +445,7 @@ namespace {
 			break;
 		case QD_STACK_TYPE_PTR:
 			slot.p = element.value.p;
+			slot.kind = element.ptr_kind;
 			break;
 		case QD_STACK_TYPE_D128:
 			slot.d = element.value.d;
@@ -458,11 +470,10 @@ namespace {
 			return qd_push_i(interp->ctx, value.i) == 0;
 		case QD_STACK_TYPE_FLOAT:
 			return qd_push_f(interp->ctx, value.f) == 0;
-		case QD_STACK_TYPE_PTR:
-			if (value.p != nullptr) {
-				qd_ptr_retain(value.p);
-			}
-			return qd_push_p(interp->ctx, value.p) == 0;
+		case QD_STACK_TYPE_PTR: {
+			const qd_stack_element_t slot = pointerSlot(value);
+			return qd_push_slot(interp->ctx, &slot) == 0; // takes a reference of its own
+		}
 		case QD_STACK_TYPE_STR:
 			return qd_push_s(interp->ctx, value.s.c_str()) == 0;
 		case QD_STACK_TYPE_D128:
@@ -666,7 +677,7 @@ namespace {
 			}
 		}
 
-		qd_push_p(interp->ctx, array);
+		qd_push_array(interp->ctx, array);
 		return true;
 	}
 
@@ -786,7 +797,7 @@ namespace {
 			}
 		}
 
-		qd_push_p(interp->ctx, array);
+		qd_push_array(interp->ctx, array);
 		return true;
 	}
 

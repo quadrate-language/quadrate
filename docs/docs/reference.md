@@ -37,7 +37,7 @@ This page documents all Quadrate keywords and built-in instructions.
 | [`Ok`](#Ok) | Pushes 0, the status a fallible call leaves when it succeeded. |
 | [`Err`](#Err) | Pushes 1, the generic error code a fallible call can panic with. |
 | [`null`](#null) | Pushes the null pointer. |
-| [`as`](#as) | Narrows a ptr to a struct type at compile time, so its fields can be read. Costs nothing at run time. |
+| [`as`](#as) | Names the module an `import` declares its words in. |
 
 ### fn
 
@@ -414,12 +414,12 @@ null -> p
 
 ### as
 
-Narrows a ptr to a struct type at compile time, so its fields can be read. Costs nothing at run time.
+Names the module an `import` declares its words in.
 
 **Example:**
 
 ```qd
-p as Point <<x
+import "libmath.a" as "math" { pub fn sqrt(x:f64 -- r:f64) }
 ```
 
 ---

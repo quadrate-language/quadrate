@@ -223,41 +223,41 @@ import "libhttp.a" as "http" {
 	/// @param path str Route path. Supports:
 	///   - :param for path parameters (e.g., "/users/:id")
 	///   - /* for wildcard suffix (e.g., "/static/*" matches /static/anything)
-	/// @param handler ptr Handler function receiving Ctx
-	/// @example e "/" def(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
-	pub fn GET(engine:ptr path:str handler:ptr -- )
+	/// @param handler fn(Ctx --) Handler function receiving Ctx
+	/// @example e "/" def(c:http::Ctx -- ) { c 200 "Hello" http::string } http::GET
+	pub fn GET(engine:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register POST route.
 	/// @param engine ptr Engine
 	/// @param path str Route path
-	/// @param handler ptr Handler function
-	/// @example e "/api/users" def(c:Ctx -- ) { c 200 "created" http::string } http::POST
-	pub fn POST(engine:ptr path:str handler:ptr -- )
+	/// @param handler fn(Ctx --) Handler function
+	/// @example e "/api/users" def(c:http::Ctx -- ) { c 200 "created" http::string } http::POST
+	pub fn POST(engine:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register PUT route.
 	/// @param engine ptr Engine
 	/// @param path str Route path
-	/// @param handler ptr Handler function
-	pub fn PUT(engine:ptr path:str handler:ptr -- )
+	/// @param handler fn(Ctx --) Handler function
+	pub fn PUT(engine:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register DELETE route.
 	/// @param engine ptr Engine
 	/// @param path str Route path
-	/// @param handler ptr Handler function
-	pub fn DELETE(engine:ptr path:str handler:ptr -- )
+	/// @param handler fn(Ctx --) Handler function
+	pub fn DELETE(engine:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register handler for any HTTP method.
 	/// @param engine ptr Engine
 	/// @param path str Route path
-	/// @param handler ptr Handler function
-	pub fn ANY(engine:ptr path:str handler:ptr -- )
+	/// @param handler fn(Ctx --) Handler function
+	pub fn ANY(engine:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Add middleware to engine.
 	/// Middleware runs before route handlers on every request.
 	/// @param engine ptr Engine
-	/// @param middleware ptr Middleware function
-	/// @example e def(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
-	pub fn use(engine:ptr middleware:ptr -- )
+	/// @param middleware fn(Ctx --) Middleware function
+	/// @example e def(c:http::Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
+	pub fn use(engine:ptr middleware:fn(Ctx --) -- )
 
 	/// Start server (blocking).
 	/// @param engine ptr Engine
@@ -374,25 +374,25 @@ import "libhttp.a" as "http" {
 
 	/// Add middleware to group.
 	/// @param group ptr Group handle
-	/// @param middleware ptr Middleware function
-	/// @example api def(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
-	pub fn group_use(group:ptr middleware:ptr -- )
+	/// @param middleware fn(Ctx --) Middleware function
+	/// @example api def(c:http::Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
+	pub fn group_use(group:ptr middleware:fn(Ctx --) -- )
 
 	/// Register GET on group.
 	/// @param group ptr Group handle
 	/// @param path str Route path (relative to group prefix)
-	/// @param handler ptr Handler function
-	/// @example api "/users" def(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
-	pub fn group_GET(group:ptr path:str handler:ptr -- )
+	/// @param handler fn(Ctx --) Handler function
+	/// @example api "/users" def(c:http::Ctx -- ) { c 200 "users" http::string } http::group_GET
+	pub fn group_GET(group:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register POST on group.
-	pub fn group_POST(group:ptr path:str handler:ptr -- )
+	pub fn group_POST(group:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register PUT on group.
-	pub fn group_PUT(group:ptr path:str handler:ptr -- )
+	pub fn group_PUT(group:ptr path:str handler:fn(Ctx --) -- )
 
 	/// Register DELETE on group.
-	pub fn group_DELETE(group:ptr path:str handler:ptr -- )
+	pub fn group_DELETE(group:ptr path:str handler:fn(Ctx --) -- )
 
 	// ============================================================
 	// Static File Serving
@@ -415,8 +415,7 @@ import "libhttp.a" as "http" {
 	/// @param fs_path str Filesystem directory path (e.g., "./public")
 	/// @example
 	/// // Serve files from ./public at /static/*
-	/// def handle_static(c:ptr -- ) {
-	///     -> c
+	/// def handle_static(c:http::Ctx -- ) {
 	///     c "/static" "./public" http::static
 	/// }
 	/// e "/static/*" &handle_static http::GET

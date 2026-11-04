@@ -677,7 +677,7 @@ TEST(CastpFromPtrTest) {
 
 	// Cast ptr to ptr -> identity
 	int dummy = 42;
-	qd_push_p(ctx, &dummy);
+	qd_push_raw(ctx, &dummy);
 	int result = qd_castp(ctx);
 	ASSERT_EQ(result, 0, "castp should succeed");
 
@@ -1080,7 +1080,7 @@ TEST(ArgsPopsDeepestFirst) {
 	qd_push_s(ctx, "text");
 	qd_push_i(ctx, 7);
 	qd_push_i(ctx, 2); // an i64 where an f64 is expected widens
-	qd_push_p(ctx, &ctx);
+	qd_push_raw(ctx, &ctx);
 
 	qd_string_t* s = NULL;
 	int64_t i = 0;
@@ -1180,7 +1180,7 @@ static void push_expect_overflow(int kind) {
 			qd_push_s_ref(ctx, s);
 			break;
 		case 4:
-			qd_push_p(ctx, NULL);
+			qd_push_raw(ctx, NULL);
 			break;
 		default:
 			qd_push_d_bits(ctx, 0, 0);

@@ -167,14 +167,15 @@ import "libmem.a" as "mem" {
 	/// @example buf 0 mem::get_f64 -> x
 	pub fn get_f64(address:ptr offset:i64 -- value:f64)
 
-	/// Set a pointer at offset.
+	/// Set a raw pointer at offset. A struct, array or string is kept with set_any instead,
+	/// which keeps its type and its reference.
 	/// @param value ptr Pointer value
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
 	/// @example other_buf buf 0 mem::set_ptr
 	pub fn set_ptr(value:ptr address:ptr offset:i64 -- )
 
-	/// Get a pointer at offset.
+	/// Get a raw pointer at offset. Nothing is counted for it: a `ptr` is raw memory.
 	/// @param address ptr Base address
 	/// @param offset i64 Byte offset from base
 	/// @return value ptr Pointer value

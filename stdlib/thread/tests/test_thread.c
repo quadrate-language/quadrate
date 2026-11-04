@@ -4,6 +4,7 @@
  */
 
 #include <quadrate/rt/context.h>
+#include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
 #include <quadrate/thread/thread.h>
@@ -42,7 +43,7 @@ TEST(MutexCreateAndFreeTest) {
 	ASSERT_TRUE(mutex_elem.value.p != NULL, "mutex pointer should not be null");
 
 	// Free the mutex: (mutex:ptr -- )
-	qd_push_p(ctx, mutex_elem.value.p);
+	qd_push_raw(ctx, mutex_elem.value.p);
 	usr_thread_raw_mutex_free(ctx);
 
 	ASSERT_EQ(0, (int)qd_stack_size(ctx->st), "stack should be empty after mutex free");
@@ -64,7 +65,7 @@ TEST(MutexLockUnlockTest) {
 	void* mutex_ptr = mutex_elem.value.p;
 
 	// Lock: (mutex:ptr -- result:i)
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	int ret = usr_thread_raw_mutex_lock(ctx);
 	ASSERT_EQ(0, ret, "mutex lock should return 0");
 
@@ -72,7 +73,7 @@ TEST(MutexLockUnlockTest) {
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "mutex lock should push THREAD_OK");
 
 	// Unlock: (mutex:ptr -- result:i)
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	ret = usr_thread_raw_mutex_unlock(ctx);
 	ASSERT_EQ(0, ret, "mutex unlock should return 0");
 
@@ -80,7 +81,7 @@ TEST(MutexLockUnlockTest) {
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "mutex unlock should push THREAD_OK");
 
 	// Free
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	usr_thread_raw_mutex_free(ctx);
 
 	destroy_test_context(ctx);
@@ -98,7 +99,7 @@ TEST(MutexTryLockTest) {
 	void* mutex_ptr = mutex_elem.value.p;
 
 	// try_lock on unlocked mutex should succeed
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	usr_thread_raw_mutex_try_lock(ctx);
 
 	qd_stack_element_t success;
@@ -107,18 +108,18 @@ TEST(MutexTryLockTest) {
 	ASSERT_EQ(1, (int)success.value.i, "try_lock on unlocked mutex should return 1");
 
 	// try_lock again on already-locked mutex should fail
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	usr_thread_raw_mutex_try_lock(ctx);
 
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(0, (int)success.value.i, "try_lock on locked mutex should return 0");
 
 	// Unlock and free
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	usr_thread_raw_mutex_unlock(ctx);
 	qd_stack_pop(ctx->st, &result); // discard THREAD_OK
 
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	usr_thread_raw_mutex_free(ctx);
 
 	destroy_test_context(ctx);
@@ -137,19 +138,19 @@ TEST(MutexDoubleLockUnlockCycleTest) {
 
 	// Lock/unlock cycle twice
 	for (int i = 0; i < 2; i++) {
-		qd_push_p(ctx, mutex_ptr);
+		qd_push_raw(ctx, mutex_ptr);
 		usr_thread_raw_mutex_lock(ctx);
 		qd_stack_pop(ctx->st, &result);
 		ASSERT_EQ(THREAD_OK, (int)result.value.i, "lock should succeed in cycle");
 
-		qd_push_p(ctx, mutex_ptr);
+		qd_push_raw(ctx, mutex_ptr);
 		usr_thread_raw_mutex_unlock(ctx);
 		qd_stack_pop(ctx->st, &result);
 		ASSERT_EQ(THREAD_OK, (int)result.value.i, "unlock should succeed in cycle");
 	}
 
 	// Free
-	qd_push_p(ctx, mutex_ptr);
+	qd_push_raw(ctx, mutex_ptr);
 	usr_thread_raw_mutex_free(ctx);
 
 	destroy_test_context(ctx);
@@ -177,7 +178,7 @@ TEST(ChannelBufferedCreateAndFreeTest) {
 	ASSERT_TRUE(ch_elem.value.p != NULL, "channel pointer should not be null");
 
 	// Free: (ch:ptr -- )
-	qd_push_p(ctx, ch_elem.value.p);
+	qd_push_raw(ctx, ch_elem.value.p);
 	usr_thread_raw_chan_free(ctx);
 
 	ASSERT_EQ(0, (int)qd_stack_size(ctx->st), "stack should be empty after chan free");
@@ -202,7 +203,7 @@ TEST(ChannelBufferedSendRecvTest) {
 
 	// Send a value: (val ch:ptr -- result:i)
 	qd_push_i(ctx, 42);
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	int ret = usr_thread_raw_chan_send(ctx);
 	ASSERT_EQ(0, ret, "chan_send should return 0");
 
@@ -210,7 +211,7 @@ TEST(ChannelBufferedSendRecvTest) {
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "chan_send should push THREAD_OK");
 
 	// Check length: (ch:ptr -- len:i64)
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_len(ctx);
 
 	qd_stack_element_t len;
@@ -218,7 +219,7 @@ TEST(ChannelBufferedSendRecvTest) {
 	ASSERT_EQ(1, (int)len.value.i, "channel should have 1 element after send");
 
 	// Receive: (ch:ptr -- val result:i)
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	ret = usr_thread_raw_chan_recv(ctx);
 	ASSERT_EQ(0, ret, "chan_recv should return 0");
 
@@ -231,7 +232,7 @@ TEST(ChannelBufferedSendRecvTest) {
 	ASSERT_EQ(42, (int)val.value.i, "received value should be 42");
 
 	// Free channel
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_free(ctx);
 
 	destroy_test_context(ctx);
@@ -252,27 +253,27 @@ TEST(ChannelTrySendTryRecvTest) {
 
 	// try_send two values (fills buffer)
 	qd_push_i(ctx, 10);
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_try_send(ctx);
 	qd_stack_element_t success;
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(1, (int)success.value.i, "first try_send should succeed");
 
 	qd_push_i(ctx, 20);
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_try_send(ctx);
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(1, (int)success.value.i, "second try_send should succeed");
 
 	// try_send when full should fail
 	qd_push_i(ctx, 30);
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_try_send(ctx);
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(0, (int)success.value.i, "try_send on full channel should return 0");
 
 	// try_recv first value
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_try_recv(ctx);
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(1, (int)success.value.i, "first try_recv should succeed");
@@ -281,7 +282,7 @@ TEST(ChannelTrySendTryRecvTest) {
 	ASSERT_EQ(10, (int)val.value.i, "first recv value should be 10");
 
 	// try_recv second value
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_try_recv(ctx);
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(1, (int)success.value.i, "second try_recv should succeed");
@@ -289,14 +290,14 @@ TEST(ChannelTrySendTryRecvTest) {
 	ASSERT_EQ(20, (int)val.value.i, "second recv value should be 20");
 
 	// try_recv on empty channel should fail
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_try_recv(ctx);
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(0, (int)success.value.i, "try_recv on empty channel should return 0");
 	qd_stack_pop(ctx->st, &val); // dummy value
 
 	// Free
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_free(ctx);
 
 	destroy_test_context(ctx);
@@ -316,25 +317,25 @@ TEST(ChannelCloseTest) {
 	void* ch_ptr = ch_elem.value.p;
 
 	// Channel should not be closed initially
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_is_closed(ctx);
 	qd_stack_element_t closed;
 	qd_stack_pop(ctx->st, &closed);
 	ASSERT_EQ(0, (int)closed.value.i, "channel should not be closed initially");
 
 	// Close channel
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_close(ctx);
 
 	// Channel should be closed now
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_is_closed(ctx);
 	qd_stack_pop(ctx->st, &closed);
 	ASSERT_EQ(1, (int)closed.value.i, "channel should be closed after close");
 
 	// Send on closed channel should fail
 	qd_push_i(ctx, 99);
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	int ret = usr_thread_raw_chan_send(ctx);
 	ASSERT_EQ(THREAD_ERR_CLOSED, ret, "send on closed channel should return error");
 	// The generated code reads the failure from error_code and drops the status pushed
@@ -349,7 +350,7 @@ TEST(ChannelCloseTest) {
 	qd_clear_error(ctx);
 
 	// Free
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_free(ctx);
 
 	destroy_test_context(ctx);
@@ -369,14 +370,14 @@ TEST(ChannelCapacityAndLenTest) {
 	void* ch_ptr = ch_elem.value.p;
 
 	// Check capacity
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_cap(ctx);
 	qd_stack_element_t cap;
 	qd_stack_pop(ctx->st, &cap);
 	ASSERT_EQ(8, (int)cap.value.i, "channel capacity should be 8");
 
 	// Check initial length
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_len(ctx);
 	qd_stack_element_t len;
 	qd_stack_pop(ctx->st, &len);
@@ -385,19 +386,19 @@ TEST(ChannelCapacityAndLenTest) {
 	// Send 3 items
 	for (int i = 0; i < 3; i++) {
 		qd_push_i(ctx, i);
-		qd_push_p(ctx, ch_ptr);
+		qd_push_raw(ctx, ch_ptr);
 		usr_thread_raw_chan_send(ctx);
 		qd_stack_pop(ctx->st, &result); // discard THREAD_OK
 	}
 
 	// Check length is 3
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_len(ctx);
 	qd_stack_pop(ctx->st, &len);
 	ASSERT_EQ(3, (int)len.value.i, "channel should have 3 elements");
 
 	// Free (remaining elements are cleaned up)
-	qd_push_p(ctx, ch_ptr);
+	qd_push_raw(ctx, ch_ptr);
 	usr_thread_raw_chan_free(ctx);
 
 	destroy_test_context(ctx);
@@ -419,14 +420,14 @@ TEST(ChannelUnbufferedCreateTest) {
 	ASSERT_TRUE(ch_elem.value.p != NULL, "channel pointer should not be null");
 
 	// Check capacity is 0 (unbuffered)
-	qd_push_p(ctx, ch_elem.value.p);
+	qd_push_raw(ctx, ch_elem.value.p);
 	usr_thread_raw_chan_cap(ctx);
 	qd_stack_element_t cap;
 	qd_stack_pop(ctx->st, &cap);
 	ASSERT_EQ(0, (int)cap.value.i, "unbuffered channel capacity should be 0");
 
 	// Free
-	qd_push_p(ctx, ch_elem.value.p);
+	qd_push_raw(ctx, ch_elem.value.p);
 	usr_thread_raw_chan_free(ctx);
 
 	destroy_test_context(ctx);
@@ -463,7 +464,7 @@ static int delayed_receiver(void* arg) {
 	channel_peer* peer = arg;
 	qd_context* ctx = create_test_context();
 	sleep_ms(peer->delay_ms);
-	qd_push_p(ctx, peer->ch);
+	qd_push_raw(ctx, peer->ch);
 	peer->ret = usr_thread_raw_chan_recv(ctx);
 	qd_stack_element_t result, val;
 	qd_stack_pop(ctx->st, &result);
@@ -477,7 +478,7 @@ static int delayed_closer(void* arg) {
 	channel_peer* peer = arg;
 	qd_context* ctx = create_test_context();
 	sleep_ms(peer->delay_ms);
-	qd_push_p(ctx, peer->ch);
+	qd_push_raw(ctx, peer->ch);
 	usr_thread_raw_chan_close(ctx);
 	destroy_test_context(ctx);
 	return 0;
@@ -494,7 +495,7 @@ TEST(ChannelUnbufferedSendWaitsForReceiverTest) {
 	// The send used to return at once, leaving the value in a one-slot buffer
 	const double start = now_ms();
 	qd_push_i(ctx, 42);
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	int ret = usr_thread_raw_chan_send(ctx);
 	const double waited = now_ms() - start;
 	thrd_join(receiver, NULL);
@@ -506,7 +507,7 @@ TEST(ChannelUnbufferedSendWaitsForReceiverTest) {
 	ASSERT_TRUE(waited >= 90.0, "unbuffered send should wait for the receiver");
 	ASSERT_EQ(42, (int)peer.value, "receiver should get the sent value");
 
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	usr_thread_raw_chan_free(ctx);
 	destroy_test_context(ctx);
 }
@@ -517,7 +518,7 @@ TEST(ChannelUnbufferedTrySendNeedsReceiverTest) {
 
 	qd_stack_element_t success;
 	qd_push_i(ctx, 7);
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	usr_thread_raw_chan_try_send(ctx);
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(0, (int)success.value.i, "try_send with no receiver waiting should fail");
@@ -530,7 +531,7 @@ TEST(ChannelUnbufferedTrySendNeedsReceiverTest) {
 	int sent = 0;
 	for (int i = 0; i < 2000 && !sent; i++) {
 		qd_push_i(ctx, 7);
-		qd_push_p(ctx, ch);
+		qd_push_raw(ctx, ch);
 		usr_thread_raw_chan_try_send(ctx);
 		qd_stack_pop(ctx->st, &success);
 		sent = (int)success.value.i;
@@ -543,7 +544,7 @@ TEST(ChannelUnbufferedTrySendNeedsReceiverTest) {
 	ASSERT_EQ(1, sent, "try_send should succeed once a receiver is waiting");
 	ASSERT_EQ(7, (int)peer.value, "receiver should get the try_sent value");
 
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	usr_thread_raw_chan_free(ctx);
 	destroy_test_context(ctx);
 }
@@ -557,7 +558,7 @@ TEST(ChannelUnbufferedSendFailsOnCloseTest) {
 	thrd_create(&closer, delayed_closer, &peer);
 
 	qd_push_i(ctx, 42);
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	int ret = usr_thread_raw_chan_send(ctx);
 	thrd_join(closer, NULL);
 	ASSERT_EQ(THREAD_ERR_CLOSED, ret, "send should fail when closed before the value is received");
@@ -568,14 +569,14 @@ TEST(ChannelUnbufferedSendFailsOnCloseTest) {
 	qd_clear_error(ctx);
 
 	// A send that failed must not have delivered
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	usr_thread_raw_chan_try_recv(ctx);
 	qd_stack_element_t success, val;
 	qd_stack_pop(ctx->st, &success);
 	qd_stack_pop(ctx->st, &val);
 	ASSERT_EQ(0, (int)success.value.i, "the failed send's value should not be receivable");
 
-	qd_push_p(ctx, ch);
+	qd_push_raw(ctx, ch);
 	usr_thread_raw_chan_free(ctx);
 	destroy_test_context(ctx);
 }
@@ -600,7 +601,7 @@ TEST(WaitGroupCreateAndFreeTest) {
 	ASSERT_TRUE(wg_elem.value.p != NULL, "waitgroup pointer should not be null");
 
 	// Free
-	qd_push_p(ctx, wg_elem.value.p);
+	qd_push_raw(ctx, wg_elem.value.p);
 	usr_thread_raw_wg_free(ctx);
 
 	ASSERT_EQ(0, (int)qd_stack_size(ctx->st), "stack should be empty after wg free");
@@ -621,15 +622,15 @@ TEST(WaitGroupAddDoneWaitTest) {
 
 	// Add 1: (n:i64 wg:ptr -- )
 	qd_push_i(ctx, 1);
-	qd_push_p(ctx, wg_ptr);
+	qd_push_raw(ctx, wg_ptr);
 	usr_thread_raw_wg_add(ctx);
 
 	// Done: (wg:ptr -- )
-	qd_push_p(ctx, wg_ptr);
+	qd_push_raw(ctx, wg_ptr);
 	usr_thread_raw_wg_done(ctx);
 
 	// Wait should return immediately since count == 0: (wg:ptr -- result:i)
-	qd_push_p(ctx, wg_ptr);
+	qd_push_raw(ctx, wg_ptr);
 	int ret = usr_thread_raw_wg_wait(ctx);
 	ASSERT_EQ(0, ret, "wg_wait should return 0 when count is 0");
 
@@ -637,7 +638,7 @@ TEST(WaitGroupAddDoneWaitTest) {
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "wg_wait should push THREAD_OK");
 
 	// Free
-	qd_push_p(ctx, wg_ptr);
+	qd_push_raw(ctx, wg_ptr);
 	usr_thread_raw_wg_free(ctx);
 
 	destroy_test_context(ctx);
@@ -670,14 +671,14 @@ TEST(OnceCreateAndFreeTest) {
 	ASSERT_EQ(QD_STACK_TYPE_PTR, once_elem.type, "once should be a pointer");
 
 	// Check done status (should be false initially)
-	qd_push_p(ctx, once_elem.value.p);
+	qd_push_raw(ctx, once_elem.value.p);
 	usr_thread_raw_once_done(ctx);
 	qd_stack_element_t done;
 	qd_stack_pop(ctx->st, &done);
 	ASSERT_EQ(0, (int)done.value.i, "once should not be done initially");
 
 	// Free
-	qd_push_p(ctx, once_elem.value.p);
+	qd_push_raw(ctx, once_elem.value.p);
 	usr_thread_raw_once_free(ctx);
 
 	destroy_test_context(ctx);
@@ -695,29 +696,33 @@ TEST(OnceDoRunsOnceTest) {
 	qd_stack_pop(ctx->st, &once_elem);
 	void* once_ptr = once_elem.value.p;
 
-	// Convert function pointer to void*
-	void* func_ptr;
+	// A function value: the function with no environment
+	void* raw_fn;
 	int (*func)(qd_context*) = once_increment_func;
-	memcpy(&func_ptr, &func, sizeof(func_ptr));
+	memcpy(&raw_fn, &func, sizeof(raw_fn));
+	void* func_value = qd_closure_new(raw_fn, NULL, 0);
 
-	// Call once_do three times - function should only execute once
+	// Call once_do three times - function should only execute once. Each call takes the
+	// reference it is handed.
 	for (int i = 0; i < 3; i++) {
-		qd_push_p(ctx, func_ptr);
-		qd_push_p(ctx, once_ptr);
+		qd_struct_retain(func_value);
+		qd_push_struct(ctx, func_value);
+		qd_push_raw(ctx, once_ptr);
 		usr_thread_raw_once_do(ctx);
 	}
 
 	ASSERT_EQ(1, once_test_counter, "once_do should have run the function exactly once");
+	qd_struct_release(func_value);
 
 	// Check done status
-	qd_push_p(ctx, once_ptr);
+	qd_push_raw(ctx, once_ptr);
 	usr_thread_raw_once_done(ctx);
 	qd_stack_element_t done;
 	qd_stack_pop(ctx->st, &done);
 	ASSERT_EQ(1, (int)done.value.i, "once should be done after do");
 
 	// Free
-	qd_push_p(ctx, once_ptr);
+	qd_push_raw(ctx, once_ptr);
 	usr_thread_raw_once_free(ctx);
 
 	destroy_test_context(ctx);
@@ -743,7 +748,7 @@ TEST(RwLockCreateAndFreeTest) {
 	ASSERT_TRUE(rw_elem.value.p != NULL, "rwlock pointer should not be null");
 
 	// Free
-	qd_push_p(ctx, rw_elem.value.p);
+	qd_push_raw(ctx, rw_elem.value.p);
 	usr_thread_raw_rwlock_free(ctx);
 
 	ASSERT_EQ(0, (int)qd_stack_size(ctx->st), "stack should be empty after rwlock free");
@@ -763,21 +768,21 @@ TEST(RwLockReadLockUnlockTest) {
 	void* rw_ptr = rw_elem.value.p;
 
 	// Read lock: (rwlock:ptr -- result:i)
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	int ret = usr_thread_raw_rwlock_read_lock(ctx);
 	ASSERT_EQ(0, ret, "read_lock should return 0");
 	qd_stack_pop(ctx->st, &result);
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "read_lock should push THREAD_OK");
 
 	// Read unlock: (rwlock:ptr -- result:i)
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	ret = usr_thread_raw_rwlock_read_unlock(ctx);
 	ASSERT_EQ(0, ret, "read_unlock should return 0");
 	qd_stack_pop(ctx->st, &result);
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "read_unlock should push THREAD_OK");
 
 	// Free
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	usr_thread_raw_rwlock_free(ctx);
 
 	destroy_test_context(ctx);
@@ -795,21 +800,21 @@ TEST(RwLockWriteLockUnlockTest) {
 	void* rw_ptr = rw_elem.value.p;
 
 	// Write lock: (rwlock:ptr -- result:i)
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	int ret = usr_thread_raw_rwlock_write_lock(ctx);
 	ASSERT_EQ(0, ret, "write_lock should return 0");
 	qd_stack_pop(ctx->st, &result);
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "write_lock should push THREAD_OK");
 
 	// Write unlock: (rwlock:ptr -- result:i)
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	ret = usr_thread_raw_rwlock_write_unlock(ctx);
 	ASSERT_EQ(0, ret, "write_unlock should return 0");
 	qd_stack_pop(ctx->st, &result);
 	ASSERT_EQ(THREAD_OK, (int)result.value.i, "write_unlock should push THREAD_OK");
 
 	// Free
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	usr_thread_raw_rwlock_free(ctx);
 
 	destroy_test_context(ctx);
@@ -827,19 +832,19 @@ TEST(RwLockTryReadTest) {
 	void* rw_ptr = rw_elem.value.p;
 
 	// try_read on unlocked rwlock should succeed
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	usr_thread_raw_rwlock_try_read(ctx);
 	qd_stack_element_t success;
 	qd_stack_pop(ctx->st, &success);
 	ASSERT_EQ(1, (int)success.value.i, "try_read on unlocked rwlock should succeed");
 
 	// Unlock
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	usr_thread_raw_rwlock_read_unlock(ctx);
 	qd_stack_pop(ctx->st, &result);
 
 	// Free
-	qd_push_p(ctx, rw_ptr);
+	qd_push_raw(ctx, rw_ptr);
 	usr_thread_raw_rwlock_free(ctx);
 
 	destroy_test_context(ctx);
@@ -923,7 +928,7 @@ TEST(BarrierSingleThreadTest) {
 
 	// Wait on barrier with threshold 1 - should return immediately
 	// and this thread should be the serial thread
-	qd_push_p(ctx, barrier_ptr);
+	qd_push_raw(ctx, barrier_ptr);
 	usr_thread_raw_barrier_wait(ctx);
 
 	qd_stack_element_t is_serial;
@@ -931,7 +936,7 @@ TEST(BarrierSingleThreadTest) {
 	ASSERT_EQ(1, (int)is_serial.value.i, "single thread at barrier should be serial");
 
 	// Free
-	qd_push_p(ctx, barrier_ptr);
+	qd_push_raw(ctx, barrier_ptr);
 	usr_thread_raw_barrier_free(ctx);
 
 	destroy_test_context(ctx);

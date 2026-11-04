@@ -70,7 +70,7 @@ def div_op(a:i64 b:i64 -- r:i64) {
 }
 
 fn main() {
-	[4]ptr -> ops
+	[4]fn(i64 i64 -- i64) -> ops
 	ops 0 &addition set
 	ops 1 &subtraction set
 	ops 2 &multiplication set
@@ -194,7 +194,7 @@ fn main() {
 ```qd
 struct Handler {
 	name:str
-	func:ptr
+	func:fn(str --)
 }
 
 def greet(name:str -- ) {
@@ -226,7 +226,7 @@ Dispatch based on a selector:
 
 ```qd
 def handle_cmd(cmd:i64 -- ) {
-	[4]ptr -> handlers
+	[4]fn(--) -> handlers
 	handlers 0 &cmd_help set
 	handlers 1 &cmd_list set
 	handlers 2 &cmd_add set

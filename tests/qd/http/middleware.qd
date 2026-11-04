@@ -1,20 +1,20 @@
 // Test: Test HTTP middleware registration
 use http
 
-def global_middleware(c:ptr -- ) {
+def global_middleware(c:http::Ctx -- ) {
 	// Middleware can set headers, log, etc.
 	// For this test we just verify it's called
 }
 
-def group_middleware(c:ptr -- ) {
+def group_middleware(c:http::Ctx -- ) {
 	// Group-specific middleware
 }
 
-def handle_home(c:ptr -- ) {
+def handle_home(c:http::Ctx -- ) {
 	c 200 "Home" http::string
 }
 
-def handle_api_data(c:ptr -- ) {
+def handle_api_data(c:http::Ctx -- ) {
 	c 200 "Data" http::json
 }
 

@@ -98,17 +98,6 @@ int qd_push_s(qd_context* ctx, const char* value);
 int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
 
 /**
- * @brief Push a pointer onto the stack
- *
- * @param ctx Execution context
- * @param value Pointer value to push
- * @return 0
- *
- * @note The pointer is stored as-is; no ownership transfer occurs
- */
-int qd_push_p(qd_context* ctx, void* value);
-
-/**
  * @brief Push a pointer to raw memory: one from malloc, or into a string or a buffer
  *
  * Never an array or a struct. The slot is marked raw, so pushing and dropping it costs no
@@ -133,6 +122,9 @@ int qd_push_ptr_kind(qd_context* ctx, void* value, uint8_t kind);
 int qd_push_slot(qd_context* ctx, const qd_stack_element_t* slot);
 /** @brief Give up the reference a slot holds, as its kind says */
 void qd_release_slot(const qd_stack_element_t* slot);
+
+/// One more reference to what a slot holds, by its type and pointer kind
+void qd_retain_slot(const qd_stack_element_t* slot);
 
 /**
  * @brief Push a d128 onto the stack
@@ -961,69 +953,27 @@ void qd_set_error_msg(qd_context* ctx, const char* msg);
 /** @} */ // end of CallStack group
 
 /**
- * @defgroup PtrManagement Generic Pointer Management
- * @brief Functions for managing reference-counted pointers (arrays and structs)
+ * @defgroup FunctionValues Function values
+ * @brief Closures and calling a function value from native code
  * @{
  */
 
 /**
- * @brief Retain a generic pointer (array or struct)
+ * @brief Make a closure: a function value with an environment
  *
- * Increments the reference count of the pointer. Safe to call on any pointer -
- * will check if it's an array or struct and call the appropriate retain function.
- *
- * @param ptr Pointer to retain (can be array, struct, or other)
- * @return The same pointer
+ * A function value is a counted struct { fn, env, captures }; the closure's function takes the
+ * environment as its second argument. The result is held with one reference.
  */
-void* qd_ptr_retain(void* ptr);
+void* qd_closure_new(void* fn, void* env, int64_t captures);
 
 /**
- * @brief Release a generic pointer (array or struct)
+ * @brief Call a function value, leaving its reference with the caller
  *
- * Decrements the reference count of the pointer. If the count reaches 0,
- * the memory is freed. Safe to call on any pointer - will check if it's
- * an array or struct and call the appropriate release function.
- *
- * @param ptr Pointer to release (can be array, struct, or other)
+ * For native code that holds a function value it was given, a handler or a callback.
  */
-void qd_ptr_release(void* ptr);
+int qd_call_value(qd_context* ctx, void* value);
 
-/** @} */ // end of PtrManagement group
-
-/**
- * @defgroup ClosureRegistry Closure Registry
- * @brief Functions for tracking closure pointers for safe cleanup
- * @{
- */
-
-/**
- * @brief Register a closure pointer in the closure registry
- *
- * Called when a closure is created. This allows safe detection of closures
- * without reading from potentially freed memory.
- *
- * @param ptr Closure pointer to register
- */
-void qd_closure_register(void* ptr);
-
-/**
- * @brief Check if a pointer is a registered closure
- *
- * @param ptr Pointer to check
- * @return 1 if the pointer is a registered closure, 0 otherwise
- */
-int qd_closure_is_valid(const void* ptr);
-
-/**
- * @brief Unregister a closure pointer from the registry
- *
- * Called when a closure is freed.
- *
- * @param ptr Closure pointer to unregister
- */
-void qd_closure_unregister(void* ptr);
-
-/** @} */ // end of ClosureRegistry group
+/** @} */ // end of FunctionValues group
 
 /**
  * @defgroup Version Version Information

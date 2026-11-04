@@ -1,0 +1,15 @@
+// A table of functions is `[n]fn(...)`: n slots for function values, set and called by index.
+// A `[]ptr` holds raw memory only, so a function value no longer goes into one.
+def add(a:i64 b:i64 -- r:i64) { a b + }
+def sub(a:i64 b:i64 -- r:i64) { a b - }
+
+fn main() {
+	[3]fn(i64 i64 -- i64) -> ops
+	ops 0 &add set
+	ops 1 &sub set
+	5 -> k
+	ops 2 def (a:i64 b:i64 -- r:i64) { a b * k * } set
+	0 3 1 for i {
+		7 2 ops i nth call print nl
+	}
+}

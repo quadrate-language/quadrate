@@ -390,33 +390,13 @@ namespace Qd {
 				}
 			}
 
-			// Type narrowing cast: 'as TypeName'
+			// `as Type` narrowed a `ptr` to a struct. A `ptr` is raw memory now and never holds
+			// one, so there is nothing left to narrow: the value keeps the type it was declared with.
 			if (strcmp(text, "as") == 0) {
-				token = u8t_scanner_scan(scanner);
-				if (token == U8T_IDENTIFIER) {
-					std::string typeName(u8t_scanner_token_text(scanner, n));
-					// Check for qualified type: module::Type
-					char32_t peekChar = u8t_scanner_peek(scanner);
-					if (peekChar == ':') {
-						u8t_scanner_scan(scanner); // Consume first ':'
-						char32_t secondColon = u8t_scanner_peek(scanner);
-						if (secondColon == ':') {
-							u8t_scanner_scan(scanner); // Consume second ':'
-							token = u8t_scanner_scan(scanner);
-							if (token == U8T_IDENTIFIER) {
-								typeName += "::";
-								typeName += u8t_scanner_token_text(scanner, n);
-							} else {
-								errorReporter->reportError(scanner, "Expected type name after '::'");
-							}
-						}
-					}
-					AstNodeAsCast* asCast = new AstNodeAsCast(typeName);
-					setNodePosition(asCast, scanner, src);
-					return asCast;
-				} else {
-					errorReporter->reportError(scanner, "Expected type name after 'as'");
-				}
+				errorReporter->reportError(scanner,
+						"'as' has been removed: a 'ptr' is raw memory and never holds a struct; declare the "
+						"value with its struct type instead");
+				return nullptr;
 			}
 
 			if (isBuiltInInstruction(text)) {

@@ -37,7 +37,7 @@ def swapped(a:d128 b:d128 -- c:d128 d:d128) {
 	b a
 }
 
-def keeper(x:d128 -- k:ptr) {
+def keeper(x:d128 -- k:fn( -- d128)) {
 	x -> v
 	fn( -- r:d128) { v }
 }

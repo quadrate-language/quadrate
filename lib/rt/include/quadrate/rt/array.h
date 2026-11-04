@@ -62,6 +62,9 @@ typedef struct qd_array {
 	size_t length;					 ///< Number of elements
 	size_t capacity;				 ///< Allocated capacity
 	qd_array_type elemType;			 ///< Type of elements in the array
+	/// For an array of pointers, the kind every element is (QD_PTR_*), adopted from the first
+	/// one stored, so an element comes back, is copied and is freed as what it is. 0 until then.
+	uint8_t elemKind;
 
 	union {
 		int64_t* i;	  ///< Integer array data
@@ -72,7 +75,9 @@ typedef struct qd_array {
 } qd_array_t;
 
 /**
- * @brief Check if a pointer is a valid array
+ * @brief Whether a pointer that is an array or null is a live array, by its magic
+ *
+ * There is no registry of arrays: this reads the pointer, so it must not be given raw memory.
  *
  * @param ptr Pointer to check
  * @return 1 if valid array, 0 otherwise
@@ -108,13 +113,6 @@ void qd_array_retain(qd_array_t* arr);
  * @note Thread-safe: uses atomic operations
  */
 void qd_array_release(qd_array_t* arr);
-
-/**
- * @brief Retain and release a pointer known to be an array, checked by its magic rather than
- * looked up; one whose magic is not an array's goes to qd_ptr_retain / qd_ptr_release
- */
-void qd_array_retain_known(void* arr);
-void qd_array_release_known(void* arr);
 
 /**
  * @brief Get the length of an array

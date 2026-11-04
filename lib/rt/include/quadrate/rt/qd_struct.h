@@ -49,14 +49,6 @@ typedef struct qd_struct_header {
 } qd_struct_header_t;
 
 /**
- * @brief Check if a pointer is a valid struct pointer
- *
- * @param struct_ptr Pointer to check (can be NULL)
- * @return 1 if valid struct, 0 otherwise
- */
-int qd_struct_is_valid(const void* struct_ptr);
-
-/**
  * @brief Allocate a new reference-counted struct
  *
  * Allocates memory for the header plus the struct data.
@@ -97,13 +89,6 @@ void* qd_struct_retain(void* struct_ptr);
  *       unless you know other references exist
  */
 void qd_struct_release(void* struct_ptr);
-
-/**
- * @brief Retain and release a pointer known to be a struct, checked by its magic rather than
- * looked up; one whose magic is not a struct's goes to qd_ptr_retain / qd_ptr_release
- */
-void qd_struct_retain_known(void* struct_ptr);
-void qd_struct_release_known(void* struct_ptr);
 
 /**
  * @brief Get the header from a struct pointer

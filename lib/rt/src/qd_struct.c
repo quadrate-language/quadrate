@@ -4,7 +4,6 @@
  */
 
 #include "quadrate/rt/qd_struct.h"
-#include "ptr_registry.h"
 #include "quadrate/rt/array.h"
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -12,9 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// Global registry of valid struct pointers
-static ptr_registry_t struct_registry = PTR_REGISTRY_INITIALIZER;
 
 // Struct operations
 
@@ -25,14 +21,6 @@ qd_struct_header_t* qd_struct_get_header(void* struct_ptr) {
 	char* byte_ptr = (char*)struct_ptr;
 	void* header_ptr = byte_ptr - sizeof(qd_struct_header_t);
 	return (qd_struct_header_t*)header_ptr;
-}
-
-int qd_struct_is_valid(const void* struct_ptr) {
-	if (struct_ptr == NULL) {
-		return 0;
-	}
-	// Use registry to safely check if this is a valid struct
-	return ptr_registry_contains(&struct_registry, struct_ptr) ? 1 : 0;
 }
 
 void* qd_struct_alloc(size_t size, qd_struct_destructor_fn destructor) {
@@ -57,119 +45,33 @@ void* qd_struct_alloc(size_t size, qd_struct_destructor_fn destructor) {
 	// otherwise be undefined, and the optimizer can fold trunc/zext chains
 	// through the undef bits and return surprising values.
 	memset(struct_ptr, 0, size);
-
-	// Register this struct pointer
-	ptr_registry_add(&struct_registry, struct_ptr);
-
 	return struct_ptr;
 }
 
-void* qd_struct_retain(void* struct_ptr) {
-	if (struct_ptr == NULL) {
-		return NULL;
-	}
-
-	// Check registry to verify this is a valid struct (safe for any pointer)
-	if (!ptr_registry_contains(&struct_registry, struct_ptr)) {
-		return struct_ptr;
-	}
-
-	qd_struct_header_t* header = qd_struct_get_header(struct_ptr);
-	atomic_fetch_add(&header->refcount, 1);
-	return struct_ptr;
-}
-
-void qd_struct_release(void* struct_ptr) {
-	if (struct_ptr == NULL) {
-		return;
-	}
-
-	// Check registry to verify this is a valid struct (safe for any pointer)
-	if (!ptr_registry_contains(&struct_registry, struct_ptr)) {
-		return;
-	}
-
-	qd_struct_header_t* header = qd_struct_get_header(struct_ptr);
-	size_t old_count = atomic_fetch_sub(&header->refcount, 1);
-
-	if (old_count == 1) {
-		// Last reference - remove from registry, call destructor, then free
-		ptr_registry_remove(&struct_registry, struct_ptr);
-
-		if (header->destructor != NULL) {
-			header->destructor(struct_ptr);
-		}
-		header->magic = 0; // Clear magic to prevent double-free
-		free(header);	   // Free from the header pointer, not struct_ptr
-	}
-}
-
-void* qd_ptr_retain(void* ptr);
-void qd_ptr_release(void* ptr);
-
-// A freed struct's magic is cleared before it goes, so a stale pointer falls through as well
+// A struct is known by the slot or field that holds it, never looked up: there is no registry
+// of them. The magic is checked all the same, and a freed struct's is cleared before it goes,
+// so a pointer that is not a live struct is left alone rather than counted.
 static bool struct_magic_ok(void* struct_ptr) {
 	return qd_struct_get_header(struct_ptr)->magic == (size_t)QD_STRUCT_MAGIC;
 }
 
-void qd_struct_retain_known(void* struct_ptr) {
-	if (struct_ptr == NULL) {
-		return;
+void* qd_struct_retain(void* struct_ptr) {
+	if (struct_ptr != NULL && struct_magic_ok(struct_ptr)) {
+		atomic_fetch_add(&qd_struct_get_header(struct_ptr)->refcount, 1);
 	}
-	if (!struct_magic_ok(struct_ptr)) {
-		qd_ptr_retain(struct_ptr);
-		return;
-	}
-	atomic_fetch_add(&qd_struct_get_header(struct_ptr)->refcount, 1);
+	return struct_ptr;
 }
 
-void qd_struct_release_known(void* struct_ptr) {
-	if (struct_ptr == NULL) {
-		return;
-	}
-	if (!struct_magic_ok(struct_ptr)) {
-		qd_ptr_release(struct_ptr);
+void qd_struct_release(void* struct_ptr) {
+	if (struct_ptr == NULL || !struct_magic_ok(struct_ptr)) {
 		return;
 	}
 	qd_struct_header_t* header = qd_struct_get_header(struct_ptr);
 	if (atomic_fetch_sub(&header->refcount, 1) == 1) {
-		ptr_registry_remove(&struct_registry, struct_ptr);
 		if (header->destructor != NULL) {
 			header->destructor(struct_ptr);
 		}
-		header->magic = 0;
-		free(header);
+		header->magic = 0; // a stale pointer is no struct
+		free(header);	   // the allocation starts at the header, not at the fields
 	}
-}
-
-// Generic pointer retain/release (works for both arrays and structs)
-
-void* qd_ptr_retain(void* ptr) {
-	if (ptr == NULL) {
-		return NULL;
-	}
-
-	// Check if it's an array first (faster check via magic number)
-	if (qd_array_is_valid(ptr)) {
-		qd_array_retain((qd_array_t*)ptr);
-		return ptr;
-	}
-
-	// Otherwise try struct retain (checks registry)
-	return qd_struct_retain(ptr);
-}
-
-void qd_ptr_release(void* ptr) {
-	if (ptr == NULL) {
-		return;
-	}
-
-	// Check if it's an array first (faster check via magic number)
-	if (qd_array_is_valid(ptr)) {
-		qd_array_release((qd_array_t*)ptr);
-		return;
-	}
-
-	// Otherwise try struct release (checks registry)
-	qd_struct_release(ptr);
 }

@@ -85,21 +85,25 @@ fn main() {
 }
 ```
 
-### Type narrowing with as
+### Structs are passed with their type
 
-When working with raw `ptr` values (common in callbacks), use `as` to tell the compiler the struct type:
+A parameter that takes a struct is declared with that struct's type. A `ptr` is raw memory --
+what `mem::alloc` hands back -- and never holds a struct, so a struct passed where a `ptr` is
+taken is a compile error:
 
 ```qd
 struct Config {
 	debug:i64
 }
 
-def handler(data:ptr -- ) {
-	data as Config <<debug print nl
+def handler(data:Config -- ) {
+	data <<debug print nl
+}
+
+fn main() {
+	Config { debug = 1 } handler   // 1
 }
 ```
-
-This is compile-time only — no runtime cost. It's required when multiple structs share a field name, as the compiler cannot guess which one you mean.
 
 ## Writing fields
 
@@ -383,13 +387,13 @@ fn main() {
 ```qd
 struct Node {
 	value:i64
-	next:ptr
+	next:*Node
 }
 
-def node_new(value:i64 -- node:ptr) {
+def node_new(value:i64 -- node:Node) {
 	Node {
 		value = value
-		next = 0
+		next = null
 	}
 }
 
@@ -404,7 +408,7 @@ fn main() {
 	// Traverse
 	first -> current
 	loop {
-		current 0 == if { break }
+		current null == if { break }
 		current <<value print nl
 		current <<next -> current
 	}
@@ -515,12 +519,12 @@ struct Node {
 	next:*Node
 }
 
-def print_list(start:ptr -- ) {
+def print_list(start:Node -- ) {
 	start -> cur
 	loop {
 		cur null == if { break }
-		cur as Node <<value print nl
-		cur as Node <<next -> cur
+		cur <<value print nl
+		cur <<next -> cur
 	}
 }
 ```
@@ -534,7 +538,7 @@ struct TreeNode {
 	right:*TreeNode
 }
 
-def inorder(n:ptr -- ) {
+def inorder(n:TreeNode -- ) {
 	n null != if {
 		n <<left inorder
 		n <<value print nl

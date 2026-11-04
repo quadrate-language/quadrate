@@ -45,7 +45,7 @@ namespace Qd {
 				builder->CreateCall(pushStrFn, {ctx, builder->CreateGlobalString("", "empty_result")});
 				break;
 			case ValueKind::Ptr:
-				builder->CreateCall(pushPtrFn, {ctx, llvm::ConstantPointerNull::get(ptrTy)});
+				builder->CreateCall(pushRawFn, {ctx, llvm::ConstantPointerNull::get(ptrTy)});
 				break;
 			case ValueKind::Int:
 			case ValueKind::Any:
@@ -251,7 +251,7 @@ namespace Qd {
 			if (useCompileTimeStack) {
 				compileTimeStack.push_back(builder->getInt64(0));
 			} else {
-				builder->CreateCall(pushPtrFn, {ctx, llvm::ConstantPointerNull::get(ptrTy)});
+				builder->CreateCall(pushRawFn, {ctx, llvm::ConstantPointerNull::get(ptrTy)});
 			}
 			lastPushedType = LastPushedType::POINTER;
 			break;
@@ -491,7 +491,7 @@ namespace Qd {
 		} else if (isPtr) {
 			// A pointer on the stack owns a reference: reading a local retains before
 			// pushing, and every consumer releases -- `<<field` pops and calls
-			// qd_ptr_release on the assumption that the push retained. Reading a global
+			// releases on the assumption that the push retained. Reading a global
 			// did not, so the release was cancelling the one reference the global itself
 			// owns. `var origin = Point { ... }` freed the struct on the *first* field
 			// read, and every read after that was a use-after-free.
@@ -499,16 +499,7 @@ namespace Qd {
 			// nothing; the compile-time-stack path above pushes an SSA value that no
 			// runtime release ever sees.)
 			// A global's type says what it holds, and so how it is counted
-			if (isKnownStruct(typeName)) {
-				builder->CreateCall(structRetainKnownFn, {v});
-				builder->CreateCall(pushStructFn, {ctx, v});
-			} else if (isArrayType(typeName)) {
-				builder->CreateCall(arrayRetainKnownFn, {v});
-				builder->CreateCall(pushArrayFn, {ctx, v});
-			} else {
-				builder->CreateCall(qdPtrRetainFn, {v});
-				builder->CreateCall(pushPtrFn, {ctx, v});
-			}
+			retainAndPushOfType(ctx, v, typeName);
 			// What `-> local` takes it for, as when an array is read from a local
 			lastPushedWasArray = typeName.rfind("[]", 0) == 0;
 		} else {
@@ -597,7 +588,7 @@ namespace Qd {
 		if (fpAliasIt == functionPointerAliases.end()) {
 			return false;
 		}
-		builder->CreateCall(pushPtrFn, {ctx, builder->CreateBitCast(fpAliasIt->second, ptrTy)});
+		builder->CreateCall(pushStructFn, {ctx, staticClosure(fpAliasIt->second)});
 		return true;
 	}
 
@@ -830,11 +821,7 @@ namespace Qd {
 		// Look up the function in the user functions map
 		auto it = userFunctions.find(funcName);
 		if (it != userFunctions.end()) {
-			// Get pointer to the function
-			llvm::Function* fn = it->second;
-			// Cast function pointer to void* and push onto stack
-			auto funcPtrValue = builder->CreateBitCast(fn, ptrTy);
-			builder->CreateCall(pushPtrFn, {ctx, funcPtrValue});
+			builder->CreateCall(pushStructFn, {ctx, staticClosure(it->second)});
 		} else {
 			// Function not found - this should have been caught by semantic analysis
 			std::cerr << "Error: Function '" << funcName << "' not found for function pointer" << std::endl;
@@ -854,8 +841,8 @@ namespace Qd {
 		lastPushedWasArray = false;
 
 		if (captures.empty()) {
-			// No captures: the function pointer itself
-			builder->CreateCall(pushPtrFn, {ctx, builder->CreateBitCast(fn, ptrTy)});
+			// No captures: the function's static value
+			builder->CreateCall(pushStructFn, {ctx, staticClosure(fn)});
 			lastGeneratedWasClosure = false;
 		} else {
 			pushClosure(fn, generateClosureEnvironment(captures), captures.size(), ctx);
@@ -1069,22 +1056,36 @@ namespace Qd {
 		builder->CreateStore(builder->CreateAdd(refCount, builder->getInt64(1), "new_refcount"), refCountPtr);
 	}
 
-	// A closure: { magic, function, environment, capture count }, registered so that `call`
-	// and the releases can tell it from a bare function pointer
+	// A closure: a counted struct { function, environment, capture count }, made by the runtime
+	// and pushed as the struct it is, so copies and releases count it as any struct
 	void LlvmGenerator::Impl::pushClosure(llvm::Function* fn, llvm::Value* env, size_t captureCount, llvm::Value* ctx) {
-		llvm::Value* closure = builder->CreateCall(mallocFn, {builder->getInt64(32)}, "closure_alloc");
-		// 0xCL05UR3E, "closure" in leet
-		builder->CreateStore(
-				builder->getInt64(0xC105023E), builder->CreateStructGEP(closureStructTy, closure, 0, "magic_slot"));
-		builder->CreateStore(builder->CreateBitCast(fn, ptrTy, "fn_ptr_cast"),
-				builder->CreateStructGEP(closureStructTy, closure, 1, "fn_ptr_slot"));
-		builder->CreateStore(env, builder->CreateStructGEP(closureStructTy, closure, 2, "env_ptr_slot"));
-		builder->CreateStore(builder->getInt64(captureCount),
-				builder->CreateStructGEP(closureStructTy, closure, 3, "cap_count_slot"));
-		builder->CreateCall(module->getOrInsertFunction("qd_closure_register",
-									llvm::FunctionType::get(builder->getVoidTy(), {ptrTy}, false)),
-				{closure});
-		builder->CreateCall(pushPtrFn, {ctx, closure});
+		auto closureNewFn = module->getOrInsertFunction(
+				"qd_closure_new", llvm::FunctionType::get(ptrTy, {ptrTy, ptrTy, int64Ty}, false));
+		llvm::Value* closure = builder->CreateCall(closureNewFn, {fn, env, builder->getInt64(captureCount)}, "closure");
+		builder->CreateCall(pushStructFn, {ctx, closure});
+	}
+
+	// A function's value without an environment, `&name`: a struct the runtime counts like any
+	// other, laid out as qd_struct_alloc lays one out -- header { magic, refcount, destructor },
+	// then { function, environment, capture count } -- but static, one per function, with a
+	// count that no program releases to zero. `call` needs no registry to tell it from a
+	// closure: its environment is null.
+	llvm::Value* LlvmGenerator::Impl::staticClosure(llvm::Function* fn) {
+		auto found = staticClosures.find(fn);
+		if (found != staticClosures.end()) {
+			return found->second;
+		}
+		auto* layout = llvm::StructType::get(*context, {int64Ty, int64Ty, ptrTy, ptrTy, ptrTy, int64Ty});
+		auto* nullPtr = llvm::ConstantPointerNull::get(ptrTy);
+		auto* init = llvm::ConstantStruct::get(
+				layout, {builder->getInt64(0x5144535452554354ULL), builder->getInt64(uint64_t{1} << 62), nullPtr, fn,
+								nullPtr, builder->getInt64(0)});
+		auto* global = new llvm::GlobalVariable(
+				*module, layout, false, llvm::GlobalValue::InternalLinkage, init, fn->getName() + ".value");
+		llvm::Constant* fields = llvm::ConstantExpr::getInBoundsGetElementPtr(
+				layout, global, llvm::ArrayRef<llvm::Constant*>{builder->getInt32(0), builder->getInt32(3)});
+		staticClosures[fn] = fields;
+		return fields;
 	}
 
 	void LlvmGenerator::Impl::generateScopedIdentifier(AstNodeScopedIdentifier* scopedIdent, llvm::Value* ctx) {

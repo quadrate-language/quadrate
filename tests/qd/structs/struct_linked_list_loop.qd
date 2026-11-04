@@ -4,7 +4,7 @@ struct Item {
 	next:*Item
 }
 
-def list_sum(cur:ptr -- total:i64) {
+def list_sum(cur:Item -- total:i64) {
 	0 -> sum
 	loop {
 		cur null == if { break }
@@ -14,7 +14,7 @@ def list_sum(cur:ptr -- total:i64) {
 	sum
 }
 
-def list_len(cur:ptr -- n:i64) {
+def list_len(cur:Item -- n:i64) {
 	0 -> count
 	loop {
 		cur null == if { break }

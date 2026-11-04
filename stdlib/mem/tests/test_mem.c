@@ -4,13 +4,13 @@
  */
 
 #include <quadrate/mem/mem.h>
-#include <quadrate/rt/runtime.h>
 #include <quadrate/rt/context.h>
+#include <quadrate/rt/runtime.h>
 #include <quadrate/rt/stack.h>
-#include <unit-check/uc.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
+#include <unit-check/uc.h>
 
 // Helper function to create a context
 /* Must go through qd_create_context: a hand-rolled context initialises only ->st,
@@ -24,7 +24,6 @@ static qd_context* create_test_context(void) {
 static void destroy_test_context(qd_context* ctx) {
 	qd_free_context(ctx);
 }
-
 
 TEST(AllocBasicTest) {
 	qd_context* ctx = create_test_context();
@@ -53,7 +52,6 @@ TEST(AllocBasicTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(SetGetByteTest) {
 	qd_context* ctx = create_test_context();
 
@@ -71,22 +69,22 @@ TEST(SetGetByteTest) {
 
 	// Set byte at offset 0
 	// Pops: offset, address, value -> Push: value, address, offset
-	qd_push_i(ctx, 0xAB);  // value
-	qd_push_p(ctx, buffer);// address
-	qd_push_i(ctx, 0);     // offset
+	qd_push_i(ctx, 0xAB);	  // value
+	qd_push_raw(ctx, buffer); // address
+	qd_push_i(ctx, 0);		  // offset
 	int result = usr_mem_set_byte(ctx);
 	ASSERT_EQ(result, 0, "set_byte should succeed");
 
 	// Set byte at offset 5
-	qd_push_i(ctx, 0xCD);  // value
-	qd_push_p(ctx, buffer);// address
-	qd_push_i(ctx, 5);     // offset
+	qd_push_i(ctx, 0xCD);	  // value
+	qd_push_raw(ctx, buffer); // address
+	qd_push_i(ctx, 5);		  // offset
 	result = usr_mem_set_byte(ctx);
 	ASSERT_EQ(result, 0, "set_byte should succeed");
 
 	// Get byte at offset 0
 	// Pops: offset, address -> Push: address, offset
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_byte(ctx);
 	ASSERT_EQ(result, 0, "get_byte should succeed");
@@ -97,7 +95,7 @@ TEST(SetGetByteTest) {
 	ASSERT_EQ((int)val_elem.value.i, 0xAB, "byte at offset 0 should be 0xAB");
 
 	// Get byte at offset 5
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 5);
 	usr_mem_get_byte(ctx);
 	qd_stack_pop(ctx->st, &val_elem);
@@ -106,7 +104,6 @@ TEST(SetGetByteTest) {
 	free(buffer);
 	destroy_test_context(ctx);
 }
-
 
 TEST(SetGetI64Test) {
 	qd_context* ctx = create_test_context();
@@ -126,13 +123,13 @@ TEST(SetGetI64Test) {
 	// Set i64 at offset 0
 	// Pops: offset, address, value -> Push: value, address, offset
 	qd_push_i(ctx, 0x123456789ABCDEF0LL);
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	int result = usr_mem_set_i64(ctx);
 	ASSERT_EQ(result, 0, "set_i64 should succeed");
 
 	// Get i64 at offset 0
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_i64(ctx);
 	ASSERT_EQ(result, 0, "get_i64 should succeed");
@@ -145,7 +142,6 @@ TEST(SetGetI64Test) {
 	free(buffer);
 	destroy_test_context(ctx);
 }
-
 
 TEST(SetGetF64Test) {
 	qd_context* ctx = create_test_context();
@@ -165,13 +161,13 @@ TEST(SetGetF64Test) {
 	// Set f64 at offset 0
 	// Pops: offset, address, value -> Push: value, address, offset
 	qd_push_f(ctx, 3.14159);
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	int result = usr_mem_set_f64(ctx);
 	ASSERT_EQ(result, 0, "set_f64 should succeed");
 
 	// Get f64 at offset 0
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_f64(ctx);
 	ASSERT_EQ(result, 0, "get_f64 should succeed");
@@ -184,7 +180,6 @@ TEST(SetGetF64Test) {
 	free(buffer);
 	destroy_test_context(ctx);
 }
-
 
 TEST(SetGetPtrTest) {
 	qd_context* ctx = create_test_context();
@@ -206,14 +201,14 @@ TEST(SetGetPtrTest) {
 
 	// Set ptr at offset 0
 	// Pops: offset, address, value -> Push: value, address, offset
-	qd_push_p(ctx, test_ptr);
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, test_ptr);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	int result = usr_mem_set_ptr(ctx);
 	ASSERT_EQ(result, 0, "set_ptr should succeed");
 
 	// Get ptr at offset 0
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 0);
 	result = usr_mem_get_ptr(ctx);
 	ASSERT_EQ(result, 0, "get_ptr should succeed");
@@ -227,7 +222,6 @@ TEST(SetGetPtrTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(ZeroTest) {
 	qd_context* ctx = create_test_context();
 
@@ -237,7 +231,7 @@ TEST(ZeroTest) {
 
 	// Zero first 8 bytes
 	// Pops: bytes, address -> Push: address, bytes
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 8);
 	int result = usr_mem_zero(ctx);
 	ASSERT_EQ(result, 0, "zero should succeed");
@@ -256,7 +250,6 @@ TEST(ZeroTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(FillTest) {
 	qd_context* ctx = create_test_context();
 
@@ -266,9 +259,9 @@ TEST(FillTest) {
 
 	// Fill with 0xAB
 	// Pops: bytes, address, value -> Push: value, address, bytes
-	qd_push_i(ctx, 0xAB);  // value
-	qd_push_p(ctx, buffer);// address
-	qd_push_i(ctx, 10);    // bytes
+	qd_push_i(ctx, 0xAB);	  // value
+	qd_push_raw(ctx, buffer); // address
+	qd_push_i(ctx, 10);		  // bytes
 	int result = usr_mem_fill(ctx);
 	ASSERT_EQ(result, 0, "fill should succeed");
 
@@ -286,7 +279,6 @@ TEST(FillTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(CopyTest) {
 	qd_context* ctx = create_test_context();
 
@@ -302,8 +294,8 @@ TEST(CopyTest) {
 
 	// Copy 8 bytes from src to dst
 	// Pops: bytes, src, dst -> Push: dst, src, bytes
-	qd_push_p(ctx, dst);
-	qd_push_p(ctx, src);
+	qd_push_raw(ctx, dst);
+	qd_push_raw(ctx, src);
 	qd_push_i(ctx, 8);
 	int result = usr_mem_copy(ctx);
 	ASSERT_EQ(result, 0, "copy should succeed");
@@ -323,7 +315,6 @@ TEST(CopyTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(ToStringTest) {
 	qd_context* ctx = create_test_context();
 
@@ -333,7 +324,7 @@ TEST(ToStringTest) {
 
 	// Convert to string (5 bytes)
 	// Pops: length, buffer -> Push: buffer, length
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, 5);
 	int result = usr_mem_to_string(ctx);
 	ASSERT_EQ(result, 0, "to_string should succeed");
@@ -398,7 +389,7 @@ TEST(ReallocTest) {
 	memset(ptr, 0xAB, 16);
 
 	// Realloc to 64 bytes: push ptr then new_bytes
-	qd_push_p(ctx, ptr);
+	qd_push_raw(ctx, ptr);
 	qd_push_i(ctx, 64);
 	result = usr_mem_realloc(ctx);
 	ASSERT_EQ(result, 0, "realloc should succeed");
@@ -418,14 +409,13 @@ TEST(ReallocTest) {
 	destroy_test_context(ctx);
 }
 
-
 TEST(AllocAlignedTest) {
 	qd_context* ctx = create_test_context();
 
 	// alloc_aligned pops bytes then alignment
 	// Push alignment first, then bytes (alignment popped second)
-	qd_push_i(ctx, 16);  // alignment
-	qd_push_i(ctx, 64);  // bytes
+	qd_push_i(ctx, 16); // alignment
+	qd_push_i(ctx, 64); // bytes
 	int result = usr_mem_alloc_aligned(ctx);
 	ASSERT_EQ(result, 0, "alloc_aligned should succeed");
 
@@ -444,7 +434,6 @@ TEST(AllocAlignedTest) {
 	free(ptr_elem.value.p);
 	destroy_test_context(ctx);
 }
-
 
 // Main - required for test executable
 int main(void) {

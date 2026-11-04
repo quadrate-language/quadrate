@@ -7,6 +7,8 @@
 
 #define _POSIX_C_SOURCE 200809L
 #include <quadrate/mem/mem.h>
+#include <quadrate/rt/array.h>
+#include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/runtime.h>
 #include <stdlib.h>
 #include <string.h>
@@ -139,6 +141,42 @@ int usr_mem_from_string(qd_context* ctx) {
 
 #define MEM_ANY_TAG_OFFSET 8
 
+// The tag is the value's stack type, and for a pointer its kind in the byte above it. The kind
+// used to be dropped, so every element a container read back was a pointer of unknown kind,
+// and each copy and release of it asked the registries what it was.
+#define MEM_ANY_TYPE(tag) ((tag) & 0xff)
+#define MEM_ANY_KIND(tag) ((uint8_t)(((tag) >> 8) & 0xff))
+
+static void mem_release_ptr(void* p, uint8_t kind) {
+	switch (kind) {
+	case QD_PTR_RAW:
+		break;
+	case QD_PTR_STRUCT:
+		qd_struct_release(p);
+		break;
+	case QD_PTR_ARRAY:
+		qd_array_release(p);
+		break;
+	default:
+		break;
+	}
+}
+
+static void mem_retain_ptr(void* p, uint8_t kind) {
+	switch (kind) {
+	case QD_PTR_RAW:
+		break;
+	case QD_PTR_STRUCT:
+		qd_struct_retain(p);
+		break;
+	case QD_PTR_ARRAY:
+		qd_array_retain(p);
+		break;
+	default:
+		break;
+	}
+}
+
 static char* slot_at(qd_context* ctx, const char* op, void* address, int64_t offset) {
 	if (address == NULL) {
 		qd_fatal_raise(ctx, op, "Null pointer");
@@ -154,11 +192,12 @@ static void mem_release_slot(char* slot) {
 	if (held == NULL) {
 		return;
 	}
-	if (tag == (int64_t)QD_STACK_TYPE_STR) {
+	const int64_t type = MEM_ANY_TYPE(tag);
+	if (type == (int64_t)QD_STACK_TYPE_STR) {
 		qd_string_release((qd_string_t*)held);
-	} else if (tag == (int64_t)QD_STACK_TYPE_PTR) {
-		qd_ptr_release(held);
-	} else if (tag == (int64_t)QD_STACK_TYPE_D128) {
+	} else if (type == (int64_t)QD_STACK_TYPE_PTR) {
+		mem_release_ptr(held, MEM_ANY_KIND(tag));
+	} else if (type == (int64_t)QD_STACK_TYPE_D128) {
 		free(held);
 	}
 }
@@ -173,7 +212,7 @@ int usr_mem_set_any(qd_context* ctx) {
 		if (value.type == QD_STACK_TYPE_STR) {
 			qd_string_release(value.value.s);
 		} else if (value.type == QD_STACK_TYPE_PTR) {
-			qd_ptr_release(value.value.p);
+			mem_release_ptr(value.value.p, value.ptr_kind);
 		}
 		qd_fatal_raise(ctx, "mem::set_any", "Null pointer");
 	}
@@ -193,7 +232,10 @@ int usr_mem_set_any(qd_context* ctx) {
 	}
 
 	mem_release_slot(slot);
-	const int64_t tag = (int64_t)value.type;
+	int64_t tag = (int64_t)value.type;
+	if (value.type == QD_STACK_TYPE_PTR) {
+		tag |= (int64_t)value.ptr_kind << 8;
+	}
 	memcpy(slot, &payload, sizeof(payload));
 	memcpy(slot + MEM_ANY_TAG_OFFSET, &tag, sizeof(tag));
 	return 0;
@@ -207,6 +249,8 @@ int usr_mem_get_any(qd_context* ctx) {
 	const char* slot = slot_at(ctx, "mem::get_any", address, offset);
 	int64_t tag;
 	memcpy(&tag, slot + MEM_ANY_TAG_OFFSET, sizeof(tag));
+	const uint8_t kind = MEM_ANY_KIND(tag);
+	tag = MEM_ANY_TYPE(tag);
 
 	if (tag == (int64_t)QD_STACK_TYPE_FLOAT) {
 		double value;
@@ -221,8 +265,8 @@ int usr_mem_get_any(qd_context* ctx) {
 	if (tag == (int64_t)QD_STACK_TYPE_PTR) {
 		void* value;
 		memcpy(&value, slot, sizeof(value));
-		qd_ptr_retain(value);
-		return qd_push_p(ctx, value);
+		mem_retain_ptr(value, kind);
+		return qd_push_ptr_kind(ctx, value, kind);
 	}
 	if (tag == (int64_t)QD_STACK_TYPE_D128) {
 		const qd_d128_t* box;

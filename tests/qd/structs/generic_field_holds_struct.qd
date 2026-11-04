@@ -1,0 +1,29 @@
+// A generic field holds a whole stack slot -- value, type and pointer kind -- and owns the
+// reference in it. Only a string used to be counted: a struct read out of a `Box<T>` was pushed
+// without a reference of its own, so each read that was dropped took one of the box's, and the
+// struct was freed while the box still held it. `make tests --valgrind` is what shows it.
+struct P {
+	x:     i64
+	label: str
+}
+
+struct Box<T> {
+	value: T
+}
+
+fn main() {
+	Box { value = P { x = 7 label = "seven" } } -> b
+	0 5 1 for i { b <<value drop }
+	b <<value <<label print nl
+	b <<value <<x print nl
+
+	// Overwritten: the old struct is given back, the new one kept
+	b P { x = 8 label = "eight" } >>value -> b
+	b <<value <<label print nl
+
+	// A copy holds its own reference
+	b clone -> c
+	b P { x = 9 label = "nine" } >>value -> b
+	c <<value <<label print nl
+	b <<value <<label print nl
+}

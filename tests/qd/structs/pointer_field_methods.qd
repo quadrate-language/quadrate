@@ -47,10 +47,6 @@ fn main() {
 	c <<next <<next -> deep
 	deep doubled print nl
 
-	// `as` still works and means the same thing
-	c <<next as Node t add_to
-	t <<sum print nl
-
 	// Walking the chain to the end: the loop rebinds a *Node local every iteration
 	c -> walk
 	0 -> seen

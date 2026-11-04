@@ -301,7 +301,7 @@ Get a signed 8-bit integer at offset (sign-extended to i64).
 
 ### `fn` get_ptr
 
-Get a pointer at offset.
+Get a raw pointer at offset. Nothing is counted for it: a `ptr` is raw memory.
 
 **Signature:** `(address:ptr offset:i64 -- value:ptr)`
 
@@ -536,7 +536,7 @@ Set a signed 8-bit integer at offset. Stored value is the low byte of `value`.
 
 ### `fn` set_ptr
 
-Set a pointer at offset.
+Set a raw pointer at offset. A struct, array or string is kept with set_any instead, which keeps its type and its reference.
 
 **Signature:** `(value:ptr address:ptr offset:i64 -- )`
 

@@ -399,6 +399,35 @@ Create a Vec3 with all components set to zero.
 math::vec3_zero  // v
 ```
 
+### On the stack: v3
+
+`Vec3` is for storing a vector; the `v3_*` words are for computing with one. They take and
+leave a vector as three `f64`s on the stack, x deepest, so nothing is allocated and each word
+compiles to native code. In a loop, unpack a `Vec3` once, compute with `v3_*`, and build a
+`Vec3` only when the result has to be kept.
+
+| Word | Signature |
+|------|-----------|
+| [`v3_add`](math.md#fn-v3_add) | `(ax ay az bx by bz -- x y z)` |
+| [`v3_sub`](math.md#fn-v3_sub) | `(ax ay az bx by bz -- x y z)` |
+| [`v3_scale`](math.md#fn-v3_scale) | `(x y z k -- x y z)` |
+| [`v3_dot`](math.md#fn-v3_dot) | `(ax ay az bx by bz -- d)` |
+| [`v3_cross`](math.md#fn-v3_cross) | `(ax ay az bx by bz -- x y z)` |
+| [`v3_length_sq`](math.md#fn-v3_length_sq) | `(x y z -- l)` |
+| [`v3_length`](math.md#fn-v3_length) | `(x y z -- l)` |
+| [`v3_normalize`](math.md#fn-v3_normalize) | `(x y z -- x y z)` |
+
+**Example:**
+
+```qd
+use math
+
+fn main() {
+	math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v
+	v <<x v <<y v <<z 2.0 math::v3_scale math::v3_length print  // 6.0
+}
+```
+
 ### Methods
 
 #### `fn` add

@@ -1,0 +1,16 @@
+// A `ptr` is raw memory. A struct, an array, a string or a function value is a counted object
+// and is never one: passed where a `ptr` is taken, it is refused rather than its type forgotten.
+use mem
+
+struct P {
+	x:i64
+}
+
+def first_word(buf:ptr -- w:i64) {
+	buf 0 mem::get_i64
+}
+
+fn main() {
+	P { x = 1 } -> p
+	p first_word print nl
+}

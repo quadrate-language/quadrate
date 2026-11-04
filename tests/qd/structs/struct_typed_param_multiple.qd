@@ -15,7 +15,7 @@ def distance(p1:Point p2:Point -- result:f64) {
 }
 
 // Function with two typed parameters plus a primitive
-def weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
+def weighted_midpoint(p1:Point p2:Point weight:f64 -- result:Point) {
 	Point {
 		x = p1 <<x weight * p2 <<x 1.0 weight - * +
 		y = p1 <<y weight * p2 <<y 1.0 weight - * +
@@ -23,7 +23,7 @@ def weighted_midpoint(p1:Point p2:Point weight:f64 -- result:ptr) {
 }
 
 // Function to add two points
-def add_points(a:Point b:Point -- result:ptr) {
+def add_points(a:Point b:Point -- result:Point) {
 	Point {
 		x = a <<x b <<x +
 		y = a <<y b <<y +

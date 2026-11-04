@@ -1178,7 +1178,7 @@ Sum of two vectors on the stack.
 **Example:**
 
 ```qd
-1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add -> z -> y  // x
+1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add  // 5.0 7.0 9.0
 ```
 ---
 
@@ -1191,7 +1191,7 @@ Cross product of two vectors on the stack, a × b.
 **Example:**
 
 ```qd
-1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross -> z -> y  // x
+1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross  // 0.0 0.0 1.0
 ```
 ---
 
@@ -1204,7 +1204,7 @@ Dot product of two vectors on the stack.
 **Example:**
 
 ```qd
-1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot  // d
+1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot  // 32.0
 ```
 ---
 
@@ -1217,7 +1217,7 @@ Squared length of a vector on the stack.
 **Example:**
 
 ```qd
-1.0 2.0 2.0 math::v3_length_sq  // l
+1.0 2.0 2.0 math::v3_length_sq  // 9.0
 ```
 ---
 
@@ -1230,7 +1230,7 @@ Length of a vector on the stack.
 **Example:**
 
 ```qd
-1.0 2.0 2.0 math::v3_length  // l
+1.0 2.0 2.0 math::v3_length  // 3.0
 ```
 ---
 
@@ -1243,7 +1243,7 @@ A vector on the stack scaled to length 1; the zero vector stays zero.
 **Example:**
 
 ```qd
-1.0 2.0 2.0 math::v3_normalize -> z -> y  // x
+1.0 2.0 2.0 math::v3_normalize  // 1/3 2/3 2/3
 ```
 ---
 
@@ -1256,7 +1256,7 @@ A vector on the stack times a scalar.
 **Example:**
 
 ```qd
-1.0 2.0 3.0 2.0 math::v3_scale -> z -> y  // x
+1.0 2.0 3.0 2.0 math::v3_scale  // 2.0 4.0 6.0
 ```
 ---
 
@@ -1269,7 +1269,7 @@ Difference of two vectors on the stack, a - b.
 **Example:**
 
 ```qd
-4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub -> z -> y  // x
+4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub  // 3.0 3.0 3.0
 ```
 ## Mat4
 

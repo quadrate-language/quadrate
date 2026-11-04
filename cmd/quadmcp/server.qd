@@ -70,7 +70,7 @@ fn is_notification(method:str -- is_notif:i64) {
 	}
 }
 
-def dispatch(ds:ptr method:str id:str body:str -- response:str) {
+def dispatch(ds:DocStore method:str id:str body:str -- response:str) {
 	method is_notification if {
 		""
 	} else {
@@ -116,7 +116,7 @@ fn request_method(doc:json::Value -- method:str valid:i64) {
 	}
 }
 
-def handle_message(ds:ptr body:str -- response:str valid:i64) {
+def handle_message(ds:DocStore body:str -- response:str valid:i64) {
 	body json::parse switch {
 		Ok {
 			-> doc
@@ -136,7 +136,7 @@ def handle_message(ds:ptr body:str -- response:str valid:i64) {
 	}
 }
 
-def run_stdio(ds:ptr -- ) {
+def run_stdio(ds:DocStore -- ) {
 	loop {
 		io::readline switch {
 			Ok {
@@ -156,13 +156,13 @@ def run_stdio(ds:ptr -- ) {
 	}
 }
 
-def handle_mcp(c:ptr -- ) {
+def handle_mcp(c:http::Ctx -- ) {
 	load_docs -> ds
 	defer {
 		ds free
 	}
 
-	c as http::Ctx <<body -> body
+	c <<body -> body
 	ds body handle_message -> valid -> response
 
 	response len 0 == if {
@@ -173,13 +173,13 @@ def handle_mcp(c:ptr -- ) {
 	}
 }
 
-def handle_sse(c:ptr -- ) {
+def handle_sse(c:http::Ctx -- ) {
 	c http::sse_start
 	c "endpoint" "/mcp" http::sse_event
 	c http::sse_end
 }
 
-fn handle_root(c:ptr -- ) {
+fn handle_root(c:http::Ctx -- ) {
 	http::StatusOK
 	"name" SERVER_NAME json::kv
 	"version" SERVER_VERSION json::kv json::join
@@ -187,7 +187,7 @@ fn handle_root(c:ptr -- ) {
 	json::obj http::json
 }
 
-def run_http(ds:ptr addr:str -- ) {
+def run_http(ds:DocStore addr:str -- ) {
 	"quadmcp v" print SERVER_VERSION print " (HTTP mode)" print nl
 	"Protocol: " print PROTOCOL_VERSION print nl
 	"Docs: " print ds <<docs_dir print nl

@@ -1,0 +1,1 @@
+error: Type error in 'set': Array is '[]ptr': expects a raw 'ptr' but got the function value

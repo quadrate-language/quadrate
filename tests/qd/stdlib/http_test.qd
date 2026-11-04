@@ -3,32 +3,32 @@ use http
 use testing
 
 // Handler functions for testing
-def handle_root(c:ptr -- ) {
+def handle_root(c:http::Ctx -- ) {
 	c 200 "Hello" http::string
 }
 
-def handle_users(c:ptr -- ) {
+def handle_users(c:http::Ctx -- ) {
 	c 200 "Users list" http::string
 }
 
-def handle_users_post(c:ptr -- ) {
+def handle_users_post(c:http::Ctx -- ) {
 	c 201 "Created" http::string
 }
 
-def handle_user_by_id(c:ptr -- ) {
+def handle_user_by_id(c:http::Ctx -- ) {
 	c "id" http::param -> id
 	c 200 id http::string
 }
 
-def handle_api_data(c:ptr -- ) {
+def handle_api_data(c:http::Ctx -- ) {
 	c 200 "Data" http::json
 }
 
-fn global_middleware(ptr -- ) {
+fn global_middleware(c:http::Ctx -- ) {
 	drop
 }
 
-fn group_middleware(ptr -- ) {
+fn group_middleware(c:http::Ctx -- ) {
 	drop
 }
 
@@ -188,13 +188,13 @@ test "http request builder" {
 // ============================================================
 
 // SSE handler functions for testing
-def handle_sse_basic(c:ptr -- ) {
+def handle_sse_basic(c:http::Ctx -- ) {
 	c http::sse_start
 	c "hello" http::sse_send
 	c http::sse_end
 }
 
-def handle_sse_multiple(c:ptr -- ) {
+def handle_sse_multiple(c:http::Ctx -- ) {
 	c http::sse_start
 	c "first" http::sse_send
 	c "second" http::sse_send
@@ -202,14 +202,14 @@ def handle_sse_multiple(c:ptr -- ) {
 	c http::sse_end
 }
 
-def handle_sse_named_events(c:ptr -- ) {
+def handle_sse_named_events(c:http::Ctx -- ) {
 	c http::sse_start
 	c "message" "hello" http::sse_event
 	c "update" "data" http::sse_event
 	c http::sse_end
 }
 
-def handle_sse_mixed(c:ptr -- ) {
+def handle_sse_mixed(c:http::Ctx -- ) {
 	c http::sse_start
 	c "anonymous data" http::sse_send
 	c "status" "processing" http::sse_event
@@ -218,7 +218,7 @@ def handle_sse_mixed(c:ptr -- ) {
 	c http::sse_end
 }
 
-def handle_sse_with_loop(c:ptr -- ) {
+def handle_sse_with_loop(c:http::Ctx -- ) {
 	c http::sse_start
 	0 5 1 for i {
 		c "iteration" http::sse_send
@@ -226,7 +226,7 @@ def handle_sse_with_loop(c:ptr -- ) {
 	c http::sse_end
 }
 
-def handle_sse_empty(c:ptr -- ) {
+def handle_sse_empty(c:http::Ctx -- ) {
 	c http::sse_start
 	// No events sent
 	c http::sse_end

@@ -4,11 +4,6 @@
 // sha256's block function, built of such words, had none and ran on the runtime stack.
 use mem
 
-struct Pair {
-	a:i64
-	b:i64
-}
-
 def sum_words(buf:ptr n:i64 -- t:i64) {
 	0 -> t
 	0 n 1 for i { t buf i 8 * mem::get_i64 + -> t }
@@ -40,11 +35,6 @@ fn main() {
 	buf nonnull print nl
 	buf show
 
-	// A struct passed where a ptr is taken is counted as before, and still there after
-	Pair { a = 7 b = 9 } -> pair
-	0 1000 1 for i { pair 0 mem::get_i64 drop }
-	pair 8 mem::get_i64 print nl
-	pair <<a print nl
 
 	buf mem::free
 }

@@ -294,10 +294,10 @@
     },
     {
       "name": "popen",
-      "signature": "(cmd:str callback:ptr -- exitcode:i64)",
+      "signature": "(cmd:str callback:fn(str --) -- exitcode:i64)",
       "failable": true,
       "description": "Execute a command and stream output line-by-line to a callback. The callback is called synchronously for each line of output (without trailing newline). The call blocks until the command completes. Closures with captured variables are supported.",
-      "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}, {"name": "callback", "type": "ptr", "description": "Callback function (line:str -- )"}],
+      "params": [{"name": "cmd", "type": "str", "description": "Command to execute"}, {"name": "callback", "type": "fn(str --)", "description": "Called with each line"}],
       "returns": [{"name": "exitcode", "type": "i64", "description": "Command exit status"}],
       "errors": [{"code": "ErrIo", "description": "Failed to execute command"}],
       "examples": ["\"ls -la\" def (line:str -- ) { print nl } os::popen! -> code"]
@@ -394,10 +394,10 @@
     },
     {
       "name": "walk",
-      "signature": "(path:str callback:ptr -- )",
+      "signature": "(path:str callback:fn(str i64 i64 --) -- )",
       "failable": true,
       "description": "Walk a directory tree recursively. Calls callback for each file and directory.",
-      "params": [{"name": "path", "type": "str", "description": "Directory path to walk"}, {"name": "callback", "type": "ptr", "description": "Callback function (path:str is_dir:i64 depth:i64 -- )"}],
+      "params": [{"name": "path", "type": "str", "description": "Directory path to walk"}, {"name": "callback", "type": "fn(str i64 i64 --)", "description": "Called with each path, whether it is a directory, and its depth"}],
       "returns": [],
       "errors": [{"code": "ErrNotFound", "description": "Path not found"}, {"code": "ErrNotDirectory", "description": "Path is not a directory"}],
       "examples": ["\"/tmp\" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!"]

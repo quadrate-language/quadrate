@@ -1528,7 +1528,7 @@ private:
 		for (size_t i = 0; i < depth; i++) {
 			qd_stack_element_t elem;
 			if (qd_stack_element(stack, i, &elem) == QD_STACK_OK && elem.type == QD_STACK_TYPE_PTR) {
-				qd_ptr_release(elem.value.p);
+				qd_release_slot(&elem); // as its kind says
 			}
 		}
 	}
@@ -1542,7 +1542,7 @@ private:
 		for (size_t i = 0; i < depth; i++) {
 			qd_stack_element_t elem;
 			if (qd_stack_element(snapshot, i, &elem) == QD_STACK_OK && elem.type == QD_STACK_TYPE_PTR) {
-				qd_ptr_retain(elem.value.p);
+				qd_retain_slot(&elem);
 			}
 		}
 		return snapshot;

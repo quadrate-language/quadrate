@@ -1,0 +1,24 @@
+// A function with a native version reads its globals and constants onto the compile-time
+// stack, which holds numbers. A str global was read there as a bare pointer -- printed as an
+// address -- and a str constant as nothing at all; both now keep the function on the runtime
+// stack. A function with no inputs used to have no native version, which hid this.
+const Greeting = "Hello"
+var name:str = "hi there"
+var count = 0
+
+def show(n:i64 -- ) { name print nl n drop }
+def hello(n:i64 -- ) { Greeting print nl n drop }
+fn shown( -- ) { name print nl }
+fn greet( -- ) { Greeting print nl }
+fn tick( -- ) { count 1 + -> count }
+fn rename( -- ) { "renamed" -> name name print nl }
+
+fn main() {
+	1 show
+	1 hello
+	shown
+	greet
+	tick tick count print nl
+	rename
+	name print nl
+}

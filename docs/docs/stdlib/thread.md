@@ -738,11 +738,11 @@ A thread handle.
 
 Spawn a new thread running the given function. 
 
-**Signature:** `(func:ptr -- t:Thread)!`
+**Signature:** `(func:fn(--) -- t:Thread)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `func` | `ptr` | Function pointer (use &function_name) |
+| `func` | `fn(--)` | The function to run (`&name` or a `fn { }`) |
 
 | Output | Type | Description |
 |--------|------|-------------|

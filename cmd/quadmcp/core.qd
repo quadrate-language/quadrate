@@ -54,7 +54,7 @@ fn find_docs_dir( -- dir:str) {
 	}
 }
 
-fn load_docs( -- ds:ptr) {
+fn load_docs( -- ds:DocStore) {
 	find_docs_dir -> docs_dir
 	"" -> builtins
 	"" -> language
@@ -101,7 +101,7 @@ def is_module_name(name:str -- valid:i64) {
 	valid
 }
 
-def load_module(ds:ptr name:str -- content:str) {
+def load_module(ds:DocStore name:str -- content:str) {
 	name is_module_name 0 == if {
 		"{}"
 	} else {

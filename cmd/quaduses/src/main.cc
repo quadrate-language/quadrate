@@ -6,7 +6,6 @@
 #include <quadrate/cli/file_utils.h>
 #include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
-#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_for.h>
@@ -135,9 +134,6 @@ void collectReferences(const IAstNode* node, References& refs) {
 		}
 		break;
 	}
-	case IAstNode::Type::AS_CAST:
-		scanTypeString(static_cast<const AstNodeAsCast*>(node)->typeName(), refs);
-		break;
 	case IAstNode::Type::GLOBAL_VAR_DECLARATION: {
 		const AstNodeGlobalVar* var = static_cast<const AstNodeGlobalVar*>(node);
 		scanTypeString(var->typeName(), refs);

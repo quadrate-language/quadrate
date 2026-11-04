@@ -2,7 +2,7 @@
 
 fn main() {
 	// Create 2x3 matrix of floats
-	[2]ptr -> matrix
+	[2][]f64 -> matrix
 
 	[3]f64 -> row1
 	row1 0 1.5 set
@@ -18,12 +18,12 @@ fn main() {
 	matrix 1 row2 set
 
 	// Access all elements
-	"[0][0]: " print matrix 0 nth cast<ptr> 0 nth print nl
-	"[0][1]: " print matrix 0 nth cast<ptr> 1 nth print nl
-	"[0][2]: " print matrix 0 nth cast<ptr> 2 nth print nl
-	"[1][0]: " print matrix 1 nth cast<ptr> 0 nth print nl
-	"[1][1]: " print matrix 1 nth cast<ptr> 1 nth print nl
-	"[1][2]: " print matrix 1 nth cast<ptr> 2 nth print nl
+	"[0][0]: " print matrix 0 nth 0 nth print nl
+	"[0][1]: " print matrix 0 nth 1 nth print nl
+	"[0][2]: " print matrix 0 nth 2 nth print nl
+	"[1][0]: " print matrix 1 nth 0 nth print nl
+	"[1][1]: " print matrix 1 nth 1 nth print nl
+	"[1][2]: " print matrix 1 nth 2 nth print nl
 
 	matrix free
 }

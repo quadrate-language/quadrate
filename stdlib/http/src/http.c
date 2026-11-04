@@ -208,7 +208,7 @@ int usr_http_new(qd_context* ctx) {
 	qd_args(ctx, "http::new", "s", &url);
 	http_request_t* req = request_new(ctx, "http::new", qd_string_data(url));
 	qd_string_release(url);
-	return qd_push_p(ctx, req);
+	return qd_push_raw(ctx, req);
 }
 
 // Stack signature: ( req:ptr method:str -- )
@@ -548,7 +548,7 @@ static int send_request(qd_context* ctx, const char* op, const http_request_t* r
 	free(response.data);
 	switch (status) {
 	case HTTP_OK:
-		qd_push_p(ctx, resp);
+		qd_push_raw(ctx, resp);
 		qd_push_i(ctx, HTTP_OK);
 		return 0;
 	case HTTP_ERR_RECEIVE:

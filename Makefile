@@ -98,20 +98,20 @@ define do_build
 		install -m 755 $(1)/cmd/quadrepl/quadrepl dist/bin/; \
 	else echo "Note: quadrepl not built (readline not found)"; fi
 	@echo "Creating static libraries..."
-	@(cd $(1)/lib/rt && ar rcs librt.a $$(ar -t librt_static.a) && cp librt.a ../../../../dist/lib/quadrate/) && echo "  librt.a"
-	@(cd $(1)/lib/qd && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/quadrate/) && echo "  libqd.a"
+	@(cd $(1)/lib/rt && rm -f librt.a && ar rcs librt.a $$(ar -t librt_static.a) && cp librt.a ../../../../dist/lib/quadrate/) && echo "  librt.a"
+	@(cd $(1)/lib/qd && rm -f libqd.a && ar rcs libqd.a $$(ar -t libqd_static.a) && cp libqd.a ../../../../dist/lib/quadrate/) && echo "  libqd.a"
 	@# libqc.a carries unresolved u8t symbols, so the parser is only linkable
 	@# with u8t alongside it. Consumers link -lqc -lu8t. Repacked rather than
 	@# copied: meson builds u8t as a thin archive that only references objects
 	@# back in the build tree.
 	@if [ -f $(1)/subprojects/u8t/libu8t.a ]; then \
-		(cd $(1)/subprojects/u8t && ar rcs libu8t_packed.a $$(ar -t libu8t.a) && cp libu8t_packed.a ../../../../dist/lib/quadrate/libu8t.a) && echo "  libu8t.a"; \
+		(cd $(1)/subprojects/u8t && rm -f libu8t_packed.a && ar rcs libu8t_packed.a $$(ar -t libu8t.a) && cp libu8t_packed.a ../../../../dist/lib/quadrate/libu8t.a) && echo "  libu8t.a"; \
 	fi
 	@for dir in $(filter-out rt qd,$(TOOLCHAIN_LIBS_WITH_C)); do \
-		(cd $(1)/lib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
+		(cd $(1)/lib/$$dir && rm -f lib$${dir}_regular.a && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
 	done
 	@for dir in $(STDLIB_LIBS_WITH_C); do \
-		(cd $(1)/stdlib/$$dir && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
+		(cd $(1)/stdlib/$$dir && rm -f lib$${dir}_regular.a && ar rcs lib$${dir}_regular.a $$(ar -t lib$$dir.a) && cp lib$${dir}_regular.a ../../../../dist/lib/quadrate/lib$$dir.a) && echo "  lib$$dir.a"; \
 	done
 	@for dir in thread tls http; do \
 		if [ -f stdlib/$$dir/lib$$dir.deps ]; then cp stdlib/$$dir/lib$$dir.deps dist/lib/quadrate/; fi; \

@@ -1040,15 +1040,6 @@ namespace Qd {
 		case IAstNode::Type::ARRAY_LITERAL:
 			generateArrayLiteral(static_cast<AstNodeArrayLiteral*>(node), ctx);
 			break;
-		case IAstNode::Type::AS_CAST: {
-			// 'as TypeName' — compile-time type narrowing for struct field access.
-			// No runtime code generated; just update the type tracking state so
-			// subsequent <<field or -> local knows the struct type.
-			AstNodeAsCast* asCast = static_cast<AstNodeAsCast*>(node);
-			lastStructConstructed = asCast->typeName();
-			lastFieldAccessResultType = asCast->typeName();
-			break;
-		}
 		default:
 			// Ignore other node types for now
 			break;

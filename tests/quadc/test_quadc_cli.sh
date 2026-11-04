@@ -329,6 +329,18 @@ else
     pass "a function reading a str has a native version, unless it uses it as a string"
 fi
 
+# A word with no inputs has a native version; one reading a str global or constant has not
+printf 'var count = 0\nvar name:str = "x"\nconst Greeting = "hi"\nfn answer( -- n:i64) { 42 }\nfn tick( -- ) { count 1 + -> count }\nfn shown( -- ) { name print nl }\nfn greet( -- ) { Greeting print nl }\nfn main() { answer print tick shown greet }\n' > native_noinputs.qd
+if ! output=$("$QUADC" --dump-ir native_noinputs.qd -o native_noinputs 2>&1); then
+    fail "a word with no inputs did not compile" "$output"
+elif ! grep -q 'answer_native' <<< "$output" || ! grep -q 'tick_native' <<< "$output"; then
+    fail "a word with no inputs has no native version"
+elif grep -q 'shown_native' <<< "$output" || grep -q 'greet_native' <<< "$output"; then
+    fail "a word reading a str global or constant has a native version, which would read it as a number"
+else
+    pass "a word with no inputs has a native version, unless it reads a str global or constant"
+fi
+
 # ===================================================================
 # Summary
 # ===================================================================

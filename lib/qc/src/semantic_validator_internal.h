@@ -411,6 +411,17 @@ inline std::string rawPtrArrayWhy(const std::string& actual) {
 	return "expects a raw 'ptr' buffer but got '" + actual + "': an array points at its header, not at its elements";
 }
 
+// Why a value of a known type is not a `ptr`, which is raw memory only
+inline std::string rawPtrWhy(const std::string& actual) {
+	if (isArrayTypeName(actual)) {
+		return rawPtrArrayWhy(actual);
+	}
+	if (actual.compare(0, 3, "fn(") == 0) {
+		return "expects a raw 'ptr' but got the function value '" + actual + "': declare it as '" + actual + "'";
+	}
+	return "expects a raw 'ptr' but got '" + actual + "': a 'ptr' is raw memory; declare the type it holds";
+}
+
 // "Box<A, []B>" -> ["A", "[]B"]; top-level split on ',' respecting nested <> and ().
 inline std::vector<std::string> typeArgsOf(const std::string& t) {
 	std::vector<std::string> args;
@@ -670,20 +681,16 @@ inline bool unifyTypeName(const std::string& expected, const std::string& actual
 		return true;
 	}
 	if (expected == "ptr") {
-		// A declared `ptr` is the escape hatch, and accepts any pointer-shaped value: what a raw
-		// buffer holds is the caller's business. The exception is a `[]T`, because an array value
-		// does not point at its elements -- it points at the `qd_array_t` header, and magic,
-		// refcount, length and capacity sit in front of the data. Handing one to a function that
-		// takes `arr:ptr count:i64` therefore aims it at the header: `[3 1 2] -> a
-		// a a len sort::ints` sorted magic, refcount and length into ascending order and left
-		// `a len` reading the `QDAR` magic as the length, with the bounds check passing for any
-		// index. A struct is not affected -- `qd_struct_alloc` returns the address of the fields,
-		// with its header behind them -- so a struct handed to a `ptr` still points at its data.
-		if (isArrayTypeName(actual)) {
-			why = rawPtrArrayWhy(actual);
-			return false;
+		// A `ptr` is raw memory: an address the program allocated or was given, with nothing
+		// counted behind it. A value of any other known type is refused -- a struct, an array, a
+		// string or a function value is a counted object, and once it went through a `ptr` the
+		// runtime had to search its registries to find out what it was again. An array was the
+		// first to be refused, for pointing at its header rather than its elements.
+		if (actual == "ptr") {
+			return true;
 		}
-		return true;
+		why = rawPtrWhy(actual);
+		return false;
 	}
 	if (!strict && (actual == "any" || actual == "ptr")) {
 		// The argument's type is not known well enough to check: a bare `ptr`, or an `any`. This

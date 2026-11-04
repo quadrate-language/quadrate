@@ -1,0 +1,8 @@
+// A `[]ptr` holds raw memory. A function value, a struct or an array going into one is refused,
+// as it is where a `ptr` parameter is taken; `set` and `append` used to check scalars only.
+def add(a:i64 b:i64 -- r:i64) { a b + }
+
+fn main() {
+	[2]ptr -> table
+	table 0 &add set
+}

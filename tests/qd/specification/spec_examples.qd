@@ -33,7 +33,7 @@ fn double(i64 -- i64) {
     2 *
 }
 
-def apply(val:i64 func:ptr -- result:i64) {
+def apply(val:i64 func:fn(i64 -- i64) -- result:i64) {
     val func call
 }
 

@@ -73,7 +73,7 @@ pub const ErrTimeout = 8
 
 // Import raw C functions (internal use)
 import "libthread.a" as "thread" {
-	fn raw_spawn(func:ptr -- thread:ptr)!
+	fn raw_spawn(func:fn(--) -- thread:ptr)!
 	fn raw_join(thread:ptr -- )!
 	fn raw_detach(thread:ptr -- )!
 	fn raw_is_alive(thread:ptr -- alive:i64)
@@ -100,7 +100,7 @@ import "libthread.a" as "thread" {
 	fn raw_wg_wait(wg:ptr -- )!
 	fn raw_wg_free(wg:ptr -- )
 	fn raw_once_new( -- once:ptr)!
-	fn raw_once_do(func:ptr once:ptr -- )
+	fn raw_once_do(func:fn(--) once:ptr -- )
 	fn raw_once_done(once:ptr -- done:i64)
 	fn raw_once_free(once:ptr -- )
 	fn raw_barrier_new(n:i64 -- barrier:ptr)!
@@ -138,11 +138,11 @@ pub struct Thread {
 
 /// Spawn a new thread running the given function.
 ///
-/// @param func ptr Function pointer (use &function_name)
+/// @param func fn(--) The function to run (`&name` or a `fn { }`)
 /// @return t Thread Thread handle
 /// @error ErrCreate Failed to create thread
 /// @example &worker thread::spawn! -> t
-pub fn spawn(func:ptr -- t:Thread)! {
+pub fn spawn(func:fn(--) -- t:Thread)! {
 	thread::raw_spawn? -> h
 	Thread {
 		handle = h
@@ -410,9 +410,9 @@ pub fn once_new( -- o:Once)! {
 /// If multiple threads call this concurrently, only one will execute
 /// the function; the others will wait until it completes.
 ///
-/// @param func ptr Function to execute once
+/// @param func fn(--) Function to execute once
 /// @example o &init_stuff do
-pub fn (o:Once) do(func:ptr -- ) {
+pub fn (o:Once) do(func:fn(--) -- ) {
 	o <<handle thread::raw_once_do
 }
 

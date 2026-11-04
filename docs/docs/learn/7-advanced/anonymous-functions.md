@@ -295,7 +295,7 @@ fn main() {
 Functions can return closures that capture their local variables:
 
 ```qd
-fn make_adder(i64 -- adder:ptr) {
+fn make_adder(i64 -- adder:fn(i64 -- i64)) {
 	-> n
 	def (x:i64 -- r:i64) { x n + }
 }

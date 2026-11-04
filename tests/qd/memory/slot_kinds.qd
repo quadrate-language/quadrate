@@ -33,9 +33,4 @@ fn main() {
 	// An array global appended to and read
 	0 10 1 for i { seen i append -> seen }
 	seen len print nl
-	// A struct through raw memory: what comes back is looked up, as before
-	16 mem::alloc! -> buf
-	origin buf 0 mem::set_ptr
-	buf 0 mem::get_ptr as Box <<v print nl
-	buf mem::free
 }

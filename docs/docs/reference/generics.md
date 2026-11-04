@@ -64,7 +64,7 @@ fn main() {
 ### Apply
 
 ```qd
-def apply<T>(x:T f:ptr -- result:T) {
+def apply<T>(x:T f:fn(T -- T) -- result:T) {
     x f call
 }
 

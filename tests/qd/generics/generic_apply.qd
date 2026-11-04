@@ -1,6 +1,6 @@
 // Test: generic apply function with function pointer
 
-def apply<T>(val:T func:ptr -- result:T) {
+def apply<T>(val:T func:fn(T -- T) -- result:T) {
 	val func call
 }
 

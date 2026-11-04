@@ -136,9 +136,9 @@ KEYWORD(Err, "Pushes 1, the generic error code a fallible call can panic with.")
 /// @example null -> p
 KEYWORD(null, "Pushes the null pointer.")
 
-/// Type narrowing keyword.
-/// @example p as Point <<x
-KEYWORD(as, "Narrows a ptr to a struct type at compile time, so its fields can be read. Costs nothing at run time.")
+/// Names the module an import declares its words in.
+/// @example import "libmath.a" as "math" { pub fn sqrt(x:f64 -- r:f64) }
+KEYWORD(as, "Names the module an `import` declares its words in.")
 
 // ============================================================================
 // STACK OPERATIONS

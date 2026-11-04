@@ -733,40 +733,42 @@ pub def (v:Vec3) angle_between(other:Vec3 -- result:f64) {
 // ============================================================================
 //
 // A vector as three f64s on the stack, x deepest, rather than a Vec3: nothing is allocated,
-// and each word is arithmetic, so it runs as native code. The fast way for inner loops.
+// and each word is arithmetic, so it runs as native code. Vec3 is for storing a vector, v3
+// for computing with one: unpack a Vec3 with <<x <<y <<z, work on the stack, build a Vec3
+// only when the result has to be kept.
 
 /// Sum of two vectors on the stack.
-/// @example 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add -> z -> y -> x
+/// @example 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add  // 5.0 7.0 9.0
 pub def v3_add(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64) { ax bx + ay by + az bz + }
 
 /// Difference of two vectors on the stack, a - b.
-/// @example 4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub -> z -> y -> x
+/// @example 4.0 5.0 6.0 1.0 2.0 3.0 math::v3_sub  // 3.0 3.0 3.0
 pub def v3_sub(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64) { ax bx - ay by - az bz - }
 
 /// A vector on the stack times a scalar.
-/// @example 1.0 2.0 3.0 2.0 math::v3_scale -> z -> y -> x
+/// @example 1.0 2.0 3.0 2.0 math::v3_scale  // 2.0 4.0 6.0
 pub def v3_scale(x:f64 y:f64 z:f64 k:f64 -- x:f64 y:f64 z:f64) { x k * y k * z k * }
 
 /// Dot product of two vectors on the stack.
-/// @example 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot -> d
+/// @example 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot  // 32.0
 pub def v3_dot(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- d:f64) { ax bx * ay by * + az bz * + }
 
 /// Cross product of two vectors on the stack, a × b.
-/// @example 1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross -> z -> y -> x
+/// @example 1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross  // 0.0 0.0 1.0
 pub def v3_cross(ax:f64 ay:f64 az:f64 bx:f64 by:f64 bz:f64 -- x:f64 y:f64 z:f64) {
 	ay bz * az by * - az bx * ax bz * - ax by * ay bx * -
 }
 
 /// Squared length of a vector on the stack.
-/// @example 1.0 2.0 2.0 math::v3_length_sq -> l
+/// @example 1.0 2.0 2.0 math::v3_length_sq  // 9.0
 pub def v3_length_sq(x:f64 y:f64 z:f64 -- l:f64) { x x * y y * + z z * + }
 
 /// Length of a vector on the stack.
-/// @example 1.0 2.0 2.0 math::v3_length -> l
+/// @example 1.0 2.0 2.0 math::v3_length  // 3.0
 pub def v3_length(x:f64 y:f64 z:f64 -- l:f64) { x x * y y * + z z * + math::sqrt }
 
 /// A vector on the stack scaled to length 1; the zero vector stays zero.
-/// @example 1.0 2.0 2.0 math::v3_normalize -> z -> y -> x
+/// @example 1.0 2.0 2.0 math::v3_normalize  // 1/3 2/3 2/3
 pub def v3_normalize(x:f64 y:f64 z:f64 -- x:f64 y:f64 z:f64) {
 	x x * y y * + z z * + math::sqrt -> mag
 	mag 0.0 > if { 1.0 mag / -> recip x recip * y recip * z recip * } else { 0.0 0.0 0.0 }

@@ -492,12 +492,12 @@ os::mktemp!  // tmpdir
 
 Execute a command and stream output line-by-line to a callback. The callback is called synchronously for each line of output (without trailing newline). The call blocks until the command completes. Closures with captured variables are supported.
 
-**Signature:** `(cmd:str callback:ptr -- exitcode:i64)!`
+**Signature:** `(cmd:str callback:fn(str --) -- exitcode:i64)!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `cmd` | `str` | Command to execute |
-| `callback` | `ptr` | Callback function (line:str -- ) |
+| `callback` | `fn(str --)` | Called with each line |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -706,12 +706,12 @@ os::urandom!  // n
 
 Walk a directory tree recursively. Calls callback for each file and directory.
 
-**Signature:** `(path:str callback:ptr -- )!`
+**Signature:** `(path:str callback:fn(str i64 i64 --) -- )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `path` | `str` | Directory path to walk |
-| `callback` | `ptr` | Callback function (path:str is_dir:i64 depth:i64 -- ) |
+| `callback` | `fn(str i64 i64 --)` | Called with each path, whether it is a directory, and its depth |
 
 | Error | Description |
 |-------|-------------|

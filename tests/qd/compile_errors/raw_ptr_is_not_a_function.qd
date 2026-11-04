@@ -1,0 +1,11 @@
+// A `ptr` is raw memory and never a function value, so one passed where a function value is
+// taken is an error. It used to be a warning, and `call` on it jumped into the data.
+use mem
+
+def apply(x:i64 f:fn(i64 -- i64) -- r:i64) { x f call }
+
+fn main() {
+	16 mem::alloc! -> buf
+	5 buf apply print nl
+	buf mem::free
+}

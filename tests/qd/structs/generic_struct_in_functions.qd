@@ -1,15 +1,15 @@
 // Test: generic structs passed to and returned from functions
 struct Box<T> { value:T }
 
-def print_box(b:ptr -- ) {
+def print_box(b:Box -- ) {
 	b <<value print nl
 }
 
-def make_int_box(x:i64 -- result:ptr) {
+def make_int_box(x:i64 -- result:Box) {
 	x Box
 }
 
-def make_float_box(x:f64 -- result:ptr) {
+def make_float_box(x:f64 -- result:Box) {
 	x Box
 }
 

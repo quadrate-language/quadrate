@@ -2,7 +2,7 @@
 
 fn main() {
 	// Create outer array to hold 1 inner array
-	[1]ptr -> outer
+	[1][]i64 -> outer
 
 	// Create inner array
 	[4]i64 -> arr
@@ -14,14 +14,14 @@ fn main() {
 	// Store inner array
 	outer 0 arr set
 
-	// Access and print elements (cast to ptr for nested nth)
-	"arr[0]: " print outer 0 nth cast<ptr> 0 nth print nl
-	"arr[1]: " print outer 0 nth cast<ptr> 1 nth print nl
-	"arr[2]: " print outer 0 nth cast<ptr> 2 nth print nl
-	"arr[3]: " print outer 0 nth cast<ptr> 3 nth print nl
+	// Access and print elements (an element is an array, read with nth again)
+	"arr[0]: " print outer 0 nth 0 nth print nl
+	"arr[1]: " print outer 0 nth 1 nth print nl
+	"arr[2]: " print outer 0 nth 2 nth print nl
+	"arr[3]: " print outer 0 nth 3 nth print nl
 
 	// Print length
-	"arr len: " print outer 0 nth cast<ptr> len print nl
+	"arr len: " print outer 0 nth len print nl
 
 	// Free outer array (should recursively free inner array)
 	outer free

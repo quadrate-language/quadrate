@@ -1,5 +1,4 @@
 #include "ast_node_block.h"
-#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_for.h>
 #include <quadrate/qc/ast_node_function.h>
@@ -69,8 +68,6 @@ namespace Qd {
 			return "StructConstruction";
 		case IAstNode::Type::FIELD_ACCESS:
 			return "FieldAccess";
-		case IAstNode::Type::AS_CAST:
-			return "AsCast";
 		case IAstNode::Type::ENUM_DECLARATION:
 			return "EnumDeclaration";
 		case IAstNode::Type::FIELD_SET:
@@ -253,12 +250,6 @@ namespace Qd {
 			printf(",");
 			printf("\"fieldName\":\"");
 			escapeJsonString(fieldAccess->fieldName().c_str());
-			printf("\"");
-		} else if (node->type() == IAstNode::Type::AS_CAST) {
-			const AstNodeAsCast* asCast = static_cast<const AstNodeAsCast*>(node);
-			printf(",");
-			printf("\"typeName\":\"");
-			escapeJsonString(asCast->typeName().c_str());
 			printf("\"");
 		}
 

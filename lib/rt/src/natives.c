@@ -73,19 +73,39 @@ static bool grow(struct qd_native_registry* reg) {
 	return true;
 }
 
-// Inputs in a stack effect: "(a:i64 b:i64 -- r:i64)" has two. Returns 0 for a
-// signature that cannot be read, which disables the caller's arity check.
+// Inputs in a stack effect: "(a:i64 b:i64 -- r:i64)" has two. A parameter of function type
+// is one input, its own `--` and parentheses inside it: "(cmd:str f:fn(str --) -- n:i64)" has
+// two. Returns 0 for a signature that cannot be read, which disables the caller's arity check.
 static size_t count_inputs(const char* signature) {
 	if (signature == NULL) {
 		return 0;
 	}
 
-	const char* end = strstr(signature, "--");
 	size_t count = 0;
+	int depth = 0;
 	bool in_word = false;
 
-	for (const char* p = signature; *p != '\0' && (end == NULL || p < end); p++) {
-		const bool separator = (*p == ' ' || *p == '\t' || *p == '(' || *p == ')' || *p == ',');
+	for (const char* p = signature; *p != '\0'; p++) {
+		if (*p == '(') {
+			depth++;
+			if (depth == 1) {
+				in_word = false;
+				continue;
+			}
+		} else if (*p == ')') {
+			depth--;
+			if (depth == 0) {
+				break;
+			}
+			continue;
+		}
+		if (depth != 1) {
+			continue; // inside a parameter's own function type
+		}
+		if (p[0] == '-' && p[1] == '-') {
+			break;
+		}
+		const bool separator = (*p == ' ' || *p == '\t' || *p == ',');
 		if (separator) {
 			in_word = false;
 		} else if (!in_word) {

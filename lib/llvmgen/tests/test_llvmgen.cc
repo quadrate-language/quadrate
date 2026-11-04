@@ -522,7 +522,7 @@ TEST(StructFieldSetChaining) {
 	)";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for chained field set");
-	ASSERT(irContains(ir, "qd_push_p"), "chained >>field should push struct back");
+	ASSERT(irContains(ir, "qd_push_raw"), "chained >>field should push struct back");
 }
 
 TEST(StructFieldSetDiscard) {
@@ -624,7 +624,7 @@ TEST(NestedDeferScopes) {
 
 TEST(SimpleAnonymousFunction) {
 	const char* src = R"(
-		def apply(x:i64 f:ptr -- r:i64) {
+		def apply(x:i64 f:fn(i64 -- i64) -- r:i64) {
 			x f call
 		}
 		fn main() {
@@ -650,7 +650,7 @@ TEST(ClosureWithCapture) {
 
 TEST(HigherOrderFunction) {
 	const char* src = R"(
-		def apply(x:i64 f:ptr -- r:i64) {
+		def apply(x:i64 f:fn(i64 -- i64) -- r:i64) {
 			x f call
 		}
 		def double(n:i64 -- r:i64) { n 2 * }
@@ -973,7 +973,7 @@ TEST(StructWithArrayFieldReleasesIt) {
 	const size_t dtor = ir.find("define internal void @__qd_dtor_Row");
 	const size_t endOfDtor = ir.find("ret void", dtor);
 	ASSERT(endOfDtor != std::string::npos, "destructor should have a body");
-	ASSERT(ir.find("qd_ptr_release", dtor) < endOfDtor, "destructor should release the array field");
+	ASSERT(ir.find("qd_array_release", dtor) < endOfDtor, "destructor should release the array field");
 }
 
 TEST(StructOfPlainFieldsHasNoDestructor) {

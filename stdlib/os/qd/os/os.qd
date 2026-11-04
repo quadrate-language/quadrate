@@ -121,11 +121,11 @@ import "libos.a" as "os" {
 	/// The callback is called synchronously for each line of output (without trailing newline).
 	/// The call blocks until the command completes. Closures with captured variables are supported.
 	/// @param cmd str Command to execute
-	/// @param callback ptr Callback function (line:str -- )
+	/// @param callback fn(str --) Called with each line
 	/// @return exitcode i64 Command exit status
 	/// @error ErrIo Failed to execute command
 	/// @example "ls -la" def (line:str -- ) { print nl } os::popen! -> code
-	pub fn popen(cmd:str callback:ptr -- exitcode:i64)!
+	pub fn popen(cmd:str callback:fn(str --) -- exitcode:i64)!
 
 	/// Execute a command and capture all output.
 	/// Simpler alternative to os::popen when you just need the full output.
@@ -164,11 +164,11 @@ import "libos.a" as "os" {
 	/// Walk a directory tree recursively.
 	/// Calls callback for each file and directory.
 	/// @param path str Directory path to walk
-	/// @param callback ptr Callback function (path:str is_dir:i64 depth:i64 -- )
+	/// @param callback fn(str i64 i64 --) Called with each path, whether it is a directory, and its depth
 	/// @error ErrNotFound Path not found
 	/// @error ErrNotDirectory Path is not a directory
 	/// @example "/tmp" def (p:str is_dir:i64 depth:i64 -- ) { p print nl } os::walk!
-	pub fn walk(path:str callback:ptr -- )!
+	pub fn walk(path:str callback:fn(str i64 i64 --) -- )!
 
 	/// Match files using glob pattern.
 	/// Supports *, ?, and ** for recursive matching.

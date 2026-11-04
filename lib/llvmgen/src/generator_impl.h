@@ -57,7 +57,6 @@
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_array_literal.h>
-#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_break.h>
 #include <quadrate/qc/ast_node_conditional_break.h>
 #include <quadrate/qc/ast_node_constant.h>
@@ -185,11 +184,10 @@ namespace Qd {
 		static constexpr unsigned CTX_FIELD_ERROR_CODE = 1;
 		static constexpr unsigned CTX_FIELD_HAS_ERROR = 6;
 
-		llvm::StructType* closureStructTy = nullptr; // Cached closure struct layout: {magic, fn, env, capture_count}
-		llvm::StructType* stackStructTy = nullptr;	 // Cached stack struct layout: {data, capacity, size}
-		llvm::PointerType* ptrTy = nullptr;			 // Cached pointer type (replaces PointerType::getUnqual(*context))
-		llvm::Type* int64Ty = nullptr;				 // Cached i64 type
-		llvm::Type* int32Ty = nullptr;				 // Cached i32 type
+		llvm::StructType* stackStructTy = nullptr; // Cached stack struct layout: {data, capacity, size}
+		llvm::PointerType* ptrTy = nullptr;		   // Cached pointer type (replaces PointerType::getUnqual(*context))
+		llvm::Type* int64Ty = nullptr;			   // Cached i64 type
+		llvm::Type* int32Ty = nullptr;			   // Cached i32 type
 
 		// Runtime functions
 		llvm::Function* createContextFn = nullptr;
@@ -198,17 +196,18 @@ namespace Qd {
 		llvm::Function* pushFloatFn = nullptr;
 		llvm::Function* pushStrFn = nullptr;
 		llvm::Function* pushStrRefFn = nullptr;
-		llvm::Function* pushPtrFn = nullptr;
 		// Pointers whose kind is known (qd_ptr_kind), and slots copied and released by theirs
 		llvm::Function* pushStructFn = nullptr;
+		llvm::Function* pushRawFn = nullptr;
 		llvm::Function* pushArrayFn = nullptr;
 		llvm::Function* pushPtrKindFn = nullptr;
 		llvm::Function* pushSlotFn = nullptr;
 		llvm::Function* releaseSlotFn = nullptr;
-		llvm::Function* structRetainKnownFn = nullptr;
-		llvm::Function* structReleaseKnownFn = nullptr;
-		llvm::Function* arrayRetainKnownFn = nullptr;
-		llvm::Function* arrayReleaseKnownFn = nullptr;
+		llvm::Function* retainSlotFn = nullptr;
+		llvm::Function* retainStructFn = nullptr;
+		llvm::Function* releaseStructFn = nullptr;
+		llvm::Function* retainArrayFn = nullptr;
+		llvm::Function* releaseArrayFn = nullptr;
 		llvm::Function* nlFn = nullptr;
 		llvm::Function* stackPopFn = nullptr;
 		llvm::Function* stackSizeFn = nullptr;
@@ -225,10 +224,6 @@ namespace Qd {
 		llvm::Function* pushD128BitsFn = nullptr;
 		llvm::Function* qdStringDataFn = nullptr;
 		llvm::Function* qdStructAllocFn = nullptr;
-		llvm::Function* qdStructReleaseFn = nullptr;
-		llvm::Function* qdStructRetainFn = nullptr;
-		llvm::Function* qdPtrReleaseFn = nullptr;
-		llvm::Function* qdPtrRetainFn = nullptr;
 		llvm::Function* addFn = nullptr;
 		llvm::Function* subFn = nullptr;
 		llvm::Function* mulFn = nullptr;
@@ -542,6 +537,7 @@ namespace Qd {
 		static constexpr uint32_t kStackTypeD128 = 4;
 		// A generic struct field: the value, two words as in a slot, then the tag
 		static constexpr size_t kTypeParamTagOffset = 16;
+		static constexpr uint64_t kSlotSize = 24; // sizeof(qd_stack_element_t)
 		static constexpr size_t kTypeParamFieldSize = 24;
 		llvm::Value* loadSlotValue(llvm::Value* valuePtr, const std::string& name);
 		void storeSlotValue(llvm::Value* value, llvm::Value* valuePtr);
@@ -559,6 +555,13 @@ namespace Qd {
 		bool generateIteratorPush(const std::string& name, llvm::Value* ctx);
 		bool generateGlobalVarPush(const std::string& name, llvm::Value* ctx);
 		const std::string* findConstant(const std::string& name) const;
+		bool isNativeConstant(const std::string& name, bool allowFloat);
+		bool holdsStruct(const std::string& typeName);
+		llvm::Value* staticClosure(llvm::Function* fn);
+		void releaseOfType(llvm::Value* value, const std::string& typeName);
+		void retainAndPushOfType(llvm::Value* ctx, llvm::Value* value, const std::string& typeName);
+		std::map<llvm::Function*, llvm::Constant*> staticClosures;
+		bool isNativeGlobal(const std::string& name, bool allowFloat);
 		const GlobalVar* findGlobalVar(const std::string& name) const;
 		bool globalHoldsPointer(const std::string& typeName);
 		bool generateConstantPush(const std::string& name, llvm::Value* ctx);

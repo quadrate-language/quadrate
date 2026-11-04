@@ -266,7 +266,7 @@ Implementations MUST support these five primitive types:
 | `f64` | IEEE 754 double-precision float | 8 bytes |
 | `d128` | IEEE 754 decimal128 float (§3.1.2) | 16 bytes |
 | `str` | Immutable UTF-8 string | pointer |
-| `ptr` | Generic pointer | 8 bytes |
+| `ptr` | Raw memory address (§3.5.1) | 8 bytes |
 
 **Note**: Arithmetic, comparison, and all stack operations operate on `i64`, `f64` and `d128`
 only; implementations MUST NOT introduce narrower *stack* types. Narrower widths exist solely
@@ -480,7 +480,7 @@ def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
 &double -> func_ptr
 ```
 
-The `fn(...)` type specifies the full signature of the function pointer, including parameter types and return types. Using `ptr` for function pointers is permitted but `fn(...)` is preferred as it enables compile-time type checking of `call` arguments.
+The `fn(...)` type specifies the full signature of the function pointer, including parameter types and return types. A function value MUST NOT be passed, stored or returned as a `ptr` (§3.5.1).
 
 A parameter in a function type MAY carry a name, `fn(x:i64 -- r:i64)`. The name documents it and
 is not part of the type.
@@ -548,6 +548,15 @@ def relay(a:any -- r:i64) { a next }
 1 relay print nl       // 2
 "two" relay print nl   // fatal: Type mismatch for parameter 1 (expected int, got str)
 ```
+
+#### 3.5.1 `ptr`
+
+A `ptr` is raw memory: an address the program allocated (`mem::alloc`), took from a string
+(`strings::data`), or was handed by a native library. Nothing is counted behind it, and the
+runtime MUST NOT retain or release one. A struct, an array, a string and a function value are
+counted objects and MUST NOT be passed, stored or returned where a `ptr` is declared;
+implementations MUST reject it at compile time, and MUST reject a `ptr` passed where a
+function value is declared. `null` is a `ptr`, and is also accepted wherever a `*T` is.
 
 ### 3.6 Null
 
@@ -624,17 +633,6 @@ and `cast` has nowhere to report it. Implementations MUST reject `"42" cast<i64>
 conversions.
 
 **Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
-
-### 3.8 Type Narrowing
-
-The `as` keyword narrows a `ptr` value to a specific struct type. This is a compile-time annotation with no runtime cost:
-
-```quadrate
-value as StructType <<field    // access field on specific struct type
-value as StructType -> local  // bind with tracked struct type
-```
-
-Implementations MUST produce an error when `<<field` is used on an untyped `ptr` and the field name is ambiguous (exists in multiple struct definitions). The `as` keyword resolves this ambiguity.
 
 ---
 
@@ -1548,11 +1546,7 @@ point <<x         // Read field 'x' from point
 point <<x <<y     // Chained access (if x is a struct)
 ```
 
-When the struct type cannot be determined (e.g., the value is typed as `ptr`) and the field name exists in multiple struct definitions, implementations MUST produce an error. Use `as` to disambiguate:
-
-```quadrate
-ptr_val as MyStruct <<field
-```
+When the struct type cannot be determined and the field name exists in multiple struct definitions, implementations MUST produce an error; declaring the value with its struct type resolves it.
 
 ### 8.4 Field Set (Write)
 
@@ -1600,8 +1594,7 @@ p <<x            // unchanged
 ```
 
 Implementations MUST reject `clone` where the struct type is not known at the call site,
-including on an untyped `ptr`: the type is what gives the size to allocate and the fields
-to retain. `as` narrows a pointer and is the way through.
+including on a `ptr`: the type is what gives the size to allocate and the fields to retain.
 
 `clone` on an array MUST produce a new array of the same element type and length, with the
 elements copied, and is shallow in the same way: a string, array or struct an element refers
@@ -2487,8 +2480,9 @@ Implementations MUST provide the following runtime functions:
 - `qd_push_f(ctx, float64)` - Push float
 - `qd_push_s(ctx, string)` - Push string (copy)
 - `qd_push_s_ref(ctx, string)` - Push string (reference)
-- `qd_push_p(ctx, ptr)` - Push pointer
-- `qd_push_raw(ctx, ptr)` - Push a pointer to raw memory, never an array or a struct; the slot is marked so that retains and releases skip it
+- `qd_push_raw(ctx, ptr)` - Push a pointer to raw memory, never an array, a struct or a function value; nothing is counted for it
+- `qd_push_struct(ctx, p)`, `qd_push_array(ctx, p)` - Push a struct or an array with the reference the caller holds
+- `qd_call_value(ctx, fn)` - Call a function value from native code
 - `qd_pop_i(ctx, &val)` - Pop integer
 - `qd_pop_f(ctx, &val)` - Pop float
 - `qd_pop_s(ctx, buf, size)` - Pop string into buffer
@@ -2647,7 +2641,7 @@ instruction     = "dup" | "dup2" | "swap" | "drop" | "drop2" | "over" | "rot" | 
 | `&` | Get function pointer |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |
-| `as` | Type narrowing cast (compile-time, no runtime cost) |
+| `as` | Names the module in an `import` |
 
 ---
 

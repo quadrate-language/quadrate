@@ -23,7 +23,7 @@ static int write_text(qd_context* ctx) {
 	qd_stack_element_t text;
 	qd_stack_pop(ctx->st, &text);
 	const char* data = qd_string_data(text.value.s);
-	qd_push_p(ctx, (void*)data);
+	qd_push_raw(ctx, (void*)data);
 	qd_push_i(ctx, (int64_t)strlen(data));
 	int result = usr_io_write(ctx);
 	qd_string_release(text.value.s);
@@ -34,7 +34,7 @@ static int read_text(qd_context* ctx) {
 	qd_stack_element_t count;
 	qd_stack_pop(ctx->st, &count);
 	char* buffer = calloc((size_t)count.value.i + 1, 1);
-	qd_push_p(ctx, buffer);
+	qd_push_raw(ctx, buffer);
 	qd_push_i(ctx, count.value.i);
 	int result = usr_io_read(ctx);
 	if (result == 0) {
@@ -95,7 +95,7 @@ TEST(IoOpenReadTest) {
 	ASSERT(handle_elem.value.p != NULL, "handle should not be NULL");
 
 	// Close
-	qd_push_p(ctx, handle_elem.value.p);
+	qd_push_raw(ctx, handle_elem.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -122,7 +122,7 @@ TEST(IoOpenWriteTest) {
 	ASSERT(handle_elem.value.p != NULL, "handle should not be NULL");
 
 	// Close
-	qd_push_p(ctx, handle_elem.value.p);
+	qd_push_raw(ctx, handle_elem.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -150,7 +150,7 @@ TEST(IoCloseNullTest) {
 	qd_context* ctx = create_test_context();
 
 	// Close NULL handle (should be safe no-op)
-	qd_push_p(ctx, NULL);
+	qd_push_raw(ctx, NULL);
 	int result = usr_io_close(ctx);
 	ASSERT_EQ(result, 0, "closing NULL should succeed");
 
@@ -172,7 +172,7 @@ TEST(IoWriteReadStringTest) {
 	qd_stack_pop(ctx->st, &write_handle);
 
 	// Write data
-	qd_push_p(ctx, write_handle.value.p);
+	qd_push_raw(ctx, write_handle.value.p);
 	qd_push_s(ctx, test_data);
 	int result = write_text(ctx);
 	ASSERT_EQ(result, 0, "write should succeed");
@@ -185,7 +185,7 @@ TEST(IoWriteReadStringTest) {
 	ASSERT_EQ((int)written.value.i, (int)strlen(test_data), "should write all bytes");
 
 	// Close write handle
-	qd_push_p(ctx, write_handle.value.p);
+	qd_push_raw(ctx, write_handle.value.p);
 	usr_io_close(ctx);
 
 	// Open for reading
@@ -197,7 +197,7 @@ TEST(IoWriteReadStringTest) {
 	qd_stack_pop(ctx->st, &read_handle);
 
 	// Read data
-	qd_push_p(ctx, read_handle.value.p);
+	qd_push_raw(ctx, read_handle.value.p);
 	qd_push_i(ctx, 100);
 	result = read_text(ctx);
 	ASSERT_EQ(result, 0, "read should succeed");
@@ -216,7 +216,7 @@ TEST(IoWriteReadStringTest) {
 	qd_string_release(data.value.s);
 
 	// Close read handle
-	qd_push_p(ctx, read_handle.value.p);
+	qd_push_raw(ctx, read_handle.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -237,7 +237,7 @@ TEST(IoWriteReadEmptyTest) {
 	qd_stack_pop(ctx->st, &handle);
 
 	// Write empty string
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_s(ctx, "");
 	write_text(ctx);
 	qd_stack_pop(ctx->st, &status);
@@ -245,7 +245,7 @@ TEST(IoWriteReadEmptyTest) {
 	qd_stack_pop(ctx->st, &written);
 	ASSERT_EQ((int)written.value.i, 0, "should write 0 bytes");
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_close(ctx);
 
 	// Read from empty file
@@ -255,7 +255,7 @@ TEST(IoWriteReadEmptyTest) {
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_pop(ctx->st, &handle);
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_i(ctx, 100);
 	read_text(ctx);
 	qd_stack_pop(ctx->st, &status);
@@ -267,7 +267,7 @@ TEST(IoWriteReadEmptyTest) {
 	ASSERT_STR_EQ(qd_string_data(data.value.s), "", "should read empty string");
 	qd_string_release(data.value.s);
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -287,14 +287,14 @@ TEST(IoSeekTellTest) {
 	qd_stack_element_t handle;
 	qd_stack_pop(ctx->st, &handle);
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_s(ctx, "0123456789");
 	write_text(ctx);
 	qd_stack_pop(ctx->st, &status);
 	qd_stack_element_t written;
 	qd_stack_pop(ctx->st, &written);
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_close(ctx);
 
 	// Open for reading
@@ -305,7 +305,7 @@ TEST(IoSeekTellTest) {
 	qd_stack_pop(ctx->st, &handle);
 
 	// Seek to position 5 (SEEK_SET = 0)
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_i(ctx, 5);
 	qd_push_i(ctx, 0);
 	int result = usr_io_seek(ctx);
@@ -318,7 +318,7 @@ TEST(IoSeekTellTest) {
 	ASSERT_EQ((int)pos.value.i, 5, "position should be 5");
 
 	// Read from position 5
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_i(ctx, 5);
 	read_text(ctx);
 	qd_stack_pop(ctx->st, &status);
@@ -329,7 +329,7 @@ TEST(IoSeekTellTest) {
 	ASSERT_STR_EQ(qd_string_data(data.value.s), "56789", "should read from position 5");
 	qd_string_release(data.value.s);
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -355,7 +355,7 @@ TEST(IoSeekEndTest) {
 	qd_stack_pop(ctx->st, &handle);
 
 	// Seek to end (SEEK_END = 2)
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_i(ctx, 0);
 	qd_push_i(ctx, 2);
 	usr_io_seek(ctx);
@@ -365,7 +365,7 @@ TEST(IoSeekEndTest) {
 	ASSERT_EQ((int)pos.value.i, 10, "end position should be 10");
 
 	// Seek -3 from current (SEEK_CUR = 1)
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_i(ctx, -3);
 	qd_push_i(ctx, 1);
 	usr_io_seek(ctx);
@@ -373,7 +373,7 @@ TEST(IoSeekEndTest) {
 	qd_stack_pop(ctx->st, &pos);
 	ASSERT_EQ((int)pos.value.i, 7, "position should be 7");
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -399,7 +399,7 @@ TEST(IoEofTest) {
 	qd_stack_pop(ctx->st, &handle);
 
 	// Check EOF before reading (should be 0)
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_eof(ctx);
 	qd_stack_element_t eof;
 	qd_stack_pop(ctx->st, &eof);
@@ -409,7 +409,7 @@ TEST(IoEofTest) {
 	qd_stack_pop(ctx->st, &handle);
 
 	// Read all content
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	qd_push_i(ctx, 10);
 	read_text(ctx);
 	qd_stack_pop(ctx->st, &status);
@@ -420,7 +420,7 @@ TEST(IoEofTest) {
 	qd_string_release(data.value.s);
 
 	// Check EOF after reading to end (should be 1)
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_eof(ctx);
 	qd_stack_pop(ctx->st, &eof);
 	ASSERT_EQ((int)eof.value.i, 1, "EOF should be 1 after reading all");
@@ -428,7 +428,7 @@ TEST(IoEofTest) {
 	// Pop handle left on stack
 	qd_stack_pop(ctx->st, &handle);
 
-	qd_push_p(ctx, handle.value.p);
+	qd_push_raw(ctx, handle.value.p);
 	usr_io_close(ctx);
 
 	unlink(path);
@@ -522,14 +522,14 @@ TEST(IoMemoryTest) {
 		qd_stack_element_t handle;
 		qd_stack_pop(ctx->st, &handle);
 
-		qd_push_p(ctx, handle.value.p);
+		qd_push_raw(ctx, handle.value.p);
 		qd_push_s(ctx, "test data for memory check");
 		write_text(ctx);
 		qd_stack_pop(ctx->st, &status);
 		qd_stack_element_t written;
 		qd_stack_pop(ctx->st, &written);
 
-		qd_push_p(ctx, handle.value.p);
+		qd_push_raw(ctx, handle.value.p);
 		usr_io_close(ctx);
 
 		// Read
@@ -539,7 +539,7 @@ TEST(IoMemoryTest) {
 		qd_stack_pop(ctx->st, &status);
 		qd_stack_pop(ctx->st, &handle);
 
-		qd_push_p(ctx, handle.value.p);
+		qd_push_raw(ctx, handle.value.p);
 		qd_push_i(ctx, 100);
 		read_text(ctx);
 		qd_stack_pop(ctx->st, &status);
@@ -549,7 +549,7 @@ TEST(IoMemoryTest) {
 		qd_stack_pop(ctx->st, &data);
 		qd_string_release(data.value.s);
 
-		qd_push_p(ctx, handle.value.p);
+		qd_push_raw(ctx, handle.value.p);
 		usr_io_close(ctx);
 	}
 

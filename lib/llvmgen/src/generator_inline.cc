@@ -645,21 +645,12 @@ namespace Qd {
 	}
 
 	// The slot's reference, given up once the native version is done with the address, as the
-	// stack version's consuming it would have
+	// stack version's consuming it would have. A string's slot owns one (isRaw null); a `ptr` is
+	// raw memory and holds none.
 	void LlvmGenerator::Impl::releasePoppedPtr(llvm::Value* address, llvm::Value* isRaw) {
-		// A string's slot always owns a reference (isRaw null)
 		if (!isRaw) {
 			builder->CreateCall(qdStringReleaseFn, {builder->CreateIntToPtr(address, ptrTy, "release_str")});
-			return;
 		}
-		llvm::Function* fn = builder->GetInsertBlock()->getParent();
-		llvm::BasicBlock* releaseBlock = llvm::BasicBlock::Create(*context, "ptr_release", fn);
-		llvm::BasicBlock* doneBlock = llvm::BasicBlock::Create(*context, "ptr_released", fn);
-		builder->CreateCondBr(isRaw, doneBlock, releaseBlock);
-		builder->SetInsertPoint(releaseBlock);
-		builder->CreateCall(qdPtrReleaseFn, {builder->CreateIntToPtr(address, ptrTy, "release_ptr")});
-		builder->CreateBr(doneBlock);
-		builder->SetInsertPoint(doneBlock);
 	}
 
 	// mem::get_* ( address:ptr offset:i64 -- value ) and mem::set_* ( value address:ptr offset:i64 -- )

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`[n]fn(...)`**: a table of function values, set and called by index. A `[]ptr` holds raw memory only, so this is where one goes.
 - **`math::v3_add`, `v3_sub`, `v3_scale`, `v3_dot`, `v3_cross`, `v3_length`, `v3_length_sq` and `v3_normalize`**: 3D vectors as three f64s on the stack, `( ax ay az bx by bz -- x y z )`. Native code, no allocation: the fast way for inner loops.
 - **`qd_push_raw(ctx, ptr)`**: push a pointer to raw memory, never an array or a struct; retains and releases skip it. `mem::alloc`, `mem::from_string`, `mem::ptr_add` into a buffer and `strings::data` use it.
 - **A global can hold an array or a function value**: `var cells:[]f64 = [1024]f64`, `var show:fn(i64 --) = &plain`, typed and checked as a local is. A store of the wrong type into any global is now an error.
@@ -72,6 +73,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`set` and `append` check a pointer element by its type**, as a call checks an argument: a struct, an array or a function value is refused by a `[]ptr`, and a `[]Point` takes no other struct. Only scalars were checked. `nth` on a `[]ptr` gives a `ptr`.
+- **`cast<ptr>` of a struct or an array gives its address as raw memory** and gives up the reference the slot held, which it used to keep, so the object leaked.
+- **A function value is a counted struct.** A closure is made by the runtime with a struct header and a destructor that frees its captures, and is copied, released and freed as any struct is; `&name` and a lambda that captures nothing are a static value per function. `call` tells a closure from a named function by its environment instead of asking a registry, and a native calls one with `qd_call_value`. A closure handed to `http::GET`, `thread::spawn` or `once::do` used to be cast to a C function pointer and crash.
+- **The pointer registries are gone.** Every stack slot, field, array and `mem::set_any` slot knows what kind of pointer it holds, so nothing has to be looked up: a struct, an array and a closure are retained and released by their own header, and a pointer of no kind is raw memory. The hash tables, and the mutex every pointer copy took, went with them; `qd_ptr_retain`, `qd_ptr_release`, `qd_struct_is_valid` and `qd_closure_register` are removed from the C API. `qd_push_p` is gone too: `qd_push_raw` pushes raw memory, and `qd_push_struct` and `qd_push_array` a counted object. `qd_struct_retain_known` and its three siblings are the plain `qd_struct_retain`, `qd_struct_release`, `qd_array_retain` and `qd_array_release`, which check the header's magic and leave anything else alone.
+- **A `ptr` is raw memory.** A struct, an array, a string or a function value passed, stored or returned where a `ptr` is declared is a compile error, and so is a `ptr` passed where a function value is; `null` is still a `ptr` and a `*T`. A `ptr` is pushed as raw memory, with nothing to retain or release, so the runtime no longer searches its registries for one. Declare what a value is: `def h(c:http::Ctx -- )`, `-- f:fn(i64 -- i64)`. `http::GET` and the other routes, `use` and the `group_` words take `fn(Ctx --)`; `thread::spawn` takes `fn(--)`; `os::walk` and `os::popen` take their callback's type. `mem::get_ptr` reads a raw address and no longer retains; keep a struct in memory with `mem::set_any`.
+- **`*T` fields and `mem::set_any` keep what kind of pointer they hold**, so a node read out of a list, or an element out of a `ct` container, is counted as the struct it is instead of being looked up in the registries.
+- **A word with no inputs has a native version**, as `fn answer( -- n:i64) { 42 }` or `fn tick( -- ) { count 1 + -> count }`. They were left out with no reason given, which hid the bug below.
 - **The raytracer keeps its vectors on the stack**, three f64s each, with math's `v3` words; nothing is allocated per ray. 15 s to 1.9 s, the same image.
 - **A function taking a `str` has a native version** when it only reads the string with `len` and `nth`, as `each` over one does, or passes it on. `within` has a native form. `wc` on 25 MB: 8.2 s to 0.17 s.
 - **`Sha256`, `Sha512` and `Md5` `update` copy input with `mem::copy`** and hash whole blocks in place. `sha256sum` on 25 MB: 77 s to 0.43 s.
@@ -162,6 +170,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Leaks the registries hid**, now that nothing keeps every object reachable until exit: a closure's captured strings and structs, a struct's function-valued fields, and the array `strings::sort`, `sort_desc`, `join` and `column` are handed.
+- **`librt.a` kept objects from deleted sources.** The Makefile repacked each static library with `ar rcs`, which adds and replaces members but never removes one, so an object from a long-gone `memory.c` was still linked into embedded modules. Each archive is now rebuilt from scratch.
+- **A struct in a generic field was freed while the struct still held it**: `Box<P>` counted only a string in its field, so each read of a `P` that was dropped took one of the box's references. A generic field now holds a whole stack slot and owns it.
+- **`set` on an array of structs or arrays leaked the element it replaced.**
+- **A `ptr` result took the struct type of any pointer argument**, so `get(re:Nfa i:i64 -- cc:ptr)` read as returning the Nfa and its result was refused where another struct was wanted.
+- **An anonymous function with a struct parameter had the type `fn(ptr --)`**, so `def(c:http::Ctx -- ) { }` matched no handler parameter.
+- **A native function read a `str` global as an address and a `str` constant as nothing**, so `name print` printed a number. A function reading or storing a global or constant that is not a number keeps its stack-based body.
 - **`mem::get_ptr` did not retain what it read back**, so dropping it could free a struct still in memory.
 - **A call to another module's word cost the caller its native version**: declaration order decided it.
 - **A store into a global or a struct field in a loop grew the machine stack** until it overflowed: csvcut crashed on long files.
@@ -409,6 +424,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **`as Type`.** It narrowed a `ptr` to a struct; a `ptr` never holds one now, so a value keeps the type it was declared with. Using it reports that it has been removed.
 - **`fmt::print`.** It printed a string without a newline, which is what the builtin `print` does for every value.
 - **`strings::len`.** The builtin `len` counts a string's characters now, as `strings::len` did, so the two said the same thing -- the reason `math::within` went. `quadfmt --migrate` writes `len`. `strings::char_at` stays: past the end it gives `NotAChar` where `nth` fails.
 - **The operators' word forms**: `add`, `sub`, `mul`, `div`, `mod`, `inc`, `dec`, `eq`, `neq`, `lt`, `lte`, `gt`, `gte`. Every operator had two spellings, the words were barely used, and the comparison names did not even agree on a length (`eq`/`lt`, `neq`/`lte`). The symbols are the one spelling: `+ - * / % ++ --` and `== != < <= > >=`. Each word reports its symbol, and `quadfmt --migrate` rewrites them, leaving alone a local, field or method of the same name. `neg` stays, having no symbol. With the names free, a program may now define a function called `add`.

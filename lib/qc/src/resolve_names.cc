@@ -8,7 +8,6 @@
 
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_array_literal.h>
-#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
 #include <quadrate/qc/ast_node_field_access.h>
@@ -188,11 +187,6 @@ namespace Qd {
 				case IAstNode::Type::FIELD_SET: {
 					auto* set = static_cast<AstNodeFieldSet*>(node);
 					set->setStructType(structType(set->structType()));
-					break;
-				}
-				case IAstNode::Type::AS_CAST: {
-					auto* cast = static_cast<AstNodeAsCast*>(node);
-					cast->setTypeName(structType(cast->typeName()));
 					break;
 				}
 				case IAstNode::Type::ARRAY_LITERAL: {

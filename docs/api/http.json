@@ -411,10 +411,10 @@
     },
     {
       "name": "ANY",
-      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "signature": "(engine:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register handler for any HTTP method.",
-      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
       "examples": []
@@ -451,10 +451,10 @@
     },
     {
       "name": "DELETE",
-      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "signature": "(engine:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register DELETE route.",
-      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
       "examples": []
@@ -491,13 +491,13 @@
     },
     {
       "name": "GET",
-      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "signature": "(engine:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register GET route.   - :param for path parameters (e.g., \"/users/:id\")   - /* for wildcard suffix (e.g., \"/static/*\" matches /static/anything)",
-      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path. Supports"}, {"name": "handler", "type": "ptr", "description": "Handler function receiving Ctx"}],
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path. Supports"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function receiving Ctx"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/\" def(c:Ctx -- ) { c 200 \"Hello\" http::string } http::GET"]
+      "examples": ["e \"/\" def(c:http::Ctx -- ) { c 200 \"Hello\" http::string } http::GET"]
     },
     {
       "name": "get_header",
@@ -521,7 +521,7 @@
     },
     {
       "name": "group_DELETE",
-      "signature": "(group:ptr path:str handler:ptr -- )",
+      "signature": "(group:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register DELETE on group.",
       "params": [],
@@ -541,17 +541,17 @@
     },
     {
       "name": "group_GET",
-      "signature": "(group:ptr path:str handler:ptr -- )",
+      "signature": "(group:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register GET on group.",
-      "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "path", "type": "str", "description": "Route path (relative to group prefix)"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "path", "type": "str", "description": "Route path (relative to group prefix)"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api \"/users\" def(c:Ctx -- ) { c 200 \"users\" http::string } http::group_GET"]
+      "examples": ["api \"/users\" def(c:http::Ctx -- ) { c 200 \"users\" http::string } http::group_GET"]
     },
     {
       "name": "group_POST",
-      "signature": "(group:ptr path:str handler:ptr -- )",
+      "signature": "(group:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register POST on group.",
       "params": [],
@@ -561,7 +561,7 @@
     },
     {
       "name": "group_PUT",
-      "signature": "(group:ptr path:str handler:ptr -- )",
+      "signature": "(group:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register PUT on group.",
       "params": [],
@@ -571,13 +571,13 @@
     },
     {
       "name": "group_use",
-      "signature": "(group:ptr middleware:ptr -- )",
+      "signature": "(group:ptr middleware:fn(Ctx --) -- )",
       "failable": false,
       "description": "Add middleware to group.",
-      "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
+      "params": [{"name": "group", "type": "ptr", "description": "Group handle"}, {"name": "middleware", "type": "fn(Ctx --)", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["api def(c:Ctx -- ) { c \"X-Group\" \"api\" http::set_header } http::group_use"]
+      "examples": ["api def(c:http::Ctx -- ) { c \"X-Group\" \"api\" http::set_header } http::group_use"]
     },
     {
       "name": "handle_one",
@@ -661,20 +661,20 @@
     },
     {
       "name": "POST",
-      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "signature": "(engine:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register POST route.",
-      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e \"/api/users\" def(c:Ctx -- ) { c 200 \"created\" http::string } http::POST"]
+      "examples": ["e \"/api/users\" def(c:http::Ctx -- ) { c 200 \"created\" http::string } http::POST"]
     },
     {
       "name": "PUT",
-      "signature": "(engine:ptr path:str handler:ptr -- )",
+      "signature": "(engine:ptr path:str handler:fn(Ctx --) -- )",
       "failable": false,
       "description": "Register PUT route.",
-      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "ptr", "description": "Handler function"}],
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "path", "type": "str", "description": "Route path"}, {"name": "handler", "type": "fn(Ctx --)", "description": "Handler function"}],
       "returns": [],
       "errors": [],
       "examples": []
@@ -773,7 +773,7 @@
       "name": "static",
       "signature": "(c:Ctx prefix:str fs_path:str -- )",
       "failable": false,
-      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:ptr -- ) {     -> c     c \"/static\" \"./public\" http::static } e \"/static/*\" &handle_static http::GET",
+      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:http::Ctx -- ) {     c \"/static\" \"./public\" http::static } e \"/static/*\" &handle_static http::GET",
       "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "prefix", "type": "str", "description": "URL prefix to strip (e.g., \"/static\")"}, {"name": "fs_path", "type": "str", "description": "Filesystem directory path (e.g., \"./public\")"}],
       "returns": [],
       "errors": [],
@@ -811,13 +811,13 @@
     },
     {
       "name": "use",
-      "signature": "(engine:ptr middleware:ptr -- )",
+      "signature": "(engine:ptr middleware:fn(Ctx --) -- )",
       "failable": false,
       "description": "Add middleware to engine. Middleware runs before route handlers on every request.",
-      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "middleware", "type": "ptr", "description": "Middleware function"}],
+      "params": [{"name": "engine", "type": "ptr", "description": "Engine"}, {"name": "middleware", "type": "fn(Ctx --)", "description": "Middleware function"}],
       "returns": [],
       "errors": [],
-      "examples": ["e def(c:Ctx -- ) { c \"X-Server\" \"Quadrate\" http::set_header } http::use"]
+      "examples": ["e def(c:http::Ctx -- ) { c \"X-Server\" \"Quadrate\" http::set_header } http::use"]
     }
   ]
 }

@@ -94,21 +94,19 @@ struct Line {
 line <<start <<x print nl  // read x from start point of line
 ```
 
-### Type narrowing for ptr values
+### Structs are not `ptr`
 
-When a value is typed as `ptr` (e.g., in callback handlers), use `as` to tell the compiler which struct type it is:
+A struct is passed with its own type: a `ptr` is raw memory and never holds one (see
+[`ptr` is raw memory](types.md#ptr-is-raw-memory)). An http handler takes the context it is given
+as `http::Ctx`:
 
 ```qd
 use http
 
-def handler(c:ptr -- ) {
-	c as http::Ctx <<body -> body
+def handler(c:http::Ctx -- ) {
+	c <<body -> body
 }
 ```
-
-If multiple structs share a field name and the compiler cannot determine the type, accessing `<<field` on an untyped `ptr` is a compile error. Use `as StructType` to disambiguate.
-
-See [Type Casting](types.md#type-narrowing-with-as) for details.
 
 ---
 

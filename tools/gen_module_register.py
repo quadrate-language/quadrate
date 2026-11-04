@@ -18,7 +18,8 @@ import sys
 # `pub fn name(effect)` or `fn name(effect)`, with an optional trailing `!`
 # marking a fallible word. Only the parenthesised stack effect is kept; the
 # runtime's arity check reads it back.
-DECL = re.compile(r"^\s*(?:pub\s+)?(?:inline\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*(\([^)]*\))\s*!?\s*$")
+# A parameter of function type, `f:fn(str --)`, nests one level of parentheses.
+DECL = re.compile(r"^\s*(?:pub\s+)?(?:inline\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*(\((?:[^()]|\([^()]*\))*\))\s*!?\s*$")
 
 # Anything that opens a declaration. A line that starts one but does not match
 # DECL -- a stack effect wrapped across lines, say -- is a hard error rather

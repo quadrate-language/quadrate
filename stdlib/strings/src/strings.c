@@ -704,6 +704,7 @@ int usr_strings_sort(qd_context* ctx) {
 		qsort(arr, (size_t)count, sizeof(qd_string_t*), str_cmp_asc);
 	}
 
+	qd_array_release((qd_array_t*)array); // qd_args handed over the stack's reference
 	return (int){0};
 }
 
@@ -719,6 +720,7 @@ int usr_strings_sort_desc(qd_context* ctx) {
 		qsort(arr, (size_t)count, sizeof(qd_string_t*), str_cmp_desc);
 	}
 
+	qd_array_release((qd_array_t*)array); // qd_args handed over the stack's reference
 	return (int){0};
 }
 
@@ -907,11 +909,19 @@ int usr_strings_last_index_of(qd_context* ctx) {
 }
 
 // join - join array of strings with delimiter ( parts:[]str delim:s -- result:s )!
+static int strings_join(qd_context* ctx, void* parts_array, qd_string_t* delim_s);
+
+// The array comes with the reference the stack held, given back once the join is done
 int usr_strings_join(qd_context* ctx) {
 	void* parts_array;
 	qd_string_t* delim_s;
 	qd_args(ctx, "strings::join", "ps", &parts_array, &delim_s);
+	const int result = strings_join(ctx, parts_array, delim_s);
+	qd_array_release((qd_array_t*)parts_array);
+	return result;
+}
 
+static int strings_join(qd_context* ctx, void* parts_array, qd_string_t* delim_s) {
 	int64_t count = strings_array_count(parts_array);
 	const char* delim = qd_string_data(delim_s);
 	size_t delim_len = strlen(delim);
@@ -1862,12 +1872,20 @@ int usr_strings_slice(qd_context* ctx) {
 }
 
 // column - format strings into columns ( arr:[]str widths:p num_cols:i -- result:s )
+static int strings_column(qd_context* ctx, void* array, void* widths_p, int64_t num_cols);
+
+// The array comes with the reference the stack held, given back once the columns are laid out
 int usr_strings_column(qd_context* ctx) {
 	void* array;
 	void* widths_p;
 	int64_t num_cols;
 	qd_args(ctx, "strings::column", "ppi", &array, &widths_p, &num_cols);
+	const int result = strings_column(ctx, array, widths_p, num_cols);
+	qd_array_release((qd_array_t*)array);
+	return result;
+}
 
+static int strings_column(qd_context* ctx, void* array, void* widths_p, int64_t num_cols) {
 	qd_string_t** arr = strings_array_elems(ctx, array, "strings::column");
 	int64_t count = strings_array_count(array);
 	int64_t* widths = (int64_t*)widths_p;

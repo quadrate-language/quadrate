@@ -2,7 +2,7 @@
 
 fn main() {
 	// Create array of one string array
-	[1]ptr -> outer
+	[1][]str -> outer
 
 	[3]str -> words
 	words 0 "hello" set
@@ -12,9 +12,9 @@ fn main() {
 	outer 0 words set
 
 	// Access and print
-	"[0][0]: " print outer 0 nth cast<ptr> 0 nth print nl
-	"[0][1]: " print outer 0 nth cast<ptr> 1 nth print nl
-	"[0][2]: " print outer 0 nth cast<ptr> 2 nth print nl
+	"[0][0]: " print outer 0 nth 0 nth print nl
+	"[0][1]: " print outer 0 nth 1 nth print nl
+	"[0][2]: " print outer 0 nth 2 nth print nl
 
 	outer free
 }

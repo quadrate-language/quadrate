@@ -120,13 +120,13 @@ c 401 "Unauthorized" http::abort
 
 Register handler for any HTTP method.
 
-**Signature:** `(engine:ptr path:str handler:ptr -- )`
+**Signature:** `(engine:ptr path:str handler:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
-| `handler` | `ptr` | Handler function |
+| `handler` | `fn(Ctx --)` | Handler function |
 ---
 
 ### `fn` body
@@ -187,13 +187,13 @@ resp http::close
 
 Register DELETE route.
 
-**Signature:** `(engine:ptr path:str handler:ptr -- )`
+**Signature:** `(engine:ptr path:str handler:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
-| `handler` | `ptr` | Handler function |
+| `handler` | `fn(Ctx --)` | Handler function |
 ---
 
 ### `fn` engine
@@ -251,18 +251,18 @@ req http::free_request
 
 Register GET route.   - :param for path parameters (e.g., "/users/:id")   - /* for wildcard suffix (e.g., "/static/*" matches /static/anything)
 
-**Signature:** `(engine:ptr path:str handler:ptr -- )`
+**Signature:** `(engine:ptr path:str handler:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path. Supports |
-| `handler` | `ptr` | Handler function receiving Ctx |
+| `handler` | `fn(Ctx --)` | Handler function receiving Ctx |
 
 **Example:**
 
 ```qd
-e "/" def(c:Ctx -- ) { c 200 "Hello" http::string } http::GET
+e "/" def(c:http::Ctx -- ) { c 200 "Hello" http::string } http::GET
 ```
 ---
 
@@ -292,7 +292,7 @@ c "Content-Type" http::get_header  // ct
 
 Register DELETE on group.
 
-**Signature:** `(group:ptr path:str handler:ptr -- )`
+**Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
 ---
 
 ### `fn` group
@@ -321,18 +321,18 @@ e "/api" http::group  // api
 
 Register GET on group.
 
-**Signature:** `(group:ptr path:str handler:ptr -- )`
+**Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `group` | `ptr` | Group handle |
 | `path` | `str` | Route path (relative to group prefix) |
-| `handler` | `ptr` | Handler function |
+| `handler` | `fn(Ctx --)` | Handler function |
 
 **Example:**
 
 ```qd
-api "/users" def(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
+api "/users" def(c:http::Ctx -- ) { c 200 "users" http::string } http::group_GET
 ```
 ---
 
@@ -340,31 +340,31 @@ api "/users" def(c:Ctx -- ) { c 200 "users" http::string } http::group_GET
 
 Register POST on group.
 
-**Signature:** `(group:ptr path:str handler:ptr -- )`
+**Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
 ---
 
 ### `fn` group_PUT
 
 Register PUT on group.
 
-**Signature:** `(group:ptr path:str handler:ptr -- )`
+**Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
 ---
 
 ### `fn` group_use
 
 Add middleware to group.
 
-**Signature:** `(group:ptr middleware:ptr -- )`
+**Signature:** `(group:ptr middleware:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `group` | `ptr` | Group handle |
-| `middleware` | `ptr` | Middleware function |
+| `middleware` | `fn(Ctx --)` | Middleware function |
 
 **Example:**
 
 ```qd
-api def(c:Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
+api def(c:http::Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
 ```
 ---
 
@@ -532,18 +532,18 @@ c "id" http::param  // id
 
 Register POST route.
 
-**Signature:** `(engine:ptr path:str handler:ptr -- )`
+**Signature:** `(engine:ptr path:str handler:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
-| `handler` | `ptr` | Handler function |
+| `handler` | `fn(Ctx --)` | Handler function |
 
 **Example:**
 
 ```qd
-e "/api/users" def(c:Ctx -- ) { c 200 "created" http::string } http::POST
+e "/api/users" def(c:http::Ctx -- ) { c 200 "created" http::string } http::POST
 ```
 ---
 
@@ -551,13 +551,13 @@ e "/api/users" def(c:Ctx -- ) { c 200 "created" http::string } http::POST
 
 Register PUT route.
 
-**Signature:** `(engine:ptr path:str handler:ptr -- )`
+**Signature:** `(engine:ptr path:str handler:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
-| `handler` | `ptr` | Handler function |
+| `handler` | `fn(Ctx --)` | Handler function |
 ---
 
 ### `fn` query_param
@@ -717,7 +717,7 @@ c http::sse_start
 
 ### `fn` static
 
-Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:ptr -- ) {     -> c     c "/static" "./public" http::static } e "/static/*" &handle_static http::GET
+Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:http::Ctx -- ) {     c "/static" "./public" http::static } e "/static/*" &handle_static http::GET
 
 **Signature:** `(c:Ctx prefix:str fs_path:str -- )`
 
@@ -786,17 +786,17 @@ c 200 "Hello, World!" http::string
 
 Add middleware to engine. Middleware runs before route handlers on every request.
 
-**Signature:** `(engine:ptr middleware:ptr -- )`
+**Signature:** `(engine:ptr middleware:fn(Ctx --) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `engine` | `ptr` | Engine |
-| `middleware` | `ptr` | Middleware function |
+| `middleware` | `fn(Ctx --)` | Middleware function |
 
 **Example:**
 
 ```qd
-e def(c:Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
+e def(c:http::Ctx -- ) { c "X-Server" "Quadrate" http::set_header } http::use
 ```
 ## Ctx
 

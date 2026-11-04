@@ -10,25 +10,17 @@
 #include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/stack.h>
 
-#include "ptr_registry.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// Global registry of valid array pointers
-// Note: We use a pointer registry rather than magic numbers because
-// qd_ptr_retain/release can receive any pointer, including raw memory
-// from mem::alloc. Reading uninitialized memory for magic number check
-// causes valgrind errors.
-static ptr_registry_t array_registry = PTR_REGISTRY_INITIALIZER;
-
+// An array is known by the slot or field that holds it, never looked up: there is no registry
+// of them. This checks the magic of a pointer that is an array or null, and a freed array's is
+// cleared before it goes.
 int qd_array_is_valid(const void* ptr) {
-	if (!ptr) {
-		return 0;
-	}
-	return ptr_registry_contains(&array_registry, ptr);
+	return ptr != NULL && ((const qd_array_t*)ptr)->magic == QD_ARRAY_MAGIC;
 }
 
 // An untyped array becoming a d128 one. Its pointer-sized buffer holds nothing yet but
@@ -67,6 +59,7 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 	arr->length = 0;
 	arr->capacity = capacity;
 	arr->elemType = elemType;
+	arr->elemKind = 0;
 
 	// Allocate data based on element type
 	size_t elemSize;
@@ -114,55 +107,25 @@ qd_array_t* qd_array_create(size_t capacity, qd_array_type elemType) {
 		return NULL;
 	}
 
-	// Register this array pointer for validation
-	ptr_registry_add(&array_registry, arr);
-
 	return arr;
 }
 
+// One more reference. A pointer whose magic is not a live array's is left alone, as
+// qd_array_release leaves it.
 void qd_array_retain(qd_array_t* arr) {
-	if (arr) {
+	if (qd_array_is_valid(arr)) {
 		atomic_fetch_add(&arr->refcount, 1);
 	}
 }
 
-void qd_array_retain_known(void* p) {
-	qd_array_t* arr = (qd_array_t*)p;
-	if (arr == NULL) {
-		return;
-	}
-	if (arr->magic != QD_ARRAY_MAGIC) {
-		qd_ptr_retain(p);
-		return;
-	}
-	atomic_fetch_add(&arr->refcount, 1);
-}
-
 static void array_free_last(qd_array_t* arr);
-
-void qd_array_release_known(void* p) {
-	qd_array_t* arr = (qd_array_t*)p;
-	if (arr == NULL) {
-		return;
-	}
-	if (arr->magic != QD_ARRAY_MAGIC) {
-		qd_ptr_release(p);
-		return;
-	}
-	if (atomic_fetch_sub(&arr->refcount, 1) == 1) {
-		array_free_last(arr);
-	}
-}
 
 void qd_array_release(qd_array_t* arr) {
 	if (!arr) {
 		return;
 	}
 
-	// Validate against the registry BEFORE touching refcount. If the array has
-	// already been freed (and thus unregistered), the memory is no longer ours
-	// to read or decrement - bailing here avoids a use-after-free. This mirrors
-	// qd_struct_release.
+	// A freed array's magic is cleared, so one released again is left alone
 	if (!qd_array_is_valid(arr)) {
 		return;
 	}
@@ -180,6 +143,50 @@ void qd_array_release(qd_array_t* arr) {
 }
 
 // Its last reference gone: its contents, its registration, itself
+// An element of a pointer array, counted by the kind the array holds
+static void elem_retain(const qd_array_t* arr, void* p) {
+	if (p == NULL) {
+		return;
+	}
+	switch (arr->elemKind) {
+	case QD_PTR_RAW:
+		break;
+	case QD_PTR_STRUCT:
+		qd_struct_retain(p);
+		break;
+	case QD_PTR_ARRAY:
+		qd_array_retain(p);
+		break;
+	default:
+		break; // raw memory
+	}
+}
+
+static void elem_release(const qd_array_t* arr, void* p) {
+	if (p == NULL) {
+		return;
+	}
+	switch (arr->elemKind) {
+	case QD_PTR_RAW:
+		break;
+	case QD_PTR_STRUCT:
+		qd_struct_release(p);
+		break;
+	case QD_PTR_ARRAY:
+		qd_array_release(p);
+		break;
+	default:
+		break; // raw memory
+	}
+}
+
+// The kind of the first pointer stored is the kind of all of them
+static void adopt_kind(qd_array_t* arr, const qd_stack_element_t* value) {
+	if (arr->elemType == QD_ARRAY_TYPE_PTR && value->type == QD_STACK_TYPE_PTR && arr->elemKind == 0) {
+		arr->elemKind = value->ptr_kind;
+	}
+}
+
 static void array_free_last(qd_array_t* arr) {
 	// Free contents
 	switch (arr->elemType) {
@@ -207,22 +214,14 @@ static void array_free_last(qd_array_t* arr) {
 		free(arr->data.d);
 		break;
 	case QD_ARRAY_TYPE_PTR:
-		// Release all references (arrays, structs, or raw pointers)
 		for (size_t i = 0; i < arr->length; i++) {
-			if (arr->data.p[i]) {
-				if (qd_array_is_valid(arr->data.p[i])) {
-					qd_array_release((qd_array_t*)arr->data.p[i]);
-				} else {
-					qd_struct_release(arr->data.p[i]);
-				}
-			}
+			elem_release(arr, arr->data.p[i]);
 		}
 		free(arr->data.p);
 		break;
 	}
 
 	// Unregister from the array registry
-	ptr_registry_remove(&array_registry, arr);
 
 	// Clear magic to prevent double-free detection
 	arr->magic = 0;
@@ -620,15 +619,8 @@ static int nth_array(qd_context* ctx, void* p, int64_t index) {
 		break;
 	case QD_ARRAY_TYPE_PTR: {
 		void* ptr = arr->data.p[index];
-		if (ptr) {
-			// Retain the pointer - could be array or struct
-			if (qd_array_is_valid(ptr)) {
-				qd_array_retain((qd_array_t*)ptr);
-			} else {
-				qd_struct_retain(ptr);
-			}
-		}
-		qd_push_p(ctx, ptr);
+		elem_retain(arr, ptr);
+		qd_push_ptr_kind(ctx, ptr, arr->elemKind);
 		break;
 	}
 	}
@@ -683,6 +675,7 @@ int qd_clone_array(qd_context* ctx) {
 		qd_array_release(src);
 		QDRT_FATAL(ctx, "clone", "Out of memory");
 	}
+	copy->elemKind = src->elemKind;
 	switch (src->elemType) {
 	case QD_ARRAY_TYPE_INT:
 		memcpy(copy->data.i, src->data.i, src->length * sizeof(int64_t));
@@ -701,13 +694,7 @@ int qd_clone_array(qd_context* ctx) {
 	case QD_ARRAY_TYPE_PTR:
 		for (size_t i = 0; i < src->length; i++) {
 			void* elem = src->data.p[i];
-			if (elem) {
-				if (qd_array_is_valid(elem)) {
-					qd_array_retain((qd_array_t*)elem);
-				} else {
-					qd_struct_retain(elem);
-				}
-			}
+			elem_retain(src, elem);
 			copy->data.p[i] = elem;
 		}
 		break;
@@ -774,6 +761,7 @@ int qd_append(qd_context* ctx) {
 	qd_args(ctx, "append", "pv", &p, &value);
 	qd_array_t* arr = array_arg(ctx, "append", p, &value);
 	adopt_type(ctx, "append", arr, &value);
+	adopt_kind(arr, &value);
 	check_fits(ctx, "append", arr, &value);
 
 	int appended = 0;
@@ -816,6 +804,7 @@ int qd_set(qd_context* ctx) {
 	qd_array_t* arr = array_arg(ctx, "set", p, &value);
 	check_index(ctx, "set", arr, index, &value);
 	adopt_type(ctx, "set", arr, &value);
+	adopt_kind(arr, &value);
 	check_fits(ctx, "set", arr, &value);
 
 	switch (arr->elemType) {
@@ -833,7 +822,10 @@ int qd_set(qd_context* ctx) {
 		arr->data.p[index] = value.value.s;
 		break;
 	case QD_ARRAY_TYPE_PTR:
-		qd_array_set_ptr(arr, (size_t)index, value.value.p);
+		// The array takes over the stack's reference, and gives back the one it held. It did not
+		// give that one back, so every element `set` replaced was leaked.
+		elem_release(arr, arr->data.p[index]);
+		arr->data.p[index] = value.value.p;
 		break;
 	case QD_ARRAY_TYPE_D128:
 		qd_array_set_d128(arr, (size_t)index, value.value.d);

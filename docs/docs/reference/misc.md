@@ -109,7 +109,7 @@ def op_mul(a:i64 b:i64 -- r:i64) {
 }
 
 fn main() {
-	[3]ptr -> ops
+	[3]fn(i64 i64 -- i64) -> ops
 	ops 0 &op_add set
 	ops 1 &op_sub set
 	ops 2 &op_mul set

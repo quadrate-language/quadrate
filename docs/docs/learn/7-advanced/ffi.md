@@ -105,7 +105,7 @@ qd_pop_p(ctx, &p);
 qd_push_i(ctx, 42);
 qd_push_f(ctx, 3.14);
 qd_push_s(ctx, "hello");
-qd_push_p(ctx, some_pointer);
+qd_push_raw(ctx, some_pointer);
 ```
 
 ## Type mapping
@@ -115,7 +115,7 @@ qd_push_p(ctx, some_pointer);
 | `i64` | `int64_t` | `qd_pop_i(ctx, &val)` | `qd_push_i(ctx, val)` |
 | `f64` | `double` | `qd_pop_f(ctx, &val)` | `qd_push_f(ctx, val)` |
 | `str` | `char*` | `qd_pop_s(ctx, buf, size)` | `qd_push_s(ctx, str)` |
-| `ptr` | `void*` | `qd_pop_p(ctx, &val)` | `qd_push_p(ctx, ptr)` |
+| `ptr` | `void*` | `qd_pop_p(ctx, &val)` | `qd_push_raw(ctx, ptr)` |
 
 ## Complete example: math operations
 

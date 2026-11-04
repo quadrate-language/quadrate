@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <quadrate/os/os.h>
 #include <quadrate/rt/array.h>
+#include <quadrate/rt/qd_struct.h>
 #include <quadrate/rt/runtime.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -233,7 +234,7 @@ int usr_os_list(qd_context* ctx) {
 	}
 	qd_string_release(path);
 
-	qd_push_p(ctx, string_array_from(ctx, "os::list", entries, count));
+	qd_push_array(ctx, string_array_from(ctx, "os::list", entries, count));
 	qd_push_i(ctx, (int64_t)count);
 	qd_push_i(ctx, OS_ERR_OK);
 	return 0;
@@ -258,7 +259,7 @@ int usr_os_args(qd_context* ctx) {
 	}
 	args->length = (size_t)count;
 
-	qd_push_p(ctx, args);
+	qd_push_array(ctx, args);
 	return 0;
 }
 
@@ -279,6 +280,7 @@ int usr_os_popen(qd_context* ctx) {
 	const int err = errno;
 	qd_string_release(cmd);
 	if (pipe == NULL) {
+		qd_struct_release(callback);
 		return fail_errno(ctx, "os::popen", err);
 	}
 
@@ -291,14 +293,15 @@ int usr_os_popen(qd_context* ctx) {
 			line[line_len - 1] = '\0';
 		}
 		qd_push_s(ctx, line);
-		qd_push_p(ctx, callback);
-		if (qd_call(ctx) != 0) {
+		if (qd_call_value(ctx, callback) != 0) {
 			free(line);
 			pclose(pipe);
+			qd_struct_release(callback);
 			return qd_fail(ctx, OS_ERR_IO, "os::popen: the callback failed");
 		}
 	}
 	free(line);
+	qd_struct_release(callback);
 
 	qd_push_i(ctx, exit_status(pclose(pipe)));
 	qd_push_i(ctx, OS_ERR_OK);
@@ -401,8 +404,7 @@ static int walk_c_callback(const char* path, int is_dir, int depth, void* user_d
 	qd_push_s(ctx, path);
 	qd_push_i(ctx, is_dir);
 	qd_push_i(ctx, depth);
-	qd_push_p(ctx, wctx->callback_ptr);
-	if (qd_call(ctx) != 0) {
+	if (qd_call_value(ctx, wctx->callback_ptr) != 0) {
 		// Stop the walk. Recorded here because the stop code itself would read as an errno.
 		wctx->callback_failed = true;
 		return 1;
@@ -417,6 +419,7 @@ int usr_os_walk(qd_context* ctx) {
 	walk_callback_ctx wctx = {ctx, callback, false};
 	const int err = os_fs_walk(qd_string_data(path), walk_c_callback, &wctx);
 	qd_string_release(path);
+	qd_struct_release(callback);
 	if (wctx.callback_failed) {
 		return qd_fail(ctx, OS_ERR_IO, "os::walk: the callback failed");
 	}
@@ -435,7 +438,7 @@ int usr_os_glob(qd_context* ctx) {
 	qd_string_release(pattern);
 
 	// No matches is an empty array, not a null one: `entries len` used to be fatal
-	qd_push_p(ctx, string_array_from(ctx, "os::glob", entries, entries ? count : 0));
+	qd_push_array(ctx, string_array_from(ctx, "os::glob", entries, entries ? count : 0));
 	qd_push_i(ctx, entries ? (int64_t)count : 0);
 	qd_push_i(ctx, OS_ERR_OK);
 	return 0;

@@ -1,0 +1,30 @@
+// A `ptr` result takes the struct type of a `ptr` argument passed through it, and of nothing
+// else. It used to take an argument's type whatever that argument was declared, so `get` below
+// read as returning the Nfa it was given, and passing its result on to `take` was refused as an
+// Nfa where an Other was wanted. regex's character classes hit this.
+use mem
+
+struct Nfa {
+	cc: ptr
+}
+
+struct Other {
+	x: i64
+}
+
+def get(re:Nfa idx:i64 -- cc:ptr) {
+	idx -1 == if { null } else { re <<cc idx 8 * mem::get_ptr }
+}
+
+def take(o:Other c:i64 -- r:i64) {
+	o drop c
+}
+
+def run(re:Nfa idx:i64 c:i64 -- r:i64) {
+	re idx get c take
+}
+
+fn main() {
+	Nfa { cc = null } -> re
+	re -1 5 run print nl
+}

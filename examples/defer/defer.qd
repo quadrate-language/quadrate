@@ -9,12 +9,12 @@ struct Resource {
 	value: i64
 }
 
-fn create_resource(id:i64 -- r:ptr) {
+fn create_resource(id:i64 -- r:Resource) {
 	// Positional construction: the fields come off the stack in declaration order
 	dup 100 * Resource
 }
 
-fn destroy_resource(r:ptr -- ) {
+fn destroy_resource(r:Resource -- ) {
 	"  Destroying resource " print dup <<id print nl
 	free
 }

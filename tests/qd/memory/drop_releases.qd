@@ -2,8 +2,8 @@
 //
 // A stack slot owns one reference to a refcounted value. That was true for strings and not
 // for pointers: drop released a string and left an array or struct alone, on the reasoning
-// that a raw pointer is not necessarily a counted object -- but qd_ptr_release answers
-// exactly that, by array magic then the struct registry, and leaves anything else untouched.
+// that a raw pointer is not necessarily a counted object -- but the slot's kind answers
+// exactly that, and a raw pointer is left untouched.
 // So `drop` leaked every array and struct it discarded: 128,000 bytes over a thousand
 // iterations for an array where binding it instead was zero.
 //

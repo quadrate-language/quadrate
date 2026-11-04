@@ -4,7 +4,6 @@
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE
 #endif
-#include "ptr_registry.h"
 #include "runtime_internal.h"
 #include <inttypes.h>
 #include <math.h>
@@ -24,7 +23,6 @@
 static void dump_stack(qd_context* ctx);
 
 // Closure registry for safe closure detection
-static ptr_registry_t closure_registry = PTR_REGISTRY_INITIALIZER;
 
 // A target with no signals (a microcontroller under FreeRTOS, say) has no
 // sigaltstack either, and its own fault handler reports a crash.
@@ -307,23 +305,62 @@ int qd_fail(qd_context* ctx, int code, const char* fmt, ...) {
 	return code;
 }
 
-void qd_closure_register(void* ptr) {
-	if (ptr) {
-		ptr_registry_add(&closure_registry, ptr);
+// A function value is a struct: { function, environment, capture count }, with the struct
+// header in front of it, so it is counted, copied and released as any struct is. A named
+// function's value (`&name`) is a static one the compiler emits, with no environment and a
+// count that never reaches zero. A closure's function takes the environment as a second
+// argument; a named function takes none.
+typedef struct {
+	void* fn;
+	void** env;
+	int64_t captures;
+} qd_closure_t;
+
+// The last reference to a closure gives back its captures: each is a block { refcount, slot }
+// with the count in the eight bytes before the slot, shared by every closure that captured it,
+// and the last one gives back what the slot holds as well
+static void closure_destroy(void* fields) {
+	qd_closure_t* closure = (qd_closure_t*)fields;
+	for (int64_t i = 0; i < closure->captures; i++) {
+		char* block = (char*)closure->env[i] - sizeof(int64_t);
+		int64_t refcount;
+		memcpy(&refcount, block, sizeof(refcount));
+		refcount--;
+		memcpy(block, &refcount, sizeof(refcount));
+		if (refcount == 0) {
+			// The captured slot owns what it holds, a string or a struct as much as a number
+			qdrt_release_element((qd_stack_element_t*)(void*)closure->env[i]);
+			free(block);
+		}
 	}
+	free((void*)closure->env);
 }
 
-int qd_closure_is_valid(const void* ptr) {
-	if (!ptr) {
-		return 0;
+void* qd_closure_new(void* fn, void* env, int64_t captures) {
+	qd_closure_t* closure = (qd_closure_t*)qd_struct_alloc(sizeof(qd_closure_t), closure_destroy);
+	if (closure == NULL) {
+		fprintf(stderr, "Fatal error: out of memory making a closure\n");
+		abort();
 	}
-	return ptr_registry_contains(&closure_registry, ptr);
+	closure->fn = fn;
+	closure->env = (void**)env;
+	closure->captures = captures;
+	return closure;
 }
 
-void qd_closure_unregister(void* ptr) {
-	if (ptr) {
-		ptr_registry_remove(&closure_registry, ptr);
+int qd_call_value(qd_context* ctx, void* value) {
+	if (value == NULL) {
+		QDRT_FATAL(ctx, "call", "NULL function value");
 	}
+	const qd_closure_t* closure = (const qd_closure_t*)value;
+	if (closure->env != NULL) {
+		int (*fn)(qd_context*, void*);
+		memcpy(&fn, &closure->fn, sizeof(fn));
+		return fn(ctx, (void*)closure->env);
+	}
+	int (*fn)(qd_context*);
+	memcpy(&fn, &closure->fn, sizeof(fn));
+	return fn(ctx);
 }
 
 // A push that does not fit is a stack overflow, the same error compiled code raises for its
@@ -370,10 +407,6 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 	return 0;
 }
 
-int qd_push_p(qd_context* ctx, void* value) {
-	return push_result(ctx, qd_stack_push_ptr(ctx->st, value));
-}
-
 int qd_push_raw(qd_context* ctx, void* value) {
 	return push_result(ctx, qd_stack_push_raw(ctx->st, value));
 }
@@ -392,6 +425,10 @@ int qd_push_ptr_kind(qd_context* ctx, void* value, uint8_t kind) {
 
 int qd_push_slot(qd_context* ctx, const qd_stack_element_t* slot) {
 	return push_result(ctx, qdrt_push_element(ctx->st, slot));
+}
+
+void qd_retain_slot(const qd_stack_element_t* slot) {
+	qdrt_retain_element(slot);
 }
 
 void qd_release_slot(const qd_stack_element_t* slot) {
@@ -626,18 +663,14 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 			err = qd_stack_push_kind(stack, elem->value.p, elem->ptr_kind);
 			if (err == QD_STACK_OK) {
 				if (elem->ptr_kind == QD_PTR_STRUCT) {
-					qd_struct_retain_known(elem->value.p);
+					qd_struct_retain(elem->value.p);
 				} else {
-					qd_array_retain_known(elem->value.p);
+					qd_array_retain(elem->value.p);
 				}
 			}
 			break;
 		}
-		qd_ptr_retain(elem->value.p);
-		err = qd_stack_push_ptr(stack, elem->value.p);
-		if (err != QD_STACK_OK) {
-			qd_ptr_release(elem->value.p); // Cleanup on overflow
-		}
+		err = qd_stack_push_raw(stack, elem->value.p); // no kind: raw memory
 		break;
 	case QD_STACK_TYPE_D128:
 		err = qd_stack_push_d128(stack, elem->value.d);
@@ -666,64 +699,20 @@ static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* el
 
 // log10 - base 10 logarithm
 
-// Closure magic marker (0xCL05UR3E in leet speak)
-#define QD_CLOSURE_MAGIC 0xC105023E
-
-// Closure struct layout: { int64_t magic, void* fn_ptr, void* env_ptr }
-typedef struct {
-	int64_t magic;
-	void* fn_ptr;
-	void* env_ptr;
-} qd_closure_t;
-
-// call - invoke function pointer or closure from stack
+// call - invoke the function value on top of the stack. The slot's reference is held until
+// the call returns: the value may be the only thing keeping its own environment alive.
 int qd_call(qd_context* ctx) {
-	// Pop function pointer/closure and call it
 	qd_stack_element_t val;
 	qd_stack_error err = qd_stack_pop(ctx->st, &val);
-
 	if (err != QD_STACK_OK) {
 		QDRT_FATAL(ctx, "call", "Stack underflow");
 	}
-
-	// Verify it's a pointer type
 	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "call", "Expected pointer type, got %d", val.type);
+		QDRT_FATAL(ctx, "call", "Expected a function value, got %d", val.type);
 	}
-
-	void* ptr = val.value.p;
-	if (ptr == NULL) {
-		QDRT_FATAL(ctx, "call", "NULL pointer");
-	}
-
-	// Check if this is a closure. The pointer must be a registered closure
-	// allocation before we dereference it as one: a bare function pointer (or
-	// any other ptr value that reached the stack) is not safe to treat as a
-	// qd_closure_t, so validate against the registry before reading ->magic.
-	qd_closure_t* closure = (qd_closure_t*)ptr;
-	if (qd_closure_is_valid(ptr) && closure->magic == QD_CLOSURE_MAGIC) {
-		// This is a closure - extract function pointer and environment
-		// Closure function signature: int (*)(qd_context*, void* env)
-		typedef int (*qd_closure_fn_ptr)(qd_context*, void*);
-		qd_closure_fn_ptr func;
-		memcpy(&func, &closure->fn_ptr, sizeof(func));
-
-		if (func == NULL) {
-			QDRT_FATAL(ctx, "call", "NULL closure function pointer");
-		}
-
-		// Call the closure with environment
-		return func(ctx, closure->env_ptr);
-	} else {
-		// Regular function pointer
-		// Function signature: int (*)(qd_context*)
-		typedef int (*qd_function_ptr)(qd_context*);
-		qd_function_ptr func;
-		memcpy(&func, &ptr, sizeof(func));
-
-		// Call the function
-		return func(ctx);
-	}
+	const int result = qd_call_value(ctx, val.value.p);
+	qdrt_release_element(&val);
+	return result;
 }
 
 // dec - decrement (subtract 1, preserves type)
@@ -866,8 +855,10 @@ int qd_castp(qd_context* ctx) {
 
 	void* ptr_value = NULL;
 	if (elem.type == QD_STACK_TYPE_PTR) {
-		// Already a pointer - just push it back
+		// The address, as raw memory. A struct or an array gives up the reference its slot held:
+		// a raw pointer holds none, and carrying it over leaked the object.
 		ptr_value = elem.value.p;
+		qdrt_release_element(&elem);
 	} else if (elem.type == QD_STACK_TYPE_INT) {
 		// Cast integer to pointer
 		ptr_value = (void*)(intptr_t)elem.value.i;
@@ -875,7 +866,7 @@ int qd_castp(qd_context* ctx) {
 		QDRT_FATAL(ctx, "castp", "Cannot cast type %d to pointer", elem.type);
 	}
 
-	err = qd_stack_push_ptr(ctx->st, ptr_value);
+	err = qd_stack_push_raw(ctx->st, ptr_value);
 	if (err != QD_STACK_OK) {
 		QDRT_FATAL(ctx, "castp", "Stack overflow pushing pointer result");
 	}
@@ -1011,15 +1002,11 @@ int qd_free(qd_context* ctx) {
 		QDRT_FATAL(ctx, "free", "Expected pointer type, got type %d", val.type);
 	}
 
-	// Check if this is a struct pointer (uses registry lookup)
-	if (qd_struct_is_valid(val.value.p)) {
-		// Struct pointers are offset from the malloc'd base, use release
-		qd_struct_release(val.value.p);
-	} else if (qd_array_is_valid(val.value.p)) {
-		// Array pointer - use array release
-		qd_array_release((qd_array_t*)val.value.p);
+	// As the slot's kind says: a struct or an array gives up the stack's reference, raw memory
+	// is freed outright (free(NULL) is safe)
+	if (val.ptr_kind == QD_PTR_STRUCT || val.ptr_kind == QD_PTR_ARRAY) {
+		qdrt_release_element(&val);
 	} else {
-		// Raw memory - free directly (ptr can be NULL, free(NULL) is safe)
 		free(val.value.p);
 	}
 

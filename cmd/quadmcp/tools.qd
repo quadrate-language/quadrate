@@ -118,7 +118,7 @@ def mcp_tools_list(id:str -- response:str) {
 	id result rpc_result
 }
 
-def module_entry(ds:ptr name:str -- entry:str) {
+def module_entry(ds:DocStore name:str -- entry:str) {
 	ds name load_module -> m
 
 	m "description" json::get_string -> _ -> desc
@@ -138,7 +138,7 @@ def module_entry(ds:ptr name:str -- entry:str) {
 
 // Build a comma-separated module list from the loaded modules.json.
 // Used in error messages (e.g. "Available: bits,bytes,...").
-fn module_list_csv(ds:ptr -- csv:str) {
+fn module_list_csv(ds:DocStore -- csv:str) {
 	<<modules -> mods
 	"" -> result
 	mods json::array_len -> n
@@ -158,7 +158,7 @@ fn module_list_csv(ds:ptr -- csv:str) {
 	result
 }
 
-def tool_list_modules(ds:ptr -- result:str) {
+def tool_list_modules(ds:DocStore -- result:str) {
 	ds <<modules -> mods
 	mods json::array_len -> n
 	"" -> arr_body
@@ -178,7 +178,7 @@ def tool_list_modules(ds:ptr -- result:str) {
 	arr_body json::arr tool_text_result
 }
 
-def tool_get_module(ds:ptr args:str -- result:str) {
+def tool_get_module(ds:DocStore args:str -- result:str) {
 	args "name" json::get_string -> found -> mod_name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -241,7 +241,7 @@ def find_related_functions(funcs:str current_name:str -- related:str) {
 	result
 }
 
-def tool_get_function(ds:ptr args:str -- result:str) {
+def tool_get_function(ds:DocStore args:str -- result:str) {
 	args "module" json::get_string -> found -> mod_name
 	found 0 == if {
 		"Missing required parameter: module" tool_error_result
@@ -271,7 +271,7 @@ def tool_get_function(ds:ptr args:str -- result:str) {
 	}
 }
 
-def search_module(ds:ptr name:str query:str result:str -- new_result:str) {
+def search_module(ds:DocStore name:str query:str result:str -- new_result:str) {
 	ds name load_module -> m
 	m query fuzzy::contains_ci if {
 		result "=== " strings::concat name strings::concat " module ===\n" strings::concat m strings::concat "\n\n" strings::concat
@@ -280,7 +280,7 @@ def search_module(ds:ptr name:str query:str result:str -- new_result:str) {
 	}
 }
 
-def tool_search(ds:ptr args:str -- result:str) {
+def tool_search(ds:DocStore args:str -- result:str) {
 	args "query" json::get_string -> found -> query
 	found 0 == if {
 		"Missing required parameter: query" tool_error_result
@@ -311,7 +311,7 @@ def tool_search(ds:ptr args:str -- result:str) {
 	}
 }
 
-fn tool_get_builtins(ds:ptr -- result:str) {
+fn tool_get_builtins(ds:DocStore -- result:str) {
 	<<builtins dup len 2 > if {
 		tool_text_result
 	} else {
@@ -362,7 +362,7 @@ def find_builtin(builtins:str name:str -- item:str found:i64) {
 	}
 }
 
-def tool_get_builtin(ds:ptr args:str -- result:str) {
+def tool_get_builtin(ds:DocStore args:str -- result:str) {
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -376,7 +376,7 @@ def tool_get_builtin(ds:ptr args:str -- result:str) {
 	}
 }
 
-fn tool_get_syntax(ds:ptr -- result:str) {
+fn tool_get_syntax(ds:DocStore -- result:str) {
 	<<language dup len 2 > if {
 		tool_text_result
 	} else {
@@ -384,7 +384,7 @@ fn tool_get_syntax(ds:ptr -- result:str) {
 	}
 }
 
-def tool_get_keyword(ds:ptr args:str -- result:str) {
+def tool_get_keyword(ds:DocStore args:str -- result:str) {
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -429,7 +429,7 @@ def find_with_alias(arr:str name:str -- item:str found:i64) {
 	result found
 }
 
-def tool_get_operator(ds:ptr args:str -- result:str) {
+def tool_get_operator(ds:DocStore args:str -- result:str) {
 	args "name" json::get_string -> found -> name
 	found 0 == if {
 		"Missing required parameter: name" tool_error_result
@@ -448,7 +448,7 @@ def tool_get_operator(ds:ptr args:str -- result:str) {
 	}
 }
 
-def fuzzy_find_in_module(ds:ptr mod_name:str query:str results:str count:i64 -- new_results:str new_count:i64) {
+def fuzzy_find_in_module(ds:DocStore mod_name:str query:str results:str count:i64 -- new_results:str new_count:i64) {
 	count 10 >= if {
 		results count
 	} else {
@@ -483,7 +483,7 @@ def fuzzy_find_in_module(ds:ptr mod_name:str query:str results:str count:i64 -- 
 	}
 }
 
-def tool_find_function(ds:ptr args:str -- result:str) {
+def tool_find_function(ds:DocStore args:str -- result:str) {
 	args "query" json::get_string -> found -> query
 	found 0 == if {
 		"Missing required parameter: query" tool_error_result
@@ -521,7 +521,7 @@ fn sig_matches_pattern(sig:str pattern:str -- matches:i64) {
 	fuzzy::contains_ci
 }
 
-def search_by_sig_in_module(ds:ptr mod_name:str pattern:str results:str count:i64 -- new_results:str new_count:i64) {
+def search_by_sig_in_module(ds:DocStore mod_name:str pattern:str results:str count:i64 -- new_results:str new_count:i64) {
 	count 15 >= if {
 		results count
 	} else {
@@ -555,7 +555,7 @@ def search_by_sig_in_module(ds:ptr mod_name:str pattern:str results:str count:i6
 	}
 }
 
-def tool_search_by_signature(ds:ptr args:str -- result:str) {
+def tool_search_by_signature(ds:DocStore args:str -- result:str) {
 	args "signature" json::get_string -> found -> pattern
 	found 0 == if {
 		"Missing required parameter: signature" tool_error_result
@@ -583,7 +583,7 @@ def tool_search_by_signature(ds:ptr args:str -- result:str) {
 	}
 }
 
-def tool_get_error(ds:ptr args:str -- result:str) {
+def tool_get_error(ds:DocStore args:str -- result:str) {
 	args "module" json::get_string -> found -> mod_name
 	found 0 == if {
 		"Missing required parameter: module" tool_error_result
@@ -926,7 +926,7 @@ def tool_type_conversion(args:str -- result:str) {
 	}
 }
 
-def mcp_tools_call(ds:ptr id:str body:str -- response:str) {
+def mcp_tools_call(ds:DocStore id:str body:str -- response:str) {
 	body "params" json::get_object -> has_params -> params
 	params "name" json::get_string -> has_name -> tool_name
 	params "arguments" json::get_object -> found -> args

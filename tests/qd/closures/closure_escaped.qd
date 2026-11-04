@@ -1,5 +1,5 @@
 // Test: Escaped closures - closures that outlive their enclosing function
-fn make_counter( -- counter:ptr ) {
+fn make_counter( -- counter:fn( -- i64)) {
     0 -> count
     fn ( -- r:i64) {
         count ++ -> count

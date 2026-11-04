@@ -7,7 +7,6 @@ Operations for converting between types.
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
 | `cast<T>` | `(val -- T)` | Convert to specified type (runtime) |
-| `as Type` | `(val -- val)` | Narrow ptr to struct type (compile-time) |
 
 ---
 
@@ -133,59 +132,26 @@ explicit conversion.
 
 ---
 
-## Type narrowing with as
+## `ptr` is raw memory
 
-The `as` keyword narrows a `ptr` value to a specific struct type. This is a compile-time operation with no runtime cost — the pointer value on the stack is unchanged.
-
-**Syntax:** `value as StructType`
+A `ptr` is an address the program allocated or was handed, with nothing counted behind it:
+`mem::alloc`, `strings::data`, a handle from a C library. A struct, an array, a string or a
+function value is never a `ptr`, and passing one where a `ptr` is taken is a compile error. A
+value keeps the type it was declared with, so there is nothing to narrow: declare a parameter
+with the struct type it takes.
 
 ```qd
 struct Dog {
 	name:str
 }
 
-def get_name(p:ptr -- name:str) {
-	p as Dog <<name
+def get_name(d:Dog -- name:str) {
+	d <<name
+}
+
+fn main() {
+	Dog { name = "Rex" } get_name print nl   // Rex
 }
 ```
 
-### When to use as
-
-Use `as` when the compiler cannot determine the struct type — typically when a value is typed as `ptr` and multiple structs share a field name:
-
-```qd
-struct Foo { value:i64 }
-struct Bar { value:str }
-
-def read_foo(p:ptr -- v:i64) {
-	p as Foo <<value   // disambiguates <<value
-}
-```
-
-Without `as`, accessing `<<value` on an untyped `ptr` when multiple structs define that field is a compile error.
-
-### as vs cast
-
-| Feature | `cast<T>` | `as Type` |
-|---------|-----------|-----------|
-| Purpose | Convert between primitive types | Narrow ptr to struct type |
-| Runtime cost | Yes (conversion code) | None (compile-time only) |
-| Changes value | Yes | No |
-| Target types | `i64`, `f64`, `d128`, `str`, `ptr` | Any struct type |
-
-### Storing typed locals
-
-Combining `as` with `->` tracks the type for all subsequent accesses:
-
-```qd
-struct Point {
-	x:i64
-	y:i64
-}
-
-def process(p:ptr -- ) {
-	p as Point -> pt   // pt is now typed as Point
-	pt <<x print nl     // no ambiguity
-	pt <<y print nl     // type still known
-}
-```
+`as Type`, which narrowed a `ptr` to a struct, has been removed.

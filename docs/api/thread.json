@@ -402,10 +402,10 @@
     },
     {
       "name": "spawn",
-      "signature": "(func:ptr -- t:Thread)",
+      "signature": "(func:fn(--) -- t:Thread)",
       "failable": true,
       "description": "Spawn a new thread running the given function. ",
-      "params": [{"name": "func", "type": "ptr", "description": "Function pointer (use &function_name)"}],
+      "params": [{"name": "func", "type": "fn(--)", "description": "The function to run (`&name` or a `fn { }`)"}],
       "returns": [{"name": "t", "type": "Thread", "description": "Thread handle"}],
       "errors": [{"code": "ErrCreate", "description": "Failed to create thread"}],
       "examples": ["&worker thread::spawn! -> t"]

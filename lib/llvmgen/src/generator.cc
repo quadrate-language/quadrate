@@ -217,7 +217,6 @@ namespace Qd {
 				llvm::StructType::create(*context, {ptrTy, i64t, ptrTy, i32t, ptrTy, ptrTy, i64t}, "qd_context_t");
 
 		// Closure layout: {int64_t magic, ptr fn, ptr env, int64_t capture_count}
-		closureStructTy = llvm::StructType::create(*context, {i64t, ptrTy, ptrTy, i64t}, "qd_closure_t");
 
 		// Stack layout: {ptr data, int64_t capacity, int64_t size}
 		stackStructTy = llvm::StructType::create(*context, {ptrTy, i64t, i64t}, "qd_stack_t");
@@ -249,18 +248,19 @@ namespace Qd {
 		pushFloatFn = declareFn(ctxF64ToResultTy, "qd_push_f");
 		pushStrFn = declareFn(ctxPtrToResultTy, "qd_push_s");
 		pushStrRefFn = declareFn(ctxPtrToResultTy, "qd_push_s_ref");
-		pushPtrFn = declareFn(ctxPtrToResultTy, "qd_push_p");
 		pushStructFn = declareFn(ctxPtrToResultTy, "qd_push_struct");
+		pushRawFn = declareFn(ctxPtrToResultTy, "qd_push_raw");
 		pushArrayFn = declareFn(ctxPtrToResultTy, "qd_push_array");
 		pushPtrKindFn =
 				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy, builder->getInt8Ty()}, false),
 						"qd_push_ptr_kind");
 		pushSlotFn = declareFn(ctxPtrToResultTy, "qd_push_slot");
 		releaseSlotFn = declareFn(ptrToVoidTy, "qd_release_slot");
-		structRetainKnownFn = declareFn(ptrToVoidTy, "qd_struct_retain_known");
-		structReleaseKnownFn = declareFn(ptrToVoidTy, "qd_struct_release_known");
-		arrayRetainKnownFn = declareFn(ptrToVoidTy, "qd_array_retain_known");
-		arrayReleaseKnownFn = declareFn(ptrToVoidTy, "qd_array_release_known");
+		retainSlotFn = declareFn(ptrToVoidTy, "qd_retain_slot");
+		retainStructFn = declareFn(ptrToPtrTy, "qd_struct_retain");
+		releaseStructFn = declareFn(ptrToVoidTy, "qd_struct_release");
+		retainArrayFn = declareFn(ptrToVoidTy, "qd_array_retain");
+		releaseArrayFn = declareFn(ptrToVoidTy, "qd_array_release");
 
 		// Runtime operations: (ctx) -> result
 		nlFn = declareFn(ctxToResultTy, "qd_nl");
@@ -306,10 +306,6 @@ namespace Qd {
 		// Struct/pointer management
 		auto allocFnTy = llvm::FunctionType::get(ptrTy, {int64Ty, ptrTy}, false);
 		qdStructAllocFn = declareFn(allocFnTy, "qd_struct_alloc");
-		qdStructReleaseFn = declareFn(ptrToVoidTy, "qd_struct_release");
-		qdStructRetainFn = declareFn(ptrToPtrTy, "qd_struct_retain");
-		qdPtrReleaseFn = declareFn(ptrToVoidTy, "qd_ptr_release");
-		qdPtrRetainFn = declareFn(ptrToPtrTy, "qd_ptr_retain");
 
 		// Error handling functions
 		auto ptrPtrToVoidTy = llvm::FunctionType::get(builder->getVoidTy(), {ptrTy, ptrTy}, false);
@@ -594,10 +590,13 @@ namespace Qd {
 		if (!node) {
 			return;
 		}
+		// `-> name` on a global stores the global and declares no local, so a global's name is
+		// left out: counted as a local, a function that assigned a global and read it back
+		// skipped the check on what the global holds.
 		if (node->type() == IAstNode::Type::LOCAL) {
 			auto* local = static_cast<AstNodeLocal*>(node);
 			for (const auto& n : local->names()) {
-				if (n != "_") {
+				if (n != "_" && !findGlobalVar(n)) {
 					names.insert(n);
 				}
 			}
@@ -633,6 +632,33 @@ namespace Qd {
 			return allowFloat && inst->hasTypeParam() && (inst->typeParam() == "i64" || inst->typeParam() == "f64");
 		}
 		return HANDLED.find(name) != HANDLED.end();
+	}
+
+	// Whether `name`, when it is a constant, is one the compile-time stack holds: an integer, or a
+	// float when floats are allowed. True for a name that is not a constant.
+	bool LlvmGenerator::Impl::isNativeConstant(const std::string& name, bool allowFloat) {
+		const std::string* constant = findConstant(name);
+		if (!constant) {
+			return true;
+		}
+		const std::string& text = *constant;
+		if (text.empty() || text.front() == '"' || isD128LiteralText(text)) {
+			return false;
+		}
+		return allowFloat || !isFloatLiteralText(text);
+	}
+
+	// The same for a global: true unless it is one whose value is not a number
+	bool LlvmGenerator::Impl::isNativeGlobal(const std::string& name, bool allowFloat) {
+		const GlobalVar* global = findGlobalVar(name);
+		if (!global) {
+			return true;
+		}
+		const std::string& type = global->type;
+		if (type == "str" || type == "d128" || globalHoldsPointer(type)) {
+			return false;
+		}
+		return allowFloat || type != "f64";
 	}
 
 	bool LlvmGenerator::Impl::analyzeIsBodyNativeEligible(
@@ -712,15 +738,21 @@ namespace Qd {
 					nonIntegerSignatureFunctions.find(identName) != nonIntegerSignatureFunctions.end()) {
 				return false;
 			}
-			// A d128 constant or global is a boxed value, which the compile-time stack has no
-			// way to hold.
-			if (localNames.find(identName) == localNames.end()) {
-				const std::string* constant = findConstant(identName);
-				if (constant && isD128LiteralText(*constant)) {
-					return false;
-				}
-				const GlobalVar* global = findGlobalVar(identName);
-				if (global && global->type == "d128") {
+			// A constant or global is read onto the compile-time stack as the number it holds, so
+			// it has to hold one. Only d128 used to be turned away: a str constant pushed nothing
+			// there, and a str or pointer global was pushed as a bare pointer that print showed as
+			// an address and a store kept without a retain.
+			if (localNames.find(identName) == localNames.end() &&
+					(!isNativeConstant(identName, allowFloat) || !isNativeGlobal(identName, allowFloat))) {
+				return false;
+			}
+			break;
+		}
+		case IAstNode::Type::LOCAL: {
+			// The same for a store: `-> name` on a global that does not hold a number
+			auto* local = static_cast<AstNodeLocal*>(node);
+			for (const auto& n : local->names()) {
+				if (!isNativeGlobal(n, allowFloat)) {
 					return false;
 				}
 			}
@@ -1782,14 +1814,14 @@ namespace Qd {
 
 	// Declares `<fnName>_native`, the version of the function that takes and returns its values
 	// as i64 and double instead of on the stack, when it can have one: no receiver, cannot fail,
-	// at least one input, inputs and outputs all i64 or f64, and a body the native path
+	// inputs and outputs all i64 or f64, and a body the native path
 	// handles, and no debug info asked for. Null, with `info` untouched, when it cannot.
 	llvm::Function* LlvmGenerator::Impl::declareNativeVersion(AstNodeFunctionDeclaration* funcNode,
 			const std::string& fnName, llvm::GlobalValue::LinkageTypes linkage, NativeFuncInfo& info) {
 		const size_t inputCount = funcNode->inputParameters().size();
 		const size_t outputCount = funcNode->outputParameters().size();
 		// With debug info every function keeps its stack-based body, which the debugger can show
-		if (debugInfoEnabled || funcNode->hasReceiver() || funcNode->throws() || inputCount == 0) {
+		if (debugInfoEnabled || funcNode->hasReceiver() || funcNode->throws()) {
 			return nullptr;
 		}
 		std::vector<NativeParamType> inputTypes;

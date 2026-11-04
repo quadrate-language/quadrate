@@ -638,17 +638,15 @@ namespace Qd {
 					// Anything else used to fall through to the STRING default in silence:
 					// `p cast<Node>` type-checked and produced a string, and the mistake
 					// surfaced a long way away as "the value on the stack is string, not a
-					// struct". 'cast' offers four targets and a struct is not one of them --
-					// narrowing a pointer to a struct type is what `as` is for, and it is
-					// free, where a cast implies a conversion.
+					// struct". 'cast' offers four targets and a struct is not one of them: a value
+					// is a struct when it was declared as one.
 					std::string err = "Type error in 'cast': '";
 					err += typeParam;
 					err += "' is not a type 'cast' converts to";
 					if (isStructTypeName(typeParam)) {
-						std::string hint = "use 'value as ";
+						std::string hint = "nothing converts to a struct: declare the value as '";
 						hint += typeParam;
-						hint += "' to read a pointer as a struct -- 'as' is a compile-time annotation, "
-								"not a conversion";
+						hint += "' where it is bound or passed";
 						reportErrorConditionalWithHint(node, err.c_str(), hint.c_str(), reportErrors);
 					} else {
 						reportErrorConditionalWithHint(
@@ -868,7 +866,10 @@ namespace Qd {
 			} else if (elemType == "str") {
 				typeStack.push_back(StackValueType::STRING);
 				structTypeStack.push_back("");
-			} else if (elemType == "ptr" || elemType == "any") {
+			} else if (elemType == "ptr") {
+				typeStack.push_back(StackValueType::PTR); // raw memory, as the array was declared
+				structTypeStack.push_back("");
+			} else if (elemType == "any") {
 				typeStack.push_back(StackValueType::ANY);
 				structTypeStack.push_back("");
 			} else {
@@ -889,6 +890,29 @@ namespace Qd {
 			static_cast<AstNodeInstruction*>(node)->setResolvedType(elemType);
 		}
 		return;
+	}
+
+	// A pointer going into a typed array is checked by its real type, as an argument is: a
+	// struct is no array, an array of one type is not of another, and a `[]ptr` holds raw
+	// memory only. Only scalars used to be checked, so `[1]ptr -> a  a 0 [1 2] set` stored an
+	// array where raw memory was promised.
+	void SemanticValidator::checkPointerElement(IAstNode* node, const char* op, const std::string& arrayType,
+			StackValueType valType, const std::string& valueType, bool reportErrors) {
+		if (valType != StackValueType::PTR || valueType.empty()) {
+			return;
+		}
+		const std::string elemType = arrayType.substr(2);
+		if (elemType == "i64" || elemType == "f64" || elemType == "d128" || elemType == "str" || elemType == "any" ||
+				elemType.empty()) {
+			return;
+		}
+		std::map<std::string, std::string> bindings;
+		std::string why;
+		auto canon = [this](const std::string& n) { return canonicalStructName(n); };
+		if (!unifyTypeName(elemType, valueType, mCurrentTypeParams, bindings, mMergedModules, canon, why)) {
+			std::string msg = std::string("Type error in '") + op + "': Array is '" + arrayType + "': " + why;
+			reportErrorConditional(node, msg.c_str(), reportErrors);
+		}
 	}
 
 	// Array set: set ( arr idx val -- )
@@ -926,6 +950,8 @@ namespace Qd {
 					errorMsg += stackValueTypeToString(valType);
 					reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				}
+				checkPointerElement(node, "set", arrayType, valType,
+						structTypeStack.empty() ? std::string() : structTypeStack.back(), reportErrors);
 			}
 		}
 		// Pop value, index, array
@@ -975,6 +1001,8 @@ namespace Qd {
 					errorMsg += stackValueTypeToString(valType);
 					reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				}
+				checkPointerElement(node, "append", arrayType, valType,
+						structTypeStack.empty() ? std::string() : structTypeStack.back(), reportErrors);
 			}
 		}
 		// Pop value
@@ -1022,7 +1050,7 @@ namespace Qd {
 			errorMsg += structType.empty() ? typeToString(typeStack.back()) : structType;
 			if (typeStack.back() == StackValueType::PTR && structType.empty()) {
 				reportErrorConditionalWithHint(node, errorMsg.c_str(),
-						"the type has to be known here; narrow the pointer with 'as', e.g. 'p as Point clone'",
+						"the type has to be known here: declare the value with its struct type, e.g. 'p:Point'",
 						reportErrors);
 			} else {
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);

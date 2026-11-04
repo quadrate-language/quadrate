@@ -87,6 +87,8 @@ namespace Qd {
 
 		// Whether a value of type `actual` may initialise a field declared `expected`.
 		bool fieldTypesCompatible(const std::string& expected, const std::string& actual) const;
+		void checkPointerElement(IAstNode* node, const char* op, const std::string& arrayType, StackValueType valType,
+				const std::string& valueType, bool reportErrors);
 		bool isPointerField(const std::string& structName, const std::string& fieldName) const;
 
 		// Whether a value must be rejected where a field declared `expected` is being written,

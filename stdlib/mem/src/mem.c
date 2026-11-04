@@ -177,13 +177,12 @@ int usr_mem_set_ptr(qd_context* ctx) {
 	return 0;
 }
 
-// A slot owns what it holds, so a struct or array read back takes a reference for it, as
-// mem::get_any's does; without one, dropping what was read released a reference it never had
+// A `ptr` is raw memory, so what comes back is a raw address with nothing counted behind it. A
+// struct or array kept in memory goes through mem::set_any and mem::get_any, which keep its type.
 int usr_mem_get_ptr(qd_context* ctx) {
 	void* v;
 	memcpy(&v, load_at(ctx, "mem::get_ptr"), sizeof(void*));
-	qd_ptr_retain(v);
-	return qd_push_p(ctx, v);
+	return qd_push_raw(ctx, v);
 }
 
 // Stack signature: ( dst:ptr src:ptr bytes:i64 -- )
@@ -202,9 +201,8 @@ int usr_mem_ptr_add(qd_context* ctx) {
 	void* base;
 	int64_t offset;
 	qd_args(ctx, "mem::ptr_add", "pi", &base, &offset);
-	// Into the middle of something is raw memory; at offset 0 it may still be the array or
-	// struct it started as
-	return offset != 0 ? qd_push_raw(ctx, (char*)base + offset) : qd_push_p(ctx, base);
+	// A `ptr` is raw memory, and so is any address into it
+	return qd_push_raw(ctx, (char*)base + offset);
 }
 
 // Stack signature: ( address:ptr bytes:i64 -- )

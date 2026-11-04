@@ -74,11 +74,8 @@ static inline double qdrt_to_double(const qd_stack_element_t* elem) {
 // Drop a stack slot's reference to what it holds.
 //
 // A slot owns one reference to a refcounted value, whether that is a string or a pointer to
-// an array or a struct. Pointers used not to be released here at all, on the reasoning that a
-// raw pointer on the stack is not necessarily a counted object -- but qd_ptr_release answers
-// exactly that question, by array magic and then the struct registry, and leaves anything
-// else alone. Skipping them meant `drop` leaked every array and struct it discarded: a
-// dropped array was 128,000 bytes over a thousand iterations where binding it was zero.
+// an array or a struct, and its kind says which. A pointer with no kind is raw memory and
+// holds nothing.
 static inline void qdrt_release_element(qd_stack_element_t* elem) {
 	if (elem->type == QD_STACK_TYPE_STR) {
 		qd_string_release(elem->value.s);
@@ -87,13 +84,12 @@ static inline void qdrt_release_element(qd_stack_element_t* elem) {
 		case QD_PTR_RAW:
 			break;
 		case QD_PTR_STRUCT:
-			qd_struct_release_known(elem->value.p);
+			qd_struct_release(elem->value.p);
 			break;
 		case QD_PTR_ARRAY:
-			qd_array_release_known(elem->value.p);
+			qd_array_release(elem->value.p);
 			break;
 		default:
-			qd_ptr_release(elem->value.p);
 			break;
 		}
 	}
@@ -106,6 +102,26 @@ static inline void qdrt_copy_element(qd_stack_element_t* dst, const qd_stack_ele
 	dst->type = src->type;
 	dst->is_error_tainted = src->is_error_tainted;
 	dst->ptr_kind = src->ptr_kind;
+}
+
+// One more reference to what a slot holds, by its type and pointer kind
+static inline void qdrt_retain_element(const qd_stack_element_t* elem) {
+	if (elem->type == QD_STACK_TYPE_STR) {
+		qd_string_retain(elem->value.s);
+	} else if (elem->type == QD_STACK_TYPE_PTR) {
+		switch (elem->ptr_kind) {
+		case QD_PTR_RAW:
+			break;
+		case QD_PTR_STRUCT:
+			qd_struct_retain(elem->value.p);
+			break;
+		case QD_PTR_ARRAY:
+			qd_array_retain(elem->value.p);
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 // Push a stack element, taking a reference of its own to what it holds

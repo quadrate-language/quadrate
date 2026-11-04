@@ -12,7 +12,7 @@ pub def length(v:Vec2 -- result:f64) {
 }
 
 // Function that adds two Vec2s
-pub def add(a:Vec2 b:Vec2 -- result:ptr) {
+pub def add(a:Vec2 b:Vec2 -- result:Vec2) {
 	Vec2 {
 		x = a <<x b <<x +
 		y = a <<y b <<y +
@@ -20,7 +20,7 @@ pub def add(a:Vec2 b:Vec2 -- result:ptr) {
 }
 
 // Function to scale a vector
-pub def scale(v:Vec2 factor:f64 -- result:ptr) {
+pub def scale(v:Vec2 factor:f64 -- result:Vec2) {
 	Vec2 {
 		x = v <<x factor *
 		y = v <<y factor *

@@ -410,7 +410,9 @@ TEST(StrJoinTest) {
 	parts->data.p[2] = qd_string_create("c");
 	parts->length = 3;
 
-	qd_push_p(ctx, parts);
+	// The stack is handed a reference of its own, which join gives back
+	qd_array_retain(parts);
+	qd_push_array(ctx, parts);
 	qd_push_s(ctx, ",");
 	usr_strings_join(ctx);
 

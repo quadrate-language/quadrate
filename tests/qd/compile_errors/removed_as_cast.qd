@@ -1,0 +1,13 @@
+// `as Type` narrowed a `ptr` to a struct. A `ptr` is raw memory and never holds one, so `as` is
+// gone; using it says so rather than looking like a syntax error.
+struct P {
+	x:i64
+}
+
+def get(p:ptr -- x:i64) {
+	p as P <<x
+}
+
+fn main() {
+	null get print nl
+}

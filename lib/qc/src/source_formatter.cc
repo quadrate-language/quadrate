@@ -6,7 +6,6 @@
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_array_literal.h>
-#include <quadrate/qc/ast_node_as_cast.h>
 #include <quadrate/qc/ast_node_case.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_defer.h>

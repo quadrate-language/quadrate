@@ -146,24 +146,13 @@ void qd_stack_truncate(qd_context* ctx, int64_t target) {
 	}
 }
 
-void qd_ptr_release(void* p) {
-	(void)p;
-}
-
-void* qd_ptr_retain(void* p) {
-	return p;
-}
-
-// Closure machinery — not used in freestanding code paths but referenced
-// by compiler-emitted defensive checks. Stub that always reports "not a
-// closure" is correct: real closures need a heap, which we don't have.
-int qd_closure_is_valid(const void* p) {
-	(void)p;
-	return 0;
-}
-
-void qd_closure_unregister(void* p) {
-	(void)p;
+// A function value in freestanding code is the static one the compiler emits for `&name`:
+// { fn, env, captures } with no environment. Closures need a heap, which there is none of.
+int qd_call_value(qd_context* ctx, void* value) {
+	void* const* fields = (void* const*)value;
+	int (*fn)(qd_context*);
+	memcpy(&fn, &fields[0], sizeof(fn));
+	return fn(ctx);
 }
 
 // String-pointer push for compiler-emitted code paths that may try to
@@ -320,14 +309,6 @@ int qd_push_d_bits(qd_context* ctx, uint64_t low, uint64_t high) {
 	return push_elem(ctx, e);
 }
 
-int qd_push_p(qd_context* ctx, void* value) {
-	qd_stack_element_t e;
-	e.type = QD_STACK_TYPE_PTR;
-	e.ptr_kind = QD_PTR_UNKNOWN;
-	e.value.p = value;
-	return push_elem(ctx, e);
-}
-
 int qd_push_ptr_kind(qd_context* ctx, void* value, uint8_t kind) {
 	qd_stack_element_t e;
 	e.type = QD_STACK_TYPE_PTR;
@@ -353,19 +334,30 @@ void qd_release_slot(const qd_stack_element_t* slot) {
 	(void)slot;
 }
 
-void qd_struct_retain_known(void* p) {
+void qd_retain_slot(const qd_stack_element_t* slot) {
+	(void)slot;
+}
+
+// Nothing is counted without a heap. Declared as the hosted runtime's headers declare them.
+struct qd_array;
+void* qd_struct_retain(void* p);
+void qd_struct_release(void* p);
+void qd_array_retain(struct qd_array* p);
+void qd_array_release(struct qd_array* p);
+
+void* qd_struct_retain(void* p) {
+	return p;
+}
+
+void qd_struct_release(void* p) {
 	(void)p;
 }
 
-void qd_struct_release_known(void* p) {
+void qd_array_retain(struct qd_array* p) {
 	(void)p;
 }
 
-void qd_array_retain_known(void* p) {
-	(void)p;
-}
-
-void qd_array_release_known(void* p) {
+void qd_array_release(struct qd_array* p) {
 	(void)p;
 }
 

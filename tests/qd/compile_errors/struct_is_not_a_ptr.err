@@ -1,0 +1,1 @@
+error: Type error in function 'first_word': Parameter 1 expects a raw 'ptr' but got 'P'

@@ -36,7 +36,7 @@ static bool has_whitespace(const char* str) {
  * may contain itself. */
 #define QD_PRINT_MAX_DEPTH 8
 
-static void print_pointer(const void* p, int depth);
+static void print_pointer(const void* p, uint8_t kind, int depth);
 
 static void print_array_contents(const qd_array_t* arr, int depth) {
 	const size_t n = qd_array_length(arr);
@@ -75,7 +75,7 @@ static void print_array_contents(const qd_array_t* arr, int depth) {
 		default: {
 			void* v = NULL;
 			qd_array_get_ptr(arr, i, &v);
-			print_pointer(v, depth + 1);
+			print_pointer(v, arr->elemKind, depth + 1);
 			break;
 		}
 		}
@@ -83,12 +83,13 @@ static void print_array_contents(const qd_array_t* arr, int depth) {
 	printf("]");
 }
 
-static void print_pointer(const void* p, int depth) {
+// A pointer is shown as what its kind says it is
+static void print_pointer(const void* p, uint8_t kind, int depth) {
 	if (!p) {
 		printf("null");
 		return;
 	}
-	if (qd_array_is_valid(p)) {
+	if (kind == QD_PTR_ARRAY) {
 		if (depth >= QD_PRINT_MAX_DEPTH) {
 			printf("[...]");
 			return;
@@ -96,7 +97,7 @@ static void print_pointer(const void* p, int depth) {
 		print_array_contents((const qd_array_t*)p, depth);
 		return;
 	}
-	if (qd_struct_is_valid(p)) {
+	if (kind == QD_PTR_STRUCT) {
 		/* The header carries a refcount and a destructor, not field names. */
 		printf("<struct %p>", p);
 		return;
@@ -126,10 +127,8 @@ int qd_print(qd_context* ctx) {
 		qd_string_release(val.value.s); // Release the string reference after printing
 		break;
 	case QD_STACK_TYPE_PTR:
-		print_pointer(val.value.p, 0);
-		if (val.ptr_kind != QD_PTR_RAW) {
-			qd_ptr_release(val.value.p); // The stack held a reference; printing consumes it
-		}
+		print_pointer(val.value.p, val.ptr_kind, 0);
+		qdrt_release_element(&val); // The stack held a reference; printing consumes it
 		break;
 	case QD_STACK_TYPE_D128: {
 		char text[QD_D128_STRING_MAX];
@@ -180,11 +179,9 @@ int qd_dump(qd_context* ctx) {
 	}
 	case QD_STACK_TYPE_PTR:
 		printf("ptr:");
-		print_pointer(val.value.p, 0);
+		print_pointer(val.value.p, val.ptr_kind, 0);
 		printf("\n");
-		if (val.ptr_kind != QD_PTR_RAW) {
-			qd_ptr_release(val.value.p);
-		}
+		qdrt_release_element(&val);
 		break;
 	case QD_STACK_TYPE_D128: {
 		char text[QD_D128_STRING_MAX];
