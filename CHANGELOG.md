@@ -432,6 +432,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **`quaduses` and `quad uses`**, folded into the formatter: `quadfmt --uses` (`-u`) adds the use statements a file needs and removes the rest, then formats, with `-w`, `-c` and stdin as usual. `quad uses` is `quad fmt --uses`. `--dry-run` went with it: `quadfmt --uses file.qd` prints the result. `make uninstall` still deletes an installed copy.
+- **`quadmcp` and `quad mcp`.** The MCP server served the stdlib reference from `docs/api/`, which an agent with a shell reads directly, and its hand-written keyword, operator and template text went stale with every language change. `make uninstall` still deletes an installed copy. `docs/api/modules.json`, which only it read, is gone too.
 - **`as Type`.** It narrowed a `ptr` to a struct; a `ptr` never holds one now, so a value keeps the type it was declared with. Using it reports that it has been removed.
 - **`fmt::print`.** It printed a string without a newline, which is what the builtin `print` does for every value.
 - **`strings::len`.** The builtin `len` counts a string's characters now, as `strings::len` did, so the two said the same thing -- the reason `math::within` went. `quadfmt --migrate` writes `len`. `strings::char_at` stays: past the end it gives `NotAChar` where `nth` fails.

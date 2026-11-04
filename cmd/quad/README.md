@@ -22,16 +22,14 @@ quad <file.qd> [arguments]           # run a script directly (for a shebang line
 | `fmt` | quadfmt | Format Quadrate source files |
 | `lint` | quadlint | Check code for common issues |
 | `repl` | quadrepl | Start interactive REPL |
-| `uses` | quaduses | Manage use statements |
 | `lsp` | quadlsp | Start language server |
 | `doc` | quaddoc | Generate HTML documentation |
 | `pm` | quadpm | Manage third-party modules |
-| `mcp` | quadmcp | Start the MCP server |
 | `init` | — | Initialize a new Quadrate project |
 | `clean` | — | Remove build artifacts |
 
-`quad fmt` and `quad uses` add `-w` for you, so they update files in place;
-pass `--check` for a dry run.
+`quad fmt` adds `-w` for you, so it updates files in place; pass `--check` for a
+dry run, and `--uses` to fix use statements as well.
 
 ## Examples
 

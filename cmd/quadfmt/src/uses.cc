@@ -1,10 +1,6 @@
 #include <algorithm>
-#include <cstring>
-#include <iostream>
+#include <cctype>
 #include <map>
-#include <quadrate/cli/cli.h>
-#include <quadrate/cli/file_utils.h>
-#include <quadrate/cli/help.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
@@ -28,32 +24,9 @@
 #include <string>
 #include <vector>
 
+#include "uses.h"
+
 using namespace Qd;
-
-struct UsesOptions {
-	bool inPlace = false;
-	bool check = false;
-	bool dryRun = false;
-};
-
-void printHelp() {
-	qdcli::Help help("quaduses", "Quadrate use-statement manager");
-	help.description("Analyses a source file and adds the use statements it needs, removing the\n"
-					 "ones it does not.")
-			.usage("[options] <file|directory>...")
-			.section("Options")
-			.standardOptions()
-			.option('w', "--write", "Update files in place")
-			.option('c', "--check", "Report whether files need changes (exit 1 if so)")
-			.option('n', "--dry-run", "Show what would change without modifying")
-			.section("Examples")
-			.item("quaduses file.qd", "Print the updated file to stdout")
-			.item("quaduses -w file.qd", "Update use statements in place")
-			.item("quaduses -w src/", "Update every .qd file in a directory, recursively")
-			.item("quaduses -c src/", "Check whether any file needs updating (for CI)")
-			.item("quaduses -n file.qd", "Show the changes that would be made");
-	help.print();
-}
 
 struct References {
 	std::set<std::string> scopes;
@@ -96,7 +69,7 @@ static void scanTypeString(const std::string& typeName, References& refs) {
 	}
 }
 
-void collectReferences(const IAstNode* node, References& refs) {
+static void collectReferences(const IAstNode* node, References& refs) {
 	if (!node) {
 		return;
 	}
@@ -232,7 +205,7 @@ static bool codeMentionsScope(const std::string& source, const std::string& scop
 	return false;
 }
 
-void collectImportNamespaces(const IAstNode* node, std::set<std::string>& importedNamespaces) {
+static void collectImportNamespaces(const IAstNode* node, std::set<std::string>& importedNamespaces) {
 	if (!node) {
 		return;
 	}
@@ -640,147 +613,33 @@ static UsesPlan planUseStatements(const std::string& source, const IAstNode* roo
 	return plan;
 }
 
-bool processFile(const std::string& filename, const UsesOptions& opts, bool& needsChanges) {
-	try {
-		// Read source file
-		std::string source = qdcli::readFile(filename);
-
-		// Validate UTF-8 encoding
-		if (!qdcli::isValidUtf8(source)) {
-			std::cerr << "quaduses: " << filename << ": invalid UTF-8 encoding or binary file\n";
-			return false;
-		}
-
-		// Parse to get AST
-		Ast ast;
-		IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
-
-		if (!root || ast.hasErrors()) {
-			std::cerr << "quaduses: " << filename << ": failed to parse (contains errors)\n";
-			return false;
-		}
-
-		UsesPlan plan = planUseStatements(source, root);
-		bool changed = plan.result != source;
-
-		if (changed) {
-			Ast check;
-			IAstNode* checkRoot = check.generate(plan.result.c_str(), false, filename.c_str());
-			std::set<std::string> resultModules;
-			if (checkRoot && !check.hasErrors()) {
-				for (const auto& use : collectRealUses(checkRoot)) {
-					resultModules.insert(use.module);
-				}
-			}
-			if (!checkRoot || check.hasErrors() || resultModules != plan.expectedModules) {
-				std::cerr << "quaduses: " << filename << ": rewriting the use statements would not produce valid "
-						  << "source; leaving the file unchanged\n";
-				return false;
-			}
-		}
-
-		if (opts.check) {
-			if (changed) {
-				std::cout << filename << ": needs updating\n";
-				needsChanges = true;
-			}
-			return true;
-		} else if (opts.dryRun) {
-			if (changed) {
-				std::cout << filename << ":\n";
-				for (const auto& u : plan.removed) {
-					std::cout << "  - " << u << "\n";
-				}
-				for (const auto& u : plan.added) {
-					std::cout << "  + " << u << "\n";
-				}
-			} else {
-				std::cout << filename << ": no changes needed\n";
-			}
-			return true;
-		} else if (opts.inPlace) {
-			if (changed) {
-				qdcli::writeFile(filename, plan.result);
-				std::cout << filename << ": updated\n";
-			} else {
-				std::cout << filename << ": no changes needed\n";
-			}
-			return true;
-		} else {
-			std::cout << plan.result;
-			return true;
-		}
-	} catch (const std::exception& e) {
-		std::cerr << "quaduses: " << filename << ": " << e.what() << "\n";
-		return false;
-	}
-}
-
-int main(int argc, char* argv[]) {
-	qdcli::BaseOptions base;
-	UsesOptions opts;
-
-	auto handler = [&opts](const char* arg, int& /*i*/, int /*ac*/, char* /*av*/[]) -> bool {
-		if (strcmp(arg, "-w") == 0 || strcmp(arg, "--write") == 0) {
-			opts.inPlace = true;
-			return true;
-		}
-		if (strcmp(arg, "-c") == 0 || strcmp(arg, "--check") == 0) {
-			opts.check = true;
-			return true;
-		}
-		if (strcmp(arg, "-n") == 0 || strcmp(arg, "--dry-run") == 0) {
-			opts.dryRun = true;
-			return true;
-		}
-		return false;
-	};
-
-	if (!qdcli::parseArgs(argc, argv, base, "quaduses", handler)) {
-		return 1;
+UsesResult fixUses(const std::string& source, const std::string& filename, std::string& out) {
+	Ast ast;
+	IAstNode* root = ast.generate(source.c_str(), false, filename.c_str());
+	if (!root || ast.hasErrors()) {
+		return UsesResult::ParseError;
 	}
 
-	if (base.help) {
-		printHelp();
-		return 0;
+	UsesPlan plan = planUseStatements(source, root);
+	if (plan.result == source) {
+		out = source;
+		return UsesResult::Ok;
 	}
 
-	if (base.version) {
-		qdcli::printVersion("quaduses");
-		return 0;
+	// The rewrite edits lines of text, so confirm it says what the plan meant: the
+	// result parses and uses exactly the modules the plan kept and added.
+	Ast check;
+	IAstNode* checkRoot = check.generate(plan.result.c_str(), false, filename.c_str());
+	if (!checkRoot || check.hasErrors()) {
+		return UsesResult::Unsafe;
 	}
-
-	if (qdcli::checkNoInputFiles(base, "quaduses")) {
-		return 1;
+	std::set<std::string> resultModules;
+	for (const auto& use : collectRealUses(checkRoot)) {
+		resultModules.insert(use.module);
 	}
-
-	// Check for conflicting options
-	int modeCount = (opts.inPlace ? 1 : 0) + (opts.check ? 1 : 0) + (opts.dryRun ? 1 : 0);
-	if (modeCount > 1) {
-		std::cerr << "quaduses: options -w, -c, and -n are mutually exclusive\n";
-		return 1;
+	if (resultModules != plan.expectedModules) {
+		return UsesResult::Unsafe;
 	}
-
-	// Collect all files from paths
-	std::vector<std::string> allFiles;
-	for (const auto& path : base.paths) {
-		auto files = qdcli::collectFiles(path);
-		allFiles.insert(allFiles.end(), files.begin(), files.end());
-	}
-
-	bool allSuccess = true;
-	bool needsChanges = false;
-
-	for (const auto& file : allFiles) {
-		if (!processFile(file, opts, needsChanges)) {
-			allSuccess = false;
-		}
-	}
-
-	// In check mode, exit 1 if any files need changes
-	if (opts.check && needsChanges) {
-		return 1;
-	}
-
-	return allSuccess ? 0 : 1;
+	out = plan.result;
+	return UsesResult::Ok;
 }

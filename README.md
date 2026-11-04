@@ -26,7 +26,7 @@ make format         # Format C/C++ source
 ### Build outputs
 
 ```
-dist/bin/           Binaries (quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaduses, quaddoc, quadmcp)
+dist/bin/           Binaries (quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaddoc)
 dist/lib/           Shared libraries (libqdrt.so, libqd.so)
 dist/lib/quadrate/  Static libraries for embedding
 dist/include/       C/C++ headers for embedding
@@ -36,7 +36,7 @@ dist/share/         Standard library modules, completions, API docs
 ## Project structure
 
 ```
-cmd/                Command-line tools (quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaduses, quaddoc, quadmcp)
+cmd/                Command-line tools (quad, quadc, quadfmt, quadlint, quadlsp, quadpm, quadrepl, quaddoc)
 lib/qc/             Compiler frontend (parser, semantic validator)
 lib/llvmgen/        LLVM code generator
 lib/interp/         AST interpreter (no LLVM)

@@ -1,6 +1,6 @@
 # Fish completion for the Quadrate toolchain.
 #
-# One file serves all ten tools. fish autoloads a completion file by the name of
+# One file serves all eight tools. fish autoloads a completion file by the name of
 # the command being completed, as bash-completion does, so `make install` links
 # <tool>.fish to this file for each tool; the definitions below name their
 # command explicitly with `complete -c`, so it does not matter which name was
@@ -10,7 +10,7 @@
 # list, and tests/run_cli_surface_test.sh fails if an option documented there is
 # missing from here.
 
-set -l __quad_tools quad quadc quaddoc quadfmt quadlint quadlsp quadmcp quadpm quadrepl quaduses
+set -l __quad_tools quad quadc quaddoc quadfmt quadlint quadlsp quadpm quadrepl
 
 # Files with a given suffix, plus directories so they can be descended into.
 #
@@ -37,7 +37,7 @@ for cmd in $__quad_tools
 end
 
 # Tools that take no file operand at all.
-for cmd in quadlsp quadrepl quadmcp
+for cmd in quadlsp quadrepl
     complete -c $cmd -f
 end
 
@@ -70,6 +70,7 @@ complete -c quadc -l dump-ir -d 'Print the generated LLVM IR'
 complete -c quadfmt -f -a '(__quad_qd_files)'
 complete -c quadfmt -s c -l check -d 'Report whether files are formatted (exit 1 if not)'
 complete -c quadfmt -s w -l write -d 'Format files in place'
+complete -c quadfmt -s u -l uses -d 'Add the use statements a file needs and remove the ones it does not'
 complete -c quadfmt -l no-sort-imports -d 'Leave use statements in their original order'
 complete -c quadfmt -l migrate -d 'Rewrite old code: def for functions reading inputs by name, renamed builtins, operator words to symbols'
 
@@ -93,12 +94,6 @@ complete -c quadlint -l check-naming -d 'Enable naming convention checks'
 complete -c quadlint -l max-function-lines -x -d 'Maximum function lines'
 complete -c quadlint -l source-path -r -F -d 'Lint the file as if it were at this path'
 
-# --- quaduses ---------------------------------------------------------------
-complete -c quaduses -f -a '(__quad_qd_files)'
-complete -c quaduses -s w -l write -d 'Update files in place'
-complete -c quaduses -s c -l check -d 'Report whether files need changes (exit 1 if so)'
-complete -c quaduses -s n -l dry-run -d 'Show what would change without modifying'
-
 # --- quaddoc ----------------------------------------------------------------
 complete -c quaddoc -f -a '(__fish_complete_directories)'
 complete -c quaddoc -s o -l output -x -a '(__fish_complete_directories)' -d 'Output directory'
@@ -108,10 +103,6 @@ complete -c quaddoc -l css -x -a '(__quad_files_matching .css)' -d 'Append a cus
 
 # --- quadrepl ---------------------------------------------------------------
 complete -c quadrepl -s p -l print -d 'Print stack to stdout on exit'
-
-# --- quadmcp ----------------------------------------------------------------
-complete -c quadmcp -l http -d 'Serve over HTTP on 127.0.0.1:3000 instead of stdio'
-complete -c quadmcp -l host -r -d 'Bind --http to this address instead of 127.0.0.1'
 
 # --- quadpm -----------------------------------------------------------------
 complete -c quadpm -f
@@ -138,11 +129,9 @@ complete -c quad -n __fish_use_subcommand -a test -d 'Run tests'
 complete -c quad -n __fish_use_subcommand -a fmt -d 'Format Quadrate source files'
 complete -c quad -n __fish_use_subcommand -a lint -d 'Check code for common issues'
 complete -c quad -n __fish_use_subcommand -a repl -d 'Start interactive REPL'
-complete -c quad -n __fish_use_subcommand -a uses -d 'Manage use statements'
 complete -c quad -n __fish_use_subcommand -a lsp -d 'Start language server'
 complete -c quad -n __fish_use_subcommand -a doc -d 'Generate HTML documentation'
 complete -c quad -n __fish_use_subcommand -a pm -d 'Manage third-party modules'
-complete -c quad -n __fish_use_subcommand -a mcp -d 'Start the MCP server'
 complete -c quad -n __fish_use_subcommand -a init -d 'Initialize a new Quadrate project'
 complete -c quad -n __fish_use_subcommand -a clean -d 'Remove build artifacts'
 complete -c quad -n __fish_use_subcommand -a help -d 'Show help for a command'
@@ -151,7 +140,7 @@ complete -c quad -n __fish_use_subcommand -a version -d 'Show version informatio
 complete -c quad -n __fish_use_subcommand -a '(__quad_qd_files)'
 
 complete -c quad -n '__fish_seen_subcommand_from help' \
-    -a 'build run test fmt lint repl uses lsp doc pm mcp init clean version'
+    -a 'build run test fmt lint repl lsp doc pm init clean version'
 
 # Pass-through: offer what the underlying tool accepts.
 complete -c quad -n '__fish_seen_subcommand_from build run test' -a '(__quad_qd_files)'
@@ -168,16 +157,12 @@ complete -c quad -n '__fish_seen_subcommand_from build run test' -l target -x -d
 complete -c quad -n '__fish_seen_subcommand_from fmt' -a '(__quad_qd_files)'
 complete -c quad -n '__fish_seen_subcommand_from fmt' -s c -l check -d 'Report whether files are formatted'
 complete -c quad -n '__fish_seen_subcommand_from fmt' -s w -l write -d 'Format files in place'
+complete -c quad -n '__fish_seen_subcommand_from fmt' -s u -l uses -d 'Fix use statements too'
 complete -c quad -n '__fish_seen_subcommand_from fmt' -l no-sort-imports -d 'Leave use statements in order'
 
 complete -c quad -n '__fish_seen_subcommand_from lint' -a '(__quad_qd_files)'
 complete -c quad -n '__fish_seen_subcommand_from lint' -l json -d 'Report issues as JSON'
 complete -c quad -n '__fish_seen_subcommand_from lint' -s q -l quiet -d 'Only show the summary'
-
-complete -c quad -n '__fish_seen_subcommand_from uses' -a '(__quad_qd_files)'
-complete -c quad -n '__fish_seen_subcommand_from uses' -s w -l write -d 'Update files in place'
-complete -c quad -n '__fish_seen_subcommand_from uses' -s c -l check -d 'Report whether files need changes'
-complete -c quad -n '__fish_seen_subcommand_from uses' -s n -l dry-run -d 'Show what would change'
 
 complete -c quad -n '__fish_seen_subcommand_from doc' -a '(__fish_complete_directories)'
 complete -c quad -n '__fish_seen_subcommand_from doc' -s o -l output -r \
@@ -188,8 +173,6 @@ complete -c quad -n '__fish_seen_subcommand_from doc' -l css -x -a '(__quad_file
     -d 'Append a custom CSS file'
 
 complete -c quad -n '__fish_seen_subcommand_from repl' -s p -l print -d 'Print stack to stdout on exit'
-complete -c quad -n '__fish_seen_subcommand_from mcp' -l http -d 'Serve over HTTP on 127.0.0.1:3000 instead of stdio'
-complete -c quad -n '__fish_seen_subcommand_from mcp' -l host -r -d 'Bind --http to this address instead of 127.0.0.1'
 
 complete -c quad -n '__fish_seen_subcommand_from pm' \
     -a 'install lock get update remove list outdated build'

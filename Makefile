@@ -38,24 +38,23 @@ endif
 # Commands to copy. Derived from what is present rather than listed, so a source
 # subset that omits a tool builds as-is -- the floppy distribution drops
 # cmd/quadlsp and used to sed this list, which also ate the word "quadlsp" out
-# of every path below it. quadrepl and quadmcp are excluded because both are
-# built conditionally further down.
-CMDS := $(filter-out quadmcp quadrepl,$(notdir $(wildcard cmd/quad*)))
+# of every path below it. quadrepl is excluded because it is built
+# conditionally further down.
+CMDS := $(filter-out quadrepl,$(notdir $(wildcard cmd/quad*)))
 
 # Every tool that ships a binary, conditionally-built ones included. Three rules
 # below needed this list and each spelled it out again.
-ALL_CMDS := $(CMDS) quadrepl quadmcp
+ALL_CMDS := $(CMDS) quadrepl
 
 # bash-completion loads a completion file lazily, named after the command being
 # completed: typing `quaddoc <TAB>` makes it look for a file called `quaddoc`.
-# One file serves all ten tools, so every tool bar `quad` -- which is the file
+# One file serves all eight tools, so every tool bar `quad` -- which is the file
 # itself -- needs a link under its own name, or it silently gets no completion
-# at all. quaddoc and quadmcp were missing from the hand-written list this
-# replaces, so neither completed anything however complete completions/quad.bash
-# was.
+# at all. quaddoc was missing from the hand-written list this replaces, so it
+# completed nothing however complete completions/quad.bash was.
 #
 # fish autoloads the same way and so needs the same links, named <tool>.fish.
-# zsh is the exception: completions/_quad names all ten commands on its #compdef
+# zsh is the exception: completions/_quad names all eight commands on its #compdef
 # line, and zsh indexes the file by those names when compinit runs.
 COMPLETION_LINKS := $(filter-out quad,$(ALL_CMDS))
 
@@ -75,7 +74,7 @@ LIBS_WITH_HEADERS := $(LIBS_WITH_C)
 # Standard library modules (auto-discovered from stdlib/*/qd/*/)
 STDLIB_MODULES := $(shell find stdlib/*/qd -maxdepth 1 -mindepth 1 -type d -exec basename {} \; 2>/dev/null | sort -u)
 
-.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format fmtcheck docscheck install uninstall clean docs quadmcp playground
+.PHONY: all debug release docker-x64 docker-arm64 docker-all tests tests-failed tests-clear valgrind asan fuzz examples format fmtcheck docscheck install uninstall clean docs playground
 
 all: debug
 
@@ -146,38 +145,11 @@ define do_build
 	@echo "$(3)"
 endef
 
-# quadmcp is compiled from .qd, so it cannot include the version.h that meson
-# generates for the C++ tools. Emit the same string as a Quadrate const, so
-# `quadmcp --version` reads identically to `quadc --version` rather than
-# printing a bare number.
-# $(1) = build directory
-define gen_quadmcp_version
-	@printf 'const BUILD_VERSION = "%s (%s, built %s)"\n' \
-		"$$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0-unknown)" \
-		"$$(git describe --always --dirty 2>/dev/null || echo unknown)" \
-		"$$(date '+%b %e %Y')" > $(1)/cmd/quadmcp/version.qd
-endef
-
-# quadmcp is written in Quadrate, so it is built by the quad just built: $(1) is the
-# build directory, $(2) the optimisation flag. A source subset without it skips it.
-define build_quadmcp
-	$(if $(wildcard cmd/quadmcp/server.qd),
-	@echo "Building quadmcp..."
-	@mkdir -p $(1)/modules $(1)/cmd/quadmcp
-	cd cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(1)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quadpm install
-	$(call gen_quadmcp_version,$(1))
-	@cat cmd/quadmcp/core.qd $(1)/cmd/quadmcp/version.qd cmd/quadmcp/tools.qd cmd/quadmcp/resources.qd cmd/quadmcp/server.qd > $(1)/cmd/quadmcp/quadmcp.qd
-	cd $(1)/cmd/quadmcp && QUADRATE_PATH=$(CURDIR)/$(1)/modules QUADRATE_ROOT=$(CURDIR) $(CURDIR)/dist/bin/quad build $(2) quadmcp.qd -o quadmcp
-	install -m 755 $(1)/cmd/quadmcp/quadmcp dist/bin/)
-endef
-
 debug:
 	$(call do_build,$(BUILD_DIR_DEBUG),debug,Debug build complete - static libraries ready)
-	$(call build_quadmcp,$(BUILD_DIR_DEBUG),)
 
 release:
 	$(call do_build,$(BUILD_DIR_RELEASE),release,Release build complete - static libraries ready)
-	$(call build_quadmcp,$(BUILD_DIR_RELEASE),-O3)
 	@echo "Stripping binaries..."
 	@for cmd in $(ALL_CMDS); do \
 		if [ -f dist/bin/$$cmd ]; then strip dist/bin/$$cmd && echo "  $$cmd"; fi; \
@@ -266,9 +238,6 @@ fmtcheck: release
 docscheck: debug
 	LD_LIBRARY_PATH=$(CURDIR)/dist/lib python3 tools/check_docs.py --run
 
-# Build quadmcp (MCP server for AI assistants): debug builds it
-quadmcp: debug
-
 # Build playground (web-based REPL) - requires Go and Docker
 playground: release
 	@if ! command -v go >/dev/null 2>&1; then echo "Error: Go required for playground"; exit 1; fi
@@ -286,7 +255,6 @@ install:
 	install -d $(DESTDIR)$(INCLUDEDIR)
 	@for cmd in $(CMDS); do install -m 755 dist/bin/$$cmd $(DESTDIR)$(PREFIX)/bin/; done
 	@if [ -f dist/bin/quadrepl ]; then install -m 755 dist/bin/quadrepl $(DESTDIR)$(PREFIX)/bin/; fi
-	@if [ -f dist/bin/quadmcp ]; then install -m 755 dist/bin/quadmcp $(DESTDIR)$(PREFIX)/bin/; fi
 	install -d $(DESTDIR)$(PREFIX)/lib/quadrate
 	@for dir in $(LIBS_WITH_C); do \
 		install -m 644 dist/lib/quadrate/lib$$dir.a $(DESTDIR)$(PREFIX)/lib/quadrate/; \
@@ -329,6 +297,11 @@ print-completion-links:
 
 uninstall:
 	@for cmd in $(ALL_CMDS); do rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd; done
+	@# Tools no longer built: clear what an older install left behind.
+	@for cmd in quadmcp quaduses; do \
+		rm -f $(DESTDIR)$(PREFIX)/bin/$$cmd $(DESTDIR)$(DATADIR)/bash-completion/completions/$$cmd \
+			$(DESTDIR)$(DATADIR)/fish/vendor_completions.d/$$cmd.fish; \
+	done
 	rm -rf $(DESTDIR)$(PREFIX)/lib/quadrate
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqdrt.so
 	rm -f $(DESTDIR)$(PREFIX)/lib/libqd.so

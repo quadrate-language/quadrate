@@ -3,10 +3,10 @@
 
 The compiler's tables in lib/qc/include/quadrate/qc/instructions.h are the source
 of truth. The same names are also written out by hand in the language reference,
-two JSON API files, the Pygments lexer, the playground and the MCP server's help
-text. Nothing compared them, so removing a builtin meant editing every list from
-memory -- and a miss stayed invisible: `ctx` survived in docs/api/language.json,
-which the MCP server serves live, long after the keyword was gone.
+two JSON API files, the Pygments lexer and the playground. Nothing compared
+them, so removing a builtin meant editing every list from memory -- and a miss
+stayed invisible: `ctx` survived in docs/api/language.json long after the
+keyword was gone.
 
 Two invariants, both cheap and both violated at some point:
 
@@ -38,8 +38,6 @@ PYGMENTS_LEXER = "docs/pygments-quadrate/quadrate_lexer/__init__.py"
 # for removed names -- which is the invariant that actually broke.
 PROSE_SOURCES = [
     "tools/playground/templates/index.html",
-    "cmd/quadmcp/tools.qd",
-    "cmd/quadmcp/resources.qd",
 ]
 
 # Removed names that are ordinary English words, so a word-boundary scan of prose says

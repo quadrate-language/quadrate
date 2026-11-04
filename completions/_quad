@@ -1,8 +1,8 @@
-#compdef quad quadc quaddoc quadfmt quadlint quadlsp quadmcp quadpm quadrepl quaduses
+#compdef quad quadc quaddoc quadfmt quadlint quadlsp quadpm quadrepl
 
 # Zsh completion for the Quadrate toolchain.
 #
-# One file serves all ten tools: zsh dispatches on $service, so unlike the bash
+# One file serves all eight tools: zsh dispatches on $service, so unlike the bash
 # completion this needs no per-command links. Option lists mirror each tool's
 # --help; `<tool> --help` is the authoritative list, and
 # tests/run_cli_surface_test.sh fails if an option documented there is missing
@@ -55,6 +55,7 @@ _quadfmt_opts() {
 		$common_opts \
 		'(-c --check)'{-c,--check}'[Report whether files are formatted (exit 1 if not)]' \
 		'(-w --write)'{-w,--write}'[Format files in place]' \
+		'(-u --uses)'{-u,--uses}'[Add the use statements a file needs and remove the ones it does not]' \
 		'--no-sort-imports[Leave use statements in their original order]' \
 		'--migrate[Rewrite old code\: def for functions reading inputs by name, renamed builtins, operator words to symbols]' \
 		$qd_files
@@ -83,15 +84,6 @@ _quadlint_opts() {
 		$qd_files
 }
 
-_quaduses_opts() {
-	_arguments -s : \
-		$common_opts \
-		'(-w --write)'{-w,--write}'[Update files in place]' \
-		'(-c --check)'{-c,--check}'[Report whether files need changes (exit 1 if so)]' \
-		'(-n --dry-run)'{-n,--dry-run}'[Show what would change without modifying]' \
-		$qd_files
-}
-
 _quaddoc_opts() {
 	_arguments -s : \
 		$common_opts \
@@ -106,13 +98,6 @@ _quadrepl_opts() {
 	_arguments -s : \
 		$common_opts \
 		'(-p --print)'{-p,--print}'[Print stack to stdout on exit]'
-}
-
-_quadmcp_opts() {
-	_arguments -s : \
-		$common_opts \
-		'--http[Serve over HTTP on 127.0.0.1:3000 instead of stdio]' \
-		'--host[Bind --http to this address instead of 127.0.0.1]:address:'
 }
 
 _quadlsp_opts() {
@@ -181,11 +166,9 @@ _quad_dispatch() {
 		'fmt:Format Quadrate source files'
 		'lint:Check code for common issues'
 		'repl:Start interactive REPL'
-		'uses:Manage use statements'
 		'lsp:Start language server'
 		'doc:Generate HTML documentation'
 		'pm:Manage third-party modules'
-		'mcp:Start the MCP server'
 		'init:Initialize a new Quadrate project'
 		'clean:Remove build artifacts'
 		'help:Show help for a command'
@@ -212,11 +195,9 @@ _quad_dispatch() {
 				build|run|test) _quadc_opts ;;
 				fmt)            _quadfmt_opts ;;
 				lint)           _quadlint_opts ;;
-				uses)           _quaduses_opts ;;
 				doc)            _quaddoc_opts ;;
 				repl)           _quadrepl_opts ;;
 				lsp)            _quadlsp_opts ;;
-				mcp)            _quadmcp_opts ;;
 				pm)             _quadpm_opts ;;
 				help)           _describe -t commands 'quad command' quad_commands ;;
 				*)              _arguments -s : $common_opts ;;
@@ -232,8 +213,6 @@ case $service in
 	quadfmt)  _quadfmt_opts ;;
 	quadlint) _quadlint_opts ;;
 	quadlsp)  _quadlsp_opts ;;
-	quadmcp)  _quadmcp_opts ;;
 	quadpm)   _quadpm_opts ;;
 	quadrepl) _quadrepl_opts ;;
-	quaduses) _quaduses_opts ;;
 esac

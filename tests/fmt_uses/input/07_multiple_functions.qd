@@ -1,7 +1,7 @@
 use math
 use unused1
 
-def helper1(x:f64loat -- result:f64loat) {
+def helper1(x:f64 -- result:f64) {
 	x math::sqrt
 }
 

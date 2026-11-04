@@ -1,0 +1,11 @@
+use math
+
+// Test that quadfmt --uses detects scoped types in function parameters
+def process(v:math::Vec3 -- result:f64) {
+	-> v
+	v <<x v <<y + v <<z +
+}
+
+fn main() {
+	1
+}

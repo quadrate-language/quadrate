@@ -41,7 +41,6 @@ benchmarks/arithmetic_qd_typeaware
 benchmarks/arithmetic_v8_specialized
 
 # Command binaries (built in-place)
-cmd/quadmcp/quadmcp
 
 # Fuzzer artifacts
 crash-*

@@ -17,7 +17,7 @@ namespace qdcli {
 
 	// Report any path that does not exist, and return false if one did.
 	// collectFiles() passes an unknown path straight through to the caller, which
-	// leaves each tool to notice on its own -- quadfmt and quaduses happen to fail
+	// leaves each tool to notice on its own -- quadfmt happens to fail
 	// when the read fails, while quadlint silently linted nothing and exited 0.
 	// Call this before collecting so a mistyped path is an error everywhere.
 	bool checkPathsExist(const std::vector<std::string>& paths, const char* toolName);

@@ -710,7 +710,7 @@ static int compile(const Options& opts, const std::string& outputDir, const std:
 		auto source = readFileContents(file);
 		if (!source) {
 			// A tool-level failure, not a diagnostic: the `tool: path: message` shape quadfmt,
-			// quadlint, quaduses and quaddoc use, not the `quadc: error:` one
+			// quadlint and quaddoc use, not the `quadc: error:` one
 			printToolError(file + ": " + std::strerror(errno != 0 ? errno : EIO));
 			return 1;
 		}

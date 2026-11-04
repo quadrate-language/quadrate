@@ -2,7 +2,7 @@
  * @file type_names.h
  * @brief The built-in type names, in one place.
  *
- * The compiler, the language server, the REPL and quaduses all need to know which names
+ * The compiler, the language server, the REPL and quadfmt --uses all need to know which names
  * are types. Each used to keep its own list, and the lists disagreed: `bool` was a type in
  * a struct field and nowhere else, `f32` and `string` only inside `cast<...>`.
  */

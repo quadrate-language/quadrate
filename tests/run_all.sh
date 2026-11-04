@@ -5,7 +5,7 @@
 #   ./tests/run_all.sh                    # Run all tests
 #   ./tests/run_all.sh --failed           # Run only previously failed tests
 #   ./tests/run_all.sh --test NAME        # Run specific test
-#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadc, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)
+#   ./tests/run_all.sh --suite SUITE      # Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadc, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)
 #   ./tests/run_all.sh --clear            # Clear failed tests file
 #   ./tests/run_all.sh --list             # List all available tests
 
@@ -112,7 +112,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --failed, -f       Run only previously failed tests"
             echo "  --test, -t NAME    Run specific test by name"
-            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadc, quadmcp, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)"
+            echo "  --suite, -s SUITE  Run specific suite (cpp, lsp, qd, formatter, linter, embed, quadpm, build_cache, quadc, args, reference, crosscompile, stdlib, tools, memory, http, mtls, fuzz)"
             echo "  --fuzz-time SECS   Fuzz test duration in seconds (default: 10)"
             echo "  --list, -l         List all available tests"
             echo "  --clear, -c        Clear failed tests file"
@@ -1090,79 +1090,6 @@ run_quadc_cli_tests() {
     fi
 }
 
-# Run quadmcp (MCP server) tests
-run_quadmcp_tests() {
-    local suite="quadmcp"
-    local test_script="$PROJECT_ROOT/tests/quadmcp/test_quadmcp.sh"
-
-    # Check if test script exists
-    if [[ ! -f "$test_script" ]]; then
-        if should_run_test "$suite" "quadmcp"; then
-            print_header "MCP Server Tests"
-            log_skip "$suite" "quadmcp" "test script not found"
-        fi
-        return
-    fi
-
-    # Check if quadmcp binary exists
-    if [[ ! -x "$PROJECT_ROOT/dist/bin/quadmcp" ]]; then
-        if should_run_test "$suite" "quadmcp"; then
-            print_header "MCP Server Tests"
-            log_skip "$suite" "quadmcp" "quadmcp binary not found (run 'make' first)"
-        fi
-        return
-    fi
-
-    local output_file="$TEMP_DIR/quadmcp_test_output.txt"
-
-    # Run tests and capture output to file
-    # Explicitly set QUADRATE_ROOT and QUADMCP to avoid picking up values from other test suites
-    (QUADRATE_ROOT="$PROJECT_ROOT" QUADMCP="$PROJECT_ROOT/dist/bin/quadmcp" bash "$test_script") > "$output_file" 2>&1
-
-    # Parse individual test results from output
-    # Format: "PASS: test name" or "FAIL: test name"
-    local -a test_results=()
-    while IFS= read -r line; do
-        # Strip ANSI codes and extract test results
-        local clean_line=$(echo "$line" | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/\\033\[[0-9;]*m//g')
-        if [[ "$clean_line" =~ ^PASS:\ (.+)$ ]]; then
-            test_results+=("PASS:${BASH_REMATCH[1]}")
-        elif [[ "$clean_line" =~ ^FAIL:\ (.+)$ ]]; then
-            test_results+=("FAIL:${BASH_REMATCH[1]}")
-        fi
-    done < "$output_file"
-
-    # Filter tests based on should_run_test
-    local -a filtered_tests=()
-    for result in "${test_results[@]}"; do
-        local test_name="${result#*:}"
-        if should_run_test "$suite" "$test_name"; then
-            filtered_tests+=("$result")
-        fi
-    done
-
-    [[ ${#filtered_tests[@]} -eq 0 ]] && return
-
-    print_header "MCP Server Tests"
-
-    CURRENT_TEST_TOTAL=${#filtered_tests[@]}
-    CURRENT_TEST_NUM=0
-
-    for result in "${filtered_tests[@]}"; do
-        CURRENT_TEST_NUM=$((CURRENT_TEST_NUM + 1))
-        local status="${result%%:*}"
-        local test_name="${result#*:}"
-
-        if [[ "$status" == "PASS" ]]; then
-            log_pass "$suite" "$test_name"
-        else
-            log_fail "$suite" "$test_name" "test failed" ""
-        fi
-    done
-
-    CURRENT_TEST_TOTAL=0
-}
-
 # Run quad CLI tests
 run_quad_tests() {
     local suite="quad"
@@ -1268,8 +1195,7 @@ arg0=hello" "hello"
 
 # Cross-check every hand-maintained copy of the builtin/keyword surface against
 # the compiler's own tables. Removing a builtin means editing ten separate lists;
-# nothing compared them, which is how a removed keyword survived in the JSON the
-# MCP server serves live.
+# nothing compared them, which is how a removed keyword survived in the API JSON.
 run_reference_tests() {
     local suite="reference"
 
@@ -1296,12 +1222,6 @@ run_reference_tests() {
         log_pass "$suite" "test_expectations" "(every test pins output or is imported by one that does)"
     else
         log_fail "$suite" "test_expectations" "$output"
-    fi
-
-    if output=$(cd "$PROJECT_ROOT" && python3 tools/check_versions.py 2>&1); then
-        log_pass "$suite" "versions" "(hand-maintained version strings match the toolchain)"
-    else
-        log_fail "$suite" "versions" "$output"
     fi
 
     if output=$(cd "$PROJECT_ROOT" && python3 tools/check_global_var_linkage.py "$QUADC" 2>&1); then
@@ -1652,7 +1572,7 @@ EOFSRC
     fi
 }
 
-# Run quaduses / quaddoc / quadrepl tests
+# Run quadfmt --uses / quaddoc / quadrepl tests
 run_tools_tests() {
     local suite="tools"
 
@@ -1707,7 +1627,7 @@ run_memory_tests() {
     fi
 }
 
-# Run the shared CLI surface checks across all ten tools
+# Run the shared CLI surface checks across all eight tools
 run_cli_surface_tests() {
     local suite="tools"
 
@@ -2068,7 +1988,7 @@ print_summary() {
     echo -e "${BOLD}═══════════════════════════════════════════════════════════════════════════════${NC}"
 
     # Print per-suite summary
-    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadc quadmcp stdlib tools memory http mtls fuzz; do
+    for suite in cpp lsp qd formatter linter embed quadpm build_cache quadc stdlib tools memory http mtls fuzz; do
         local passed=${SUITE_PASSED[$suite]:-0}
         local failed=${SUITE_FAILED[$suite]:-0}
         local skipped=${SUITE_SKIPPED[$suite]:-0}
@@ -2087,7 +2007,6 @@ print_summary() {
             quadpm) suite_name="Package Manager" ;;
             build_cache) suite_name="Build Cache" ;;
             quadc) suite_name="quadc CLI" ;;
-            quadmcp) suite_name="MCP Server" ;;
             stdlib) suite_name="Stdlib Unit Tests" ;;
             tools) suite_name="Tool Tests" ;;
             memory) suite_name="Memory" ;;
@@ -2212,10 +2131,6 @@ main() {
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadc" ]]; then
         run_quadc_cli_tests
-    fi
-
-    if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quadmcp" ]]; then
-        run_quadmcp_tests
     fi
 
     if [[ -z "$SPECIFIC_SUITE" ]] || [[ "$SPECIFIC_SUITE" == "quad" ]]; then

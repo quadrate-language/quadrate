@@ -27,11 +27,10 @@ trap cleanup EXIT
 
 BUILD_DIR="${BUILD_DIR:-build/debug}"
 
-TOOLS="quad quadc quaddoc quadfmt quadlint quadlsp quadmcp quadpm quadrepl quaduses"
+TOOLS="quad quadc quaddoc quadfmt quadlint quadlsp quadpm quadrepl"
 
-# quadmcp is compiled from .qd by the Makefile rather than by meson, so it only
-# ever lands in dist/bin; the rest are taken from the build tree when it has
-# them so the suite tests what was just built.
+# Tools are taken from the build tree when it has them, so the suite tests what
+# was just built, and from dist/bin otherwise.
 tool_path() {
     local name="$1"
     if [ -x "$PROJECT_ROOT/$BUILD_DIR/cmd/$name/$name" ]; then
@@ -236,14 +235,14 @@ else
 
     # Registering a completion in the file is not enough to get one. bash
     # loads a completion file lazily, by the name of the command being
-    # completed, so one file serving ten tools needs a link per tool. The
+    # completed, so one file serving eight tools needs a link per tool. The
     # install rule listed seven of the ten by hand: quaddoc and quadmcp had
     # working completions in the file that no shell would ever load.
 fi
 
 # The zsh completion is a second, independent list of every tool's options, with
 # the same drift problem as the bash one. zsh needs no per-command links: the
-# #compdef line names all ten commands and compinit indexes the file by them --
+# #compdef line names all eight commands and compinit indexes the file by them --
 # which is exactly why that line has to stay complete.
 echo ""
 echo "=== zsh completions match --help ==="

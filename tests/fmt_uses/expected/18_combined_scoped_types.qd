@@ -1,14 +1,14 @@
-// Test that quaduses detects multiple scoped types from different sources
 use math
 use os
 use strings
 
+// Test that quadfmt --uses detects multiple scoped types from different sources
 struct Container {
 	position: math::Vec3
-	name:     str
+	name: str
 }
 
-def process(v: math::Vec3 -- len: f64) {
+def process(v:math::Vec3 -- len:f64) {
 	-> v
 	v <<x dup * v <<y dup * + v <<z dup * + math::sqrt
 }
@@ -18,8 +18,7 @@ fn main() {
 		x = 1.0
 		y = 2.0
 		z = 3.0
-	}
-	process print nl
+	} process print nl
 
 	"hello" strings::upper print nl
 

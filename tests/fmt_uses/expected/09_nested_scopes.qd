@@ -10,6 +10,6 @@ fn main() {
 	}
 
 	10 for it {
-		i bits::inc print nl
+		it bits::inc print nl
 	}
 }

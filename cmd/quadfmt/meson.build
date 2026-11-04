@@ -1,5 +1,6 @@
 quadfmt_sources = files(
 		'src/main.cc',
+		'src/uses.cc',
 )
 
 # u8t is already provided by qc_dep (no need to get it again)

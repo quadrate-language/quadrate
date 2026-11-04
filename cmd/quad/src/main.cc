@@ -35,11 +35,9 @@ static const Command commands[] = {
 		{"fmt", "quadfmt", "Format Quadrate source files"},
 		{"lint", "quadlint", "Check code for common issues"},
 		{"repl", "quadrepl", "Start interactive REPL"},
-		{"uses", "quaduses", "Manage use statements"},
 		{"lsp", "quadlsp", "Start language server"},
 		{"doc", "quaddoc", "Generate HTML documentation"},
 		{"pm", "quadpm", "Manage third-party modules"},
-		{"mcp", "quadmcp", "Start the MCP server"},
 		{"init", nullptr, "Initialize a new Quadrate project"},
 		{"clean", nullptr, "Remove build artifacts"},
 		{"version", nullptr, "Show version information"},
@@ -443,84 +441,6 @@ int handlePm(const std::vector<std::string>& args) {
 	return execTool(toolPath, args);
 }
 
-int handleMcp(const std::vector<std::string>& args) {
-	std::string toolPath = findTool("quadmcp");
-	if (toolPath.empty()) {
-		std::cerr << "quad: quadmcp not found\n";
-		return 1;
-	}
-	return execTool(toolPath, args);
-}
-
-int handleUses(const std::vector<std::string>& args) {
-	std::string toolPath = findTool("quaduses");
-	if (toolPath.empty()) {
-		std::cerr << "quad: quaduses not found\n";
-		return 1;
-	}
-
-	std::vector<std::string> toolArgs;
-
-	// Add -w flag by default to update in place (unless user passes --check or -n)
-	bool hasCheckFlag = false;
-	for (const auto& arg : args) {
-		if (arg == "-c" || arg == "--check" || arg == "-n" || arg == "--dry-run") {
-			hasCheckFlag = true;
-			break;
-		}
-	}
-	if (!hasCheckFlag) {
-		toolArgs.push_back("-w");
-	}
-
-	// Add user-provided args
-	for (const auto& arg : args) {
-		toolArgs.push_back(arg);
-	}
-
-	// If no files specified, process all .qd files in current directory
-	bool hasFiles = false;
-	for (const auto& arg : args) {
-		if (!arg.empty() && arg[0] != '-') {
-			hasFiles = true;
-			break;
-		}
-	}
-	if (!hasFiles) {
-		auto files = findQdFiles();
-		if (files.empty()) {
-			std::cerr << "quad: no .qd files found in current directory\n";
-			return 1;
-		}
-		for (const auto& f : files) {
-			toolArgs.push_back(f);
-		}
-	}
-
-	// quaduses processes one file at a time, so we need to call it for each file
-	int result = 0;
-	std::vector<std::string> fileArgs;
-	std::vector<std::string> optionArgs;
-	for (const auto& arg : toolArgs) {
-		if (!arg.empty() && arg[0] == '-') {
-			optionArgs.push_back(arg);
-		} else {
-			fileArgs.push_back(arg);
-		}
-	}
-
-	for (const auto& file : fileArgs) {
-		std::vector<std::string> singleFileArgs = optionArgs;
-		singleFileArgs.push_back(file);
-		int r = execTool(toolPath, singleFileArgs);
-		if (r != 0) {
-			result = r;
-		}
-	}
-
-	return result;
-}
-
 int handleLsp(const std::vector<std::string>& args) {
 	std::string toolPath = findTool("quadlsp");
 	if (toolPath.empty()) {
@@ -822,9 +742,6 @@ int main(int argc, char* argv[]) {
 	if (command == "repl") {
 		return handleRepl(args);
 	}
-	if (command == "uses") {
-		return handleUses(args);
-	}
 	if (command == "lsp") {
 		return handleLsp(args);
 	}
@@ -833,9 +750,6 @@ int main(int argc, char* argv[]) {
 	}
 	if (command == "pm") {
 		return handlePm(args);
-	}
-	if (command == "mcp") {
-		return handleMcp(args);
 	}
 	if (command == "init") {
 		return handleInit(args);

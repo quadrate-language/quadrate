@@ -1,6 +1,6 @@
-// Test that quaduses detects scoped struct constructions
 use math
 
+// Test that quadfmt --uses detects scoped struct constructions
 fn main() {
 	math::Vec3 {
 		x = 1.0

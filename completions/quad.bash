@@ -1,6 +1,5 @@
 # Bash completion for the Quadrate toolchain
-# Covers quad, quadc, quaddoc, quadfmt, quadlint, quadlsp, quadmcp, quadpm,
-# quadrepl and quaduses.
+# Covers quad, quadc, quaddoc, quadfmt, quadlint, quadlsp, quadpm and quadrepl.
 #
 # Option lists here mirror each tool's --help. When you add an option to a tool,
 # add it here too -- `<tool> --help` is the authoritative list.
@@ -10,12 +9,10 @@ _QUAD_COMMON="-h --help -v --version --no-color"
 
 # Per-tool options, without the common three.
 _QUAD_OPTS_QUADC="-o --output -O0 -O1 -O2 -O3 -g --debug -s --stack-size -I --include -l --module -r --run --no-jit --test --coverage --default-float --target --freestanding --werror --verbose --save-temps --dump-tokens --dump-ast --dump-ir"
-_QUAD_OPTS_QUADFMT="-c --check -w --write --no-sort-imports --migrate"
+_QUAD_OPTS_QUADFMT="-c --check -w --write -u --uses --no-sort-imports --migrate"
 _QUAD_OPTS_QUADLINT="--json -q --quiet --max-nesting --no-unused-functions --no-unused-variables --no-dead-code --no-deep-nesting --no-missing-defer --no-shadow-variables --no-empty-blocks --no-constant-conditions --no-needless-binding --check-magic-numbers --check-long-functions --check-naming --max-function-lines --source-path"
-_QUAD_OPTS_QUADUSES="-w --write -c --check -n --dry-run"
 _QUAD_OPTS_QUADDOC="-o --output -q --quiet --title --css"
 _QUAD_OPTS_QUADREPL="-p --print"
-_QUAD_OPTS_QUADMCP="--http --host"
 _QUAD_OPTS_QUADPM="--frozen --no-scripts"
 
 # Helper function to find .qd files and directories
@@ -58,7 +55,7 @@ _quad() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="build run test fmt lint repl uses lsp doc pm mcp init clean help version"
+    local commands="build run test fmt lint repl lsp doc pm init clean help version"
 
     if [[ $cword -eq 1 ]]; then
         if [[ "$cur" == -* ]]; then
@@ -79,10 +76,8 @@ _quad() {
         build|run|test) opts="$_QUAD_OPTS_QUADC" ;;
         fmt)            opts="$_QUAD_OPTS_QUADFMT" ;;
         lint)           opts="$_QUAD_OPTS_QUADLINT" ;;
-        uses)           opts="$_QUAD_OPTS_QUADUSES" ;;
         doc)            opts="$_QUAD_OPTS_QUADDOC"; takes_files=0 ;;
         repl)           opts="$_QUAD_OPTS_QUADREPL"; takes_files=0 ;;
-        mcp)            opts="$_QUAD_OPTS_QUADMCP"; takes_files=0 ;;
         lsp)            opts=""; takes_files=0 ;;
         pm)
             _quadpm_args 2
@@ -176,16 +171,6 @@ _quadlint() {
     fi
 }
 
-_quaduses() {
-    local cur prev words cword
-    _init_completion || return
-    if [[ "$cur" == -* ]]; then
-        COMPREPLY=( $(compgen -W "$_QUAD_COMMON $_QUAD_OPTS_QUADUSES" -- "$cur") )
-    else
-        _quad_qd_files "$cur"
-    fi
-}
-
 _quaddoc() {
     local cur prev words cword
     _init_completion || return
@@ -213,14 +198,6 @@ _quadrepl() {
     fi
 }
 
-_quadmcp() {
-    local cur prev words cword
-    _init_completion || return
-    if [[ "$cur" == -* ]]; then
-        COMPREPLY=( $(compgen -W "$_QUAD_COMMON $_QUAD_OPTS_QUADMCP" -- "$cur") )
-    fi
-}
-
 _quadpm() {
     local cur prev words cword
     _init_completion || return
@@ -234,7 +211,5 @@ complete -F _quaddoc quaddoc
 complete -F _quadfmt quadfmt
 complete -F _quadlint quadlint
 complete -F _quadlsp quadlsp
-complete -F _quadmcp quadmcp
 complete -F _quadpm quadpm
 complete -F _quadrepl quadrepl
-complete -F _quaduses quaduses

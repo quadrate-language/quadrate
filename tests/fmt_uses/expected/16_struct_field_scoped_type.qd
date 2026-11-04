@@ -1,0 +1,11 @@
+use math
+
+// Test that quadfmt --uses detects scoped types in struct field declarations
+struct Segment {
+	pos: math::Vec3
+	tangent: math::Vec3
+}
+
+fn main() {
+	1
+}

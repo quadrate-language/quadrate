@@ -4,7 +4,7 @@ Quadrate provides a complete set of tools for developing, building, and maintain
 
 ## What every tool shares
 
-The ten tools accept the same three options and report themselves the same way, so
+The eight tools accept the same three options and report themselves the same way, so
 what you learn from one carries to the rest:
 
 | Option | Description |
@@ -28,7 +28,7 @@ what you learn from one carries to the rest:
 
 ### Shell completions
 
-Completions for all ten tools ship for bash, zsh and fish, and are installed by
+Completions for all eight tools ship for bash, zsh and fish, and are installed by
 `make install`:
 
 | Shell | Installed as |
@@ -81,14 +81,12 @@ quad clean             # Remove build artifacts
 | `build` | `quadc` | Compile source files |
 | `run` | `quadc -r` | Build and run a program; `quad run greet.qd -- Alice` passes `Alice` to it |
 | `test` | `quadc --test` | Run the `test` blocks in the `*_test.qd` and `test_*.qd` files in the current directory; `quad test ./...` searches subdirectories too |
-| `fmt` | `quadfmt -w` | Format files in place; `quad fmt --check` only reports |
+| `fmt` | `quadfmt -w` | Format files in place; `quad fmt --check` only reports, `quad fmt --uses` also fixes `use` statements |
 | `lint` | `quadlint` | Check code for common issues |
-| `uses` | `quaduses -w` | Add and remove `use` statements; `quad uses --check` only reports |
 | `repl` | `quadrepl` | Start the interactive REPL |
 | `lsp` | `quadlsp` | Start the language server |
 | `doc` | `quaddoc` | Generate HTML documentation |
 | `pm` | `quadpm` | Manage third-party modules |
-| `mcp` | `quadmcp` | Start the MCP server |
 | `init` | | Create a new project |
 | `clean` | | Remove build artifacts |
 | `version` | | Show version information |
@@ -171,12 +169,14 @@ Code formatter that enforces consistent style across your codebase.
 quadfmt hello.qd       # Show formatted output (dry run)
 quadfmt -w hello.qd    # Format file in place
 quadfmt -w src/        # Format all .qd files in directory
+quadfmt -u -w src/     # Also add missing use statements and remove unused ones
 ```
 
 | Option | Description |
 |--------|-------------|
 | `-w`, `--write` | Format files in place |
 | `-c`, `--check` | Report whether files are formatted; exit 1 if not |
+| `-u`, `--uses` | Add the `use` statements a file needs and remove the ones it does not, then format |
 | `--no-sort-imports` | Leave `use` statements in their original order |
 | `-` | Read from stdin, write to stdout (for an editor) |
 
@@ -339,21 +339,6 @@ else `~/quadrate/modules`.
 
 The `build` command is useful during local module development. It compiles any C source files in `src/` and creates both shared (`.so`) and static (`.a`) libraries in `lib/`.
 
-## quaduses
-
-Automatically manages `use` statements in your source files. Analyzes your code and adds missing imports or removes unused ones.
-
-```bash
-quaduses hello.qd        # Show what changes would be made
-quaduses -w hello.qd     # Update file in place
-quaduses -w src/         # Update all .qd files in directory recursively
-```
-
-`-c`/`--check` reports whether files need changes and exits 1 if so; `-n`/`--dry-run`
-shows the changes without making them.
-
-Note: `quad uses` automatically adds `-w` to update files in place. Use `quad uses --check` for dry run.
-
 ## quaddoc
 
 Generates HTML documentation from Quadrate source files. Parses `///` doc comments with `@param`, `@return`, `@error`, `@example`, and `@field` tags.
@@ -375,15 +360,3 @@ With no `-o`, the output goes to `docs/` in the current directory. `-q`/`--quiet
 nothing but errors.
 
 The generated documentation includes function signatures, parameter tables, return values, error conditions, code examples, and `Calls:`/`Called by:` cross-references.
-
-## quadmcp
-
-Model Context Protocol server for AI assistants. Provides language documentation, code examples, and standard library reference to MCP-compatible tools.
-
-```bash
-quadmcp          # Serve MCP on stdin/stdout (how a client starts it)
-quadmcp --http   # Serve MCP over HTTP on localhost:3000
-quadmcp --http --host 0.0.0.0   # Bind to another address
-```
-
-Configure your MCP client to connect to `quadmcp` as a stdio-based server.

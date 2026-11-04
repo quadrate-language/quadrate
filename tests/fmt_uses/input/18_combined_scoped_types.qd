@@ -1,4 +1,4 @@
-// Test that quaduses detects multiple scoped types from different sources
+// Test that quadfmt --uses detects multiple scoped types from different sources
 struct Container {
 	position: math::Vec3
 	name: str

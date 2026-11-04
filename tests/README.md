@@ -15,9 +15,7 @@ tests/
 ├── fuzz/         # Fuzzing tests with libFuzzer
 ├── quad/         # quad command tests
 ├── quadc/        # quadc command-line tests
-├── quadmcp/      # MCP server tests
 ├── quadpm/       # Package manager tests
-├── quaduses/     # Dependency analyzer tests
 ├── run_all.sh    # Unified test runner (main entry point)
 ├── run_cli_surface_test.sh  # Every tool's --help, completions and shared options
 ├── run_http_test.sh         # HTTP client and server tests
@@ -154,9 +152,9 @@ bash tests/run_all.sh --suite args
 
 ### Tool tests (`tools`)
 
-Two scripts. `run_tools_test.sh` covers the behaviour of `quaduses`, `quaddoc`,
+Two scripts. `run_tools_test.sh` covers the behaviour of `quadfmt --uses`, `quaddoc`,
 `quadrepl`, `quadfmt`'s stdin mode and `quadc`'s output naming.
-`run_cli_surface_test.sh` covers what all ten tools share: the shape of `--help`
+`run_cli_surface_test.sh` covers what all eight tools share: the shape of `--help`
 (title line, `Usage:`, an `Options:` block opening with `-h`/`-v`/`--no-color`
 worded identically, `Examples:`), the one-line `--version` format, that an
 unrecognised option is two lines on stderr and exit 1, and that every option in

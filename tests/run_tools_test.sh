@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Smoke and behaviour tests for quaduses, quaddoc and quadrepl.
+# Smoke and behaviour tests for quadfmt --uses, quaddoc and quadrepl.
 #
 # These three tools had no tests and no suite at all -- ~2700 LOC between them.
 # Both bugs found in the 2026-09-10 review lived here: quaddoc aborting with an
@@ -23,7 +23,6 @@ cleanup() { rm -rf "$WORK_DIR"; }
 trap cleanup EXIT
 
 BUILD_DIR="${BUILD_DIR:-build/debug}"
-QUADUSES="${QUADUSES:-$PROJECT_ROOT/$BUILD_DIR/cmd/quaduses/quaduses}"
 QUADDOC="${QUADDOC:-$PROJECT_ROOT/$BUILD_DIR/cmd/quaddoc/quaddoc}"
 QUADREPL="${QUADREPL:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadrepl/quadrepl}"
 QUADFMT="${QUADFMT:-$PROJECT_ROOT/$BUILD_DIR/cmd/quadfmt/quadfmt}"
@@ -39,7 +38,7 @@ export QUADRATE_ROOT="${QUADRATE_ROOT:-$PROJECT_ROOT/dist/share/quadrate}"
 # it reports by grepping for that character, so a bare "FAIL" here surfaced as
 # "0 passed, 1 failed" with no reason attached. A tool is missing rather than
 # broken when its meson.build skipped it -- quadrepl needs readline.
-for tool in "$QUADUSES" "$QUADDOC" "$QUADREPL" "$QUADFMT" "$QUADLINT"; do
+for tool in "$QUADDOC" "$QUADREPL" "$QUADFMT" "$QUADLINT"; do
     if [ ! -x "$tool" ]; then
         echo -e "  ${RED}\u2717${NC} $tool not found (not built? check meson output for a skip warning)"
         exit 1
@@ -87,26 +86,26 @@ expect_not_contains() {
     else pass "$name"; fi
 }
 
-echo "=== quaduses ==="
+echo "=== quadfmt --uses ==="
 
 printf 'fn main() {\n\t"a,b" "," strings::split -> _ -> parts\n\tparts print nl\n}\n' > "$WORK_DIR/missing.qd"
 printf 'use math\n\nfn main() {\n\t1 print nl\n}\n' > "$WORK_DIR/unused.qd"
 printf 'use strings\n\nfn main() {\n\t"a" "b" strings::concat print nl\n}\n' > "$WORK_DIR/clean.qd"
 
-expect_contains     "adds a missing use"        "use strings"  "$QUADUSES" "$WORK_DIR/missing.qd"
-expect_not_contains "removes an unused use"     "use math"     "$QUADUSES" "$WORK_DIR/unused.qd"
-expect_rc           "--check flags a file needing changes" 1    "$QUADUSES" -c "$WORK_DIR/missing.qd"
-expect_rc           "--check passes a clean file"          0    "$QUADUSES" -c "$WORK_DIR/clean.qd"
+expect_contains     "adds a missing use"        "use strings"  "$QUADFMT" --uses "$WORK_DIR/missing.qd"
+expect_not_contains "removes an unused use"     "use math"     "$QUADFMT" --uses "$WORK_DIR/unused.qd"
+expect_rc           "--check flags a file needing changes" 1    "$QUADFMT" --uses -c "$WORK_DIR/missing.qd"
+expect_rc           "--check passes a clean file"          0    "$QUADFMT" --uses -c "$WORK_DIR/clean.qd"
 
 cp "$WORK_DIR/missing.qd" "$WORK_DIR/inplace.qd"
-"$QUADUSES" -w "$WORK_DIR/inplace.qd" > /dev/null 2>&1 || true
+"$QUADFMT" --uses -w "$WORK_DIR/inplace.qd" > /dev/null 2>&1 || true
 if grep -q "use strings" "$WORK_DIR/inplace.qd"; then pass "--write updates in place"; else
     fail "--write updates in place" "file unchanged"; fi
 
-expect_rc "missing file exits non-zero" 1 "$QUADUSES" "$WORK_DIR/does-not-exist.qd"
+expect_rc "missing file exits non-zero" 1 "$QUADFMT" --uses "$WORK_DIR/does-not-exist.qd"
 
 printf '/*\nuse os\n*/\nuse math\n\nfn main() {\n\t"text\nuse io\nmore" print nl\n}\n' > "$WORK_DIR/hidden_use.qd"
-"$QUADUSES" -w "$WORK_DIR/hidden_use.qd" > /dev/null 2>&1 || true
+"$QUADFMT" --uses -w "$WORK_DIR/hidden_use.qd" > /dev/null 2>&1 || true
 if grep -qx "use os" "$WORK_DIR/hidden_use.qd" && grep -qx "use io" "$WORK_DIR/hidden_use.qd"; then
     pass "--write keeps use lines inside comments and strings"; else
     fail "--write keeps use lines inside comments and strings" "$(tr '\n' '|' < "$WORK_DIR/hidden_use.qd")"; fi
@@ -115,23 +114,36 @@ if grep -qx "use math" "$WORK_DIR/hidden_use.qd"; then
     pass "--write still removes a real unused use"; fi
 
 printf 'use ct\n\nfn main() {\n\tVec<i64> { data = null len = 0 cap = 0 } -> v\n\tv 1 push! -> v\n\tv release\n}\n' > "$WORK_DIR/generic_type.qd"
-expect_contains "keeps a use whose types are referenced unqualified" "use ct" "$QUADUSES" "$WORK_DIR/generic_type.qd"
+expect_contains "keeps a use whose types are referenced unqualified" "use ct" "$QUADFMT" --uses "$WORK_DIR/generic_type.qd"
 
+# The use statements are fixed first, so the formatter sorts what was added.
 printf 'use math\n\nfn  main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.qd"
-printf 'use strings\n\nfn  main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.want"
-"$QUADUSES" -w "$WORK_DIR/unformatted.qd" > /dev/null 2>&1 || true
-if cmp -s "$WORK_DIR/unformatted.qd" "$WORK_DIR/unformatted.want"; then pass "--write changes only use lines"; else
-    fail "--write changes only use lines" "$(diff "$WORK_DIR/unformatted.want" "$WORK_DIR/unformatted.qd" | tr '\n' '|')"; fi
+printf 'use strings\n\nfn main() {\n\t1   2 +   print nl\n\t"a" "," strings::split -> _ -> p\n}\n' > "$WORK_DIR/unformatted.want"
+"$QUADFMT" --uses -w "$WORK_DIR/unformatted.qd" > /dev/null 2>&1 || true
+if cmp -s "$WORK_DIR/unformatted.qd" "$WORK_DIR/unformatted.want"; then pass "--uses -w fixes uses and formats"; else
+    fail "--uses -w fixes uses and formats" "$(diff "$WORK_DIR/unformatted.want" "$WORK_DIR/unformatted.qd" | tr '\n' '|')"; fi
 
 printf 'pub fn hi() {\n\t"hi" print nl\n}\n' > "$WORK_DIR/helper.qd"
 printf 'use "helper.qd"\n\nfn main() {\n\thelper::hi\n}\n' > "$WORK_DIR/quoted_use.qd"
-expect_rc "--check accepts a quoted file use" 0 "$QUADUSES" -c "$WORK_DIR/quoted_use.qd"
+expect_contains "keeps a quoted file use" "use helper.qd" "$QUADFMT" --uses "$WORK_DIR/quoted_use.qd"
 
 printf 'fn main() {\n\t$"x {1}" print nl\n}\n' > "$WORK_DIR/interp.qd"
-expect_not_contains "no use sb for string interpolation" "use sb" "$QUADUSES" "$WORK_DIR/interp.qd"
+expect_not_contains "no use sb for string interpolation" "use sb" "$QUADFMT" --uses "$WORK_DIR/interp.qd"
 
 printf 'use os // exits\nuse zeta\n\nfn main() {\n\t"a" "," strings::split -> _ -> p\n\t0 os::exit\n}\n' > "$WORK_DIR/trailing.qd"
-expect_contains "keeps a kept use's trailing comment" "use os // exits" "$QUADUSES" "$WORK_DIR/trailing.qd"
+expect_contains "keeps a kept use's trailing comment" "use os // exits" "$QUADFMT" --uses "$WORK_DIR/trailing.qd"
+
+expect_contains "--uses reads stdin" "use strings" sh -c "\"$QUADFMT\" --uses - < \"$WORK_DIR/missing.qd\""
+expect_rc "--uses and --migrate are refused together" 1 "$QUADFMT" --uses --migrate "$WORK_DIR/clean.qd"
+
+# Each input, fixed and formatted, must be its expected file byte for byte.
+for input in "$PROJECT_ROOT"/tests/fmt_uses/input/*.qd; do
+    name=$(basename "$input")
+    want="$PROJECT_ROOT/tests/fmt_uses/expected/$name"
+    got=$("$QUADFMT" --uses "$input" 2>&1) || true
+    if [ "$got" = "$(cat "$want")" ]; then pass "fmt_uses/$name"; else
+        fail "fmt_uses/$name" "$(diff <(echo "$got") "$want" | head -5 | tr '\n' '|')"; fi
+done
 
 echo ""
 echo "=== quaddoc ==="
@@ -732,7 +744,7 @@ fi
 echo ""
 echo "=== shared CLI surface ==="
 
-for spec in "quaduses:$QUADUSES" "quaddoc:$QUADDOC" "quadrepl:$QUADREPL"; do
+for spec in "quaddoc:$QUADDOC" "quadrepl:$QUADREPL"; do
     name="${spec%%:*}"; bin="${spec#*:}"
     expect_rc       "$name --help exits 0"        0 "$bin" --help
     expect_contains "$name --help names the tool" "$name" "$bin" --help
@@ -752,7 +764,7 @@ echo "=== hostile input ==="
 # (is_directory / recursive_directory_iterator) and aborted with an uncaught
 # filesystem_error -- no diagnostic, just SIGABRT and a core dump.
 LONG_NAME=$(printf 'A%.0s' $(seq 1 100000))
-for spec in "quadc:$QUADC" "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+for spec in "quadc:$QUADC" "quadfmt:$QUADFMT" "quadlint:$QUADLINT"; do
     name="${spec%%:*}"; bin="${spec#*:}"
     err=$("$bin" "$LONG_NAME" 2>&1 >/dev/null || true)
     rc=0; "$bin" "$LONG_NAME" >/dev/null 2>&1 || rc=$?
@@ -769,7 +781,7 @@ mkdir -p "$WORK_DIR/hostile/readable" "$WORK_DIR/hostile/locked"
 echo 'fn main() { 1 drop }' > "$WORK_DIR/hostile/readable/ok.qd"
 echo 'fn other() { }' > "$WORK_DIR/hostile/locked/hidden.qd"
 chmod 000 "$WORK_DIR/hostile/locked" 2>/dev/null || true
-for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT"; do
     name="${spec%%:*}"; bin="${spec#*:}"
     err=$("$bin" "$WORK_DIR/hostile" 2>&1 >/dev/null || true)
     rc=0; "$bin" "$WORK_DIR/hostile" >/dev/null 2>&1 || rc=$?
@@ -784,7 +796,7 @@ chmod 755 "$WORK_DIR/hostile/locked" 2>/dev/null || true
 # readFile() streamed a character device forever: `quadfmt /dev/zero` never
 # returned. Only regular files are read now.
 if [ -c /dev/zero ]; then
-    for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+    for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT"; do
         name="${spec%%:*}"; bin="${spec#*:}"
         if timeout 20 "$bin" /dev/zero >/dev/null 2>&1; rc=$?; [ "${rc:-0}" -ne 124 ]; then
             pass "$name does not hang on a character device"
@@ -795,7 +807,7 @@ if [ -c /dev/zero ]; then
 fi
 
 # A directory passed where a file belongs must be reported, not read.
-for spec in "quadfmt:$QUADFMT" "quaduses:$QUADUSES"; do
+for spec in "quadfmt:$QUADFMT"; do
     name="${spec%%:*}"; bin="${spec#*:}"
     rc=0; "$bin" "$WORK_DIR/hostile/readable/" >/dev/null 2>&1 || rc=$?
     if [ "$rc" -lt 128 ]; then pass "$name handles a directory argument"; else
@@ -806,7 +818,7 @@ done
 # quadlint printed "error: Invalid UTF-8" and still exited 0 -- a CI check over
 # a binary file passed silently.
 printf 'fn main() { 1 drop }\n\xff\xfe not utf8\n' > "$WORK_DIR/badutf8.qd"
-for spec in "quadc:$QUADC" "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+for spec in "quadc:$QUADC" "quadfmt:$QUADFMT" "quadlint:$QUADLINT"; do
     name="${spec%%:*}"; bin="${spec#*:}"
     rc=0; "$bin" "$WORK_DIR/badutf8.qd" >/dev/null 2>&1 || rc=$?
     if [ "$rc" -eq 1 ]; then pass "$name exits 1 on invalid UTF-8"; else
@@ -817,7 +829,7 @@ done
 # zero, so a file that is nothing but errors cost O(n^2) to reject: 20k stray
 # braces took about nine seconds. The precomputed source maps make it linear.
 printf '}%.0s' $(seq 1 20000) > "$WORK_DIR/allerrors.qd"
-for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT" "quaduses:$QUADUSES"; do
+for spec in "quadfmt:$QUADFMT" "quadlint:$QUADLINT"; do
     name="${spec%%:*}"; bin="${spec#*:}"
     if timeout 20 "$bin" "$WORK_DIR/allerrors.qd" >/dev/null 2>&1; rc=$?; [ "${rc:-0}" -ne 124 ]; then
         pass "$name reports a file of pure errors promptly"

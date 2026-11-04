@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Shared help-page renderer for Quadrate CLI tools.
 //
-// Every tool's --help is built here rather than hand-written, so the ten tools
+// Every tool's --help is built here rather than hand-written, so the eight tools
 // keep one layout: a title line, a description paragraph, a Usage block, an
 // Options block that always opens with the same three flags, any number of
 // tool-specific sections, and Examples. Column alignment is computed rather

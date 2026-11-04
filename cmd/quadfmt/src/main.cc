@@ -8,6 +8,8 @@
 #include <quadrate/qc/formatter.h>
 #include <vector>
 
+#include "uses.h"
+
 using namespace Qd;
 
 struct FmtOptions {
@@ -15,6 +17,7 @@ struct FmtOptions {
 	bool inPlace = false;
 	bool noSortImports = false;
 	bool migrate = false;
+	bool uses = false;
 };
 
 void printHelp() {
@@ -26,6 +29,7 @@ void printHelp() {
 			.standardOptions()
 			.option('c', "--check", "Report whether files are formatted (exit 1 if not)")
 			.option('w', "--write", "Format files in place")
+			.option('u', "--uses", "Add the use statements a file needs and remove the ones it does not")
 			.option("--no-sort-imports", "Leave use statements in their original order")
 			.option("--migrate", "Rewrite old code: a function reading its inputs by name becomes `def`, `stack fn` "
 								 "becomes `fn`, renamed builtins and the operators' word forms get their new spelling")
@@ -39,8 +43,25 @@ void printHelp() {
 			.item("quadfmt -w file.qd", "Format in place")
 			.item("quadfmt -w src/", "Format every .qd file in a directory, recursively")
 			.item("quadfmt -c src/", "Check whether any file needs formatting (for CI)")
+			.item("quadfmt -u -w src/", "Fix use statements and format, in place")
 			.item("cat file.qd | quadfmt -", "Format a buffer piped from an editor");
 	help.print();
+}
+
+// Rewrite the use statements before formatting, so the formatter sorts what was added.
+static bool applyUses(const std::string& source, const std::string& name, std::string& out) {
+	switch (fixUses(source, name, out)) {
+	case UsesResult::Ok:
+		return true;
+	case UsesResult::ParseError:
+		std::cerr << "quadfmt: " << name << ": failed to parse (contains errors)\n";
+		return false;
+	case UsesResult::Unsafe:
+		std::cerr << "quadfmt: " << name << ": rewriting the use statements would not produce valid source; "
+				  << "leaving it unchanged\n";
+		return false;
+	}
+	return false;
 }
 
 // Format source read from stdin and write the result to stdout.
@@ -56,7 +77,14 @@ static bool formatStdin(const FmtOptions& opts, const FormatOptions& fmtOpts) {
 		return false;
 	}
 
-	std::string formatted = opts.migrate ? migrateSource(source) : formatSource(source, fmtOpts);
+	std::string input = source;
+	if (opts.uses && !applyUses(source, "<stdin>", input)) {
+		// Pass the input through untouched: an editor must never lose the buffer.
+		std::cout << source;
+		return false;
+	}
+
+	std::string formatted = opts.migrate ? migrateSource(input) : formatSource(input, fmtOpts);
 
 	Ast validationAst;
 	IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, "<stdin>");
@@ -89,9 +117,14 @@ bool formatFile(const std::string& filename, const FmtOptions& opts, const Forma
 			return false;
 		}
 
+		std::string input = source;
+		if (opts.uses && !applyUses(source, filename, input)) {
+			return false;
+		}
+
 		// Format using AST-based formatter
 		// Returns original unchanged if file has parse errors
-		std::string formatted = opts.migrate ? migrateSource(source) : formatSource(source, fmtOpts);
+		std::string formatted = opts.migrate ? migrateSource(input) : formatSource(input, fmtOpts);
 
 		// Validate formatted output by parsing it
 		Ast validationAst;
@@ -153,6 +186,10 @@ int main(int argc, char* argv[]) {
 			opts.noSortImports = true;
 			return true;
 		}
+		if (strcmp(arg, "-u") == 0 || strcmp(arg, "--uses") == 0) {
+			opts.uses = true;
+			return true;
+		}
 		if (strcmp(arg, "--migrate") == 0) {
 			opts.migrate = true;
 			return true;
@@ -176,6 +213,10 @@ int main(int argc, char* argv[]) {
 
 	if (opts.check && opts.inPlace) {
 		return qdcli::usageError("quadfmt", "options -w and -c are mutually exclusive");
+	}
+	if (opts.uses && opts.migrate) {
+		// Old source does not parse, and fixing its use statements needs a parse.
+		return qdcli::usageError("quadfmt", "options --uses and --migrate are mutually exclusive");
 	}
 
 	// A lone "-" means stdin. Handled before the no-input check, which would
