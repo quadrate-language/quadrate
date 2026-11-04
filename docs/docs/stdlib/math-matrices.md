@@ -1,5 +1,39 @@
 # `use` math — Matrices & Quaternions
 
+<!-- doccheck: page-context use math -->
+
+<!-- doccheck: page-setup math::Vec2 { x = 3.0 y = 4.0 } -> v2 -->
+
+<!-- doccheck: page-setup math::Vec2 { x = 1.0 y = 0.0 } -> other2 -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v3 -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> other3 -->
+
+<!-- doccheck: page-setup math::Vec4 { x = 1.0 y = 2.0 z = 2.0 w = 1.0 } -> v4 -->
+
+<!-- doccheck: page-setup math::Vec4 { x = 0.0 y = 1.0 z = 0.0 w = 1.0 } -> other4 -->
+
+<!-- doccheck: page-setup math::quat_identity -> q -->
+
+<!-- doccheck: page-setup math::quat_identity -> other_q -->
+
+<!-- doccheck: page-setup math::mat4_identity -> m -->
+
+<!-- doccheck: page-setup math::mat4_identity -> other_m -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> axis -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> normal -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> point -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 5.0 } -> eye -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> target -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> up -->
+
 Matrix and quaternion types for 3D transformations. All types are part of the `math` module.
 
 See also: [Scalar functions](math.md) | [Vectors](math-vectors.md)
@@ -115,13 +149,13 @@ Create rotation Mat4 around Z axis.
 
 Create scale Mat4.
 
-**Signature:** `(sx:f64 sy:f64 sz:f64 -- m:Mat4)`
+**Signature:** `(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sx` | `f64` | X scale factor |
-| `sy` | `f64` | Y scale factor |
-| `sz` | `f64` | Z scale factor |
+| `sx_v` | `f64` | X scale factor |
+| `sy_v` | `f64` | Y scale factor |
+| `sz_v` | `f64` | Z scale factor |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -138,13 +172,13 @@ Create scale Mat4.
 
 Create translation Mat4.
 
-**Signature:** `(x:f64 y:f64 z:f64 -- m:Mat4)`
+**Signature:** `(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `f64` | X translation |
-| `y` | `f64` | Y translation |
-| `z` | `f64` | Z translation |
+| `x_v` | `f64` | X translation |
+| `y_v` | `f64` | Y translation |
+| `z_v` | `f64` | Z translation |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -286,7 +320,7 @@ Matrix multiplication.
 **Example:**
 
 ```qd
-other m mul -> product
+m other_m mul -> product
 ```
 ---
 
@@ -358,7 +392,7 @@ Transform a Vec3 point by this matrix (w=1).
 **Example:**
 
 ```qd
-point m transform_point -> transformed
+m point transform_point -> transformed
 ```
 ---
 
@@ -379,7 +413,7 @@ Transform a Vec4 by this matrix.
 **Example:**
 
 ```qd
-vec m transform_vec4 -> transformed
+m other4 transform_vec4 -> transformed
 ```
 
 ## Quat
@@ -494,7 +528,7 @@ Dot product with another quaternion.
 **Example:**
 
 ```qd
-other q dot  // d
+q other_q dot  // d
 ```
 ---
 
@@ -532,7 +566,7 @@ Quaternion multiplication.
 **Example:**
 
 ```qd
-other q mul  // product
+q other_q mul  // product
 ```
 ---
 
@@ -605,7 +639,7 @@ Spherical linear interpolation to another quaternion.
 **Example:**
 
 ```qd
-other 0.5 q slerp -> mid
+q other_q 0.5 slerp -> mid
 ```
 ---
 
@@ -626,5 +660,5 @@ Rotate a Vec3 by this quaternion.
 **Example:**
 
 ```qd
-v q rotate_vec3 -> rotated
+q point rotate_vec3 -> rotated
 ```

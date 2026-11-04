@@ -26,6 +26,7 @@ Decode a percent-encoded string.
 ```qd
 "hello%20world" uri::decode  // decoded
 ```
+
 ---
 
 ### `fn` encode
@@ -47,6 +48,7 @@ Percent-encode a string for use in URIs.
 ```qd
 "hello world" uri::encode  // encoded
 ```
+
 ---
 
 ### `fn` query_get
@@ -69,6 +71,7 @@ Get a query parameter value by key.
 ```qd
 "foo=bar&x=1" "foo" uri::query_get  // val
 ```
+
 ---
 
 ### `fn` query_has

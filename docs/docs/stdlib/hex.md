@@ -26,6 +26,7 @@ Decode a 2-character hex string to a byte value. Returns -1 if the input is inva
 ```qd
 "41" hex::decode_byte  // 65
 ```
+
 ---
 
 ### `fn` decoded_len
@@ -47,6 +48,7 @@ Get the length of data that would result from decoding a hex string. Returns -1 
 ```qd
 "48656C6C6F" hex::decoded_len  // 5
 ```
+
 ---
 
 ### `fn` decode
@@ -68,6 +70,7 @@ Decode a hexadecimal string to bytes. Accepts both uppercase and lowercase hex d
 ```qd
 "48656C6C6F" hex::decode  // "Hello"
 ```
+
 ---
 
 ### `fn` encode_byte
@@ -89,6 +92,7 @@ Encode a single byte (0-255) to a 2-character hex string.
 ```qd
 65 hex::encode_byte  // "41"
 ```
+
 ---
 
 ### `fn` encoded_len
@@ -110,6 +114,7 @@ Get the length of hex string that would result from encoding data.
 ```qd
 "Hello" hex::encoded_len  // 10
 ```
+
 ---
 
 ### `fn` encode_lower
@@ -131,6 +136,7 @@ Encode a string to lowercase hexadecimal. Each byte becomes two hex characters (
 ```qd
 "Hello" hex::encode_lower  // "48656c6c6f"
 ```
+
 ---
 
 ### `fn` encode
@@ -152,6 +158,7 @@ Encode a string to uppercase hexadecimal. Each byte becomes two hex characters (
 ```qd
 "Hello" hex::encode  // "48656C6C6F"
 ```
+
 ---
 
 ### `fn` is_valid

@@ -1,6 +1,6 @@
 {
   "name": "http",
-  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=1 (success), specific errors start at 2",
+  "description": "HTTP module. Provides HTTP client and server functionality. Error codes: Ok=0 (success); error codes start at 2",
   "constants": [
     {
       "name": "ErrAccept",
@@ -773,11 +773,11 @@
       "name": "static",
       "signature": "(c:Ctx prefix:str fs_path:str -- )",
       "failable": false,
-      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:http::Ctx -- ) {     c \"/static\" \"./public\" http::static } e \"/static/*\" &handle_static http::GET",
+      "description": "Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts.",
       "params": [{"name": "c", "type": "Ctx", "description": "Context"}, {"name": "prefix", "type": "str", "description": "URL prefix to strip (e.g., \"/static\")"}, {"name": "fs_path", "type": "str", "description": "Filesystem directory path (e.g., \"./public\")"}],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["e \"/static/*\" def (c:http::Ctx -- ) { c \"/static\" \"./public\" http::static } http::GET"]
     },
     {
       "name": "static_file",

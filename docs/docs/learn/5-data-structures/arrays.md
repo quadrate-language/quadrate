@@ -138,7 +138,7 @@ The compiler checks that you pass the right array type and that `nth` returns th
 def sum(arr:[]i64 -- total:i64) {
 	0 -> total
 	0 arr len 1 for i {
-		total arr i nth cast<i64> + -> total
+		total arr i nth + -> total
 	}
 	total
 }

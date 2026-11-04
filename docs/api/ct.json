@@ -1,68 +1,68 @@
 {
   "name": "ct",
-  "description": "Generic container types. Provides Vec, HashMap, Set, Queue, Deque, and Pair.",
+  "description": "Generic container types: Vec, Map, Set, Queue, Deque and Pair.  A container is created with a struct literal whose fields are all zero or null; there is no constructor function, and the first insertion allocates. A method that changes a container returns it, and that result must be captured (`v 10 push! -> v`). Call `release` on a Vec, Map, Set, Queue or Deque when done to free its memory.  Example:   use ct    fn main() {   \tct::Vec<i64> { data = null len = 0 cap = 0 } -> v   \tv 10 push! -> v   \tv 20 push! -> v   \tv 0 get! print nl                       // 10   \tv release    \tct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m   \tm \"alice\" 42 insert! -> m   \tm \"alice\" get! print nl                 // 42   \tm release    \tct::Set { keys = null states = null len = 0 cap = 0 } -> s   \ts \"alice\" add! -> s   \ts \"alice\" contains print nl             // 1   \ts release    \tct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q   \tq 1 enqueue! -> q   \tq 2 enqueue! -> q   \tq dequeue! -> q -> first   \tfirst print nl                          // 1   \tq release    \tct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d   \td 1 push_back! -> d   \td 0 push_front! -> d   \td peek_front! print nl                  // 0   \td release    \tct::Pair<i64, str> { first = 42 second = \"hello\" } -> p   \tp unpack -> b -> a   \ta print \" \" print b print nl            // 42 hello   }",
   "constants": [
 
   ],
   "structs": [
     {
       "name": "Deque",
-      "description": "Double-ended queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity",
+      "description": "Double-ended queue with elements of type T.",
       "fields": [
-        {"name": "data", "type": "ptr", "description": ""},
-        {"name": "head", "type": "i64", "description": ""},
-        {"name": "tail", "type": "i64", "description": ""},
-        {"name": "len", "type": "i64", "description": ""},
-        {"name": "cap", "type": "i64", "description": ""}
+        {"name": "data", "type": "ptr", "description": "Pointer to circular buffer"},
+        {"name": "head", "type": "i64", "description": "Index of front element"},
+        {"name": "tail", "type": "i64", "description": "Index after last element"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Buffer capacity"}
       ]
     },
     {
       "name": "Map",
-      "description": "Hash map with string keys and values of any type V -- i64, f64, str, ptr or a struct. A value lives in a tagged slot (mem::set_any), so it reads back as what was inserted, and the map holds a reference to a string or a struct for as long as the entry is in it.  Fields:   keys   - Array of string key pointers   values - Array of V values   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of entries   cap    - Allocated capacity",
+      "description": "Hash map with string keys and values of any type V -- i64, f64, str, ptr or a struct. A value lives in a tagged slot (mem::set_any), so it reads back as what was inserted, and the map holds a reference to a string or a struct for as long as the entry is in it.",
       "fields": [
-        {"name": "keys", "type": "ptr", "description": ""},
-        {"name": "values", "type": "ptr", "description": ""},
-        {"name": "states", "type": "ptr", "description": ""},
-        {"name": "len", "type": "i64", "description": ""},
-        {"name": "cap", "type": "i64", "description": ""}
+        {"name": "keys", "type": "ptr", "description": "Array of string key pointers"},
+        {"name": "values", "type": "ptr", "description": "Array of V values"},
+        {"name": "states", "type": "ptr", "description": "Array of slot states (0=empty, 1=occupied, 2=deleted)"},
+        {"name": "len", "type": "i64", "description": "Number of entries"},
+        {"name": "cap", "type": "i64", "description": "Allocated capacity"}
       ]
     },
     {
       "name": "Pair",
-      "description": "Pair<T, U> - A Generic Two-Element Tuple ========================================  Pair holds two values of potentially different types. Useful for returning multiple values or key-value associations.  ## Creating a Pair      Pair<i64, str> { first = 42 second = \"hello\" } -> p  ## Accessing Elements      p <<first -> key     p <<second -> value  ## Unpacking Both Elements      p unpack -> a -> b A pair of two values.  Fields:   first  - The first element of type T   second - The second element of type U",
+      "description": "A pair of two values.",
       "fields": [
-        {"name": "first", "type": "T", "description": ""},
-        {"name": "second", "type": "U", "description": ""}
+        {"name": "first", "type": "T", "description": "The first element of type T"},
+        {"name": "second", "type": "U", "description": "The second element of type U"}
       ]
     },
     {
       "name": "Queue",
-      "description": "FIFO Queue with elements of type T.  Fields:   data - Pointer to circular buffer   head - Index of front element   tail - Index after last element   len  - Number of elements   cap  - Buffer capacity",
+      "description": "FIFO Queue with elements of type T.",
       "fields": [
-        {"name": "data", "type": "ptr", "description": ""},
-        {"name": "head", "type": "i64", "description": ""},
-        {"name": "tail", "type": "i64", "description": ""},
-        {"name": "len", "type": "i64", "description": ""},
-        {"name": "cap", "type": "i64", "description": ""}
+        {"name": "data", "type": "ptr", "description": "Pointer to circular buffer"},
+        {"name": "head", "type": "i64", "description": "Index of front element"},
+        {"name": "tail", "type": "i64", "description": "Index after last element"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Buffer capacity"}
       ]
     },
     {
       "name": "Set",
-      "description": "Set of unique string elements.  Fields:   keys   - Array of string key pointers   states - Array of slot states (0=empty, 1=occupied, 2=deleted)   len    - Number of elements   cap    - Allocated capacity",
+      "description": "Set of unique string elements.",
       "fields": [
-        {"name": "keys", "type": "ptr", "description": ""},
-        {"name": "states", "type": "ptr", "description": ""},
-        {"name": "len", "type": "i64", "description": ""},
-        {"name": "cap", "type": "i64", "description": ""}
+        {"name": "keys", "type": "ptr", "description": "Array of string key pointers"},
+        {"name": "states", "type": "ptr", "description": "Array of slot states (0=empty, 1=occupied, 2=deleted)"},
+        {"name": "len", "type": "i64", "description": "Number of elements"},
+        {"name": "cap", "type": "i64", "description": "Allocated capacity"}
       ]
     },
     {
       "name": "Vec",
-      "description": "Dynamic array (vector) structure.  Fields:   data - Pointer to contiguous element storage   len  - Current number of elements (0 to cap)   cap  - Allocated capacity in elements",
+      "description": "Dynamic array (vector) structure.",
       "fields": [
-        {"name": "data", "type": "ptr", "description": ""},
-        {"name": "len", "type": "i64", "description": ""},
-        {"name": "cap", "type": "i64", "description": ""}
+        {"name": "data", "type": "ptr", "description": "Pointer to contiguous element storage"},
+        {"name": "len", "type": "i64", "description": "Current number of elements (0 to cap)"},
+        {"name": "cap", "type": "i64", "description": "Allocated capacity in elements"}
       ]
     }
   ],
@@ -71,401 +71,401 @@
       "name": "add",
       "signature": "(s:Set) add(key:str -- s2:Set)",
       "failable": true,
-      "description": "Add an element to the set.  If the element already exists, the set is unchanged. Returns the updated set which must be captured.  Example:     s \"alice\" add! -> s  Stack: (s key -- s2)",
+      "description": "Add an element to the set. If the element already exists, the set is unchanged. Returns the updated set which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["s \"alice\" add! -> s  // re-bind the returned set"]
     },
     {
       "name": "capacity",
       "signature": "(v:Vec<T>) capacity<T>( -- n:i64)",
       "failable": false,
-      "description": "Get the allocated capacity.  Capacity is always >= length. The vector can hold up to 'capacity' elements before needing to reallocate.  Example:     v capacity -> cap  Stack: (v -- n)",
+      "description": "Get the allocated capacity. Capacity is always >= length. The vector can hold up to 'capacity' elements before needing to reallocate.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v capacity -> cap"]
     },
     {
       "name": "contains",
       "signature": "(s:Set) contains(key:str -- exists:i64)",
       "failable": false,
-      "description": "Check if an element exists in the set.  Example:     s \"alice\" contains if { \"found!\" print nl }  Stack: (s key -- exists)",
+      "description": "Check if an element exists in the set.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["s \"alice\" contains if { \"found!\" print nl }"]
     },
     {
       "name": "dequeue",
       "signature": "(q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)",
       "failable": true,
-      "description": "Remove and return the front element.  Returns error if queue is empty. Returns the value and updated queue.  Example:     q dequeue! -> q -> val  Stack: (q -- val q2)",
+      "description": "Remove and return the front element. Returns error if queue is empty. Returns the value and updated queue.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["q dequeue! -> q -> val  // the queue is on top, the element under it"]
     },
     {
       "name": "enqueue",
       "signature": "(q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)",
       "failable": true,
-      "description": "Add an element to the back of the queue.  Returns the updated queue which must be captured.  Example:     q 42 enqueue! -> q  Stack: (q val -- q2)",
+      "description": "Add an element to the back of the queue. Returns the updated queue which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["q 42 enqueue! -> q  // re-bind the returned queue"]
     },
     {
       "name": "first",
       "signature": "(p:Pair<T, U>) first<T, U>( -- a:T)",
       "failable": false,
-      "description": "Get the first element of a pair.  Example:     p first -> a  Stack: (p -- a)",
+      "description": "Get the first element of a pair.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["p first -> a"]
     },
     {
       "name": "get",
       "signature": "(m:Map<V>) get<V>(key:str -- value:V)",
       "failable": true,
-      "description": "Get the value for a key.  Returns an error if the key is not found.  Example:     m \"alice\" get! -> age  Stack: (m key -- value)",
+      "description": "Get the value for a key. Returns an error if the key is not found.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m \"alice\" get! -> age"]
     },
     {
       "name": "get",
       "signature": "(v:Vec<T>) get<T>(idx:i64 -- elem:T)",
       "failable": true,
-      "description": "Get element at index.  Panics if index is out of bounds (< 0 or >= len).  Example:     v 0 get! -> first  Stack: (v idx -- elem)",
+      "description": "Get element at index. Panics if index is out of bounds (< 0 or >= len).",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v 0 get! -> first"]
     },
     {
       "name": "has",
       "signature": "(m:Map<V>) has<V>(key:str -- exists:i64)",
       "failable": false,
-      "description": "Check if a key exists in the map.  Example:     m \"alice\" has if { \"found!\" print nl }  Stack: (m key -- exists)",
+      "description": "Check if a key exists in the map.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m \"alice\" has if { \"found!\" print nl }"]
     },
     {
       "name": "insert",
       "signature": "(m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)",
       "failable": true,
-      "description": "Insert a key-value pair into the map.  If the key already exists, the value is updated. Returns the updated map which must be captured.  Example:     m \"alice\" 42 insert! -> m  Stack: (m key value -- m2)",
+      "description": "Insert a key-value pair into the map. If the key already exists, the value is updated. Returns the updated map which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m \"alice\" 42 insert! -> m  // re-bind the returned map"]
     },
     {
       "name": "is_empty",
       "signature": "(d:Deque<T>) is_empty<T>( -- b:i64)",
       "failable": false,
-      "description": "Check if the deque is empty.  Stack: (d -- bool)",
+      "description": "Check if the deque is empty.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d is_empty if { \"empty!\" print nl }"]
     },
     {
       "name": "is_empty",
       "signature": "(m:Map<V>) is_empty<V>( -- b:i64)",
       "failable": false,
-      "description": "Check if the map is empty.  Example:     m is_empty if { \"empty!\" print nl }  Stack: (m -- bool)",
+      "description": "Check if the map is empty.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m is_empty if { \"empty!\" print nl }"]
     },
     {
       "name": "is_empty",
       "signature": "(q:Queue<T>) is_empty<T>( -- b:i64)",
       "failable": false,
-      "description": "Check if the queue is empty.  Stack: (q -- bool)",
+      "description": "Check if the queue is empty.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["q is_empty if { \"empty!\" print nl }"]
     },
     {
       "name": "is_empty",
       "signature": "(s:Set) is_empty( -- b:i64)",
       "failable": false,
-      "description": "Check if the set is empty.  Example:     s is_empty if { \"empty!\" print nl }  Stack: (s -- bool)",
+      "description": "Check if the set is empty.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["s is_empty if { \"empty!\" print nl }"]
     },
     {
       "name": "is_empty",
       "signature": "(v:Vec<T>) is_empty<T>( -- b:i64)",
       "failable": false,
-      "description": "Check if the vector is empty (length == 0).  Example:     v is_empty if { \"empty!\" print nl }  Stack: (v -- bool)",
+      "description": "Check if the vector is empty (length == 0).",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v is_empty if { \"empty!\" print nl }"]
     },
     {
       "name": "length",
       "signature": "(d:Deque<T>) length<T>( -- n:i64)",
       "failable": false,
-      "description": "Get the number of elements.  Stack: (d -- n)",
+      "description": "Get the number of elements.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d length -> n"]
     },
     {
       "name": "length",
       "signature": "(m:Map<V>) length<V>( -- n:i64)",
       "failable": false,
-      "description": "Get the number of entries in the map.  Example:     m length -> n  Stack: (m -- n)",
+      "description": "Get the number of entries in the map.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m length -> n"]
     },
     {
       "name": "length",
       "signature": "(q:Queue<T>) length<T>( -- n:i64)",
       "failable": false,
-      "description": "Get the number of elements in the queue.  Stack: (q -- n)",
+      "description": "Get the number of elements in the queue.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["q length -> n"]
     },
     {
       "name": "length",
       "signature": "(s:Set) length( -- n:i64)",
       "failable": false,
-      "description": "Get the number of elements in the set.  Example:     s length -> n  Stack: (s -- n)",
+      "description": "Get the number of elements in the set.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["s length -> n"]
     },
     {
       "name": "length",
       "signature": "(v:Vec<T>) length<T>( -- n:i64)",
       "failable": false,
-      "description": "Get the number of elements in the vector.  Example:     v length -> n  Stack: (v -- n)",
+      "description": "Get the number of elements in the vector.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v length -> n"]
     },
     {
       "name": "peek_back",
       "signature": "(d:Deque<T>) peek_back<T>( -- val:T)",
       "failable": true,
-      "description": "View the back element without removing it.  Stack: (d -- val)",
+      "description": "View the back element without removing it.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d peek_back! -> val"]
     },
     {
       "name": "peek_front",
       "signature": "(d:Deque<T>) peek_front<T>( -- val:T)",
       "failable": true,
-      "description": "View the front element without removing it.  Stack: (d -- val)",
+      "description": "View the front element without removing it.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d peek_front! -> val"]
     },
     {
       "name": "peek",
       "signature": "(q:Queue<T>) peek<T>( -- val:T)",
       "failable": true,
-      "description": "View the front element without removing it.  Returns error if queue is empty.  Example:     q peek! -> val  Stack: (q -- val)",
+      "description": "View the front element without removing it. Returns error if queue is empty.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["q peek! -> val"]
     },
     {
       "name": "pop_back",
       "signature": "(d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)",
       "failable": true,
-      "description": "Remove and return the back element.  Example:     d pop_back! -> d -> val  Stack: (d -- val d2)",
+      "description": "Remove and return the back element.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d pop_back! -> d -> val  // the deque is on top, the element under it"]
     },
     {
       "name": "pop_front",
       "signature": "(d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)",
       "failable": true,
-      "description": "Remove and return the front element.  Example:     d pop_front! -> d -> val  Stack: (d -- val d2)",
+      "description": "Remove and return the front element.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d pop_front! -> d -> val  // the deque is on top, the element under it"]
     },
     {
       "name": "pop",
       "signature": "(v:Vec<T>) pop<T>( -- elem:T v2:Vec<T>)",
       "failable": true,
-      "description": "Pop and return the last element.  Panics if the vector is empty. Returns both the element and the updated vector.  Example:     v pop! -> v -> elem  Stack: (v -- elem v2)",
+      "description": "Pop and return the last element. Panics if the vector is empty. Returns both the element and the updated vector.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v pop! -> v -> elem  // the vector is on top, the element under it"]
     },
     {
       "name": "push_back",
       "signature": "(d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)",
       "failable": true,
-      "description": "Push an element to the back.  Example:     d 42 push_back! -> d  Stack: (d val -- d2)",
+      "description": "Push an element to the back.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d 42 push_back! -> d  // re-bind the returned deque"]
     },
     {
       "name": "push_front",
       "signature": "(d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)",
       "failable": true,
-      "description": "Push an element to the front.  Example:     d 42 push_front! -> d  Stack: (d val -- d2)",
+      "description": "Push an element to the front.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d 42 push_front! -> d  // re-bind the returned deque"]
     },
     {
       "name": "push",
       "signature": "(v:Vec<T>) push<T>(elem:T -- v2:Vec<T>)",
       "failable": true,
-      "description": "Push an element to the end of the vector.  Automatically grows capacity when full (doubles size, starting at 8). Returns the updated vector which must be captured.  Example:     v 42 push! -> v  Stack: (v elem -- v2)",
+      "description": "Push an element to the end of the vector. Automatically grows capacity when full (doubles size, starting at 8). Returns the updated vector which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v 42 push! -> v  // re-bind the returned vector"]
     },
     {
       "name": "release",
       "signature": "(d:Deque<T>) release<T>()",
       "failable": false,
-      "description": "Free the deque's memory.  Stack: (d --)",
+      "description": "Free the deque's memory.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["d release"]
     },
     {
       "name": "release",
       "signature": "(m:Map<V>) release<V>()",
       "failable": false,
-      "description": "Free the map's memory.  IMPORTANT: Always call this when done with a map to prevent memory leaks. After calling release, the map should not be used.  Example:     m release  Stack: (m --)",
+      "description": "Free the map's memory. IMPORTANT: Always call this when done with a map to prevent memory leaks. After calling release, the map should not be used.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m release"]
     },
     {
       "name": "release",
       "signature": "(q:Queue<T>) release<T>()",
       "failable": false,
-      "description": "Free the queue's memory.  Stack: (q --)",
+      "description": "Free the queue's memory.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["q release"]
     },
     {
       "name": "release",
       "signature": "(s:Set) release()",
       "failable": false,
-      "description": "Free the set's memory.  IMPORTANT: Always call this when done with a set to prevent memory leaks.  Example:     s release  Stack: (s --)",
+      "description": "Free the set's memory. IMPORTANT: Always call this when done with a set to prevent memory leaks.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["s release"]
     },
     {
       "name": "release",
       "signature": "(v:Vec<T>) release<T>()",
       "failable": false,
-      "description": "Free the vector's memory.  IMPORTANT: Always call this when done with a vector to prevent memory leaks. After calling release, the vector should not be used.  Example:     v release  Stack: (v --)",
+      "description": "Free the vector's memory. IMPORTANT: Always call this when done with a vector to prevent memory leaks. After calling release, the vector should not be used.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v release"]
     },
     {
       "name": "remove",
       "signature": "(m:Map<V>) remove<V>(key:str -- m2:Map<V>)",
       "failable": true,
-      "description": "Remove a key from the map.  Returns error if the key is not found. Returns the updated map which must be captured.  Example:     m \"alice\" remove! -> m  Stack: (m key -- m2)",
+      "description": "Remove a key from the map. Returns error if the key is not found. Returns the updated map which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["m \"alice\" remove! -> m  // re-bind the returned map"]
     },
     {
       "name": "remove",
       "signature": "(s:Set) remove(key:str -- s2:Set)",
       "failable": true,
-      "description": "Remove an element from the set.  Returns error if the element is not found. Returns the updated set which must be captured.  Example:     s \"alice\" remove! -> s  Stack: (s key -- s2)",
+      "description": "Remove an element from the set. Returns error if the element is not found. Returns the updated set which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["s \"alice\" remove! -> s  // re-bind the returned set"]
     },
     {
       "name": "reset",
       "signature": "(v:Vec<T>) reset<T>( -- v2:Vec<T>)",
       "failable": false,
-      "description": "Remove all elements, keeping allocated capacity.  Useful for reusing a vector without reallocating.  Example:     v reset -> v  Stack: (v -- v2)",
+      "description": "Remove all elements, keeping allocated capacity. Useful for reusing a vector without reallocating.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v reset -> v  // re-bind the returned vector"]
     },
     {
       "name": "second",
       "signature": "(p:Pair<T, U>) second<T, U>( -- b:U)",
       "failable": false,
-      "description": "Get the second element of a pair.  Example:     p second -> b  Stack: (p -- b)",
+      "description": "Get the second element of a pair.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["p second -> b"]
     },
     {
       "name": "set",
       "signature": "(v:Vec<T>) set<T>(idx:i64 elem:T -- v2:Vec<T>)",
       "failable": true,
-      "description": "Set element at index.  Panics if index is out of bounds (< 0 or >= len). Returns the updated vector which must be captured.  Example:     v 0 100 set! -> v  Stack: (v idx elem -- v2)",
+      "description": "Set element at index. Panics if index is out of bounds (< 0 or >= len). Returns the updated vector which must be captured.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["v 0 100 set! -> v  // re-bind the returned vector"]
     },
     {
       "name": "unpack",
       "signature": "(p:Pair<T, U>) unpack<T, U>( -- a:T b:U)",
       "failable": false,
-      "description": "Unpack a pair onto the stack.  Returns both elements: first is deeper, second on top.  Example:     p unpack -> first_val -> second_val  Stack: (p -- a b)",
+      "description": "Unpack a pair onto the stack. Returns both elements: first is deeper, second on top.",
       "params": [],
       "returns": [],
       "errors": [],
-      "examples": []
+      "examples": ["p unpack -> b -> a  // second on top, so it binds first"]
     }
   ]
 }

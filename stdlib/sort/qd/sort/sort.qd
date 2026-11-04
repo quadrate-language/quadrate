@@ -423,7 +423,7 @@ def qsort_cmp(arr:[]i64 lo:i64 hi:i64 cmp:fn(i64 i64 -- i64) -- ) {
 /// positive value if `a` sorts after `b` -- the same convention as C's `qsort`. Sorting by a
 /// key, by several fields, or in descending order are all just comparators. Not stable.
 /// @param arr []i64 Array of i64 values
-/// @param cmp fn Comparator (a b -- ordering)
+/// @param cmp fn(i64 i64 -- i64) Comparator (a b -- ordering)
 /// @example arr &by_length sort::by
 pub def by(arr:[]i64 cmp:fn(i64 i64 -- i64) -- ) {
 	arr len -> count
@@ -435,7 +435,7 @@ pub def by(arr:[]i64 cmp:fn(i64 i64 -- i64) -- ) {
 
 /// Whether an array of i64 is sorted according to a comparator.
 /// @param arr []i64 Array of i64 values
-/// @param cmp fn Comparator (a b -- ordering)
+/// @param cmp fn(i64 i64 -- i64) Comparator (a b -- ordering)
 /// @return sorted i64 1 if sorted, 0 otherwise
 /// @example arr &by_length sort::is_sorted_by print nl
 pub def is_sorted_by(arr:[]i64 cmp:fn(i64 i64 -- i64) -- sorted:i64) {
@@ -460,7 +460,7 @@ pub def is_sorted_by(arr:[]i64 cmp:fn(i64 i64 -- i64) -- sorted:i64) {
 /// sorts before `needle`.
 /// @param arr []i64 Array of i64 values, sorted by `cmp`
 /// @param needle i64 Value to locate
-/// @param cmp fn Comparator (a b -- ordering)
+/// @param cmp fn(i64 i64 -- i64) Comparator (a b -- ordering)
 /// @return idx i64 Index of the first element not ordered before `needle`
 /// @example arr 42 &ascending sort::lower_bound_by print nl
 pub def lower_bound_by(arr:[]i64 needle:i64 cmp:fn(i64 i64 -- i64) -- idx:i64) {

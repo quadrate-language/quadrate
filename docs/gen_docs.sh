@@ -18,6 +18,8 @@ set -euo pipefail
 # character -- math::abs documents its return as `|x|` -- so the separator must be one that
 # cannot: ASCII unit separator.
 SEP=$'\x1f'
+# Between a reference entry's examples, which may contain ';' themselves: record separator.
+EXSEP=$'\x1e'
 
 # A type as a doc tag writes it. This used to be `[a-zA-Z0-9_]+`, which matched a bare `i64`
 # and nothing else: `@return args []str Array of argument strings` matched no branch at all,
@@ -339,7 +341,9 @@ get_receiver_type() {
     local sig="$1"
     # Match pattern like "(v:Vec2) name" - extract Vec2
     # Only match if the first part is a valid identifier (no spaces or --)
-    local pattern='^\(([a-zA-Z_][a-zA-Z0-9_]*):([A-Za-z][a-zA-Z0-9_]*)\)'
+    # A generic receiver `(v:Vec<T>)` names the struct `Vec`: without the `<...>` here every ct
+    # method fell through to the flat function list, away from its struct.
+    local pattern='^\(([a-zA-Z_][a-zA-Z0-9_]*):([A-Za-z][a-zA-Z0-9_]*)(<[^>]*>)?\)'
     if [[ "$sig" =~ $pattern ]]; then
         echo "${BASH_REMATCH[2]}"
     fi
@@ -592,7 +596,7 @@ generate_markdown() {
         for func in "${standalone_funcs[@]}"; do
             [[ -z "$func" ]] && continue
             if [[ $first -eq 0 ]]; then
-                output+="---"$'\n\n'
+                output+=$'\n'"---"$'\n\n'
             fi
             first=0
             output+="$(output_function "$module_name" "$func" "###")"$'\n'
@@ -635,7 +639,7 @@ generate_markdown() {
             while IFS= read -r func; do
                 [[ -z "$func" ]] && continue
                 if [[ $first -eq 0 ]]; then
-                    output+="---"$'\n\n'
+                    output+=$'\n'"---"$'\n\n'
                 fi
                 first=0
                 output+="$(output_function "$module_name" "$func" "####")"$'\n'
@@ -654,7 +658,7 @@ generate_markdown() {
             while IFS= read -r func; do
                 [[ -z "$func" ]] && continue
                 if [[ $first -eq 0 ]]; then
-                    output+="---"$'\n\n'
+                    output+=$'\n'"---"$'\n\n'
                 fi
                 first=0
                 output+="$(output_function "$module_name" "$func" "####")"$'\n'
@@ -844,15 +848,31 @@ generate_reference() {
     local current_category=""
     local -a doc_buffer=()
 
+    # A section is `// ====`, its name on the next line, then optional prose. Only that first
+    # line names the category; every comment line used to, so the last line of a paragraph of
+    # prose became the heading.
+    local after_rule=0 named=0
     while IFS= read -r line || [[ -n "$line" ]]; do
-        # Track category from section comments
+        # Track category from section comments. The rule that closes a section's name line
+        # does not open another.
         if [[ "$line" =~ ^//[[:space:]]*===.* ]]; then
+            if (( named )); then
+                named=0
+            else
+                after_rule=1
+            fi
             continue
         fi
+        named=0
 
         if [[ "$line" =~ ^///  ]]; then
             : # Skip doc comments here, handle below
         elif [[ "$line" =~ ^//[[:space:]]+([^=].*)$ ]]; then
+            if (( ! after_rule )); then
+                continue
+            fi
+            after_rule=0
+            named=1
             current_category="${BASH_REMATCH[1]}"
             current_category="${current_category#"${current_category%%[![:space:]]*}"}"
             current_category="${current_category%"${current_category##*[![:space:]]}"}"
@@ -875,7 +895,7 @@ generate_reference() {
             local examples=""
             for doc in "${doc_buffer[@]}"; do
                 if [[ "$doc" =~ ^@example[[:space:]]+(.*) ]]; then
-                    examples+="${BASH_REMATCH[1]};"
+                    examples+="${BASH_REMATCH[1]}$EXSEP"
                 fi
             done
 
@@ -893,7 +913,7 @@ generate_reference() {
             local examples=""
             for doc in "${doc_buffer[@]}"; do
                 if [[ "$doc" =~ ^@example[[:space:]]+(.*) ]]; then
-                    examples+="${BASH_REMATCH[1]};"
+                    examples+="${BASH_REMATCH[1]}$EXSEP"
                 fi
             done
 
@@ -934,14 +954,14 @@ generate_reference() {
             if [[ -n "$kw_examples" ]]; then
                 output+="**Example:**"$'\n\n'
                 output+="\`\`\`qd"$'\n'
-                IFS=';' read -ra ex_arr <<< "$kw_examples"
+                IFS="$EXSEP" read -ra ex_arr <<< "$kw_examples"
                 for ex in "${ex_arr[@]}"; do
                     [[ -z "$ex" ]] && continue
                     output+="$ex"$'\n'
                 done
                 output+="\`\`\`"$'\n\n'
             fi
-            output+="---"$'\n\n'
+            output+=$'\n'"---"$'\n\n'
         done
     fi
 
@@ -989,14 +1009,14 @@ generate_reference() {
             if [[ -n "$bi_examples" ]]; then
                 output+="**Example:**"$'\n\n'
                 output+="\`\`\`qd"$'\n'
-                IFS=';' read -ra ex_arr <<< "$bi_examples"
+                IFS="$EXSEP" read -ra ex_arr <<< "$bi_examples"
                 for ex in "${ex_arr[@]}"; do
                     [[ -z "$ex" ]] && continue
                     output+="$ex"$'\n'
                 done
                 output+="\`\`\`"$'\n\n'
             fi
-            output+="---"$'\n\n'
+            output+=$'\n'"---"$'\n\n'
         done <<< "${categories[$cat]}"
     done
 

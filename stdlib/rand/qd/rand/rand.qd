@@ -27,7 +27,7 @@ pub struct Rng {
 
 /// Create a new RNG seeded from current time.
 /// NOT cryptographically secure (guessable seed) - see module security note.
-/// @return rng ptr New random number generator
+/// @return rng Rng New random number generator
 /// @example rand::new -> rng
 pub fn new( -- rng:Rng) {
 	time::now -> seed
@@ -77,8 +77,7 @@ pub fn with_seed(seed:i64 -- rng:Rng) {
 }
 
 /// Generate next random i64.
-/// @param rng ptr RNG state
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return n i64 Random 64-bit integer
 /// @example rng rand::next -> rng n
 pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
@@ -99,9 +98,8 @@ pub fn (rng:Rng) next( -- rng2:Rng n:i64) {
 }
 
 /// Generate random i64 in range [0, max).
-/// @param rng ptr RNG state
 /// @param max i64 Upper bound (exclusive)
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return n i64 Random integer in [0, max)
 /// @example rng 100 rand::int -> rng n
 pub def (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
@@ -123,10 +121,9 @@ pub def (rng:Rng) int(max:i64 -- rng2:Rng n:i64) {
 }
 
 /// Generate random i64 in range [min, max).
-/// @param rng ptr RNG state
 /// @param min i64 Lower bound (inclusive)
 /// @param max i64 Upper bound (exclusive)
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return n i64 Random integer in [min, max)
 /// @example rng 10 20 rand::range -> rng n
 pub def (rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64) {
@@ -138,8 +135,7 @@ pub def (rng:Rng) range(min:i64 max:i64 -- rng2:Rng n:i64) {
 }
 
 /// Generate random boolean.
-/// @param rng ptr RNG state
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return b i64 Random boolean (0 or 1)
 /// @example rng rand::boolean -> rng b
 pub fn (rng:Rng) boolean( -- rng2:Rng b:i64) {
@@ -147,8 +143,7 @@ pub fn (rng:Rng) boolean( -- rng2:Rng b:i64) {
 }
 
 /// Generate random f64 in range [0.0, 1.0).
-/// @param rng ptr RNG state
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return f f64 Random float in [0.0, 1.0)
 /// @example rng rand::float -> rng f
 pub fn (rng:Rng) float( -- rng2:Rng f:f64) {
@@ -167,10 +162,9 @@ pub fn (rng:Rng) float( -- rng2:Rng f:f64) {
 }
 
 /// Generate random f64 in range [min, max).
-/// @param rng ptr RNG state
 /// @param min f64 Lower bound (inclusive)
 /// @param max f64 Upper bound (exclusive)
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return f f64 Random float in [min, max)
 /// @example rng 0.0 10.0 rand::float_range -> rng f
 pub def (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
@@ -181,10 +175,9 @@ pub def (rng:Rng) float_range(min:f64 max:f64 -- rng2:Rng f:f64) {
 }
 
 /// Shuffle array in place using Fisher-Yates algorithm.
-/// @param rng ptr RNG state
 /// @param arr ptr Array of i64 values
 /// @param len i64 Array length
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @example rng arr len rand::shuffle -> rng
 pub def (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
 	len 1 > if {
@@ -208,10 +201,9 @@ pub def (rng:Rng) shuffle(arr:ptr len:i64 -- rng2:Rng) {
 }
 
 /// Pick a random element from array.
-/// @param rng ptr RNG state
 /// @param arr ptr Array of i64 values
 /// @param len i64 Array length
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return val i64 Random element from array
 /// @example rng arr len rand::choice -> rng val
 pub def (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64) {
@@ -224,8 +216,7 @@ pub def (rng:Rng) choice(arr:ptr len:i64 -- rng2:Rng val:i64) {
 
 /// Generate random f64 from standard normal distribution (mean=0, stddev=1).
 /// Uses Box-Muller transform.
-/// @param rng ptr RNG state
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return n f64 Random value from N(0,1)
 /// @example rng rand::normal -> rng n
 pub fn (rng:Rng) normal( -- rng2:Rng n:f64) {
@@ -249,10 +240,9 @@ pub fn (rng:Rng) normal( -- rng2:Rng n:f64) {
 }
 
 /// Generate random f64 from normal distribution with given mean and stddev.
-/// @param rng ptr RNG state
 /// @param mean f64 Distribution mean
 /// @param stddev f64 Distribution standard deviation
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return n f64 Random value from N(mean, stddev)
 /// @example rng 100.0 15.0 rand::normal_params -> rng n
 pub def (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64) {
@@ -264,9 +254,8 @@ pub def (rng:Rng) normal_params(mean:f64 stddev:f64 -- rng2:Rng n:f64) {
 }
 
 /// Generate random f64 from exponential distribution.
-/// @param rng ptr RNG state
 /// @param lambda f64 Rate parameter (1/mean)
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @return n f64 Random value from Exp(lambda)
 /// @example rng 1.0 rand::exponential -> rng n
 pub def (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
@@ -287,12 +276,11 @@ pub def (rng:Rng) exponential(lambda:f64 -- rng2:Rng n:f64) {
 
 /// Pick n random elements from array without replacement.
 /// Uses partial Fisher-Yates algorithm. Output array must have space for n elements.
-/// @param rng ptr RNG state
 /// @param src ptr Source array of i64 values
 /// @param src_len i64 Source array length
 /// @param dst ptr Destination array (must have space for n i64 values)
 /// @param n i64 Number of elements to pick
-/// @return rng ptr Updated RNG state
+/// @return rng2 Rng Updated RNG state
 /// @example rng src 10 dst 3 rand::sample -> rng
 pub def (rng:Rng) sample(src:ptr src_len:i64 dst:ptr n:i64 -- rng2:Rng) {
 	// Handle edge cases

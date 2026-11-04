@@ -83,7 +83,7 @@ Quadrate source files MUST be UTF-8 encoded. Identifiers MUST contain only ASCII
 #### 2.3.1 Keywords
 
 ```
-fn        pub       inline    stack     struct    packed    enum
+fn        def       pub       inline    struct    packed    enum
 type      use       import    if        else      for       loop
 while     until     switch    break     continue  return    defer
 const     var       test      as
@@ -218,7 +218,7 @@ $"pi={math::Pi}"               // A module-qualified constant
 >>    Field set (write): struct value >>field (writes the field, pushes the same struct back)
 ->    Local variable binding
 ::    Scope resolution
-&     Function pointer prefix
+&     Function value prefix: `&name` is the named function as a value
 !     Abort-on-error suffix
 ```
 
@@ -382,7 +382,12 @@ struct Person {
 }
 ```
 
-Structs MUST be represented as `ptr` on the stack (pointer to heap or stack allocated data).
+A struct value on the stack MUST be a counted reference to the struct, not a `ptr`
+(§3.5.1): its slot owns a reference, and copying, binding and dropping it move the struct's
+count (§11.2.2). Implementations MUST reject a struct supplied where a `ptr` is declared, and
+MUST accept nothing but a value of that struct type, or `null`, where a struct type or a `*T`
+is declared — an arbitrary raw `ptr` is not one, since nothing would say the memory behind it
+holds a `T` with a count to move.
 
 #### 3.2.2 Arrays
 
@@ -414,7 +419,9 @@ element types disagree is a compile-time error where they are known.
 ```
 
 The zero value MUST be `0` for the integer types and `bool`, `0.0` for `f64`, `0` for `d128`, an empty string
-for `str`, and null for `ptr`. For a struct type, `[n]T` MUST produce `n` distinct instances,
+for `str`, null for `ptr`, and for a function type `fn(...)` a null function value, so
+`[n]fn(i64 -- i64)` is a table of `n` empty entries to fill with `set`; calling one that was
+never filled MUST stop the program with a fatal "NULL function value". For a struct type, `[n]T` MUST produce `n` distinct instances,
 each constructed as `T {}`; it is therefore well-formed exactly where `T {}` is, which
 requires every field of `T` to declare a default. For an array element type, `[n][]T` MUST
 produce `n` distinct empty arrays, on the same principle: the zero of an array is an empty
@@ -436,15 +443,26 @@ a type name is, so two array literals written in a row MUST be separated by whit
 [1 2] [3 4]           // Two array literals, which the space is what makes them
 ```
 
-Arrays MUST be represented as `ptr` on the stack. In type annotations, arrays MAY be written as `[]T` (e.g., `[]i64`, `[]f64`, `[]str`, `[]mod::Point`, `[][]i64`) to indicate the element type. This is a compile-time annotation; at runtime, arrays are pointers.
+An array value on the stack MUST be a counted reference to the array, not a `ptr` (§3.5.1),
+and its type is written `[]T` (e.g., `[]i64`, `[]f64`, `[]str`, `[]mod::Point`, `[][]i64`).
+An array carries its element type, and for elements that are references, which kind they are
+(§11.5).
 
-A declared `ptr` otherwise accepts any pointer-shaped value, but implementations MUST reject a `[]T` supplied where a parameter, output or struct field is declared `ptr`. The pointer an array is represented by addresses the array's header, not its elements, so a function that takes a raw buffer would read and write the header rather than the data. A raw buffer and the length beside it remain the way to pass elements:
+Implementations MUST reject a `[]T` supplied where a parameter, output or struct field is
+declared `ptr`. The reference addresses the array's header, not its elements, so a function
+that takes a raw buffer would read and write the header rather than the data. A raw buffer and
+the length beside it remain the way to pass elements:
 
 <!-- doccheck: skip two signatures contrasted, not a program -->
 ```quadrate
 fn sum(arr:ptr count:i64 -- total:i64)   // a raw buffer
 fn sum(arr:[]i64 -- total:i64)           // an array; `arr len` gives the count
 ```
+
+`[]ptr` is an array of raw memory addresses and holds nothing else: `set` and `append` MUST
+check that what they store into an array of references is of the kind the array already holds,
+and reject a struct, an array or a function value stored into a `[]ptr`, as they reject a raw
+`ptr` stored into an array of structs.
 
 ### 3.3 Generic Types
 
@@ -467,20 +485,31 @@ struct Pair<A, B> {
 
 Type parameters SHOULD be single uppercase letters or short uppercase names.
 
+A field whose type is a type parameter MUST hold a whole stack slot, the value with its type and,
+for a reference, its kind, and MUST own a reference to it as any field holding a reference does
+(§11.2.2): `Box<Point>` keeps its point alive, and `Box<i64>` holds a plain number.
+
 ### 3.4 Function Types
 
-Function pointers MUST be represented using typed `fn(...)` syntax:
+A **function value** is a named function or an anonymous function (§7.5) held as a value. Its
+type MUST be written with the typed `fn(...)` syntax:
 
 ```quadrate
 def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
     x f call
 }
 
-// Get function pointer
-&double -> func_ptr
+// Get a function value
+&double -> f
 ```
 
-The `fn(...)` type specifies the full signature of the function pointer, including parameter types and return types. A function value MUST NOT be passed, stored or returned as a `ptr` (§3.5.1).
+The `fn(...)` type specifies the full signature of the function value, including parameter types
+and return types. A function value is counted, as a struct is: a closure owns its captures
+(§11.6), and the slot, local, field or element holding it owns a reference (§11.2.2). `&name`
+gives a static function value, which captures nothing and is never freed, so counting it is a
+no-op. A function value MUST NOT be passed, stored or returned as a `ptr` (§3.5.1), and a raw
+`ptr` MUST NOT be passed where a function value is declared nor called: `call` on a `ptr` MUST
+be a compile-time error.
 
 A parameter in a function type MAY carry a name, `fn(x:i64 -- r:i64)`. The name documents it and
 is not part of the type.
@@ -556,7 +585,13 @@ A `ptr` is raw memory: an address the program allocated (`mem::alloc`), took fro
 runtime MUST NOT retain or release one. A struct, an array, a string and a function value are
 counted objects and MUST NOT be passed, stored or returned where a `ptr` is declared;
 implementations MUST reject it at compile time, and MUST reject a `ptr` passed where a
-function value is declared. `null` is a `ptr`, and is also accepted wherever a `*T` is.
+function value, a struct or a `*T` is declared. `null` is a `ptr`, and is the one `ptr` also
+accepted wherever a struct type or a `*T` is (§3.2.1); `var p = null` declares a global that
+holds one.
+
+Memory reached through a `ptr` holds raw words. `mem::get_ptr` reads a raw `ptr` back from it,
+never a struct or an array; a struct kept in raw memory goes through `mem::set_any` and
+`mem::get_any`, whose tagged slot keeps the value's type and owns a reference to it (§11.2.2).
 
 ### 3.6 Null
 
@@ -587,6 +622,11 @@ Node { value = 20 next = a } -> b
 
 b <<next <<value print nl   // 10 — follow pointer chain
 ```
+
+A `*T` field holds either a `T`, as a counted reference the field owns (§11.2.2), or `null`;
+an implementation MUST reject any other `ptr` stored into it (§3.2.1). `*T` is valid only as the
+type of a struct field, and MUST be rejected as the type of a parameter, an output, a local or a
+global, where the struct type `T` itself is written.
 
 `null` MAY also be used as a default value in struct field definitions:
 
@@ -625,6 +665,10 @@ Explicit casting via `cast<Type>`:
 `cast<i64>` of a `d128` truncates toward zero and, being total, saturates at the `i64`
 limits and turns NaN into `0`. There is no cast between `d128` and `ptr`.
 
+`cast<ptr>` of a struct or an array gives its raw address, and the result is a raw `ptr`
+(§3.5.1): it gives up the reference its slot held, so the address keeps nothing alive and is
+valid only while some other reference does.
+
 `cast<T>` MUST be total: every conversion it offers always produces a value, so its result
 never needs to be checked. A string MUST NOT be cast to a numeric type -- parsing can fail
 and `cast` has nowhere to report it. Implementations MUST reject `"42" cast<i64>` and
@@ -632,7 +676,10 @@ and `cast` has nowhere to report it. Implementations MUST reject `"42" cast<i64>
 `strconv::parse_float`, `strconv::parse_d128` and `strconv::parse_bool` are the fallible
 conversions.
 
-**Implicit coercion**: Implementations MUST NOT perform implicit type coercion. All type conversions MUST be explicit.
+**Implicit coercion**: Implementations MUST NOT perform implicit type coercion, with one
+exception: an `i64` widens to `f64` or `d128` where it meets one, as an operand of arithmetic or
+comparison (§12.1, §3.1.2), as an argument to a parameter of that type, or as a struct field of
+that type (§8.2). Every other conversion MUST be explicit.
 
 ---
 
@@ -655,8 +702,15 @@ struct qd_stack_element {
 
     qd_stack_type type;      // Type tag: INT=0, FLOAT=1, PTR=2, STR=3, D128=4
     bool is_error_tainted;   // Error propagation flag
+    uint8_t ptr_kind;        // For PTR: RAW=1, STRUCT=2, ARRAY=3
 };
 ```
+
+A slot of type PTR MUST record what it points at. A raw `ptr` (§3.5.1) has nothing to count,
+and the slot neither retains nor releases it. A struct, a function value (which is a counted
+struct) and an array are counted references: the slot owns one, and copying or dropping the
+slot moves the count (§11.2.2). Whatever writes a PTR slot writes its kind with it, so the
+runtime never has to look an address up to learn what it is.
 
 ### 4.2 Stack Operations
 
@@ -932,7 +986,7 @@ type IntList = []i64
 pub type Callback = fn(str -- bool)
 ```
 
-Type aliases are resolved at compile time and carry no runtime overhead. They are especially useful for giving readable names to complex function pointer types.
+Type aliases are resolved at compile time and carry no runtime overhead. They are especially useful for giving readable names to complex function types.
 
 ### 5.6 Struct Declarations
 
@@ -959,7 +1013,7 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 ```
 
 - `pub`: Makes function publicly accessible from other modules
-- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions. An `inline fn` SHOULD be replaced by its body where the body can stand in the caller unchanged -- a stack `fn`, neither fallible, generic nor a method, whose body declares no local and has no `return` or `defer` -- so that a word factored into smaller words costs what it would written out in one piece, whatever results the smaller words leave. That holds for a call in the declaring file and in the files sharing its names (§9.7), and for a call of a module's word as `module::name` when its body names only the module's functions and constants, which then keep their meaning by their qualified names; a body that reads a field, calls a method, names a global or takes `&name` is resolved in its module, and is called.
+- `inline`: Requests the compiler to inline the function at call sites, eliminating call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls. Useful for small wrapper functions. An `inline fn` SHOULD be replaced by its body where the body can stand in the caller unchanged -- a `fn` (not a `def`), neither fallible, generic nor a method, whose body declares no local and has no `return` or `defer` -- so that a word factored into smaller words costs what it would written out in one piece, whatever results the smaller words leave. That holds for a call in the declaring file and in the files sharing its names (§9.7), and for a call of a module's word as `module::name` when its body names only the module's functions and constants, which then keep their meaning by their qualified names; a body that reads a field, calls a method, names a global or takes `&name` is resolved in its module, and is called.
 - `fn`: The inputs stay on the stack for the body to work on (§4.4); names on them are
   documentation and are not in scope, so naming is optional and naming some inputs and not others
   is permitted.
@@ -969,7 +1023,7 @@ Type aliases are resolved at compile time and carry no runtime overhead. They ar
 - `<TypeParams>`: Generic type parameters, and stack variables (`..a`, §3.4.1)
 - `!`: Marks function as fallible (can fail with error)
 
-`pub` comes first, then `inline`, then `fn` or `def`. A receiver (§8.4) is always bound, in a
+`pub` comes first, then `inline`, then `fn` or `def`. A receiver (§7.4) is always bound, in a
 `fn` as in a `def`.
 
 An identifier in the body of a `fn` that names one of its inputs, and nothing else in scope,
@@ -980,7 +1034,7 @@ MUST be reported as an input that is not bound, with a hint to write `def`.
 <!-- doccheck: skip grammar: the shape of an import block -->
 ```quadrate
 import "library.a" as "namespace" {
-    [pub] def funcname(params -- returns) [!]
+    [pub] fn funcname(params -- returns) [!]
     ...
 }
 ```
@@ -1086,12 +1140,16 @@ start end step for iterator {
 
 **Stack**: MUST pop `step`, `end`, `start` from stack.
 
+The iterator MUST start at `start` and advance by `step`, and `end` is exclusive: the loop runs
+while the iterator is below `end` for a positive step, and above it for a negative one. `0 10 1
+for` runs for 0 through 9, and `10 7 -1 for` for 10, 9 and 8.
+
 ```quadrate
 0 10 1 for i {
     i print nl
 }
 
-// Reverse iteration
+// Reverse iteration: 10 down to 1
 10 0 -1 for i {
     i print nl
 }
@@ -1261,9 +1319,11 @@ Functions are called by name; arguments must already be on stack:
 
 **Module-qualified calls:**
 ```quadrate
-3.14 math::sin      // Call 'sin' from 'math' module
-"hello" len    // Call 'len' from 'strings' module
+3.14 math::sin           // Call 'sin' from the 'math' module
+"hello" strings::upper   // Call 'upper' from the 'strings' module
 ```
+
+`len` is a builtin (§12.5), not a module's function, and is called unqualified: `"hello" len`.
 
 ### 7.3 Generic Functions
 
@@ -1298,7 +1358,8 @@ vec length
 
 <!-- doccheck: skip grammar: the shape of an anonymous function -->
 ```quadrate
-[let] fn (params -- returns) [!] { body }
+fn (params -- returns) [!] { body }
+def (params -- returns) [!] { body }
 fn { body }
 ```
 
@@ -1311,8 +1372,8 @@ one what it rejects in the other:
   reads its arguments by name and does not find them on the stack. A `def` MUST declare at
   least one input.
 - `!` marks it fallible. Only then may its body `panic`, and a `call` on it MUST be written `!`,
-  `?`, or be followed immediately by `if` or `switch` (§9.2) — the rule that governs a call to a
-  fallible name. Without `!` a `call` on it is an ordinary call, and `!` or `?` there is an error.
+  `?`, or read as a status: `ok`/`fail` then `if`, or `switch` (§10.3) — the rule that governs a
+  call to a fallible name. Without `!` a `call` on it is an ordinary call, and `!` or `?` there is an error.
 - The body MUST leave exactly what the signature declares, counted and typed as §5.7 requires.
 - A parameter's type MUST be a valid type name, and a name that is not one is an error. An
   unused named parameter is diagnosed the same way it is in a named function: a warning, not an
@@ -1346,7 +1407,7 @@ fn ( -- r:i64) { a b + } -> sum  // Both a and b are captured
 sum call print nl                // Prints 30
 ```
 
-**Closure without captures** (plain function pointer):
+**Closure without captures** (a function value that captures nothing):
 ```quadrate
 def (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 3 4 add_fn call print nl         // Prints 7
@@ -1359,10 +1420,10 @@ def (x:i64 y:i64 -- r:i64) { x y + } -> add_fn
 
 **Fallible**:
 ```quadrate
-0 def (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call if {
+0 def (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call ok if {
     print nl
 } else {
-    "caught" print nl            // Prints caught
+    drop "caught" print nl       // Prints caught
 }
 ```
 
@@ -1381,9 +1442,8 @@ effect is **inferred** from the body rather than declared:
 
 The inferred effect is the function value's type, `fn(_ -- f64)`, and every check that applies
 to a declared type applies to it: `call`, a parameter of function type, and a stack variable
-(§3.4.1) all see exactly that effect. Errors in the body are reported as in any body. If the body
-calls a function value whose effect is unknown (§7.6), its own effect is unknown too, and the
-checks that depend on it are switched off for it.
+(§3.4.1) all see exactly that effect. Errors in the body are reported as in any body. Every
+function value has a type, so a body that calls one has an effect the checks can see.
 
 A `fn { }` captures as any anonymous function does. It is not fallible: its body MUST NOT
 `panic`, and `?` inside it is an error. A fallible function value needs a signature.
@@ -1396,12 +1456,18 @@ A `fn { }` captures as any anonymous function does. It is not fallible: its body
 [1 2 3] fn { dup * } map -> squares     // [1 4 9]
 ```
 
-### 7.6 Function Pointers
+### 7.6 Function Values
 
 ```quadrate
-&function_name      // Get function pointer
-pointer call        // Invoke function via pointer
+&function_name      // The named function as a function value
+f call              // Call the function value f
 ```
+
+`&name` MUST give a static function value of the function's type (§3.4); an anonymous function
+gives one that owns its captures. Both are counted values, and `call` MUST accept only a function
+value: a raw `ptr` is not one, and calling it MUST be a compile-time error. A function type is a
+valid element type, so `[n]fn(...)` builds a table of null function values (§3.2.2) that `set`
+fills; calling an entry still null MUST stop the program with a fatal "NULL function value".
 
 
 ### 7.7 Combinators
@@ -1674,11 +1740,12 @@ Use `::` to access module members:
 ```quadrate
 use math
 use io
+use json
 
 math::sin       // Function
 math::Pi        // Constant
 io::Read        // Constant
-io::File        // Struct
+json::Value     // Struct
 ```
 
 ### 9.5 FFI Imports
@@ -2029,6 +2096,10 @@ and every part of an implementation MUST hold to the same one. None of it is vis
 program's output, so an implementation that gets it wrong in one place and right in another
 still passes every test of what programs print.
 
+The counted values are strings, structs, arrays and function values (§3.4); a closure's
+captures are counted with it (§11.6), and `&name` gives a static function value whose count is
+never taken. A raw `ptr` (§3.5.1), an `i64`, an `f64` and a `d128` are not counted.
+
 **A value on the stack carries a reference of its own.** Reading a local, a field, an array
 element or a global retains what it reads before pushing it. A value that was just created --
 by a struct literal, a string operation, an array literal -- arrives with the single reference
@@ -2038,7 +2109,8 @@ its allocation gave it.
 alike:
 
 - a **local variable**, from `->` until it is rebound or its scope ends;
-- a **struct field**, from the store until it is overwritten or the struct is destroyed;
+- a **struct field**, from the store until it is overwritten or the struct is destroyed — a
+  field of generic type (§3.3) included, which holds a whole stack slot;
 - an **array element**, until it is overwritten or the array is destroyed;
 - a **tagged slot** (`mem::set_any`), until it is overwritten or cleared.
 
@@ -2094,9 +2166,13 @@ struct qd_struct_header {
 ```
 
 **Destructors:**
-- Automatically generated for structs with string/struct fields
+- Automatically generated for structs with fields that hold references: strings, structs,
+  arrays, function values, and fields of generic type
 - Called when refcount reaches 0
 - Release nested references
+
+A function value is a counted struct of this shape, holding the function, its captured
+environment and their count, and is retained and released as any struct is (§11.2.2).
 
 ### 11.5 Array Memory
 
@@ -2106,17 +2182,25 @@ struct qd_array {
     atomic_size_t refcount;
     size_t length;
     size_t capacity;
-    qd_array_type elemType;  // INT, FLOAT, STR, PTR
+    qd_array_type elemType;  // INT=0, FLOAT=1, STR=2, PTR=3, ANY=4, D128=5
+    uint8_t elemKind;        // For PTR elements: RAW=1, STRUCT=2, ARRAY=3
     union {
         int64_t* i;
         double* f;
-        void** p;
+        void** p;            // strings and pointers
+        qd_d128_t* d;        // d128 elements, sixteen bytes each
     } data;
 };
 ```
 
+- `ANY` is the element type of an array that has not yet adopted one: an empty `[]`, or `[n]T`
+  for a type parameter (§3.2.2). The first value stored sets it.
+- `elemKind` is adopted with the first pointer element stored, and every later one MUST be of
+  the same kind (§3.2.2), so an element is retained, copied and released as what it is: a
+  struct, function value or array element is counted, a raw `ptr` element is not.
 - Dynamic resizing with 2x growth factor
-- Element-type-aware cleanup (strings released, nested arrays/structs released)
+- Element-type-aware cleanup (strings released, nested arrays, structs and function values
+  released)
 
 ### 11.6 Closure Captures
 
@@ -2129,8 +2213,9 @@ struct captured_var {
 };
 ```
 
-- Closure increments refcount of captured variables
-- Variables freed when all closures using them are released
+- A closure is a counted function value (§3.4); it holds a reference to each captured variable
+- Variables freed when all closures using them are released, and a captured variable that holds
+  a counted value releases it then
 - A captured `for` iterator has no such variable to point at, so the closure is given a block of
   its own holding the iterator's value, with a refcount of one, released the same way
 
@@ -2292,7 +2377,7 @@ is for an array.
 
 | Instruction | Stack Effect | Description |
 |-------------|--------------|-------------|
-| `call` | `(ptr -- ...)` | Call function via pointer |
+| `call` | `(f:fn(...) -- ...)` | Call a function value; its type gives the rest of the effect. A `ptr` is not one (§7.6) |
 
 ---
 
@@ -2384,11 +2469,15 @@ Low-level memory.
 **Functions:**
 - `alloc!`, `realloc!`, `free`
 - `set_byte`, `get_byte`, `set_i64`, `get_i64`
+- `set_ptr`, `get_ptr` — a raw `ptr` only; `get_ptr` MUST return raw memory, never a struct or
+  an array (§3.5.1)
+- `set_any`, `get_any`, `clear_any` — a tagged slot that keeps the value's type and owns a
+  reference to it (§11.2.2); the way to keep a struct, an array or a string in raw memory
 - `copy`, `zero`, `fill`
 
-### 13.9 d128
+### 13.9 decimal
 
-IEEE 754-2008 decimal128 operations beyond the operators, and the elementary functions
+The `decimal` module: IEEE 754-2008 decimal128 operations on `d128` beyond the operators, and the elementary functions
 (§3.1.2). Every result is rounded to 34 digits with roundTiesToEven; `sqrt`, `exp`, `ln`,
 `log10` and `fma` MUST be correctly rounded.
 
@@ -2400,7 +2489,8 @@ IEEE 754-2008 decimal128 operations beyond the operators, and the elementary fun
 - Exponent and digits: `quantize`, `reduce`, `scaleb`, `logb`, `next_up`, `next_down`
 - Classification: `is_nan`, `is_inf`, `is_finite`, `is_zero`, `is_normal`, `is_subnormal`,
   `is_signed`, `total_order`
-- Constants: `pi`, `e`, `inf`, `nan`
+- Constants, as functions taking nothing and leaving a `d128`: `pi`, `e`, `inf`, `nan`
+  (`decimal::pi`)
 
 ### 13.10 Additional Modules
 
@@ -2409,6 +2499,7 @@ IEEE 754-2008 decimal128 operations beyond the operators, and the elementary fun
 - `bytes` - Byte buffer operations
 - `crypto` - Cryptographic hashes (SHA-256, SHA-512, MD5, CRC32)
 - `ct` - Generic containers (Vec, Map, Set, Queue, Deque)
+- `error` - Errors as values: the `Error` struct, holding a failure's message and code
 - `flag` - Command-line flag parsing
 - `fuzzy` - Fuzzy string matching (Levenshtein distance)
 - `hex` - Hexadecimal encoding and decoding
@@ -2425,6 +2516,7 @@ IEEE 754-2008 decimal128 operations beyond the operators, and the elementary fun
 - `signal` - Signal handling
 - `sort` - Sorting and array utilities
 - `strconv` - String/number conversion
+- `sys` - Low-level system operations: x86 port I/O, interrupt control, raw loads and stores
 - `term` - Terminal colors and formatting
 - `testing` - Unit testing utilities
 - `tls` - TLS/SSL secure sockets
@@ -2553,9 +2645,9 @@ defer_stmt      = "defer" ( block | statement ) ;
 
 expression      = literal | identifier | scoped_id | struct_const | array_lit
                 | field_access | field_set | local_bind | fn_call | anon_fn
-                | operator | instruction | as_cast | interp_string ;
+                | operator | instruction | fn_ref | interp_string ;
 interp_string   = "$\"" { character | "{" ( identifier | scoped_id ) "}" } "\"" ;
-as_cast         = "as" type ;
+fn_ref          = "&" ( identifier | scoped_id ) ;   /* a static function value, 7.6 */
 
 literal         = integer | float | d128 | string | "true" | "false" | "Ok" | "Err" | "null" ;
 scoped_id       = identifier "::" identifier { "::" identifier } ;  /* mod::Enum::Variant, 5.4.2 */
@@ -2564,13 +2656,13 @@ array_lit       = "[" { expression } "]" ;
 field_access    = "<<" identifier ;
 field_set       = ">>" identifier ;
 local_bind      = "->" identifier ;
-anon_fn         = [ "let" ] "fn" signature [ "!" ] block     /* captures are implicit */
+anon_fn         = ( "fn" | "def" ) signature [ "!" ] block   /* captures are implicit */
                 | "fn" block ;                             /* effect inferred, 7.5.1 */
 fn_call         = identifier [ "!" ] ;
 
 type            = "i64" | "f64" | "d128" | "str" | "ptr" | "bool" | sized_int
-                | "[]" type | identifier [type_args] | "*" type
-                | "fn" signature [ "!" ] ;
+                | "[]" type | identifier [type_args] | "*" identifier [type_args]
+                | "fn" signature [ "!" ] ;   /* "*" only as a struct field's type, 3.6.2 */
 sized_int       = "i8" | "u8" | "i16" | "u16" | "i32" | "u32" | "u64" ;
 type_args       = "<" type { "," type } ">" ;
 
@@ -2638,7 +2730,7 @@ instruction     = "dup" | "dup2" | "swap" | "drop" | "drop2" | "over" | "rot" | 
 | `::` | Scope resolution (module::member) |
 | `<<` | Field access (read): `struct <<field` |
 | `>>` | Field set (write): `struct value >>field` — writes the field, pushes the same struct back; add `drop` to discard the reference |
-| `&` | Get function pointer |
+| `&` | The named function as a function value (§7.6) |
 | `!` | Abort on error (after fallible call) |
 | `?` | Propagate error to caller (after fallible call) |
 | `as` | Names the module in an `import` |
@@ -2647,8 +2739,14 @@ instruction     = "dup" | "dup2" | "swap" | "drop" | "drop2" | "over" | "rot" | 
 
 ## Document History
 
+- **Unreleased**: `ptr` is raw memory only (§3.5.1): a struct, an array and a function value are
+  counted references that are not `ptr`s, a stack slot and an array record which kind of pointer
+  they hold (§4.1, §11.5), and the runtime's registries of counted objects are removed. Function
+  values are counted, `&name` gives a static one, and `[n]fn(...)` builds a table of them (§3.4,
+  §7.6). The `as Type` cast is removed; `as` remains only in `import` (§5.8).
 - **0.5.0**: Sized integer types (§3.1.1), `[n]T` array literals and nested array types
-  (§3.2.2), `while` (§6.4), `stack fn` and the anonymous-function rules (§7.5), branch and
+  (§3.2.2), `while` (§6.4), `fn` leaving its inputs on the stack beside `def`, and the
+  anonymous-function rules (§7.5), branch and
   switch-arm stack effects (§6.1.1, §6.5.1), logical `and`/`or`/`not` with the bitwise
   operations in `bits` (§12.3), reference cycles and ownership (§11.2)
 - **0.2.0**: Method syntax for stdlib, expanded regex/fmt/sort/crypto/net, unified block parsers

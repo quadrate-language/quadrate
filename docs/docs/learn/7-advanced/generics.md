@@ -51,14 +51,11 @@ fn main() {
 }
 ```
 
-!!! note
-    Generic structs currently work best with integer types. For structs with mixed types, prefer non-generic structs with explicit field types.
-
 ## Built-in generic operations
 
-### make
+### Sized arrays
 
-Create typed arrays:
+`[N]T` makes an array of `N` elements of type `T`:
 
 ```qd
 [10]i64 -> ints      // Array of 10 integers

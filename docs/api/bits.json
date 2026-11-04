@@ -33,7 +33,7 @@
       "signature": "(v:i64 -- count:i64)",
       "failable": false,
       "description": "Count leading zeros (from MSB).",
-      "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value to count"}],
       "returns": [{"name": "count", "type": "i64", "description": "Number of leading zero bits (0-64)"}],
       "errors": [],
       "examples": ["0x0F00000000000000 bits::clz print  // 4"]
@@ -43,7 +43,7 @@
       "signature": "(v:i64 -- count:i64)",
       "failable": false,
       "description": "Count trailing zeros (from LSB).",
-      "params": [{"name": "value", "type": "i64", "description": "Value to count"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value to count"}],
       "returns": [{"name": "count", "type": "i64", "description": "Number of trailing zero bits (0-64)"}],
       "errors": [],
       "examples": ["0x100 bits::ctz print  // 8"]
@@ -73,7 +73,7 @@
       "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Get the highest set bit as a value (isolate highest bit).",
-      "params": [{"name": "value", "type": "i64", "description": "Input value"}],
+      "params": [{"name": "v", "type": "i64", "description": "Input value"}],
       "returns": [{"name": "result", "type": "i64", "description": "Highest set bit as power of two, 0 if input is 0"}],
       "errors": [],
       "examples": ["0b1010 bits::highest_bit print  // 8 (0b1000)"]
@@ -83,7 +83,7 @@
       "signature": "(v:i64 -- flag:i64)",
       "failable": false,
       "description": "Check if value is a power of two.",
-      "params": [{"name": "value", "type": "i64", "description": "Value to check"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value to check"}],
       "returns": [{"name": "flag", "type": "i64", "description": "1 if power of two, 0 otherwise"}],
       "errors": [],
       "examples": ["8 bits::is_power_of_two print  // 1", "7 bits::is_power_of_two print  // 0"]
@@ -93,7 +93,7 @@
       "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Integer log base 2 (position of highest set bit).",
-      "params": [{"name": "value", "type": "i64", "description": "Value (must be > 0)"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value (must be > 0)"}],
       "returns": [{"name": "result", "type": "i64", "description": "Floor of log2(value)"}],
       "errors": [],
       "examples": ["8 bits::log2 print  // 3", "15 bits::log2 print  // 3"]
@@ -103,7 +103,7 @@
       "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Get the lowest set bit as a value (isolate lowest bit).",
-      "params": [{"name": "value", "type": "i64", "description": "Input value"}],
+      "params": [{"name": "v", "type": "i64", "description": "Input value"}],
       "returns": [{"name": "result", "type": "i64", "description": "Lowest set bit as power of two, 0 if input is 0"}],
       "errors": [],
       "examples": ["0b1010 bits::lowest_bit print  // 2 (0b0010)"]
@@ -123,7 +123,7 @@
       "signature": "(v:i64 -- result:i64)",
       "failable": false,
       "description": "Find the next power of two greater than or equal to value.",
-      "params": [{"name": "value", "type": "i64", "description": "Input value"}],
+      "params": [{"name": "v", "type": "i64", "description": "Input value"}],
       "returns": [{"name": "result", "type": "i64", "description": "Next power of two"}],
       "errors": [],
       "examples": ["5 bits::next_power_of_two print  // 8", "8 bits::next_power_of_two print  // 8"]
@@ -163,7 +163,7 @@
       "signature": "(v:i64 w:i64 -- result:i64)",
       "failable": false,
       "description": "Reverse the bottom N bits.",
-      "params": [{"name": "value", "type": "i64", "description": "Value to reverse"}, {"name": "width", "type": "i64", "description": "Number of bits to reverse"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value to reverse"}, {"name": "w", "type": "i64", "description": "Number of bits to reverse"}],
       "returns": [{"name": "result", "type": "i64", "description": "Reversed value"}],
       "errors": [],
       "examples": ["0b1011 4 bits::reverse_bits print  // 13 (0b1101)"]
@@ -173,7 +173,7 @@
       "signature": "(v:i64 b:i64 w:i64 -- result:i64)",
       "failable": false,
       "description": "Rotate bits left within a width.",
-      "params": [{"name": "value", "type": "i64", "description": "Value to rotate"}, {"name": "bits", "type": "i64", "description": "Positions to rotate"}, {"name": "width", "type": "i64", "description": "Bit width to rotate within"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value to rotate"}, {"name": "b", "type": "i64", "description": "Positions to rotate"}, {"name": "w", "type": "i64", "description": "Bit width to rotate within"}],
       "returns": [{"name": "result", "type": "i64", "description": "Rotated value"}],
       "errors": [],
       "examples": ["0b0011 1 4 bits::rotate_left print  // 6 (0b0110)"]
@@ -183,7 +183,7 @@
       "signature": "(v:i64 b:i64 w:i64 -- result:i64)",
       "failable": false,
       "description": "Rotate bits right within a width.",
-      "params": [{"name": "value", "type": "i64", "description": "Value to rotate"}, {"name": "bits", "type": "i64", "description": "Positions to rotate"}, {"name": "width", "type": "i64", "description": "Bit width to rotate within"}],
+      "params": [{"name": "v", "type": "i64", "description": "Value to rotate"}, {"name": "b", "type": "i64", "description": "Positions to rotate"}, {"name": "w", "type": "i64", "description": "Bit width to rotate within"}],
       "returns": [{"name": "result", "type": "i64", "description": "Rotated value"}],
       "errors": [],
       "examples": ["0b0110 1 4 bits::rotate_right print  // 3 (0b0011)"]
@@ -193,7 +193,7 @@
       "signature": "(tgt:i64 val:i64 sb:i64 nb:i64 -- result:i64)",
       "failable": false,
       "description": "Set a bit field in a value.",
-      "params": [{"name": "target", "type": "i64", "description": "Target value to modify"}, {"name": "value", "type": "i64", "description": "Value to insert"}, {"name": "start_bit", "type": "i64", "description": "Start position (0 = LSB)"}, {"name": "num_bits", "type": "i64", "description": "Number of bits to set"}],
+      "params": [{"name": "tgt", "type": "i64", "description": "Target value to modify"}, {"name": "val", "type": "i64", "description": "Value to insert"}, {"name": "sb", "type": "i64", "description": "Start position (0 = LSB)"}, {"name": "nb", "type": "i64", "description": "Number of bits to set"}],
       "returns": [{"name": "result", "type": "i64", "description": "Modified target"}],
       "errors": [],
       "examples": ["0 0b101 2 3 bits::set_bits print  // 20 (0b10100)"]

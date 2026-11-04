@@ -7,21 +7,21 @@ Quadrate is a stack-based programming language designed for explicit data flow a
 Quadrate makes data flow explicit through stack-based evaluation. Every function declares its stack effect - what values it consumes and produces. This enables the compiler to validate all operations before execution.
 
 ```qd
-def double(x:i64 -- result:i64) {
-	x 2 *
+fn double(x:i64 -- result:i64) {
+	2 *
 }
 ```
 
 This function takes one integer and produces one integer. The signature documents the stack
-effect, and the compiler enforces it.
+effect, and the compiler enforces it. The body works on the value the caller left on the
+stack; in a `fn` the name `x` is documentation only.
 
-Naming a parameter binds it: `x` is consumed off the stack on entry and the body refers to it
-by name. A function that would rather work on what the caller left says so, and then the name
-is documentation only:
+A function that would rather refer to its inputs by name is declared with `def`. Each input is
+then taken off the stack on entry and bound as a local:
 
 ```qd
-fn double(value:i64 -- result:i64) {
-	2 *
+def sum_of_squares(a:i64 b:i64 -- r:i64) {
+	a a * b b * +
 }
 ```
 
@@ -51,7 +51,9 @@ Quadrate is open source and developed in the open:
 
 **Repository:** [github.com/quadrate-language/quadrate](https://github.com/quadrate-language/quadrate)
 
-Contributions, bug reports, and feedback are welcome. The project uses SourceHut for hosting and mailing lists for discussion.
+Contributions, bug reports, and feedback are welcome: open an
+[issue](https://github.com/quadrate-language/quadrate/issues) or a
+[pull request](https://github.com/quadrate-language/quadrate/pulls) on GitHub.
 
 ## Built with
 

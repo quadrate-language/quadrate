@@ -1,6 +1,54 @@
-/// Generic container types.
-/// Provides Vec, HashMap, Set, Queue, Deque, and Pair.
+/// Generic container types: Vec, Map, Set, Queue, Deque and Pair.
+///
+/// A container is created with a struct literal whose fields are all zero or null; there is no
+/// constructor function, and the first insertion allocates. A method that changes a container
+/// returns it, and that result must be captured (`v 10 push! -> v`). Call `release` on a Vec,
+/// Map, Set, Queue or Deque when done to free its memory.
+///
+/// Example:
+///   use ct
+///
+///   fn main() {
+///   	ct::Vec<i64> { data = null len = 0 cap = 0 } -> v
+///   	v 10 push! -> v
+///   	v 20 push! -> v
+///   	v 0 get! print nl                       // 10
+///   	v release
+///
+///   	ct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
+///   	m "alice" 42 insert! -> m
+///   	m "alice" get! print nl                 // 42
+///   	m release
+///
+///   	ct::Set { keys = null states = null len = 0 cap = 0 } -> s
+///   	s "alice" add! -> s
+///   	s "alice" contains print nl             // 1
+///   	s release
+///
+///   	ct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+///   	q 1 enqueue! -> q
+///   	q 2 enqueue! -> q
+///   	q dequeue! -> q -> first
+///   	first print nl                          // 1
+///   	q release
+///
+///   	ct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
+///   	d 1 push_back! -> d
+///   	d 0 push_front! -> d
+///   	d peek_front! print nl                  // 0
+///   	d release
+///
+///   	ct::Pair<i64, str> { first = 42 second = "hello" } -> p
+///   	p unpack -> b -> a
+///   	a print " " print b print nl            // 42 hello
+///   }
 /// doccheck: page-context
+/// doccheck: page-setup ct::Vec<i64> { data = null len = 0 cap = 0 } -> v
+/// doccheck: page-setup ct::Map<i64> { keys = null values = null states = null len = 0 cap = 0 } -> m
+/// doccheck: page-setup ct::Set { keys = null states = null len = 0 cap = 0 } -> s
+/// doccheck: page-setup ct::Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+/// doccheck: page-setup ct::Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
+/// doccheck: page-setup ct::Pair<i64, str> { first = 42 second = "hello" } -> p
 
 use deque.qd
 use hashmap.qd

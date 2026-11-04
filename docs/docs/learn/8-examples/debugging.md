@@ -37,18 +37,11 @@ Break at a specific line in your `.qd` source:
 
 ### Inspecting the stack
 
-Use the runtime debug helper to print the full stack:
+The runtime's stack structure is reachable through `ctx`:
 
 ```
-(gdb) call (void)qd_debug_print_stack(ctx)
-(gdb) print qd_context_stack_size(ctx)
-```
-
-For low-level inspection, the internal stack structure is also accessible:
-
-```
-(gdb) print ctx->st->size
-(gdb) print ctx->st->data[0]
+(gdb) print ctx->st->size       # how many values are on the stack
+(gdb) print ctx->st->data[0]    # the bottom value, with its type
 ```
 
 ### Stepping through code
@@ -64,12 +57,15 @@ Standard GDB commands work with Quadrate source files:
 
 ## Compiler diagnostics
 
+The `--dump-*` flags print what they dump and then build the program as usual, so the
+executable lands in the current directory. Pass `-o` to put it somewhere else.
+
 ### Dump tokens
 
 See how the lexer tokenizes your source:
 
 ```bash
-quadc --dump-tokens myprogram.qd
+quadc --dump-tokens myprogram.qd -o /tmp/myprogram
 ```
 
 ### Dump AST
@@ -77,7 +73,7 @@ quadc --dump-tokens myprogram.qd
 See the parsed abstract syntax tree:
 
 ```bash
-quadc --dump-ast myprogram.qd
+quadc --dump-ast myprogram.qd -o /tmp/myprogram
 ```
 
 ### Dump LLVM IR
@@ -85,7 +81,7 @@ quadc --dump-ast myprogram.qd
 Inspect the generated LLVM intermediate representation:
 
 ```bash
-quadc --dump-ir myprogram.qd
+quadc --dump-ir myprogram.qd -o /tmp/myprogram
 ```
 
 ### Verbose compilation

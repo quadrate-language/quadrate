@@ -79,7 +79,7 @@ fn main() {
 }
 ```
 
-Write `:type` explicitly to force a specific type; inference only chooses between `i64`, `f64`, `str`, and `ptr`. A global is a 64-bit slot, so a sized integer type such as `u8` is rejected there.
+Write `:type` explicitly to force a specific type; inference only chooses between `i64`, `f64` and `str`, and `var p = null` makes a `ptr` that starts empty. A global is a 64-bit slot, so a sized integer type such as `u8` is rejected there.
 
 A global can also hold an array or a function value. Write its type, unless an array literal names its element type:
 
@@ -111,8 +111,8 @@ Writes use the same `-> name` syntax as locals — if `name` matches a module-le
 |----------|-------|------|-------------|
 | `true` | 1 | i64 | Boolean true |
 | `false` | 0 | i64 | Boolean false |
-| `Ok` | 1 | i64 | Success result |
-| `Err` | 0 | i64 | Error result |
+| `Ok` | 0 | i64 | The status of a call that succeeded |
+| `Err` | 1 | i64 | The status of a call that failed |
 | `null` | 0 | ptr | Null pointer |
 
 Use `null` for pointer fields in structs:
@@ -188,38 +188,42 @@ const ErrTimeout = 3
 
 def handle_error(code:i64 -- ) {
 	code switch {
-		0 { "Success" print nl }
-		1 { "Not found" print nl }
-		2 { "Permission denied" print nl }
-		3 { "Timeout" print nl }
+		ErrNone { "Success" print nl }
+		ErrNotFound { "Not found" print nl }
+		ErrPermission { "Permission denied" print nl }
+		ErrTimeout { "Timeout" print nl }
 		_ { "Unknown error" print nl }
 	}
 }
 ```
 
-!!! note "Constants in switch"
-    Constants cannot currently be used as `switch` case values. Use literal values instead.
-
 ## Constants for bit flags
 
+`and` and `or` are logical -- they answer 0 or 1 -- so flags are combined and tested with the
+`bits` module.
+
 ```qd
+use bits
+
 const FlagRead = 1
 const FlagWrite = 2
 const FlagExecute = 4
 
 def has_read(flags:i64 -- result:i64) {
-	flags FlagRead and 0 !=
+	flags FlagRead bits::and 0 !=
 }
 
 def has_write(flags:i64 -- result:i64) {
-	flags FlagWrite and 0 !=
+	flags FlagWrite bits::and 0 !=
 }
 
 fn main() {
-	FlagRead FlagWrite or -> permissions
+	FlagRead FlagWrite bits::or -> permissions
+	permissions print nl            // 3
 
 	permissions has_read print nl   // 1
 	permissions has_write print nl  // 1
+	FlagRead has_write print nl     // 0
 }
 ```
 

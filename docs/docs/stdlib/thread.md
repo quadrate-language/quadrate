@@ -91,6 +91,7 @@ Get the number of online CPUs/cores. Useful for determining how many threads to 
 ```qd
 thread::cpu_count  // n
 ```
+
 ---
 
 ### `fn` self
@@ -108,6 +109,7 @@ Get the current thread's ID. The ID is implementation-defined but can be used fo
 ```qd
 thread::self  // id
 ```
+
 ---
 
 ### `fn` sleep
@@ -125,6 +127,7 @@ Sleep the current thread for the specified duration in milliseconds.
 ```qd
 1000 thread::sleep  // Sleep 1 second
 ```
+
 ---
 
 ### `fn` yield
@@ -187,6 +190,7 @@ Free the Barrier.
 ```qd
 b free
 ```
+
 ---
 
 #### `fn` wait
@@ -240,6 +244,7 @@ Create a new buffered channel.
 ```qd
 10 thread::chan_buffered!  // ch
 ```
+
 ---
 
 #### `fn` chan_new
@@ -272,13 +277,14 @@ Get channel capacity.
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `cap` | `i64` | Buffer capacity (0 for unbuffered) |
+| `c` | `i64` | Buffer capacity (0 for unbuffered) |
 
 **Example:**
 
 ```qd
 ch cap  // c
 ```
+
 ---
 
 #### `fn` close
@@ -292,6 +298,7 @@ Close the channel.
 ```qd
 ch close
 ```
+
 ---
 
 #### `fn` free
@@ -305,6 +312,7 @@ Free the channel.
 ```qd
 ch free
 ```
+
 ---
 
 #### `fn` is_closed
@@ -322,6 +330,7 @@ Check if the channel is closed.
 ```qd
 ch is_closed  // done
 ```
+
 ---
 
 #### `fn` len
@@ -339,6 +348,7 @@ Get number of values in channel buffer.
 ```qd
 ch len  // n
 ```
+
 ---
 
 #### `fn` recv
@@ -360,6 +370,7 @@ Receive a value from the channel.
 ```qd
 ch recv!  // val
 ```
+
 ---
 
 #### `fn` send
@@ -381,6 +392,7 @@ Send a value on the channel.  Waits while a buffered channel is full. On an unbu
 ```qd
 ch 42 send!
 ```
+
 ---
 
 #### `fn` try_recv
@@ -399,6 +411,7 @@ Try to receive without blocking.
 ```qd
 ch try_recv -> success  // val
 ```
+
 ---
 
 #### `fn` try_send
@@ -466,6 +479,7 @@ Free the mutex.
 ```qd
 m free
 ```
+
 ---
 
 #### `fn` lock
@@ -479,6 +493,7 @@ Lock the mutex.
 ```qd
 m lock!
 ```
+
 ---
 
 #### `fn` try_lock
@@ -496,6 +511,7 @@ Try to lock the mutex without blocking.
 ```qd
 m try_lock  // got
 ```
+
 ---
 
 #### `fn` unlock
@@ -548,17 +564,18 @@ thread::once_new!  // o
 
 Execute the function exactly once. If multiple threads call this concurrently, only one will execute the function; the others will wait until it completes. 
 
-**Signature:** `(o:Once) do(func:ptr -- )`
+**Signature:** `(o:Once) do(func:fn(--) -- )`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `func` | `ptr` | Function to execute once |
+| `func` | `fn(--)` | Function to execute once |
 
 **Example:**
 
 ```qd
 o &init_stuff do
 ```
+
 ---
 
 #### `fn` free
@@ -572,6 +589,7 @@ Free the Once.
 ```qd
 o free
 ```
+
 ---
 
 #### `fn` is_done
@@ -635,6 +653,7 @@ Free the RwLock.
 ```qd
 rw free
 ```
+
 ---
 
 #### `fn` read_lock
@@ -648,6 +667,7 @@ Acquire a read lock. Multiple threads can hold read locks simultaneously. Blocks
 ```qd
 rw read_lock!
 ```
+
 ---
 
 #### `fn` read_unlock
@@ -661,6 +681,7 @@ Release a read lock.
 ```qd
 rw read_unlock!
 ```
+
 ---
 
 #### `fn` try_read
@@ -678,6 +699,7 @@ Try to acquire a read lock without blocking.
 ```qd
 rw try_read  // got
 ```
+
 ---
 
 #### `fn` try_write
@@ -695,6 +717,7 @@ Try to acquire a write lock without blocking.
 ```qd
 rw try_write  // got
 ```
+
 ---
 
 #### `fn` write_lock
@@ -708,6 +731,7 @@ Acquire a write lock. Only one thread can hold the write lock. Blocks until all 
 ```qd
 rw write_lock!
 ```
+
 ---
 
 #### `fn` write_unlock
@@ -771,6 +795,7 @@ Detach the thread.
 ```qd
 t detach!
 ```
+
 ---
 
 #### `fn` is_alive
@@ -788,6 +813,7 @@ Check if the thread is still alive.
 ```qd
 t is_alive  // running
 ```
+
 ---
 
 #### `fn` join
@@ -851,6 +877,7 @@ Add to the WaitGroup counter.
 ```qd
 wg 2 add
 ```
+
 ---
 
 #### `fn` done
@@ -864,6 +891,7 @@ Mark one unit of work as done.
 ```qd
 wg done
 ```
+
 ---
 
 #### `fn` free
@@ -877,6 +905,7 @@ Free the WaitGroup.
 ```qd
 wg free
 ```
+
 ---
 
 #### `fn` wait

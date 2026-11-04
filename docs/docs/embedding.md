@@ -34,8 +34,12 @@ int main(void) {
 
 Compile with:
 ```bash
-gcc -o myapp myapp.c -lqd -lqdrt -L/path/to/quadrate/dist/lib/quadrate -I/path/to/quadrate/dist/include
+DIST=/path/to/quadrate/dist
+cc -o myapp myapp.c -I$DIST/include -L$DIST/lib -lqd -lqdrt -Wl,-rpath,$DIST/lib
 ```
+
+`libqd` and `libqdrt` are shared libraries in `$DIST/lib`; the rpath lets the program find them
+at run time without `LD_LIBRARY_PATH`.
 
 ## Core Concepts
 
@@ -102,6 +106,7 @@ Native functions take a `qd_context*` and a `void* userdata`, and return `int`. 
 ```c
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/runtime.h>
+#include <time.h>
 
 // Native function: pushes current time onto stack ( -- t:i64)
 int native_get_time(qd_context* ctx, void* userdata) {
@@ -160,14 +165,41 @@ void* p;    qd_pop_p(ctx, &p);              // Pop pointer
 All pop functions return `QD_OK` on success, or an error code on underflow/type mismatch.
 `qd_pop_s` copies the string into your buffer and releases the internal reference automatically.
 
+`qd_pop_p` is for a `ptr`: raw memory, which has nothing to release. A struct, an array or a
+function value also arrives as a pointer, and popping it hands you the reference the stack
+held: release it with `qd_struct_release` (or `qd_array_release` for an array) when you are
+done. For those, prefer `qd_args`, below, which checks every argument's type before it pops
+anything.
+
+### Popping All Arguments at Once
+
+`qd_args(ctx, op, sig, ...)` pops every input of a native in one call. `sig` has one letter per
+input, deepest first, as the signature writes them: `i` i64, `f` f64, `d` d128, `s` str
+(a `qd_string_t*`), `p` a pointer (`ptr`, struct, array or function value) and `v` any value.
+Each letter takes a pointer to receive the value. Strings and other counted values come with
+the stack's reference, which is now yours to release. On a wrong type or too few values it
+raises an error naming `op`, and leaves the stack as it was.
+
+```c
+// Native: (a:i64 b:i64 -- sum:i64)
+int native_add(qd_context* ctx, void* userdata) {
+    int64_t a, b;
+    qd_args(ctx, "math::add", "ii", &a, &b);
+    return qd_push_i(ctx, a + b);
+}
+```
+
 ### Push Functions
 
 ```c
 qd_push_i(ctx, 42);           // Push integer
 qd_push_f(ctx, 3.14159);      // Push float
 qd_push_s(ctx, "hello");      // Push string (copied)
-qd_push_p(ctx, my_pointer);   // Push pointer
+qd_push_p(ctx, my_pointer);   // Push a pointer to raw memory (nothing counted)
 ```
+
+`qd_push_p` is only for raw memory: a buffer, a C handle. To push a struct or an array use
+`qd_push_struct` or `qd_push_array`, which hand the stack the reference you hold.
 
 ### Userdata
 
@@ -206,7 +238,8 @@ You can create modules that consist entirely of registered native functions, wit
 qd_module* sensors = qd_get_module(ctx, "sensors");
 qd_register_function(sensors, "temperature", "( -- v:f64)", read_temp, &hw);
 qd_register_function(sensors, "pressure", "( -- v:f64)", read_pressure, &hw);
-// No qd_add_script or qd_build needed for native-only modules
+// No qd_add_script needed. qd_build is only needed to call these words directly
+// with qd_execute ("sensors::temperature"); a module that uses them works without it.
 
 // Another module can use it normally
 qd_module* app = qd_get_module(ctx, "app");
@@ -235,6 +268,7 @@ generation and no toolchain at run time:
 
 ```c
 #include <quadrate/interp/interp.h>
+#include <stdio.h>
 
 int main(void) {
     qd_interp* interp = qd_interp_create(1024);
@@ -253,8 +287,12 @@ int main(void) {
 
 Compile with:
 ```bash
-gcc -o myapp myapp.c -linterp -lqc -lu8t -lrt -L/path/to/quadrate/dist/lib/quadrate -I/path/to/quadrate/dist/include
+DIST=/path/to/quadrate/dist
+cc -o myapp myapp.c -I$DIST/include -L$DIST/lib/quadrate -linterp -lqc -lu8t -lrt -lstdc++ -lm
 ```
+
+The interpreter libraries are static and live in `$DIST/lib/quadrate`; the parser is C++, hence
+`-lstdc++`.
 
 The stack persists across calls, which is what a prompt needs:
 
@@ -284,7 +322,12 @@ qd_interp_destroy(interp);                   // ctx survives
 qd_free_context(ctx);
 ```
 
-Linking this combination needs both paths: `-lqd -lqdrt -linterp -lqc -lu8t`.
+Linking this combination needs both paths, with the shared runtime in place of the static `-lrt`:
+
+```bash
+cc -o myapp myapp.c -I$DIST/include -L$DIST/lib -L$DIST/lib/quadrate \
+    -linterp -lqc -lu8t -lqd -lqdrt -lstdc++ -lm -Wl,-rpath,$DIST/lib
+```
 
 ### Errors
 
@@ -304,9 +347,14 @@ than rolled back, which is what a user needs in order to see what went wrong.
 
 ### Coverage
 
-The interpreter handles built-in instructions and literals. Control flow, user-defined functions,
-local variables and module imports are not interpreted; they are reported as an error rather than
-failing silently. Use `qd_add_script()` and `qd_build()` for those.
+The interpreter handles built-in instructions, literals, control flow (`if`, `for`, `switch`),
+locals (`-> x`) and function values. A line may also be nothing but declarations, such as
+`def sq(x:i64 -- r:i64) { x x * }`; the function is then callable from later lines. A line that
+mixes declarations with code to run is an error, so define in one call and use in the next.
+
+Module imports (`use strings`) are not interpreted yet, so neither is anything from the
+standard library modules; they are reported as an error rather than failing silently. Use
+`qd_add_script()` and `qd_build()` for those.
 
 ---
 
@@ -376,6 +424,7 @@ void engine_move(GameState* game, int64_t id, double dx, double dy);
 ```c
 // engine.c
 #include "engine.h"
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -392,7 +441,7 @@ Entity* engine_spawn(GameState* game, double x, double y, int64_t health, const 
     e->script_module = script;
 
     game->entity_count++;
-    printf("[Engine] Spawned entity %lld at (%.1f, %.1f)\n", e->id, x, y);
+    printf("[Engine] Spawned entity %" PRId64 " at (%.1f, %.1f)\n", e->id, x, y);
     return e;
 }
 
@@ -406,12 +455,12 @@ void engine_damage(GameState* game, int64_t id, int64_t amount) {
     if (!e || !e->active) return;
 
     e->health -= amount;
-    printf("[Engine] Entity %lld took %lld damage (health: %lld)\n",
+    printf("[Engine] Entity %" PRId64 " took %" PRId64 " damage (health: %" PRId64 ")\n",
            id, amount, e->health);
 
     if (e->health <= 0) {
         e->active = false;
-        printf("[Engine] Entity %lld destroyed!\n", id);
+        printf("[Engine] Entity %" PRId64 " destroyed!\n", id);
     }
 }
 
@@ -554,6 +603,8 @@ void scripting_init(GameState* game) {
     qd_register_function(engine, "distance", "(x1:f64 y1:f64 x2:f64 y2:f64 -- dist:f64)", script_distance, game);
     qd_register_function(engine, "log", "(msg:str -- )", script_log, game);
 
+    // Not needed for the scripts that `use engine`; built so the host can also
+    // qd_execute engine words directly
     qd_build(engine);
 }
 
@@ -585,6 +636,7 @@ void scripting_shutdown(void) {
 ```quadrate
 // scripts/player.qd
 // Player behavior script
+use engine
 
 // Called every frame
 fn update() {
@@ -618,6 +670,7 @@ def take_damage(amount:i64 -- ) {
 ```quadrate
 // scripts/enemy.qd
 // Enemy AI script
+use engine
 
 fn update() {
     engine::self -> id
@@ -742,7 +795,7 @@ int main(void) {
 # Makefile
 QUADRATE_DIR = /path/to/quadrate/dist
 CFLAGS = -I$(QUADRATE_DIR)/include -Wall
-LDFLAGS = -L$(QUADRATE_DIR)/lib/quadrate -lqd -lqdrt -lm -Wl,-rpath,$(QUADRATE_DIR)/lib/quadrate
+LDFLAGS = -L$(QUADRATE_DIR)/lib -lqd -lqdrt -lm -Wl,-rpath,$(QUADRATE_DIR)/lib
 
 game: src/main.c src/engine.c src/scripting.c
 	gcc $(CFLAGS) -o game $^ $(LDFLAGS)
@@ -781,7 +834,7 @@ clean:
 
 ### Interpreted Execution
 
-Declared in `<quadrate/interp/interp.h>`. Link with `-linterp -lqc -lu8t -lrt`.
+Declared in `<quadrate/interp/interp.h>`. Link with `-L$DIST/lib/quadrate -linterp -lqc -lu8t -lrt -lstdc++ -lm`.
 
 | Function | Description |
 |----------|-------------|
@@ -804,11 +857,15 @@ Declared in `<quadrate/interp/interp.h>`. Link with `-linterp -lqc -lu8t -lrt`.
 | `qd_push_p(ctx, ptr)` | Push a pointer to raw memory (never an array, a struct or a function value), which costs no reference counting |
 | `qd_push_struct(ctx, p)`, `qd_push_array(ctx, p)` | Push a struct or an array, handing the stack the reference the caller holds |
 | `qd_call_value(ctx, fn)` | Call a function value a native was given, with its inputs on the stack; the caller keeps its reference |
-| `qd_closure_new(fn, NULL, 0)` | Make a function value of a C function `int fn(qd_context*)` |
+| `qd_closure_new(fn, NULL, 0)` | Make a function value of a plain C function `int fn(qd_context*)`, held with one reference |
+| `qd_closure_new(fn, env, n)` | The same with an environment: the function is `int fn(qd_context*, void* env)` |
+| `qd_struct_release(p)` | Give up one reference to a struct or function value |
+| `qd_args(ctx, op, sig, ...)` | Pop all of a native's inputs, typed by `sig` (`i f d s p v`); counted values come with their reference |
+| `qd_fail(ctx, code, fmt, ...)` | Fail a fallible (`!`) native: sets the error and pushes the status; `return` its result |
 | `qd_pop_i(ctx, &val)` | Pop integer |
 | `qd_pop_f(ctx, &val)` | Pop float |
 | `qd_pop_s(ctx, buf, size)` | Pop string into buffer |
-| `qd_pop_p(ctx, &val)` | Pop pointer |
+| `qd_pop_p(ctx, &val)` | Pop a pointer; a counted value's reference becomes the caller's to release |
 | `qd_context_stack_size(ctx)` | Get number of elements on stack |
 
 ### Error Inspection
@@ -827,7 +884,10 @@ Declared in `<quadrate/interp/interp.h>`. Link with `-linterp -lqc -lu8t -lrt`.
 
 3. **Thread Safety**: Each thread should have its own `qd_context`.
 
-4. **Hot Reloading**: To reload scripts, create a new module with the same name and rebuild.
+4. **Hot Reloading**: `qd_get_module` with a name already in use returns that same module, and
+   `qd_add_script` appends to it, so rebuilding it with new source fails on the duplicate
+   definitions (and leaves the module unbuilt). To reload, load the new source into a module with
+   a fresh name (`ai_2`) and call that from then on, or build everything again in a new context.
 
 ## Common Patterns
 
@@ -852,28 +912,92 @@ function value, so the native's parameter is declared with the function type it 
 <!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
 ```quadrate
 // Quadrate side
-def my_callback(x:i64 -- result:i64) { x 2 * }
+use engine
+
 fn process() {
-    10 def(x:i64 -- r:i64) { x 2 * } engine::with_callback
+    10 def(x:i64 -- r:i64) { x 2 * } engine::with_callback print nl  // 40
 }
 ```
+
+```c
+// C side: (x:i64 f:fn(i64 -- i64) -- r:i64), applies f twice
+int with_callback(qd_context* ctx, void* userdata) {
+    int64_t x;
+    void* fn;
+    qd_args(ctx, "engine::with_callback", "ip", &x, &fn);  // fn's reference is now ours
+
+    qd_push_i(ctx, x);
+    qd_call_value(ctx, fn);   // leaves f(x)
+    qd_call_value(ctx, fn);   // leaves f(f(x))
+
+    qd_struct_release(fn);    // done with it
+    return QD_OK;
+}
+
+qd_register_function(engine, "with_callback", "(x:i64 f:fn(i64 -- i64) -- r:i64)",
+                     with_callback, NULL);
+```
+
+`qd_struct_release` is declared in `<quadrate/rt/qd_struct.h>`.
+
+Going the other way, a native can hand a script a function value made from a C function.
+With a NULL environment the function is a plain `int fn(qd_context*)`:
+
+```c
+static int forty_two(qd_context* ctx) { return qd_push_i(ctx, 42); }
+
+// Native: ( -- f:fn( -- i64))
+int make_fn(qd_context* ctx, void* userdata) {
+    void* fn = qd_closure_new((void*)forty_two, NULL, 0);
+    return qd_push_struct(ctx, fn);   // hands the stack our reference
+}
+```
+
+With an environment, `qd_closure_new(fn, env, captures)`, the function takes it as a second
+argument: `int fn(qd_context* ctx, void* env)`.
 
 ### Error Propagation
 
+A native that can fail is registered with a `!` signature, and scripts handle it like any other
+fallible call. The C side has a fixed contract: on success, push the outputs and then the status
+`1`; on failure, `return qd_fail(ctx, code, fmt, ...)`, which records the code (not 0) and the
+message and pushes the code as the status. Push no outputs on failure: the caller gets zero
+placeholders in their place.
+
 ```c
-int native_might_fail(qd_context* ctx, void* userdata) {
-    int64_t val;
-    int rc = qd_pop_i(ctx, &val);
-    if (rc != QD_OK) {
-        return rc;  // Propagate underflow/type error
+#include <inttypes.h>   // PRId64
+
+// Native: (x:i64 -- r:i64)!
+int checked_half(qd_context* ctx, void* userdata) {
+    int64_t x;
+    qd_args(ctx, "engine::checked_half", "i", &x);
+    if (x % 2 != 0) {
+        return qd_fail(ctx, 2, "engine::checked_half: %" PRId64 " is odd", x);
     }
-    if (val < 0) {
-        qd_set_error_msg(ctx, "value must be non-negative");
-        return QD_ERR_GENERIC;
+    qd_push_i(ctx, x / 2);     // the output
+    return qd_push_i(ctx, 1);  // then the status: success
+}
+
+qd_register_function(engine, "checked_half", "(x:i64 -- r:i64)!", checked_half, NULL);
+```
+
+<!-- doccheck: skip the host application registers these words; they cannot exist outside it -->
+```quadrate
+// Quadrate side
+use engine
+
+fn halve(x:i64 -- ) {
+    engine::checked_half ok if {
+        print nl
+    } else {
+        drop                  // the zero placeholder
+        err -> code -> msg
+        msg print nl          // engine::checked_half: 7 is odd
     }
-    return qd_push_i(ctx, val * 2);
 }
 ```
+
+The script sees the call's status as `Ok` (0) on success, even though the native pushed `1`.
 
 ## Language Bindings
 

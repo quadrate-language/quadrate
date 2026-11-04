@@ -49,6 +49,7 @@ Declares a function with a stack signature. Its inputs stay on the stack for the
 fn square(x:i64 -- r:i64) { dup * }
 ```
 
+
 ---
 
 ### pub
@@ -60,6 +61,7 @@ Makes a function, constant, or struct visible to other modules.
 ```qd
 pub fn greet() { "Hello" print nl }
 ```
+
 
 ---
 
@@ -73,6 +75,7 @@ Declares a compile-time constant value.
 const PI = 3.14159
 ```
 
+
 ---
 
 ### var
@@ -84,6 +87,7 @@ Declares a module-level mutable global (type annotation optional; inferred from 
 ```qd
 var counter = 0    // inferred i64
 ```
+
 
 ---
 
@@ -97,6 +101,7 @@ Declares a structured data type with named fields.
 struct Point { x:f64 y:f64 }
 ```
 
+
 ---
 
 ### packed
@@ -108,6 +113,7 @@ Struct modifier: fields laid out adjacent at exact widths, no padding. Used befo
 ```qd
 packed struct FileLump { offset:u32 size:u32 name:u64 }
 ```
+
 
 ---
 
@@ -121,6 +127,7 @@ Declares a function like `fn`, but each named input is bound as a local at entry
 def area(w:f64 h:f64 -- a:f64) { w h * }
 ```
 
+
 ---
 
 ### inline
@@ -132,6 +139,7 @@ Function modifier: every call is replaced by the function's body. Used before `f
 ```qd
 inline fn sq(x:i64 -- y:i64) { dup * }
 ```
+
 
 ---
 
@@ -145,6 +153,7 @@ Declares named integer constants, numbered from 0 and written Color::Red.
 enum Color { Red Green Blue }
 ```
 
+
 ---
 
 ### type
@@ -156,6 +165,7 @@ Declares another name for a type, accepted wherever the type is. `bool` is a bui
 ```qd
 type Score = i64
 ```
+
 
 ---
 
@@ -170,6 +180,7 @@ use testing
 test "adds" { 1 2 + 3 testing::assert_eq }
 ```
 
+
 ---
 
 ### use
@@ -181,6 +192,7 @@ Imports a module, making its functions available with module::function syntax.
 ```qd
 use strings
 ```
+
 
 ---
 
@@ -194,6 +206,7 @@ Imports a C library, declaring its functions with Quadrate signatures.
 import "libmath.a" as "math" { pub fn sin(x:f64 -- y:f64) }
 ```
 
+
 ---
 
 ### if
@@ -205,6 +218,7 @@ Executes a block if the top of stack is true (non-zero).
 ```qd
 5 3 > if { "yes" print }
 ```
+
 
 ---
 
@@ -218,6 +232,7 @@ Provides an alternative block when the if condition is false.
 x 0 > if { "positive" } else { "non-positive" }
 ```
 
+
 ---
 
 ### for
@@ -229,6 +244,7 @@ Iterates from start to end with a step, binding the iterator variable.
 ```qd
 0 10 1 for i { i print nl }
 ```
+
 
 ---
 
@@ -242,6 +258,7 @@ Repeats a block indefinitely until break is called.
 loop { "forever" print nl }
 ```
 
+
 ---
 
 ### while
@@ -253,6 +270,7 @@ Inside a loop: takes a flag and leaves the innermost loop when it is false (zero
 ```qd
 0 -> i  loop { i 5 < while  i print nl  i 1 + -> i }
 ```
+
 
 ---
 
@@ -266,6 +284,7 @@ Inside a loop: takes a flag and leaves the innermost loop when it is true (non-z
 loop { read_line -> line  line process  line "quit" == until }
 ```
 
+
 ---
 
 ### break
@@ -277,6 +296,7 @@ Exits the innermost loop immediately.
 ```qd
 loop { x 10 > if { break } }
 ```
+
 
 ---
 
@@ -290,6 +310,7 @@ Skips to the next iteration of the innermost loop.
 0 10 1 for i { i 5 == if { continue } i print nl }
 ```
 
+
 ---
 
 ### return
@@ -301,6 +322,7 @@ Exits the current function immediately.
 ```qd
 fn early() { true if { return } "not reached" print }
 ```
+
 
 ---
 
@@ -314,6 +336,7 @@ Schedules a block to run when the function exits, in LIFO order.
 defer { file io::close }
 ```
 
+
 ---
 
 ### switch
@@ -325,6 +348,7 @@ Branches based on matching the top of stack against case values.
 ```qd
 x switch { 1 { "one" } 2 { "two" } _ { "other" } }
 ```
+
 
 ---
 
@@ -338,6 +362,7 @@ Provides a fallback block when no switch case matches.
 _ { "no match" print }
 ```
 
+
 ---
 
 ### ->
@@ -349,6 +374,7 @@ Pops a value from the stack and binds it to a local variable.
 ```qd
 42 -> x
 ```
+
 
 ---
 
@@ -362,6 +388,7 @@ Pushes 1 onto the stack.
 true if { "yes" print }
 ```
 
+
 ---
 
 ### false
@@ -373,6 +400,7 @@ Pushes 0 onto the stack.
 ```qd
 false if { } else { "no" print }
 ```
+
 
 ---
 
@@ -386,6 +414,7 @@ Pushes 0, the status a fallible call leaves when it succeeded.
 Ok print  // 0
 ```
 
+
 ---
 
 ### Err
@@ -397,6 +426,7 @@ Pushes 1, the generic error code a fallible call can panic with.
 ```qd
 Err print  // 1
 ```
+
 
 ---
 
@@ -410,6 +440,7 @@ Pushes the null pointer.
 null -> p
 ```
 
+
 ---
 
 ### as
@@ -422,64 +453,10 @@ Names the module an `import` declares its words in.
 import "libmath.a" as "math" { pub fn sqrt(x:f64 -- r:f64) }
 ```
 
+
 ---
 
 ## Built-in Instructions
-
-### short-circuiting forms.
-
-| Instruction | Signature | Description |
-|-------------|-----------|-------------|
-| [`and`](#and) | `( a b -- flag )` | Returns 1 if both values are non-zero, 0 otherwise; both are always evaluated. `bits::and` is the bitwise one. |
-| [`or`](#or) | `( a b -- flag )` | Returns 1 if either value is non-zero, 0 otherwise; both are always evaluated. `bits::or` is the bitwise one. |
-| [`not`](#not) | `( a -- flag )` | Returns 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement. |
-
-#### and
-
-Returns 1 if both values are non-zero, 0 otherwise; both are always evaluated. `bits::and` is the bitwise one.
-
-**Signature:** `( a b -- flag )`
-
-**Example:**
-
-```qd
-1 1 and // 1
-2 1 and // 1 (any non-zero value is true
- bits::and would give 0)
-```
-
----
-
-#### or
-
-Returns 1 if either value is non-zero, 0 otherwise; both are always evaluated. `bits::or` is the bitwise one.
-
-**Signature:** `( a b -- flag )`
-
-**Example:**
-
-```qd
-0 0 or // 0
-2 1 or // 1 (any non-zero value is true
- bits::or would give 3)
-```
-
----
-
-#### not
-
-Returns 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement.
-
-**Signature:** `( a -- flag )`
-
-**Example:**
-
-```qd
-0 not // 1
-5 not // 0
-```
-
----
 
 ### STRUCT OPERATIONS
 
@@ -500,6 +477,7 @@ p clone -> q
 q 42 >>x drop // p is untouched
 [1 2 3] clone -> b
 ```
+
 
 ---
 
@@ -527,6 +505,7 @@ Returns 1 if a equals b, 0 otherwise.
 5 5 == // 1
 ```
 
+
 ---
 
 #### !=
@@ -540,6 +519,7 @@ Returns 1 if a does not equal b, 0 otherwise.
 ```qd
 5 3 != // 1
 ```
+
 
 ---
 
@@ -555,6 +535,7 @@ Returns 1 if a is less than b, 0 otherwise.
 3 5 < // 1
 ```
 
+
 ---
 
 #### <=
@@ -568,6 +549,7 @@ Returns 1 if a is less than or equal to b, 0 otherwise.
 ```qd
 5 5 <= // 1
 ```
+
 
 ---
 
@@ -583,6 +565,7 @@ Returns 1 if a is greater than b, 0 otherwise.
 5 3 > // 1
 ```
 
+
 ---
 
 #### >=
@@ -597,6 +580,7 @@ Returns 1 if a is greater than or equal to b, 0 otherwise.
 5 5 >= // 1
 ```
 
+
 ---
 
 #### within
@@ -610,6 +594,7 @@ Returns 1 if a is in [low, high], both ends included, 0 otherwise.
 ```qd
 5 0 10 within // 1
 ```
+
 
 ---
 
@@ -630,10 +615,11 @@ Converts x to T, written cast<T>: one of i64, f64, d128, ptr and str.
 
 ```qd
 3.14 cast<i64> // 3
-42 cast<f64> // 42.0
+42 cast<f64> print // 42 (an f64, printed without a fraction)
 42 cast<str> // "42"
 42 cast<d128> // 42
 ```
+
 
 ---
 
@@ -649,6 +635,7 @@ Returns the size of T in bytes, written sizeof<T>; known at compile time.
 sizeof<i64> // 8
 ```
 
+
 ---
 
 ### ARRAY OPERATIONS
@@ -659,7 +646,7 @@ sizeof<i64> // 8
 | [`nth`](#nth) | `( arr i -- elem )` | Returns the element at index i; in a string, the character there, as its codepoint. |
 | [`set`](#set) | `( arr i x -- )` | Stores x at index i. |
 | [`append`](#append) | `( arr x -- arr )` | Appends x and returns the array, which may have moved. |
-| [`free`](#free) | `( p -- )` | Frees an array or a struct. |
+| [`free`](#free) | `( p -- )` | Releases an array's or a struct's reference, freeing it when it was the last; frees raw memory. |
 
 #### len
 
@@ -673,6 +660,7 @@ Returns the number of elements in an array, or of characters in a string.
 arr len // number of elements
 "héllo" len // 5
 ```
+
 
 ---
 
@@ -689,6 +677,7 @@ arr 0 nth // first element
 "abc" 1 nth // 98
 ```
 
+
 ---
 
 #### set
@@ -702,6 +691,7 @@ Stores x at index i.
 ```qd
 arr 0 42 set
 ```
+
 
 ---
 
@@ -717,11 +707,12 @@ Appends x and returns the array, which may have moved.
 arr 42 append -> arr
 ```
 
+
 ---
 
 #### free
 
-Frees an array or a struct.
+Releases an array's or a struct's reference, freeing it when it was the last; frees raw memory.
 
 **Signature:** `( p -- )`
 
@@ -730,6 +721,7 @@ Frees an array or a struct.
 ```qd
 arr free
 ```
+
 
 ---
 
@@ -758,6 +750,7 @@ Adds two numbers.
 3 4 + // 7
 ```
 
+
 ---
 
 #### -
@@ -771,6 +764,7 @@ Subtracts b from a.
 ```qd
 10 3 - // 7
 ```
+
 
 ---
 
@@ -786,6 +780,7 @@ Multiplies two numbers.
 6 7 * // 42
 ```
 
+
 ---
 
 #### /
@@ -799,6 +794,7 @@ Divides a by b.
 ```qd
 20 4 / // 5
 ```
+
 
 ---
 
@@ -814,6 +810,7 @@ Computes a modulo b.
 17 5 % // 2
 ```
 
+
 ---
 
 #### neg
@@ -827,6 +824,7 @@ Negates a number.
 ```qd
 5 neg // -5
 ```
+
 
 ---
 
@@ -842,6 +840,7 @@ Adds 1 to a number.
 5 ++ // 6
 ```
 
+
 ---
 
 #### --
@@ -856,9 +855,10 @@ Subtracts 1 from a number.
 5 -- // 4
 ```
 
+
 ---
 
-### one is checked on the real stack and compiled inline.
+### COMBINATORS
 
 | Instruction | Signature | Description |
 |-------------|-----------|-------------|
@@ -895,6 +895,7 @@ Runs a function value: a fn { } literal, a local holding one, or &name.
 &foo call  // calls the function foo
 ```
 
+
 ---
 
 #### dip
@@ -908,6 +909,7 @@ Runs q on what is under x, then puts x back.
 ```qd
 10 20 fn { 1 + } dip  // 11 20
 ```
+
 
 ---
 
@@ -923,6 +925,7 @@ Runs q on x, then puts x back on top.
 2 fn { dup * } keep  // 4 2
 ```
 
+
 ---
 
 #### dip2
@@ -936,6 +939,7 @@ Runs q on what is under the top two values, then puts them back.
 ```qd
 1 2 3 fn { 10 * } dip2  // 10 2 3
 ```
+
 
 ---
 
@@ -951,6 +955,7 @@ Runs q on the top two values, then puts them back on top.
 2 3 fn { * } keep2  // 6 2 3
 ```
 
+
 ---
 
 #### bi
@@ -964,6 +969,7 @@ Runs p on x, then q on x again, each on what the last left.
 ```qd
 5 fn { 1 + } fn { 2 * } bi  // 6 10
 ```
+
 
 ---
 
@@ -979,6 +985,7 @@ Runs p, q and r on x in turn, as bi runs two.
 5 fn { 1 + } fn { 2 * } fn { 3 - } tri  // 6 10 2
 ```
 
+
 ---
 
 #### bi_star
@@ -992,6 +999,7 @@ Runs p on x, with what is under x, then q on y: Factor's bi*.
 ```qd
 3 4 fn { 1 + } fn { 2 * } bi_star  // 4 8
 ```
+
 
 ---
 
@@ -1007,6 +1015,7 @@ Runs p on x, q on y and r on z, as bi_star runs two.
 1 2 3 fn { 10 * } fn { 20 * } fn { 30 * } tri_star  // 10 40 90
 ```
 
+
 ---
 
 #### both
@@ -1020,6 +1029,7 @@ Runs q on x, then on y.
 ```qd
 3 4 fn { 10 * } both  // 30 40
 ```
+
 
 ---
 
@@ -1035,6 +1045,7 @@ Runs q n times; it must leave the stack as it found it.
 1 3 fn { 2 * } times  // 8
 ```
 
+
 ---
 
 #### each
@@ -1048,6 +1059,7 @@ Runs q with each element, or character of a string, on top; it must leave the st
 ```qd
 0 [1 2 3] fn { + } each  // 6
 ```
+
 
 ---
 
@@ -1063,6 +1075,7 @@ Returns a new array of what q leaves for each element.
 [1 2 3] fn { dup * } map  // [1 4 9]
 ```
 
+
 ---
 
 #### filter
@@ -1074,8 +1087,9 @@ Returns a new array of the elements q leaves a true flag for.
 **Example:**
 
 ```qd
-[1 2 3 4] fn { 2 mod 0 == } filter  // [2 4]
+[1 2 3 4] fn { 2 % 0 == } filter  // [2 4]
 ```
+
 
 ---
 
@@ -1090,6 +1104,7 @@ Runs q on the accumulator and each element, or character of a string, in turn, s
 ```qd
 [1 2 3] 0 fn { + } fold  // 6
 ```
+
 
 ---
 
@@ -1106,6 +1121,7 @@ Returns 1 if q leaves a true flag for any element, or character of a string, sto
 "a1b" fn { 48 57 within } any  // 1
 ```
 
+
 ---
 
 #### all
@@ -1120,6 +1136,7 @@ Returns 1 if q leaves a true flag for every element, or character of a string, s
 [1 5 12] fn { 0 > } all  // 1
 ```
 
+
 ---
 
 #### find
@@ -1133,6 +1150,7 @@ Returns the first element, or character of a string, q leaves a true flag for, a
 ```qd
 [1 5 12] fn { 4 > } find  // 5 1
 ```
+
 
 ---
 
@@ -1149,6 +1167,7 @@ Returns the position of the first element, or character of a string, q leaves a 
 "key=value" fn { 61 == } index  // 3
 ```
 
+
 ---
 
 #### scan
@@ -1163,6 +1182,63 @@ Returns the position of the first element, or character of a string, at or after
 [3 8 5 12] 2 fn { 4 > } scan  // 2
 "a=b=c" 2 fn { 61 == } scan  // 3
 ```
+
+
+---
+
+### LOGICAL OPERATIONS
+
+| Instruction | Signature | Description |
+|-------------|-----------|-------------|
+| [`and`](#and) | `( a b -- flag )` | Returns 1 if both values are non-zero, 0 otherwise; both are always evaluated. `bits::and` is the bitwise one. |
+| [`or`](#or) | `( a b -- flag )` | Returns 1 if either value is non-zero, 0 otherwise; both are always evaluated. `bits::or` is the bitwise one. |
+| [`not`](#not) | `( a -- flag )` | Returns 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement. |
+
+#### and
+
+Returns 1 if both values are non-zero, 0 otherwise; both are always evaluated. `bits::and` is the bitwise one.
+
+**Signature:** `( a b -- flag )`
+
+**Example:**
+
+```qd
+1 1 and // 1
+2 1 and // 1 (any non-zero value is true; bits::and would give 0)
+```
+
+
+---
+
+#### or
+
+Returns 1 if either value is non-zero, 0 otherwise; both are always evaluated. `bits::or` is the bitwise one.
+
+**Signature:** `( a b -- flag )`
+
+**Example:**
+
+```qd
+0 0 or // 0
+2 1 or // 1 (any non-zero value is true; bits::or would give 3)
+```
+
+
+---
+
+#### not
+
+Returns 1 if the value is zero, 0 otherwise. `bits::not` is the bitwise ones' complement.
+
+**Signature:** `( a -- flag )`
+
+**Example:**
+
+```qd
+0 not // 1
+5 not // 0
+```
+
 
 ---
 
@@ -1186,6 +1262,7 @@ Prints a value without a newline.
 42 print
 ```
 
+
 ---
 
 #### dump
@@ -1193,6 +1270,7 @@ Prints a value without a newline.
 Prints a value with its type, for debugging.
 
 **Signature:** `( x -- )`
+
 
 ---
 
@@ -1207,6 +1285,7 @@ Prints a newline.
 ```qd
 nl
 ```
+
 
 ---
 
@@ -1240,6 +1319,7 @@ Copies the top value.
 5 dup + // 10
 ```
 
+
 ---
 
 #### dup2
@@ -1253,6 +1333,7 @@ Copies the top two values.
 ```qd
 1 2 dup2 // Stack: [1, 2, 1, 2]
 ```
+
 
 ---
 
@@ -1268,6 +1349,7 @@ Removes the top value.
 1 2 3 drop // Stack: [1, 2]
 ```
 
+
 ---
 
 #### swap
@@ -1281,6 +1363,7 @@ Exchanges the top two values.
 ```qd
 1 2 swap // Stack: [2, 1]
 ```
+
 
 ---
 
@@ -1296,6 +1379,7 @@ Copies the second value to the top.
 1 2 over // Stack: [1, 2, 1]
 ```
 
+
 ---
 
 #### rot
@@ -1309,6 +1393,7 @@ Moves the third value to the top.
 ```qd
 1 2 3 rot // Stack: [2, 3, 1]
 ```
+
 
 ---
 
@@ -1324,6 +1409,7 @@ Moves the top value below the next two; the inverse of rot.
 1 2 3 rrot  // Stack: 3 1 2
 ```
 
+
 ---
 
 #### rot4
@@ -1337,6 +1423,7 @@ Moves the fourth value to the top; rot one deeper.
 ```qd
 1 2 3 4 rot4  // Stack: 2 3 4 1
 ```
+
 
 ---
 
@@ -1352,6 +1439,7 @@ Moves the top value below the next three; the inverse of rot4.
 1 2 3 4 rrot4  // Stack: 4 1 2 3
 ```
 
+
 ---
 
 #### tuck
@@ -1365,6 +1453,7 @@ Copies the top value below the second.
 ```qd
 1 2 tuck  // Stack: 2 1 2
 ```
+
 
 ---
 
@@ -1380,6 +1469,7 @@ Removes the top two values.
 1 2 3 drop2  // Stack: 1
 ```
 
+
 ---
 
 #### nip
@@ -1394,6 +1484,7 @@ Removes the second value.
 1 2 nip // Stack: [2]
 ```
 
+
 ---
 
 #### pick
@@ -1407,6 +1498,7 @@ Copies the third value to the top.
 ```qd
 1 2 3 pick // 1 2 3 1
 ```
+
 
 ---
 
@@ -1431,6 +1523,7 @@ Returns the message and code of the last failed call, and clears them.
 err print nl print nl  // the code, then the message, of the last failed call
 ```
 
+
 ---
 
 #### ok
@@ -1444,6 +1537,7 @@ Returns 1 if a fallible call's status is Ok (0), and 0 if it is an error code.
 ```qd
 10 2 divide ok if { print nl } else { drop }
 ```
+
 
 ---
 
@@ -1459,6 +1553,7 @@ Returns 1 if a fallible call's status is an error code, and 0 if it is Ok.
 path load fail if { drop "cannot load" print nl return }
 ```
 
+
 ---
 
 #### panic
@@ -1472,6 +1567,7 @@ Signals an error and returns from the fallible function.
 ```qd
 "invalid input" 1 panic
 ```
+
 
 ---
 

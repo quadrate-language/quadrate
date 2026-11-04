@@ -1,5 +1,5 @@
 /// Operating system interface.
-/// Error codes: Ok=1 (success), specific errors start at 2
+/// Error codes: Ok=0 (success); error codes start at 2
 
 /// Error: No such file or directory.
 pub const ErrNotFound = 2
@@ -103,8 +103,7 @@ import "libos.a" as "os" {
 	/// @return count i64 Number of entries
 	/// @error ErrNotFound File not found
 	/// @error ErrNotDirectory Path is not a directory
-	/// @example "/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
-	/// so the bindings read in reverse of the declared outputs
+	/// @example "/tmp" os::list! -> count -> entries  // `->` binds the top of the stack first
 	pub fn list(path:str -- entries:[]str count:i64)!
 
 	/// The command-line arguments, excluding the program name.
@@ -124,7 +123,7 @@ import "libos.a" as "os" {
 	/// @param callback fn(str --) Called with each line
 	/// @return exitcode i64 Command exit status
 	/// @error ErrIo Failed to execute command
-	/// @example "ls -la" def (line:str -- ) { print nl } os::popen! -> code
+	/// @example "ls -la" def (line:str -- ) { line print nl } os::popen! -> code
 	pub fn popen(cmd:str callback:fn(str --) -- exitcode:i64)!
 
 	/// Execute a command and capture all output.
@@ -216,12 +215,12 @@ import "libos.a" as "os" {
 	pub fn is_symlink(path:str -- is_symlink:i64)
 
 	/// Change file permissions.
-	/// Mode is specified as Unix permission bits (e.g., 0o644, 0o755).
+	/// Mode is the Unix permission bits as a decimal integer (there are no octal literals): 420 is 0o644, 493 is 0o755.
 	/// @param path str File or directory path
-	/// @param mode i64 Permission mode (e.g., 420 for 0o644)
+	/// @param mode i64 Permission mode (e.g. 420 for 0o644)
 	/// @error ErrNotFound File not found
 	/// @error ErrPermission Permission denied
-	/// @example "/tmp/script.sh" 0o755 os::chmod!
+	/// @example "/tmp/script.sh" 493 os::chmod!  // 0o755
 	pub fn chmod(path:str mode:i64 -- )!
 
 	/// Change file owner and group.

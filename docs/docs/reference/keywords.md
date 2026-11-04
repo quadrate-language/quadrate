@@ -95,7 +95,12 @@ fn main() {
 
 Requests the compiler to inline a function at call sites, eliminating function call overhead. Can be combined with `pub`.
 
-The compiler will inline in most cases, but may decline for recursive functions or indirect calls through function pointers. Best suited for small wrapper functions where the call overhead would dominate the function body.
+A direct call by name is replaced by the body. A plain stack `fn` (not fallible, generic or a
+method, with no locals, `return` or `defer`) is spliced into the caller before code generation,
+so a word factored into smaller words costs what it would written out in one piece. Any other
+`inline` function is marked for LLVM to inline. A recursive call, or a call through a function
+value with `call`, is not inlined. Best suited for small wrapper functions where the call
+overhead would dominate the function body.
 
 ```qd
 inline def double(x:i64 -- result:i64) {
@@ -408,8 +413,11 @@ Use `pub type` to export from a module.
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-def keep_if(arr:IntArray pred:Predicate -- result:IntArray) { ... }
+def keep_if(arr:IntArray pred:Predicate -- result:[]i64) { ... }
 ```
+
+An array or function alias does not yet work as a declared output (the body's `[]i64` is
+reported as not matching `IntArray`), so the output is written as `[]i64`.
 
 ### null
 

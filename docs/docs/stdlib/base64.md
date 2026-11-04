@@ -26,6 +26,7 @@ Decode a base64 string.
 ```qd
 "SGVsbG8=" base64::decode  // text
 ```
+
 ---
 
 ### `fn` encode

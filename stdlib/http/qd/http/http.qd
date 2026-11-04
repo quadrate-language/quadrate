@@ -1,6 +1,6 @@
 /// HTTP module.
 /// Provides HTTP client and server functionality.
-/// Error codes: Ok=1 (success), specific errors start at 2
+/// Error codes: Ok=0 (success); error codes start at 2
 /// doccheck: page-context
 /// doccheck: page-setup http::engine -> e
 /// doccheck: page-setup e "/api" http::group -> api
@@ -413,12 +413,7 @@ import "libhttp.a" as "http" {
 	/// @param c Ctx Context
 	/// @param prefix str URL prefix to strip (e.g., "/static")
 	/// @param fs_path str Filesystem directory path (e.g., "./public")
-	/// @example
-	/// // Serve files from ./public at /static/*
-	/// def handle_static(c:http::Ctx -- ) {
-	///     c "/static" "./public" http::static
-	/// }
-	/// e "/static/*" &handle_static http::GET
+	/// @example e "/static/*" def (c:http::Ctx -- ) { c "/static" "./public" http::static } http::GET
 	pub fn static(c:Ctx prefix:str fs_path:str -- )
 
 	// ============================================================

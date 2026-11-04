@@ -67,7 +67,7 @@ fn show(path:str hash:str -- ) {
 	line_end
 }
 
-fn hash_file(path:str -- ) { dup digest if { show } else { drop missing } }
+fn hash_file(path:str -- ) { dup digest if { show } else { drop missing miss } }
 
 // Checking: each line of a checksum file is a hash, a separator and a file name
 
@@ -139,4 +139,6 @@ fn main() {
 	} else {
 		dup "--version" flag::boolean if { version flag::destroy } else { options run }
 	}
+	// A file that could not be read or did not match fails the run, as GNU sha256sum's does
+	failures 0 > if { 1 os::exit }
 }

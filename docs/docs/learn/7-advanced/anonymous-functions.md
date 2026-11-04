@@ -49,7 +49,7 @@ to write `fn`. A bare type name in the parameter list is a *type*, never a param
 body that leaves two values under `-- r:i64` does not compile.
 
 **`!` makes it fallible.** Only then may the body `panic`, and the call site has to say what
-happens on failure — `call!` to abort, `call?` to propagate, or a bare `call` read by `if` or
+happens on failure — `call!` to abort, `call?` to propagate, or `call` followed by `ok if`/`fail if` or
 `switch`:
 
 ```qd
@@ -162,7 +162,7 @@ fn main() {
 	1 6 1 for i {
 		i double call print nl
 	}
-	// Output: 2 4 6 8 10
+	// Output: 2 4 6 8 10, one per line
 }
 ```
 
@@ -246,7 +246,7 @@ fn main() {
 		fn ( -- r:i64) { i } -> c
 		c call print nl
 	}
-	// Output: 0 1 2 3 4
+	// Output: 0 1 2 3 4, one per line
 }
 ```
 
@@ -263,7 +263,7 @@ fn main() {
 	0 3 1 for n {
 		fns n nth call print nl
 	}
-	// Output: 0 10 20
+	// Output: 0 10 20, one per line
 	fns free
 }
 ```
@@ -324,16 +324,17 @@ fn main() {
 }
 ```
 
-## Comparison with function pointers
+## Comparison with named function values
 
-Anonymous functions and function pointers both use `call`:
+Anonymous functions and named functions taken with `&` are both function values, and both use
+`call`:
 
 ```qd
-// Named function with pointer
-def double(x:i64 -- r:i64) { x 2 * }
+// A named function
+fn double(x:i64 -- r:i64) { 2 * }
 
 fn main() {
-	// Function pointer to named function
+	// The named function as a value
 	&double -> fp1
 	5 fp1 call print nl  // 10
 
@@ -343,7 +344,7 @@ fn main() {
 }
 ```
 
-The difference is that anonymous functions are defined inline, while function pointers reference separately defined functions.
+The difference is that anonymous functions are defined inline, while `&name` refers to a separately defined function.
 
 ## What's next?
 

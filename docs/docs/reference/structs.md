@@ -14,7 +14,7 @@ Custom data types that group related fields together.
 | `struct value >>field` | Write a field (pushes modified struct back for chaining) |
 | `struct value >>field drop` | Write a field and discard the struct (standalone mutation) |
 | `clone` | A new struct of the same type, fields copied (shallow); copies an array too |
-| `def (s:Name) method(...)` | Define a method |
+| `fn (s:Name) method(...)` | Define a method (`def` binds the inputs as locals) |
 
 ---
 
@@ -165,7 +165,11 @@ fn main() {
 
 Methods are functions with a receiver parameter. The receiver uses a special syntax before the function name.
 
-**Syntax:** `def (receiver:StructType) name(params -- returns) { body }`
+**Syntax:** `fn (receiver:StructType) name(params -- returns) { body }`
+
+The receiver is always bound as a local. Write `def` instead of `fn` to bind the other inputs
+as locals too; a `def` method needs at least one input besides the receiver, so a method with
+none is an `fn`.
 
 ```qd
 struct Circle {
@@ -261,8 +265,6 @@ struct Pair<A, B> {
 	second:B
 }
 ```
-
-**Note:** Generic structs currently work best with `i64` fields. Using `f64` or `str` type parameters may return raw bits or pointers.
 
 ---
 

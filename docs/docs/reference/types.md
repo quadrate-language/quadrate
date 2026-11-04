@@ -31,7 +31,12 @@ Converts a value to the specified type using the `cast<T>` syntax.
 
 **Supported types:** `i64`, `f64`, `d128`, `str`, `ptr`
 
-`cast` performs only conversions that always succeed, so its result never has to be checked.
+`cast` between numbers and to `str` always succeeds, so its result never has to be checked.
+`cast<ptr>` takes an `i64` or a `ptr`. A struct or an array gives its raw address, and the
+`ptr` holds no reference to it, so it is only valid while something else keeps the value alive.
+A string cannot be cast to `ptr`: that is a runtime error. Use `strings::data` for a string's
+bytes.
+
 A string cannot be cast to a number: parsing can fail and `cast` has nowhere to report it.
 Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::parse_d128` or
 `strconv::parse_bool`, which are fallible.
@@ -48,9 +53,9 @@ Use `strconv::atoi`, `strconv::parse_int`, `strconv::parse_float`, `strconv::par
 | `f64` | 64-bit floating-point | 8 bytes |
 | `d128` | IEEE 754 decimal128: 34 decimal digits, written `0.1d` | 16 bytes |
 | `str` | String | Variable |
-| `ptr` | Pointer | 8 bytes |
+| `ptr` | Raw memory address | 8 bytes |
 | `[]T` | Typed array (e.g., `[]i64`, `[]f64`, `[]str`) | 8 bytes (pointer) |
-| `fn(...)` | Typed function pointer (e.g., `fn(i64 -- i64)`) | 8 bytes (pointer) |
+| `fn(...)` | Function value (e.g., `fn(i64 -- i64)`) | 8 bytes (reference) |
 | `bool` | Boolean (alias for i64) | 8 bytes |
 
 ### Sized integer types
@@ -64,7 +69,7 @@ Quadrate's runtime stack holds 64-bit integers and floats, but struct fields and
 | `i32` / `u32` | 32-bit signed / unsigned integer | 4 bytes |
 | `u64` | 64-bit unsigned integer | 8 bytes |
 
-Use them as struct fields (`x:u8`, `count:i32`) or with `mem::get_u8` / `mem::set_i16` / etc. for raw byte-offset access. They are rejected anywhere else — a parameter, a return value, a module-level `var`, a `cast` target — because a stack value is always 64 bits, so there is no width for the annotation to describe. They used to be accepted there and do nothing: `300 cast<u8>` yielded `300`, not `44`. To keep the low bits, mask (`value 255 and`).
+Use them as struct fields (`x:u8`, `count:i32`) or with `mem::get_u8` / `mem::set_i16` / etc. for raw byte-offset access. They are rejected anywhere else — a parameter, a return value, a module-level `var`, a `cast` target — because a stack value is always 64 bits, so there is no width for the annotation to describe. They used to be accepted there and do nothing: `300 cast<u8>` yielded `300`, not `44`. To keep the low bits, mask with `bits::and` (`value 255 bits::and`, after `use bits`).
 
 **Note on `u64`:** because the stack element is always an `i64`, a `u64` field containing a value above `2^63-1` loads onto the stack as a negative `i64` (same bit pattern). Arithmetic still works bitwise, but comparison operators treat it as signed. Use `i64` when you don't specifically need the wider unsigned semantics at the memory layer.
 
@@ -79,7 +84,7 @@ def process(x:i64 y:f64 name:str data:[]i64 -- result:i64) {
 }
 ```
 
-With function pointer types:
+With function types:
 
 ```qd
 def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
@@ -106,7 +111,10 @@ type Transform = fn(i64 -- i64)
 type IntList = []i64
 ```
 
-Type aliases are interchangeable with their underlying type.
+An alias can be used where its underlying type is expected, and the other way round, for
+inputs and struct fields. Outputs are the exception for now: an array or function alias
+declared as an output is not matched by the value the body leaves (`expects type 'IntArray'
+but got '[]i64'`), so write array and function outputs with the type itself.
 
 ### Type checking
 

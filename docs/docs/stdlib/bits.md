@@ -33,6 +33,7 @@ Bitwise AND.
 ```qd
 6 3 bits::and print  // 2
 ```
+
 ---
 
 ### `fn` clear_bit
@@ -55,6 +56,7 @@ Clear a bit to 0.
 ```qd
 0b1010 1 bits::clear_bit print  // 8 (0b1000)
 ```
+
 ---
 
 ### `fn` clz
@@ -65,7 +67,7 @@ Count leading zeros (from MSB).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value to count |
+| `v` | `i64` | Value to count |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -76,6 +78,7 @@ Count leading zeros (from MSB).
 ```qd
 0x0F00000000000000 bits::clz print  // 4
 ```
+
 ---
 
 ### `fn` ctz
@@ -86,7 +89,7 @@ Count trailing zeros (from LSB).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value to count |
+| `v` | `i64` | Value to count |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -97,6 +100,7 @@ Count trailing zeros (from LSB).
 ```qd
 0x100 bits::ctz print  // 8
 ```
+
 ---
 
 ### `fn` extract
@@ -120,6 +124,7 @@ Extract a bit field from a value.
 ```qd
 0b11010110 2 3 bits::extract print  // 5
 ```
+
 ---
 
 ### `fn` has_bit
@@ -142,6 +147,7 @@ Check if a bit is set.
 ```qd
 0b1010 1 bits::has_bit print  // 1
 ```
+
 ---
 
 ### `fn` highest_bit
@@ -152,7 +158,7 @@ Get the highest set bit as a value (isolate highest bit).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Input value |
+| `v` | `i64` | Input value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -163,6 +169,7 @@ Get the highest set bit as a value (isolate highest bit).
 ```qd
 0b1010 bits::highest_bit print  // 8 (0b1000)
 ```
+
 ---
 
 ### `fn` is_power_of_two
@@ -173,7 +180,7 @@ Check if value is a power of two.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value to check |
+| `v` | `i64` | Value to check |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -185,6 +192,7 @@ Check if value is a power of two.
 8 bits::is_power_of_two print  // 1
 7 bits::is_power_of_two print  // 0
 ```
+
 ---
 
 ### `fn` log2
@@ -195,7 +203,7 @@ Integer log base 2 (position of highest set bit).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value (must be > 0) |
+| `v` | `i64` | Value (must be > 0) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -207,6 +215,7 @@ Integer log base 2 (position of highest set bit).
 8 bits::log2 print  // 3
 15 bits::log2 print  // 3
 ```
+
 ---
 
 ### `fn` lowest_bit
@@ -217,7 +226,7 @@ Get the lowest set bit as a value (isolate lowest bit).
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Input value |
+| `v` | `i64` | Input value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -228,6 +237,7 @@ Get the lowest set bit as a value (isolate lowest bit).
 ```qd
 0b1010 bits::lowest_bit print  // 2 (0b0010)
 ```
+
 ---
 
 ### `fn` mask
@@ -250,6 +260,7 @@ Keep only the bottom N bits.
 ```qd
 0xFF 4 bits::mask print  // 15
 ```
+
 ---
 
 ### `fn` next_power_of_two
@@ -260,7 +271,7 @@ Find the next power of two greater than or equal to value.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Input value |
+| `v` | `i64` | Input value |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -272,6 +283,7 @@ Find the next power of two greater than or equal to value.
 5 bits::next_power_of_two print  // 8
 8 bits::next_power_of_two print  // 8
 ```
+
 ---
 
 ### `fn` not
@@ -293,6 +305,7 @@ Bitwise NOT (ones' complement).
 ```qd
 5 bits::not print  // -6
 ```
+
 ---
 
 ### `fn` or
@@ -315,6 +328,7 @@ Bitwise OR.
 ```qd
 6 3 bits::or print  // 7
 ```
+
 ---
 
 ### `fn` popcount
@@ -336,6 +350,7 @@ Count set bits (population count).
 ```qd
 0b1010110 bits::popcount print  // 4
 ```
+
 ---
 
 ### `fn` reverse_bits
@@ -346,8 +361,8 @@ Reverse the bottom N bits.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value to reverse |
-| `width` | `i64` | Number of bits to reverse |
+| `v` | `i64` | Value to reverse |
+| `w` | `i64` | Number of bits to reverse |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -358,6 +373,7 @@ Reverse the bottom N bits.
 ```qd
 0b1011 4 bits::reverse_bits print  // 13 (0b1101)
 ```
+
 ---
 
 ### `fn` rotate_left
@@ -368,9 +384,9 @@ Rotate bits left within a width.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value to rotate |
-| `bits` | `i64` | Positions to rotate |
-| `width` | `i64` | Bit width to rotate within |
+| `v` | `i64` | Value to rotate |
+| `b` | `i64` | Positions to rotate |
+| `w` | `i64` | Bit width to rotate within |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -381,6 +397,7 @@ Rotate bits left within a width.
 ```qd
 0b0011 1 4 bits::rotate_left print  // 6 (0b0110)
 ```
+
 ---
 
 ### `fn` rotate_right
@@ -391,9 +408,9 @@ Rotate bits right within a width.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `value` | `i64` | Value to rotate |
-| `bits` | `i64` | Positions to rotate |
-| `width` | `i64` | Bit width to rotate within |
+| `v` | `i64` | Value to rotate |
+| `b` | `i64` | Positions to rotate |
+| `w` | `i64` | Bit width to rotate within |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -404,6 +421,7 @@ Rotate bits right within a width.
 ```qd
 0b0110 1 4 bits::rotate_right print  // 3 (0b0011)
 ```
+
 ---
 
 ### `fn` set_bits
@@ -414,10 +432,10 @@ Set a bit field in a value.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `target` | `i64` | Target value to modify |
-| `value` | `i64` | Value to insert |
-| `start_bit` | `i64` | Start position (0 = LSB) |
-| `num_bits` | `i64` | Number of bits to set |
+| `tgt` | `i64` | Target value to modify |
+| `val` | `i64` | Value to insert |
+| `sb` | `i64` | Start position (0 = LSB) |
+| `nb` | `i64` | Number of bits to set |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -428,6 +446,7 @@ Set a bit field in a value.
 ```qd
 0 0b101 2 3 bits::set_bits print  // 20 (0b10100)
 ```
+
 ---
 
 ### `fn` set_bit
@@ -450,6 +469,7 @@ Set a bit to 1.
 ```qd
 0b1000 1 bits::set_bit print  // 10 (0b1010)
 ```
+
 ---
 
 ### `fn` shl
@@ -472,6 +492,7 @@ Shift left, shifting in zeros. A count outside 0-63 is an error.
 ```qd
 1 4 bits::shl print  // 16
 ```
+
 ---
 
 ### `fn` shr
@@ -495,6 +516,7 @@ Shift right, shifting in zeros (logical, not arithmetic). A count outside 0-63 i
 16 2 bits::shr print  // 4
 -1 60 bits::shr print  // 15
 ```
+
 ---
 
 ### `fn` toggle_bit
@@ -517,6 +539,7 @@ Toggle a bit.
 ```qd
 0b1010 0 bits::toggle_bit print  // 11 (0b1011)
 ```
+
 ---
 
 ### `fn` xor

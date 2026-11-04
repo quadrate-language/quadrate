@@ -100,9 +100,8 @@ fn main() {
 }
 ```
 
-**Note:** the shifts are builtins — they have no logical counterpart, so there is nothing
-for them to collide with. `and`, `or` and `not` are logical: `2 1 and` is `1`, where
-`2 1 bits::and` is `0`.
+**Note:** every bitwise operation, the shifts included, lives in `bits`. The plain words `and`,
+`or` and `not` are logical: `2 1 and` is `1`, where `2 1 bits::and` is `0`.
 
 ## Combining operations
 

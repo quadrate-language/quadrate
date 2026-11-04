@@ -47,6 +47,7 @@ Clamp value to i16 range.
 ```qd
 50000 limits::clamp_i16 print  // 32767
 ```
+
 ---
 
 ### `fn` clamp_i8
@@ -68,6 +69,7 @@ Clamp value to i8 range.
 ```qd
 200 limits::clamp_i8 print  // 127
 ```
+
 ---
 
 ### `fn` clamp_u16
@@ -89,6 +91,7 @@ Clamp value to u16 range.
 ```qd
 70000 limits::clamp_u16 print  // 65535
 ```
+
 ---
 
 ### `fn` clamp_u8
@@ -110,6 +113,7 @@ Clamp value to u8 range.
 ```qd
 300 limits::clamp_u8 print  // 255
 ```
+
 ---
 
 ### `fn` fits_i16
@@ -131,6 +135,7 @@ Check if value fits in i16 range.
 ```qd
 30000 limits::fits_i16 print  // 1
 ```
+
 ---
 
 ### `fn` fits_i32
@@ -152,6 +157,7 @@ Check if value fits in i32 range.
 ```qd
 2000000000 limits::fits_i32 print  // 1
 ```
+
 ---
 
 ### `fn` fits_i8
@@ -173,6 +179,7 @@ Check if value fits in i8 range.
 ```qd
 100 limits::fits_i8 print  // 1
 ```
+
 ---
 
 ### `fn` fits_u16
@@ -194,6 +201,7 @@ Check if value fits in u16 range.
 ```qd
 50000 limits::fits_u16 print  // 1
 ```
+
 ---
 
 ### `fn` fits_u32
@@ -215,6 +223,7 @@ Check if value fits in u32 range.
 ```qd
 3000000000 limits::fits_u32 print  // 1
 ```
+
 ---
 
 ### `fn` fits_u8
@@ -236,6 +245,7 @@ Check if value fits in u8 range.
 ```qd
 200 limits::fits_u8 print  // 1
 ```
+
 ---
 
 ### `fn` I64Min

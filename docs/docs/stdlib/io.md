@@ -11,7 +11,7 @@
 <!-- doccheck: page-setup 16 -> len -->
 
 File and stream I/O operations.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -66,6 +66,7 @@ Append string contents to a file. Creates the file if it doesn't exist.
 ```qd
 "/tmp/log.txt" "New line\n" io::append_file!
 ```
+
 ---
 
 ### `fn` close
@@ -83,6 +84,7 @@ Close a file. Closing an invalid or already closed handle does nothing.
 ```qd
 f io::close
 ```
+
 ---
 
 ### `fn` eof
@@ -105,6 +107,7 @@ Check if at end of file. An invalid handle is never at the end.
 ```qd
 f io::eof -> at_end  // f
 ```
+
 ---
 
 ### `fn` flush
@@ -118,6 +121,7 @@ Flush stdout buffer. Ensures all pending output is written immediately. Useful f
 ```qd
 "Loading..." print io::flush
 ```
+
 ---
 
 ### `fn` open
@@ -146,6 +150,7 @@ Open a file.
 ```qd
 "data.txt" io::Read io::open!  // f
 ```
+
 ---
 
 ### `fn` read_file
@@ -173,6 +178,7 @@ Read entire file contents, to the end of the file: a pipe, or a file under /proc
 ```qd
 "/etc/hostname" io::read_file!  // contents
 ```
+
 ---
 
 ### `fn` read
@@ -202,6 +208,7 @@ Read bytes into buffer.
 ```qd
 f buf 1024 io::read!  // n
 ```
+
 ---
 
 ### `fn` readline
@@ -225,6 +232,7 @@ Read a line from stdin.  Running out of input is not an error -- it is how a rea
 ```qd
 io::readline switch { Ok { -> more -> line line print nl } _ { drop drop } }
 ```
+
 ---
 
 ### `fn` seek
@@ -254,6 +262,7 @@ Seek to position in file.
 ```qd
 f 0 io::SeekSet io::seek! drop
 ```
+
 ---
 
 ### `fn` stat_atime
@@ -281,6 +290,7 @@ Get file access time.
 ```qd
 "/etc/hostname" io::stat_atime!  // atime
 ```
+
 ---
 
 ### `fn` stat_mode
@@ -308,6 +318,7 @@ Get file permissions (Unix mode).
 ```qd
 "/etc/hostname" io::stat_mode!  // mode
 ```
+
 ---
 
 ### `fn` stat_mtime
@@ -335,6 +346,7 @@ Get file modification time.
 ```qd
 "/etc/hostname" io::stat_mtime!  // mtime
 ```
+
 ---
 
 ### `fn` stat_size
@@ -362,6 +374,7 @@ Get file size in bytes.
 ```qd
 "/etc/hostname" io::stat_size!  // size
 ```
+
 ---
 
 ### `fn` tell
@@ -388,6 +401,7 @@ Get current position in file.
 ```qd
 f io::tell!  // pos
 ```
+
 ---
 
 ### `fn` write_file
@@ -412,6 +426,7 @@ Write string contents to file. Creates or truncates the file at the given path.
 ```qd
 "/tmp/test.txt" "Hello, world!\n" io::write_file!
 ```
+
 ---
 
 ### `fn` write

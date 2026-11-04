@@ -1,0 +1,14 @@
+// A `ptr` global starts empty with `null`; there was no way to write one, since `null` was
+// refused as a var initializer and the initializer is required.
+use mem
+
+var buffer = null
+var spare:ptr = null
+
+fn main() {
+	buffer null == print nl
+	spare null == print nl
+	16 mem::alloc! -> buffer
+	buffer null == print nl
+	buffer mem::free
+}

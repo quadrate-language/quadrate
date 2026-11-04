@@ -14,6 +14,8 @@ Operations for manipulating values on the stack.
 | `over` | `(a b -- a b a)` | Copy second to top |
 | `rot` | `(a b c -- b c a)` | Rotate three |
 | `rrot` | `(a b c -- c a b)` | Rotate three the other way |
+| `rot4` | `(a b c d -- b c d a)` | Rotate four: the fourth value to the top |
+| `rrot4` | `(a b c d -- d a b c)` | Rotate four the other way: the top below the next three |
 | `tuck` | `(a b -- b a b)` | Copy top below second |
 | `nip` | `(a b -- b)` | Remove second |
 | `pick` | `(x y z -- x y z x)` | Copy the third value to the top |
@@ -119,6 +121,26 @@ Rotates the top three values the other way, moving the top to third: the inverse
 
 ```qd
 1 2 3 rrot // Stack: [3, 1, 2]
+```
+
+### rot4
+
+Moves the fourth value to the top: `rot` one deeper.
+
+**Signature:** `(a b c d -- b c d a)`
+
+```qd
+1 2 3 4 rot4 // Stack: [2, 3, 4, 1]
+```
+
+### rrot4
+
+Moves the top value below the next three: the inverse of `rot4`.
+
+**Signature:** `(a b c d -- d a b c)`
+
+```qd
+1 2 3 4 rrot4 // Stack: [4, 1, 2, 3]
 ```
 
 ### tuck

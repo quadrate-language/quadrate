@@ -5,8 +5,8 @@ Handle multiple conditions cleanly with `switch`.
 ## Basic switch
 
 ```qd
-def day_name(day:i64 -- name:str) {
-	day switch {
+fn day_name(day:i64 -- name:str) {
+	switch {
 		1 {
 			"Monday"
 		}
@@ -44,8 +44,8 @@ fn main() {
 Use `_` for the default (fallback) case:
 
 ```qd
-def describe(n:i64 -- desc:str) {
-	n switch {
+fn describe(n:i64 -- desc:str) {
+	switch {
 		0 {
 			"zero"
 		}
@@ -82,8 +82,8 @@ Use **if-else** when:
 ### Switch (cleaner)
 
 ```qd
-def get_color(code:i64 -- name:str) {
-	code switch {
+fn get_color(code:i64 -- name:str) {
+	switch {
 		0 {
 			"black"
 		}
@@ -132,8 +132,8 @@ def get_color_if(code:i64 -- name:str) {
 ### Menu handler
 
 ```qd
-def handle_menu(choice:i64 -- ) {
-	choice switch {
+fn handle_menu(choice:i64 -- ) {
+	switch {
 		1 {
 			"Creating new file..." print nl
 		}

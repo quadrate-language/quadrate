@@ -57,7 +57,7 @@ fn matching(q:str -- found:[]i64) {
 
 // Each handler takes the request context and answers it
 
-fn handle_root(c:ptr -- ) {
+fn handle_root(c:http::Ctx -- ) {
 	200
 	"service" "links-api" json::kv
 	"version" "1.0" json::kv json::join
@@ -65,9 +65,9 @@ fn handle_root(c:ptr -- ) {
 	json::obj http::json
 }
 
-fn handle_list(c:ptr -- ) { 200 ids links_json http::json }
+fn handle_list(c:http::Ctx -- ) { 200 ids links_json http::json }
 
-fn handle_get_one(c:ptr -- ) {
+fn handle_get_one(c:http::Ctx -- ) {
 	dup "id" http::param 10 strconv::parse_int!
 	dup 0 ids len 1 - within if {
 		link_json 200 swap http::json
@@ -76,7 +76,7 @@ fn handle_get_one(c:ptr -- ) {
 	}
 }
 
-fn handle_search(c:ptr -- ) {
+fn handle_search(c:http::Ctx -- ) {
 	dup "q" http::query_param dup len 0 == if {
 		drop 400 "{\"error\":\"missing q parameter\"}" http::json
 	} else {
@@ -84,7 +84,7 @@ fn handle_search(c:ptr -- ) {
 	}
 }
 
-fn handle_echo(c:ptr -- ) {
+fn handle_echo(c:http::Ctx -- ) {
 	dup http::request_body dup len 0 == if {
 		drop 400 "{\"error\":\"empty body\"}" http::json
 	} else {

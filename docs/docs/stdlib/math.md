@@ -70,8 +70,9 @@ Absolute value.
 **Example:**
 
 ```qd
--5.0 math::abs print  // 5.0
+-5.0 math::abs print  // 5
 ```
+
 ---
 
 ### `fn` acosh
@@ -91,8 +92,9 @@ Inverse hyperbolic cosine.
 **Example:**
 
 ```qd
-1.0 math::acosh print  // 0.0
+1.0 math::acosh print  // 0
 ```
+
 ---
 
 ### `fn` acos
@@ -112,8 +114,9 @@ Arc cosine (inverse cosine).
 **Example:**
 
 ```qd
-1.0 math::acos print  // 0.0
+1.0 math::acos print  // 0
 ```
+
 ---
 
 ### `fn` asinh
@@ -133,8 +136,9 @@ Inverse hyperbolic sine.
 **Example:**
 
 ```qd
-0.0 math::asinh print  // 0.0
+0.0 math::asinh print  // 0
 ```
+
 ---
 
 ### `fn` asin
@@ -154,8 +158,9 @@ Arc sine (inverse sine).
 **Example:**
 
 ```qd
-0.0 math::asin print  // 0.0
+0.0 math::asin print  // 0
 ```
+
 ---
 
 ### `fn` atan2
@@ -176,8 +181,9 @@ Two-argument arc tangent. Returns the angle in radians between the positive x-ax
 **Example:**
 
 ```qd
-1.0 1.0 math::atan2 print  // ~0.785 (π/4)
+1.0 1.0 math::atan2 print  // 0.785398 (π/4)
 ```
+
 ---
 
 ### `fn` atanh
@@ -197,8 +203,9 @@ Inverse hyperbolic tangent.
 **Example:**
 
 ```qd
-0.0 math::atanh print  // 0.0
+0.0 math::atanh print  // 0
 ```
+
 ---
 
 ### `fn` atan
@@ -218,8 +225,9 @@ Arc tangent (inverse tangent).
 **Example:**
 
 ```qd
-0.0 math::atan print  // 0.0
+0.0 math::atan print  // 0
 ```
+
 ---
 
 ### `fn` bezier2
@@ -242,8 +250,9 @@ Evaluate quadratic Bezier curve.
 **Example:**
 
 ```qd
-0.0 1.0 2.0 0.5 math::bezier2 print  // 1.0
+0.0 1.0 2.0 0.5 math::bezier2 print  // 1
 ```
+
 ---
 
 ### `fn` bezier3
@@ -269,6 +278,7 @@ Evaluate cubic Bezier curve.
 ```qd
 0.0 0.5 0.5 1.0 0.5 math::bezier3 print
 ```
+
 ---
 
 ### `fn` cbrt
@@ -288,8 +298,9 @@ Cube root.
 **Example:**
 
 ```qd
-8.0 math::cbrt print  // 2.0
+8.0 math::cbrt print  // 2
 ```
+
 ---
 
 ### `fn` cb
@@ -309,8 +320,9 @@ Cube a number.
 **Example:**
 
 ```qd
-2.0 math::cb print  // 8.0
+2.0 math::cb print  // 8
 ```
+
 ---
 
 ### `fn` ceil
@@ -330,8 +342,9 @@ Ceiling (round up).
 **Example:**
 
 ```qd
-2.3 math::ceil print  // 3.0
+2.3 math::ceil print  // 3
 ```
+
 ---
 
 ### `fn` clamp
@@ -353,8 +366,9 @@ Clamp value to range.
 **Example:**
 
 ```qd
-15.0 0.0 10.0 math::clamp print  // 10.0
+15.0 0.0 10.0 math::clamp print  // 10
 ```
+
 ---
 
 ### `fn` cosh
@@ -374,8 +388,9 @@ Hyperbolic cosine.
 **Example:**
 
 ```qd
-0.0 math::cosh print  // 1.0
+0.0 math::cosh print  // 1
 ```
+
 ---
 
 ### `fn` cos
@@ -395,8 +410,9 @@ Cosine of angle in radians.
 **Example:**
 
 ```qd
-0.0 math::cos print  // 1.0
+0.0 math::cos print  // 1
 ```
+
 ---
 
 ### `fn` cubic_hermite
@@ -422,6 +438,7 @@ Cubic Hermite spline interpolation. Interpolates between p1 and p2 using tangent
 ```qd
 0.0 1.0 4.0 5.0 0.5 math::cubic_hermite print
 ```
+
 ---
 
 ### `fn` deg_to_rad
@@ -441,8 +458,9 @@ Convert degrees to radians.
 **Example:**
 
 ```qd
-180.0 math::deg_to_rad print  // ~3.14159
+180.0 math::deg_to_rad print  // 3.14159
 ```
+
 ---
 
 ### `fn` exp2
@@ -462,8 +480,9 @@ Exponential base 2 (2^x).
 **Example:**
 
 ```qd
-3.0 math::exp2 print  // 8.0
+3.0 math::exp2 print  // 8
 ```
+
 ---
 
 ### `fn` exp
@@ -483,8 +502,9 @@ Exponential function (e^x).
 **Example:**
 
 ```qd
-1.0 math::exp print  // ~2.718 (e)
+1.0 math::exp print  // 2.71828 (e)
 ```
+
 ---
 
 ### `fn` fac
@@ -506,6 +526,7 @@ Factorial of a non-negative integer.
 ```qd
 5 math::fac print  // 120
 ```
+
 ---
 
 ### `fn` floor
@@ -525,8 +546,9 @@ Floor (round down).
 **Example:**
 
 ```qd
-2.7 math::floor print  // 2.0
+2.7 math::floor print  // 2
 ```
+
 ---
 
 ### `fn` fmod
@@ -549,6 +571,7 @@ Floating-point modulo (remainder). Returns the remainder of x/y with the same si
 ```qd
 5.5 2.0 math::fmod print  // 1.5
 ```
+
 ---
 
 ### `fn` hypot
@@ -569,8 +592,9 @@ Hypotenuse (Euclidean distance). Computes sqrt(x² + y²) without intermediate o
 **Example:**
 
 ```qd
-3.0 4.0 math::hypot print  // 5.0
+3.0 4.0 math::hypot print  // 5
 ```
+
 ---
 
 ### `fn` inf
@@ -588,6 +612,7 @@ Positive infinity. Infinity is not writable as a literal, so this is the only wa
 ```qd
 math::inf print  // inf
 ```
+
 ---
 
 ### `fn` inverse_lerp
@@ -611,6 +636,7 @@ Inverse lerp - find t given a value between a and b.
 ```qd
 0.0 10.0 5.0 math::inverse_lerp print  // 0.5
 ```
+
 ---
 
 ### `fn` inv
@@ -632,6 +658,7 @@ Reciprocal (1/x).
 ```qd
 4.0 math::inv print  // 0.25
 ```
+
 ---
 
 ### `fn` is_finite
@@ -653,6 +680,7 @@ Is x neither infinite nor NaN?
 ```qd
 1.0 math::is_finite print  // 1
 ```
+
 ---
 
 ### `fn` is_inf
@@ -674,6 +702,7 @@ Is x positive or negative infinity?
 ```qd
 1.0 0.0 / math::is_inf print  // 1
 ```
+
 ---
 
 ### `fn` is_nan
@@ -695,6 +724,7 @@ Is x Not-a-Number?
 ```qd
 0.0 0.0 / math::is_nan print  // 1
 ```
+
 ---
 
 ### `fn` lerp
@@ -716,8 +746,9 @@ Linear interpolation between two values.
 **Example:**
 
 ```qd
-0.0 10.0 0.5 math::lerp print  // 5.0
+0.0 10.0 0.5 math::lerp print  // 5
 ```
+
 ---
 
 ### `fn` ln
@@ -737,8 +768,9 @@ Natural logarithm (base e).
 **Example:**
 
 ```qd
-2.718281828 math::ln print  // ~1.0
+2.718281828 math::ln print  // 1
 ```
+
 ---
 
 ### `fn` log10
@@ -758,8 +790,9 @@ Base-10 logarithm.
 **Example:**
 
 ```qd
-100.0 math::log10 print  // 2.0
+100.0 math::log10 print  // 2
 ```
+
 ---
 
 ### `fn` log2
@@ -779,8 +812,9 @@ Base-2 logarithm.
 **Example:**
 
 ```qd
-8.0 math::log2 print  // 3.0
+8.0 math::log2 print  // 3
 ```
+
 ---
 
 ### `fn` log
@@ -801,8 +835,9 @@ Logarithm with arbitrary base.
 **Example:**
 
 ```qd
-8.0 2.0 math::log print  // 3.0
+8.0 2.0 math::log print  // 3
 ```
+
 ---
 
 ### `fn` max
@@ -825,6 +860,7 @@ Maximum of two values.
 ```qd
 3 7 math::max print  // 7
 ```
+
 ---
 
 ### `fn` min
@@ -847,6 +883,7 @@ Minimum of two values.
 ```qd
 3 7 math::min print  // 3
 ```
+
 ---
 
 ### `fn` nan
@@ -864,6 +901,7 @@ Not-a-Number. NaN compares unequal to everything, including itself -- test it wi
 ```qd
 math::nan math::is_nan print  // 1
 ```
+
 ---
 
 ### `fn` pow
@@ -884,8 +922,9 @@ Power function.
 **Example:**
 
 ```qd
-2.0 3.0 math::pow print  // 8.0
+2.0 3.0 math::pow print  // 8
 ```
+
 ---
 
 ### `fn` rad_to_deg
@@ -905,8 +944,9 @@ Convert radians to degrees.
 **Example:**
 
 ```qd
-3.141592653589793 math::rad_to_deg print  // 180.0
+3.141592653589793 math::rad_to_deg print  // 180
 ```
+
 ---
 
 ### `fn` remap
@@ -930,8 +970,9 @@ Remap a value from one range to another.
 **Example:**
 
 ```qd
-0.0 10.0 0.0 100.0 5.0 math::remap print  // 50.0
+0.0 10.0 0.0 100.0 5.0 math::remap print  // 50
 ```
+
 ---
 
 ### `fn` round
@@ -951,8 +992,9 @@ Round to nearest integer.
 **Example:**
 
 ```qd
-2.5 math::round print  // 3.0
+2.5 math::round print  // 3
 ```
+
 ---
 
 ### `fn` sign
@@ -972,8 +1014,9 @@ Sign function.
 **Example:**
 
 ```qd
--5.0 math::sign print  // -1.0
+-5.0 math::sign print  // -1
 ```
+
 ---
 
 ### `fn` sinh
@@ -993,8 +1036,9 @@ Hyperbolic sine.
 **Example:**
 
 ```qd
-1.0 math::sinh print  // ~1.175
+1.0 math::sinh print  // 1.1752
 ```
+
 ---
 
 ### `fn` sin
@@ -1014,8 +1058,9 @@ Sine of angle in radians.
 **Example:**
 
 ```qd
-0.0 math::sin print  // 0.0
+0.0 math::sin print  // 0
 ```
+
 ---
 
 ### `fn` smootherstep
@@ -1028,7 +1073,7 @@ Smoother step interpolation (quintic, zero first and second derivatives at edges
 |-----------|------|-------------|
 | `edge0` | `f64` | Lower edge |
 | `edge1` | `f64` | Upper edge |
-| `x` | `f64` | Value to interpolate |
+| `x_v` | `f64` | Value to interpolate |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -1039,6 +1084,7 @@ Smoother step interpolation (quintic, zero first and second derivatives at edges
 ```qd
 0.0 1.0 0.5 math::smootherstep print  // 0.5
 ```
+
 ---
 
 ### `fn` smoothstep
@@ -1051,7 +1097,7 @@ Smooth step interpolation (cubic Hermite, zero derivatives at edges).
 |-----------|------|-------------|
 | `edge0` | `f64` | Lower edge |
 | `edge1` | `f64` | Upper edge |
-| `x` | `f64` | Value to interpolate |
+| `x_v` | `f64` | Value to interpolate |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -1062,6 +1108,7 @@ Smooth step interpolation (cubic Hermite, zero derivatives at edges).
 ```qd
 0.0 1.0 0.5 math::smoothstep print  // 0.5
 ```
+
 ---
 
 ### `fn` sqrt
@@ -1081,8 +1128,9 @@ Square root.
 **Example:**
 
 ```qd
-4.0 math::sqrt print  // 2.0
+4.0 math::sqrt print  // 2
 ```
+
 ---
 
 ### `fn` sq
@@ -1102,8 +1150,9 @@ Square a number.
 **Example:**
 
 ```qd
-3.0 math::sq print  // 9.0
+3.0 math::sq print  // 9
 ```
+
 ---
 
 ### `fn` tanh
@@ -1123,8 +1172,9 @@ Hyperbolic tangent.
 **Example:**
 
 ```qd
-0.0 math::tanh print  // 0.0
+0.0 math::tanh print  // 0
 ```
+
 ---
 
 ### `fn` tan
@@ -1144,8 +1194,9 @@ Tangent of angle in radians.
 **Example:**
 
 ```qd
-0.0 math::tan print  // 0.0
+0.0 math::tan print  // 0
 ```
+
 ---
 
 ### `fn` trunc
@@ -1165,8 +1216,9 @@ Truncate toward zero.
 **Example:**
 
 ```qd
--2.7 math::trunc print  // -2.0
+-2.7 math::trunc print  // -2
 ```
+
 ---
 
 ### `fn` v3_add
@@ -1180,6 +1232,7 @@ Sum of two vectors on the stack.
 ```qd
 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_add  // 5.0 7.0 9.0
 ```
+
 ---
 
 ### `fn` v3_cross
@@ -1193,6 +1246,7 @@ Cross product of two vectors on the stack, a × b.
 ```qd
 1.0 0.0 0.0 0.0 1.0 0.0 math::v3_cross  // 0.0 0.0 1.0
 ```
+
 ---
 
 ### `fn` v3_dot
@@ -1206,6 +1260,7 @@ Dot product of two vectors on the stack.
 ```qd
 1.0 2.0 3.0 4.0 5.0 6.0 math::v3_dot  // 32.0
 ```
+
 ---
 
 ### `fn` v3_length_sq
@@ -1219,6 +1274,7 @@ Squared length of a vector on the stack.
 ```qd
 1.0 2.0 2.0 math::v3_length_sq  // 9.0
 ```
+
 ---
 
 ### `fn` v3_length
@@ -1232,6 +1288,7 @@ Length of a vector on the stack.
 ```qd
 1.0 2.0 2.0 math::v3_length  // 3.0
 ```
+
 ---
 
 ### `fn` v3_normalize
@@ -1245,6 +1302,7 @@ A vector on the stack scaled to length 1; the zero vector stays zero.
 ```qd
 1.0 2.0 2.0 math::v3_normalize  // 1/3 2/3 2/3
 ```
+
 ---
 
 ### `fn` v3_scale
@@ -1258,6 +1316,7 @@ A vector on the stack times a scalar.
 ```qd
 1.0 2.0 3.0 2.0 math::v3_scale  // 2.0 4.0 6.0
 ```
+
 ---
 
 ### `fn` v3_sub
@@ -1317,6 +1376,7 @@ Create rotation matrix from quaternion.
 ```qd
 other_q math::mat4_from_quat  // rot_mat
 ```
+
 ---
 
 #### `fn` mat4_identity
@@ -1334,6 +1394,7 @@ Create identity Mat4.
 ```qd
 math::mat4_identity  // m
 ```
+
 ---
 
 #### `fn` mat4_look_at
@@ -1357,6 +1418,7 @@ Create a look-at view matrix.
 ```qd
 eye target up math::mat4_look_at  // view
 ```
+
 ---
 
 #### `fn` mat4_orthographic
@@ -1383,6 +1445,7 @@ Create an orthographic projection matrix.
 ```qd
 -1.0 1.0 -1.0 1.0 0.1 100.0 math::mat4_orthographic  // proj
 ```
+
 ---
 
 #### `fn` mat4_perspective
@@ -1407,6 +1470,7 @@ Create a perspective projection matrix.
 ```qd
 1.047 1.777 0.1 100.0 math::mat4_perspective  // proj
 ```
+
 ---
 
 #### `fn` mat4_rotation_x
@@ -1428,6 +1492,7 @@ Create rotation Mat4 around X axis.
 ```qd
 1.57 math::mat4_rotation_x  // m
 ```
+
 ---
 
 #### `fn` mat4_rotation_y
@@ -1449,6 +1514,7 @@ Create rotation Mat4 around Y axis.
 ```qd
 1.57 math::mat4_rotation_y  // m
 ```
+
 ---
 
 #### `fn` mat4_rotation_z
@@ -1470,6 +1536,7 @@ Create rotation Mat4 around Z axis.
 ```qd
 1.57 math::mat4_rotation_z  // m
 ```
+
 ---
 
 #### `fn` mat4_scaling
@@ -1480,9 +1547,9 @@ Create scale Mat4.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `sx` | `f64` | X scale factor |
-| `sy` | `f64` | Y scale factor |
-| `sz` | `f64` | Z scale factor |
+| `sx_v` | `f64` | X scale factor |
+| `sy_v` | `f64` | Y scale factor |
+| `sz_v` | `f64` | Z scale factor |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -1493,6 +1560,7 @@ Create scale Mat4.
 ```qd
 1.0 1.0 1.0 math::mat4_scaling  // m
 ```
+
 ---
 
 #### `fn` mat4_translation
@@ -1503,9 +1571,9 @@ Create translation Mat4.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `x` | `f64` | X translation |
-| `y` | `f64` | Y translation |
-| `z` | `f64` | Z translation |
+| `x_v` | `f64` | X translation |
+| `y_v` | `f64` | Y translation |
+| `z_v` | `f64` | Z translation |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -1516,6 +1584,7 @@ Create translation Mat4.
 ```qd
 1.0 1.0 1.0 math::mat4_translation  // m
 ```
+
 ---
 
 #### `fn` mat4_zero
@@ -1551,6 +1620,7 @@ Matrix determinant.
 ```qd
 m determinant  // det
 ```
+
 ---
 
 #### `fn` inverse
@@ -1568,6 +1638,7 @@ Matrix inverse.
 ```qd
 m inverse  // m_inv
 ```
+
 ---
 
 #### `fn` mul
@@ -1589,6 +1660,7 @@ Matrix multiplication.
 ```qd
 m other_m mul  // product
 ```
+
 ---
 
 #### `fn` transform_point
@@ -1610,6 +1682,7 @@ Transform a Vec3 point by this matrix (w=1).
 ```qd
 m point transform_point  // transformed
 ```
+
 ---
 
 #### `fn` transform_vec4
@@ -1631,6 +1704,7 @@ Transform a Vec4 by this matrix.
 ```qd
 m other4 transform_vec4  // transformed
 ```
+
 ---
 
 #### `fn` transpose
@@ -1684,6 +1758,7 @@ Create quaternion from axis and angle.
 ```qd
 axis 1.57 math::quat_from_axis_angle  // q
 ```
+
 ---
 
 #### `fn` quat_from_euler
@@ -1707,6 +1782,7 @@ Create quaternion from Euler angles (XYZ order).
 ```qd
 0.0 1.57 0.0 math::quat_from_euler  // q
 ```
+
 ---
 
 #### `fn` quat_identity
@@ -1742,6 +1818,7 @@ Conjugate of this quaternion.
 ```qd
 q conjugate  // q_conj
 ```
+
 ---
 
 #### `fn` dot
@@ -1763,6 +1840,7 @@ Dot product with another quaternion.
 ```qd
 q other_q dot  // d
 ```
+
 ---
 
 #### `fn` inverse
@@ -1780,6 +1858,7 @@ Inverse of this quaternion.
 ```qd
 q inverse  // q_inv
 ```
+
 ---
 
 #### `fn` length
@@ -1797,6 +1876,7 @@ Length (magnitude) of this quaternion.
 ```qd
 q length  // len
 ```
+
 ---
 
 #### `fn` length_sq
@@ -1808,6 +1888,7 @@ Squared length of quaternion.
 | Output | Type | Description |
 |--------|------|-------------|
 | `result` | `f64` | Squared length |
+
 ---
 
 #### `fn` mul
@@ -1829,6 +1910,7 @@ Quaternion multiplication.
 ```qd
 q other_q mul  // product
 ```
+
 ---
 
 #### `fn` normalize
@@ -1846,6 +1928,7 @@ Normalize this quaternion to unit length.
 ```qd
 q normalize  // unit_q
 ```
+
 ---
 
 #### `fn` rotate_vec3
@@ -1867,6 +1950,7 @@ Rotate a Vec3 by this quaternion.
 ```qd
 q point rotate_vec3  // rotated
 ```
+
 ---
 
 #### `fn` slerp
@@ -1919,6 +2003,7 @@ Evaluate quadratic Bezier curve for Vec2.
 | Output | Type | Description |
 |--------|------|-------------|
 | `result` | `Vec2` | Point on curve |
+
 ---
 
 #### `fn` bezier3_vec2
@@ -1938,6 +2023,7 @@ Evaluate cubic Bezier curve for Vec2.
 | Output | Type | Description |
 |--------|------|-------------|
 | `result` | `Vec2` | Point on curve |
+
 ---
 
 #### `fn` vec2_one
@@ -1955,6 +2041,7 @@ Create a Vec2 with all components set to one.
 ```qd
 math::vec2_one  // v
 ```
+
 ---
 
 #### `fn` vec2_zero
@@ -1994,6 +2081,7 @@ Add another Vec2 to this vector.
 ```qd
 v2 other2 add  // sum
 ```
+
 ---
 
 #### `fn` angle
@@ -2011,6 +2099,7 @@ Angle of this vector from positive X axis.
 ```qd
 v2 angle  // a
 ```
+
 ---
 
 #### `fn` distance
@@ -2032,6 +2121,7 @@ Distance to another Vec2.
 ```qd
 v2 other2 distance  // d
 ```
+
 ---
 
 #### `fn` dot
@@ -2053,6 +2143,7 @@ Dot product with another Vec2.
 ```qd
 v2 other2 dot  // d
 ```
+
 ---
 
 #### `fn` length_sq
@@ -2070,6 +2161,7 @@ Squared length of this vector (avoids sqrt).
 ```qd
 v2 length_sq  // len_sq
 ```
+
 ---
 
 #### `fn` length
@@ -2087,6 +2179,7 @@ Length (magnitude) of this vector.
 ```qd
 v2 length  // len
 ```
+
 ---
 
 #### `fn` lerp
@@ -2109,6 +2202,7 @@ Linear interpolation to another Vec2.
 ```qd
 v2 other2 0.5 lerp  // mid
 ```
+
 ---
 
 #### `fn` neg
@@ -2126,6 +2220,7 @@ Negate this vector.
 ```qd
 v2 neg  // neg_v
 ```
+
 ---
 
 #### `fn` normalize
@@ -2143,6 +2238,7 @@ Normalize this vector to unit length.
 ```qd
 v2 normalize  // unit
 ```
+
 ---
 
 #### `fn` perpendicular
@@ -2160,6 +2256,7 @@ Get perpendicular vector (90° counterclockwise rotation).
 ```qd
 v2 perpendicular  // perp
 ```
+
 ---
 
 #### `fn` rotate
@@ -2181,6 +2278,7 @@ Rotate this vector by an angle.
 ```qd
 v2 1.57 rotate  // rotated
 ```
+
 ---
 
 #### `fn` scale
@@ -2202,6 +2300,7 @@ Multiply this vector by a scalar.
 ```qd
 v2 2.0 scale  // scaled
 ```
+
 ---
 
 #### `fn` subtract
@@ -2255,6 +2354,7 @@ Evaluate cubic Bezier curve for Vec3.
 | Output | Type | Description |
 |--------|------|-------------|
 | `result` | `Vec3` | Point on curve |
+
 ---
 
 #### `fn` vec3_one
@@ -2272,6 +2372,7 @@ Create a Vec3 with all components set to one.
 ```qd
 math::vec3_one  // v
 ```
+
 ---
 
 #### `fn` vec3_unit_x
@@ -2289,6 +2390,7 @@ Unit vector along the X axis.
 ```qd
 math::vec3_unit_x  // v
 ```
+
 ---
 
 #### `fn` vec3_unit_y
@@ -2306,6 +2408,7 @@ Unit vector along the Y axis.
 ```qd
 math::vec3_unit_y  // v
 ```
+
 ---
 
 #### `fn` vec3_unit_z
@@ -2323,6 +2426,7 @@ Unit vector along the Z axis.
 ```qd
 math::vec3_unit_z  // v
 ```
+
 ---
 
 #### `fn` vec3_zero
@@ -2362,6 +2466,7 @@ Add another Vec3 to this vector.
 ```qd
 v3 other3 add  // sum
 ```
+
 ---
 
 #### `fn` angle_between
@@ -2383,6 +2488,7 @@ Angle between this vector and another.
 ```qd
 v3 other3 angle_between  // a
 ```
+
 ---
 
 #### `fn` cross
@@ -2404,6 +2510,7 @@ Cross product with another Vec3.
 ```qd
 v3 other3 cross  // c
 ```
+
 ---
 
 #### `fn` distance
@@ -2425,6 +2532,7 @@ Distance to another Vec3.
 ```qd
 v3 other3 distance  // d
 ```
+
 ---
 
 #### `fn` dot
@@ -2446,6 +2554,7 @@ Dot product with another Vec3.
 ```qd
 v3 other3 dot  // d
 ```
+
 ---
 
 #### `fn` length_sq
@@ -2463,6 +2572,7 @@ Squared length of this vector (avoids sqrt).
 ```qd
 v3 length_sq  // len_sq
 ```
+
 ---
 
 #### `fn` length
@@ -2480,6 +2590,7 @@ Length (magnitude) of this vector.
 ```qd
 v3 length  // len
 ```
+
 ---
 
 #### `fn` lerp
@@ -2502,6 +2613,7 @@ Linear interpolation to another Vec3.
 ```qd
 v3 other3 0.5 lerp  // mid
 ```
+
 ---
 
 #### `fn` neg
@@ -2519,6 +2631,7 @@ Negate this vector.
 ```qd
 v3 neg  // neg_v
 ```
+
 ---
 
 #### `fn` normalize
@@ -2536,6 +2649,7 @@ Normalize this vector to unit length.
 ```qd
 v3 normalize  // unit
 ```
+
 ---
 
 #### `fn` reflect
@@ -2557,6 +2671,7 @@ Reflect this vector around a normal.
 ```qd
 v3 normal reflect  // reflected
 ```
+
 ---
 
 #### `fn` scale
@@ -2578,6 +2693,7 @@ Multiply this vector by a scalar.
 ```qd
 v3 2.0 scale  // scaled
 ```
+
 ---
 
 #### `fn` subtract
@@ -2630,6 +2746,7 @@ Create a Vec4 with all components set to one.
 ```qd
 math::vec4_one  // v
 ```
+
 ---
 
 #### `fn` vec4_zero
@@ -2669,6 +2786,7 @@ Add another Vec4 to this vector.
 ```qd
 v4 other4 add  // sum
 ```
+
 ---
 
 #### `fn` dot
@@ -2690,6 +2808,7 @@ Dot product with another Vec4.
 ```qd
 v4 other4 dot  // d
 ```
+
 ---
 
 #### `fn` length_sq
@@ -2707,6 +2826,7 @@ Squared length of this vector (avoids sqrt).
 ```qd
 v4 length_sq  // len_sq
 ```
+
 ---
 
 #### `fn` length
@@ -2724,6 +2844,7 @@ Length (magnitude) of this vector.
 ```qd
 v4 length  // len
 ```
+
 ---
 
 #### `fn` lerp
@@ -2746,6 +2867,7 @@ Linear interpolation to another Vec4.
 ```qd
 v4 other4 0.5 lerp  // mid
 ```
+
 ---
 
 #### `fn` neg
@@ -2763,6 +2885,7 @@ Negate this vector.
 ```qd
 v4 neg  // neg_v
 ```
+
 ---
 
 #### `fn` normalize
@@ -2780,6 +2903,7 @@ Normalize this vector to unit length.
 ```qd
 v4 normalize  // unit
 ```
+
 ---
 
 #### `fn` scale
@@ -2801,6 +2925,7 @@ Multiply this vector by a scalar.
 ```qd
 v4 2.0 scale  // scaled
 ```
+
 ---
 
 #### `fn` subtract

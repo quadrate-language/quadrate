@@ -162,6 +162,7 @@ fn slurp(path:str -- text:str ok:i64) {
 fn run() {
 	spec columns_of dup len 0 == if {
 		drop "csvcut: invalid column spec: " print spec print nl
+		1 os::exit
 	} else {
 		-> columns
 		path slurp if {
@@ -169,6 +170,7 @@ fn run() {
 			rows
 		} else {
 			drop "csvcut: " print path print ": cannot read file" print nl
+			1 os::exit
 		}
 	}
 }

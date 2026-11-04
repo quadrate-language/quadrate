@@ -15,7 +15,7 @@ def divide(a:i64 b:i64 -- result:i64)! {
 
 The `!` tells the compiler this function can return an error.
 
-## Signaling panics
+## Signaling errors with panic
 
 Use the `panic` instruction to signal an error:
 

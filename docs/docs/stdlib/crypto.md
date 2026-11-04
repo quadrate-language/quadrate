@@ -29,6 +29,7 @@ One-shot CRC32 of a string.
 ```qd
 "Hello" crypto::crc32  // crc
 ```
+
 ---
 
 ### `fn` hmac_sha256
@@ -51,6 +52,7 @@ Compute HMAC-SHA256.
 ```qd
 "Jefe" "what do ya want for nothing?" crypto::hmac_sha256!  // mac
 ```
+
 ---
 
 ### `fn` hmac_sha512
@@ -73,6 +75,7 @@ Compute HMAC-SHA512.
 ```qd
 "Jefe" "what do ya want for nothing?" crypto::hmac_sha512!  // mac
 ```
+
 ---
 
 ### `fn` md5
@@ -94,6 +97,7 @@ One-shot MD5 of a string. Note: MD5 is cryptographically broken. Use only for ch
 ```qd
 "Hello" crypto::md5!  // hash
 ```
+
 ---
 
 ### `fn` sha256
@@ -115,6 +119,7 @@ One-shot SHA-256 of a string.
 ```qd
 "Hello" crypto::sha256!  // hash
 ```
+
 ---
 
 ### `fn` sha512
@@ -156,6 +161,7 @@ One-shot CRC32 as hex string.
 | Output | Type | Description |
 |--------|------|-------------|
 | `hex` | `str` | CRC32 as 8-character hex string |
+
 ---
 
 #### `fn` crc32_verify
@@ -188,6 +194,7 @@ Get CRC32 as 8-character hex string.
 | Output | Type | Description |
 |--------|------|-------------|
 | `hex` | `str` | CRC32 as lowercase hex string |
+
 ---
 
 #### `fn` release
@@ -199,6 +206,7 @@ Free resources used by CRC32 hasher.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `c` | `Crc32` | The hasher state to free |
+
 ---
 
 #### `fn` update
@@ -215,6 +223,7 @@ Update CRC32 state with additional data.
 | Output | Type | Description |
 |--------|------|-------------|
 | `c2` | `Crc32` | Updated hasher state |
+
 ---
 
 #### `fn` value
@@ -262,6 +271,7 @@ Finalize MD5 and get result as hex string.
 | Output | Type | Description |
 |--------|------|-------------|
 | `hash` | `str` | 32-character hex string (lowercase) |
+
 ---
 
 #### `fn` release
@@ -273,6 +283,7 @@ Free resources used by MD5 hasher.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `h` | `Md5` | The hasher state to free |
+
 ---
 
 #### `fn` update
@@ -334,6 +345,7 @@ Finalize SHA-256 and get result as hex string.
 | Output | Type | Description |
 |--------|------|-------------|
 | `hash` | `str` | 64-character hex string (lowercase) |
+
 ---
 
 #### `fn` release
@@ -345,6 +357,7 @@ Free resources used by SHA-256 hasher.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `h` | `Sha256` | The hasher state to free |
+
 ---
 
 #### `fn` update
@@ -406,6 +419,7 @@ Calculate SHA-512 hash of raw bytes.
 Finalize SHA-512 and get result as hex string.
 
 **Signature:** `(h:Sha512) finish( -- hash:str)!`
+
 ---
 
 #### `fn` release
@@ -413,6 +427,7 @@ Finalize SHA-512 and get result as hex string.
 Free resources used by SHA-512 hasher.
 
 **Signature:** `(h:Sha512) release()`
+
 ---
 
 #### `fn` update

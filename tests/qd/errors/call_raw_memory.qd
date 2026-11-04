@@ -1,0 +1,9 @@
+// `call` takes a function value, which is a counted struct. Raw memory is refused with a
+// message rather than jumped into: a raw `ptr` the compiler cannot yet tell from a function
+// value used to be called as one and crash.
+use mem
+
+fn main() {
+	"before" print nl
+	[] 16 mem::alloc! append 0 nth call
+}

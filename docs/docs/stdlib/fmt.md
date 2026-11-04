@@ -25,6 +25,7 @@ Print a string to stderr followed by a newline.
 ```qd
 "error occurred" fmt::eprintln
 ```
+
 ---
 
 ### `fn` fprintf
@@ -43,6 +44,7 @@ Print formatted output to a file descriptor. The values go under the fd, as for 
 ```qd
 "not found" 2 "error: %s\n" fmt::fprintf
 ```
+
 ---
 
 ### `fn` printf
@@ -60,6 +62,7 @@ Print formatted output to stdout.
 ```qd
 "world" "Hello %s\n" fmt::printf  // Hello world
 ```
+
 ---
 
 ### `fn` println
@@ -77,6 +80,7 @@ Print a string to stdout followed by a newline.
 ```qd
 "hello" fmt::println  // hello\n
 ```
+
 ---
 
 ### `fn` sprintf
@@ -98,6 +102,7 @@ Format a string with printf-style specifiers.
 ```qd
 "world" "Hello %s" fmt::sprintf  // "Hello world"
 ```
+
 ---
 
 ### `fn` sprintln

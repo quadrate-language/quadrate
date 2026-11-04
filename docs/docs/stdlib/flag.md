@@ -7,7 +7,7 @@
 <!-- doccheck: page-setup os::args flag::parse -> f -->
 
 Command-line flag parsing.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -60,7 +60,6 @@ Check if a boolean flag exists.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name (e.g., "--verbose") |
 
 | Output | Type | Description |
@@ -72,6 +71,7 @@ Check if a boolean flag exists.
 ```qd
 f "--verbose" flag::boolean if { "verbose" print nl }
 ```
+
 ---
 
 #### `fn` destroy
@@ -85,6 +85,7 @@ Free a Flag struct and its argv string.
 ```qd
 f flag::destroy
 ```
+
 ---
 
 #### `fn` either
@@ -95,7 +96,6 @@ Check if a boolean flag is given in either of its spellings.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
 | `short` | `str` | Short spelling (e.g., "-v") |
 | `long` | `str` | Long spelling (e.g., "--verbose") |
 
@@ -108,6 +108,7 @@ Check if a boolean flag is given in either of its spellings.
 ```qd
 f "-v" "--verbose" flag::either if { "verbose" print nl }
 ```
+
 ---
 
 #### `fn` float
@@ -118,7 +119,6 @@ Get float value of a flag.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name |
 
 | Output | Type | Description |
@@ -134,6 +134,7 @@ Get float value of a flag.
 ```qd
 f "--rate" flag::float!  // rate
 ```
+
 ---
 
 #### `fn` int
@@ -144,7 +145,6 @@ Get integer value of a flag.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name |
 
 | Output | Type | Description |
@@ -160,6 +160,7 @@ Get integer value of a flag.
 ```qd
 f "--count" flag::int!  // count
 ```
+
 ---
 
 #### `fn` positional
@@ -170,7 +171,6 @@ Get positional argument at index.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
 | `index` | `i64` | Position (0-based, skips flags starting with -) |
 
 | Output | Type | Description |
@@ -180,6 +180,7 @@ Get positional argument at index.
 | Error | Description |
 |-------|-------------|
 | `flag::ErrNotFound` | Index out of bounds |
+
 ---
 
 #### `fn` string
@@ -190,7 +191,6 @@ Get string value of a flag.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `f` | `ptr` | Flag struct |
 | `name` | `str` | Flag name |
 
 | Output | Type | Description |

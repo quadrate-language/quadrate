@@ -33,7 +33,7 @@ fn main() {
 Functions can have multiple type parameters:
 
 ```qd
-def pair<A B>(a:A b:B -- a:A b:B) {
+def pair<A, B>(a:A b:B -- a:A b:B) {
     a b
 }
 
@@ -55,9 +55,9 @@ def exchange<T>(a:T b:T -- b:T a:T) {
 }
 
 fn main() {
-    10 20 exchange
-    -> a -> b
-    a print " " print b print nl  // 10 20
+    10 20 exchange      // the stack is now 20 10
+    -> top -> below
+    below print " " print top print nl  // 20 10
 }
 ```
 
@@ -82,7 +82,7 @@ fn main() {
     [5]i64 -> ints    // Integer array
     [5]f64 -> floats  // Float array
     [5]str -> strings // String array
-    [5]ptr -> ptrs    // Pointer array
+    [5]ptr -> ptrs    // Raw-memory array
 }
 ```
 
@@ -102,9 +102,9 @@ fn main() {
 
 ## Limitations
 
-- Type parameters must be concrete types (`i64`, `f64`, `str`, `ptr`, `[]T`)
+- A type parameter stands for any concrete type: `i64`, `f64`, `d128`, `str`, `ptr`, `[]T`,
+  a function type or a struct
 - No type constraints (all types are accepted)
-- Generic structs are supported but currently work best with `i64` fields
 
 ## Implementation
 

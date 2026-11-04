@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`var p = null`** declares a `ptr` global that starts empty (`var p:ptr = null` too). `null` was refused as a var initializer, and the initializer is required, so there was no way to write one.
 - **`[n]fn(...)`**: a table of function values, set and called by index. A `[]ptr` holds raw memory only, so this is where one goes.
 - **`math::v3_add`, `v3_sub`, `v3_scale`, `v3_dot`, `v3_cross`, `v3_length`, `v3_length_sq` and `v3_normalize`**: 3D vectors as three f64s on the stack, `( ax ay az bx by bz -- x y z )`. Native code, no allocation: the fast way for inner loops.
 - **`qd_push_struct(ctx, p)` and `qd_push_array(ctx, p)`**: push a counted object with the reference the caller holds, so the slot knows what it is.
@@ -73,6 +74,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`regex::find` leaves `start end`, as its signature always said**, so `-> end -> start` binds them. It left them the other way round; code that bound `-> start -> end` to get the right values has to swap.
+- **`call` on raw memory and a pointer of the wrong kind in an array are run-time errors** rather than a crash or a wrong release: `call` says it expected a function value, and an array of function values or structs refuses raw memory (and the other way round).
+- **wc, sha256sum and csvcut exit 1 when a file cannot be read**, as the tools they model do.
 - **`set` and `append` check a pointer element by its type**, as a call checks an argument: a struct, an array or a function value is refused by a `[]ptr`, and a `[]Point` takes no other struct. Only scalars were checked. `nth` on a `[]ptr` gives a `ptr`.
 - **`cast<ptr>` of a struct or an array gives its address as raw memory** and gives up the reference the slot held, which it used to keep, so the object leaked.
 - **A function value is a counted struct.** A closure is made by the runtime with a struct header and a destructor that frees its captures, and is copied, released and freed as any struct is; `&name` and a lambda that captures nothing are a static value per function. `call` tells a closure from a named function by its environment instead of asking a registry, and a native calls one with `qd_call_value`. A closure handed to `http::GET`, `thread::spawn` or `once::do` used to be cast to a C function pointer and crash.
@@ -170,6 +174,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`uri::encode` and `uri::decode` corrupted non-ASCII text**: they walked characters but wrote one byte for each, so "é" encoded as `%E9`. They now work on the UTF-8 bytes (`%C3%A9`).
+- **`examples/links-api` did not build**: its handlers were declared `c:ptr`.
+- **The language reference generator** named sections after the last line of their prose and split examples at any `;`, and stdlib pages had a separator directly under a line of text, which Markdown read as a heading.
+- **The documentation, reviewed end to end against the toolchain**: every example run and its stated output checked. Fixes include the error-handling patterns (`ok if`, `?` inside fallible functions), `Ok`/`Err` values, bit flags with `bits::`, the FFI contract for fallible natives (push status `1` on success), method examples in the math vector and matrix pages (receiver first), embedding link flags, and stale `ptr`, `as` and function-pointer wording. `docscheck` now compiles 1207 blocks, up from 1092.
 - **Leaks the registries hid**, now that nothing keeps every object reachable until exit: a closure's captured strings and structs, a struct's function-valued fields, and the array `strings::sort`, `sort_desc`, `join` and `column` are handed.
 - **`librt.a` kept objects from deleted sources.** The Makefile repacked each static library with `ar rcs`, which adds and replaces members but never removes one, so an object from a long-gone `memory.c` was still linked into embedded modules. Each archive is now rebuilt from scratch.
 - **A struct in a generic field was freed while the struct still held it**: `Box<P>` counted only a string in its field, so each read of a `P` that was dropped took one of the box's references. A generic field now holds a whole stack slot and owns it.

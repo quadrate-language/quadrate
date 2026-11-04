@@ -26,6 +26,7 @@ Check if a string is a valid UUID format.
 ```qd
 "550e8400-e29b-41d4-a716-446655440000" uuid::is_valid  // result
 ```
+
 ---
 
 ### `fn` v4_seeded
@@ -47,6 +48,7 @@ Generate UUID with specific seed (for reproducibility).
 ```qd
 12345 uuid::v4_seeded  // id
 ```
+
 ---
 
 ### `fn` v4

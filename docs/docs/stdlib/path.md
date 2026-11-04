@@ -32,6 +32,7 @@ Get the filename part of a path.
 ```qd
 "/home/user/file.txt" path::basename  // "file.txt"
 ```
+
 ---
 
 ### `fn` depth
@@ -53,6 +54,7 @@ Get the depth of a path (number of components).
 ```qd
 "/home/user/file.txt" path::depth  // 3
 ```
+
 ---
 
 ### `fn` dirname
@@ -74,6 +76,7 @@ Get the directory part of a path.
 ```qd
 "/home/user/file.txt" path::dirname  // "/home/user"
 ```
+
 ---
 
 ### `fn` ext
@@ -95,6 +98,7 @@ Get the file extension (including dot).
 ```qd
 "file.txt" path::ext  // ".txt"
 ```
+
 ---
 
 ### `fn` has_extension
@@ -117,6 +121,7 @@ Check if a path matches a simple extension filter.
 ```qd
 "file.txt" "txt" path::has_extension  // 1
 ```
+
 ---
 
 ### `fn` has_ext
@@ -138,6 +143,7 @@ Check if path has an extension.
 ```qd
 "file.txt" path::has_ext  // 1
 ```
+
 ---
 
 ### `fn` is_absolute
@@ -159,6 +165,7 @@ Check if path is absolute.
 ```qd
 "/home/user" path::is_absolute  // 1
 ```
+
 ---
 
 ### `fn` is_relative
@@ -180,6 +187,7 @@ Check if path is relative (not absolute).
 ```qd
 "home/user" path::is_relative  // 1
 ```
+
 ---
 
 ### `fn` join
@@ -202,6 +210,7 @@ Join two path components.
 ```qd
 "/home" "user" path::join  // "/home/user"
 ```
+
 ---
 
 ### `fn` normalize
@@ -223,6 +232,7 @@ Normalize a path (remove redundant separators).
 ```qd
 "/home//user/" path::normalize  // "/home/user"
 ```
+
 ---
 
 ### `fn` parent
@@ -244,6 +254,7 @@ Get parent directory (same as dirname but clearer name).
 ```qd
 "/home/user/file.txt" path::parent  // "/home/user"
 ```
+
 ---
 
 ### `fn` starts_with
@@ -266,6 +277,7 @@ Check if path starts with a given prefix path.
 ```qd
 "/home/user/file.txt" "/home" path::starts_with  // 1
 ```
+
 ---
 
 ### `fn` stem
@@ -287,6 +299,7 @@ Get filename without extension.
 ```qd
 "file.txt" path::stem  // "file"
 ```
+
 ---
 
 ### `fn` strip_prefix
@@ -309,6 +322,7 @@ Remove a prefix from a path if it exists.
 ```qd
 "/home/user/file.txt" "/home" path::strip_prefix  // "user/file.txt"
 ```
+
 ---
 
 ### `fn` with_ext

@@ -1,0 +1,11 @@
+// An array of pointers holds one kind of them. Raw memory going into an array of function
+// values is refused: kept, it would later be called as one.
+use mem
+
+def twice(x:i64 -- r:i64) { x 2 * }
+
+fn main() {
+	[] &twice append -> fns
+	"before" print nl
+	fns 16 mem::alloc! append drop
+}

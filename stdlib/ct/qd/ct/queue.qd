@@ -1,45 +1,43 @@
-/// Queue<T> - A FIFO Queue
-/// ========================
-///
-/// Queue provides First-In-First-Out (FIFO) operations.
-/// Implemented using a circular buffer for O(1) enqueue/dequeue.
-///
-/// ## Creating a Queue
-///
-/// Create an empty queue:
-///
-///     Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
-///
-/// ## Basic Operations
-///
-/// Enqueue (add to back):
-///
-///     q 42 enqueue! -> q
-///
-/// Dequeue (remove from front):
-///
-///     q dequeue! -> q -> val
-///
-/// Peek (view front without removing):
-///
-///     q peek! -> val
-///
-/// ## Memory Management
-///
-/// Always call release when done:
-///
-///     q release
+// Queue<T> - A FIFO Queue
+// ========================
+//
+// Queue provides First-In-First-Out (FIFO) operations.
+// Implemented using a circular buffer for O(1) enqueue/dequeue.
+//
+// ## Creating a Queue
+//
+// Create an empty queue:
+//
+//     Queue<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> q
+//
+// ## Basic Operations
+//
+// Enqueue (add to back):
+//
+//     q 42 enqueue! -> q
+//
+// Dequeue (remove from front):
+//
+//     q dequeue! -> q -> val
+//
+// Peek (view front without removing):
+//
+//     q peek! -> val
+//
+// ## Memory Management
+//
+// Always call release when done:
+//
+//     q release
 
 use mem
 
 /// FIFO Queue with elements of type T.
-///
-/// Fields:
-///   data - Pointer to circular buffer
-///   head - Index of front element
-///   tail - Index after last element
-///   len  - Number of elements
-///   cap  - Buffer capacity
+/// @field data ptr Pointer to circular buffer
+/// @field head i64 Index of front element
+/// @field tail i64 Index after last element
+/// @field len i64 Number of elements
+/// @field cap i64 Buffer capacity
 pub struct Queue<T> {
 	data: ptr
 	head: i64
@@ -49,13 +47,8 @@ pub struct Queue<T> {
 }
 
 /// Add an element to the back of the queue.
-///
 /// Returns the updated queue which must be captured.
-///
-/// Example:
-///     q 42 enqueue! -> q
-///
-/// Stack: (q val -- q2)
+/// @example q 42 enqueue! -> q  // re-bind the returned queue
 pub def (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 	q <<data -> data
 	q <<head -> head
@@ -100,14 +93,9 @@ pub def (q:Queue<T>) enqueue<T>(val:T -- q2:Queue<T>)! {
 }
 
 /// Remove and return the front element.
-///
 /// Returns error if queue is empty.
 /// Returns the value and updated queue.
-///
-/// Example:
-///     q dequeue! -> q -> val
-///
-/// Stack: (q -- val q2)
+/// @example q dequeue! -> q -> val  // the queue is on top, the element under it
 pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 	q <<len -> len
 
@@ -130,13 +118,8 @@ pub fn (q:Queue<T>) dequeue<T>( -- val:T q2:Queue<T>)! {
 }
 
 /// View the front element without removing it.
-///
 /// Returns error if queue is empty.
-///
-/// Example:
-///     q peek! -> val
-///
-/// Stack: (q -- val)
+/// @example q peek! -> val
 pub fn (q:Queue<T>) peek<T>( -- val:T)! {
 	q <<len -> len
 
@@ -151,22 +134,19 @@ pub fn (q:Queue<T>) peek<T>( -- val:T)! {
 }
 
 /// Get the number of elements in the queue.
-///
-/// Stack: (q -- n)
+/// @example q length -> n
 pub fn (q:Queue<T>) length<T>( -- n:i64) {
 	q <<len
 }
 
 /// Check if the queue is empty.
-///
-/// Stack: (q -- bool)
+/// @example q is_empty if { "empty!" print nl }
 pub fn (q:Queue<T>) is_empty<T>( -- b:i64) {
 	q <<len 0 ==
 }
 
 /// Free the queue's memory.
-///
-/// Stack: (q --)
+/// @example q release
 pub fn (q:Queue<T>) release<T>() {
 	q <<data -> data
 	data 0 != if {

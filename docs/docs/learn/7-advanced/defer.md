@@ -24,20 +24,22 @@ The deferred code runs after the function body completes.
 
 ## Guaranteed cleanup
 
-Defers run even when errors occur:
+Defers run when the function returns normally, when it panics, and when a `?` passes an error
+on to the caller. They do not run when a `!` aborts the program: an abort ends the process on
+the spot. Inside a fallible function, use `?` so the cleanup still happens:
 
 ```qd
 use io
 use mem
 
 def process_file(path:str -- )! {
-	path io::Read io::open! -> file
+	path io::Read io::open? -> file
 	defer {
-		// Always runs, even if the read fails
+		// Runs even if the read fails
 		file io::close
 	}
 
-	64 mem::alloc! -> buf
+	64 mem::alloc? -> buf
 	defer { buf mem::free }
 
 	// Even if this fails, the file is closed and the buffer freed
@@ -92,13 +94,13 @@ use io
 use mem
 
 def copy_file(src:str dst:str -- )! {
-	src io::Read io::open! -> src_file
+	src io::Read io::open? -> src_file
 	defer { src_file io::close }
 
-	dst io::Write io::open! -> dst_file
+	dst io::Write io::open? -> dst_file
 	defer { dst_file io::close }
 
-	4096 mem::alloc! -> buf
+	4096 mem::alloc? -> buf
 	defer { buf mem::free }
 
 	// Copy data...
@@ -109,7 +111,7 @@ Resources are released in reverse order of acquisition.
 
 ## Defer with variables
 
-Defers capture the current value of variables:
+A defer reads variables when it runs, not when it is declared:
 
 ```qd
 fn main() {
@@ -165,7 +167,7 @@ Unlike try/finally in other languages, defer is simpler:
 
 - No special syntax for try blocks
 - Just add defer where you acquire a resource
-- Cleanup is guaranteed
+- Cleanup runs on every return, panic and `?`; only a `!` abort skips it
 
 <!-- doccheck: skip comparison sketch: open_file and close_file stand for a program's own words -->
 ```qd
@@ -221,4 +223,4 @@ fn main() {
 
 ## What's next?
 
-Learn about [Function pointers](function-pointers.md) for passing behaviour through your program.
+Learn about [Function values](function-pointers.md) for passing behaviour through your program.

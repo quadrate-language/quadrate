@@ -43,6 +43,7 @@ Compare two byte buffers.
 ```qd
 buf1 0 buf2 0 10 bytes::compare  // result
 ```
+
 ---
 
 ### `fn` contains
@@ -67,6 +68,7 @@ Check if a byte value exists in a buffer.
 ```qd
 buf 0 10 0x41 bytes::contains  // found
 ```
+
 ---
 
 ### `fn` copy
@@ -88,6 +90,7 @@ Copy bytes from one buffer to another.
 ```qd
 dst 0 src 0 10 bytes::copy
 ```
+
 ---
 
 ### `fn` count
@@ -100,7 +103,7 @@ Count occurrences of a byte value in a buffer.
 |-----------|------|-------------|
 | `buf` | `ptr` | Buffer to search |
 | `offset` | `i64` | Starting offset |
-| `count` | `i64` | Number of bytes to search |
+| `len` | `i64` | Number of bytes to search |
 | `value` | `i64` | Byte value to count |
 
 | Output | Type | Description |
@@ -112,6 +115,7 @@ Count occurrences of a byte value in a buffer.
 ```qd
 buf 0 10 0x41 bytes::count  // n
 ```
+
 ---
 
 ### `fn` equals
@@ -137,6 +141,7 @@ Check if two byte buffers are equal.
 ```qd
 buf1 0 buf2 0 10 bytes::equals  // result
 ```
+
 ---
 
 ### `fn` fill
@@ -157,6 +162,7 @@ Fill a buffer with a byte value.
 ```qd
 0 buf 0 10 bytes::fill
 ```
+
 ---
 
 ### `fn` index_of
@@ -181,6 +187,7 @@ Find the first occurrence of a byte value in a buffer.
 ```qd
 buf 0 10 0x41 bytes::index_of  // idx
 ```
+
 ---
 
 ### `fn` read_u16_be
@@ -203,6 +210,7 @@ Read a 16-bit unsigned integer from memory in big-endian order.
 ```qd
 buf 0 bytes::read_u16_be  // val
 ```
+
 ---
 
 ### `fn` read_u16_le
@@ -225,6 +233,7 @@ Read a 16-bit unsigned integer from memory in little-endian order.
 ```qd
 buf 0 bytes::read_u16_le  // val
 ```
+
 ---
 
 ### `fn` read_u32_be
@@ -247,6 +256,7 @@ Read a 32-bit unsigned integer from memory in big-endian order.
 ```qd
 buf 0 bytes::read_u32_be  // val
 ```
+
 ---
 
 ### `fn` read_u32_le
@@ -269,6 +279,7 @@ Read a 32-bit unsigned integer from memory in little-endian order.
 ```qd
 buf 0 bytes::read_u32_le  // val
 ```
+
 ---
 
 ### `fn` read_u64_be
@@ -291,6 +302,7 @@ Read a 64-bit unsigned integer from memory in big-endian order.
 ```qd
 buf 0 bytes::read_u64_be  // val
 ```
+
 ---
 
 ### `fn` read_u64_le
@@ -313,6 +325,7 @@ Read a 64-bit unsigned integer from memory in little-endian order.
 ```qd
 buf 0 bytes::read_u64_le  // val
 ```
+
 ---
 
 ### `fn` reverse
@@ -332,6 +345,7 @@ Reverse the byte order in a buffer region.
 ```qd
 buf 0 10 bytes::reverse
 ```
+
 ---
 
 ### `fn` swap16
@@ -353,6 +367,7 @@ Swap byte order of a 16-bit value.
 ```qd
 0x1234 bytes::swap16 -> result  // 0x3412
 ```
+
 ---
 
 ### `fn` swap32
@@ -374,6 +389,7 @@ Swap byte order of a 32-bit value.
 ```qd
 0x12345678 bytes::swap32 -> result  // 0x78563412
 ```
+
 ---
 
 ### `fn` swap64
@@ -395,6 +411,7 @@ Swap byte order of a 64-bit value.
 ```qd
 0x0102030405060708 bytes::swap64 -> result  // 0x0807060504030201
 ```
+
 ---
 
 ### `fn` write_u16_be
@@ -414,6 +431,7 @@ Write a 16-bit unsigned integer to memory in big-endian order.
 ```qd
 buf 0 0x1234 bytes::write_u16_be
 ```
+
 ---
 
 ### `fn` write_u16_le
@@ -433,6 +451,7 @@ Write a 16-bit unsigned integer to memory in little-endian order.
 ```qd
 buf 0 0x1234 bytes::write_u16_le
 ```
+
 ---
 
 ### `fn` write_u32_be
@@ -452,6 +471,7 @@ Write a 32-bit unsigned integer to memory in big-endian order.
 ```qd
 buf 0 0x12345678 bytes::write_u32_be
 ```
+
 ---
 
 ### `fn` write_u32_le
@@ -471,6 +491,7 @@ Write a 32-bit unsigned integer to memory in little-endian order.
 ```qd
 buf 0 0x12345678 bytes::write_u32_le
 ```
+
 ---
 
 ### `fn` write_u64_be
@@ -490,6 +511,7 @@ Write a 64-bit unsigned integer to memory in big-endian order.
 ```qd
 buf 0 0x123456789ABCDEF0 bytes::write_u64_be
 ```
+
 ---
 
 ### `fn` write_u64_le
@@ -509,6 +531,7 @@ Write a 64-bit unsigned integer to memory in little-endian order.
 ```qd
 buf 0 0x123456789ABCDEF0 bytes::write_u64_le
 ```
+
 ---
 
 ### `fn` xor

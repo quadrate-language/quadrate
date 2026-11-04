@@ -412,7 +412,7 @@ fn main() {
 		current <<value print nl
 		current <<next -> current
 	}
-	// Output: 10 20 30
+	// Output: 10 20 30, one per line
 }
 ```
 

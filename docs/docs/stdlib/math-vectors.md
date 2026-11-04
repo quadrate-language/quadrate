@@ -1,5 +1,39 @@
 # `use` math — Vectors
 
+<!-- doccheck: page-context use math -->
+
+<!-- doccheck: page-setup math::Vec2 { x = 3.0 y = 4.0 } -> v2 -->
+
+<!-- doccheck: page-setup math::Vec2 { x = 1.0 y = 0.0 } -> other2 -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v3 -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> other3 -->
+
+<!-- doccheck: page-setup math::Vec4 { x = 1.0 y = 2.0 z = 2.0 w = 1.0 } -> v4 -->
+
+<!-- doccheck: page-setup math::Vec4 { x = 0.0 y = 1.0 z = 0.0 w = 1.0 } -> other4 -->
+
+<!-- doccheck: page-setup math::quat_identity -> q -->
+
+<!-- doccheck: page-setup math::quat_identity -> other_q -->
+
+<!-- doccheck: page-setup math::mat4_identity -> m -->
+
+<!-- doccheck: page-setup math::mat4_identity -> other_m -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> axis -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> normal -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 1.0 y = 0.0 z = 0.0 } -> point -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 5.0 } -> eye -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 0.0 z = 0.0 } -> target -->
+
+<!-- doccheck: page-setup math::Vec3 { x = 0.0 y = 1.0 z = 0.0 } -> up -->
+
 Vector types for 2D, 3D, and 4D math. All types are part of the `math` module.
 
 See also: [Scalar functions](math.md) | [Matrices & Quaternions](math-matrices.md)
@@ -69,7 +103,7 @@ Add another Vec2 to this vector.
 **Example:**
 
 ```qd
-other v add  // sum
+v2 other2 add  // sum
 ```
 ---
 
@@ -90,7 +124,7 @@ Dot product with another Vec2.
 **Example:**
 
 ```qd
-other v dot  // d
+v2 other2 dot  // d
 ```
 ---
 
@@ -107,7 +141,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v length_sq  // len_sq
+v2 length_sq  // len_sq
 ```
 ---
 
@@ -124,7 +158,7 @@ Length (magnitude) of this vector.
 **Example:**
 
 ```qd
-v length  // len
+v2 length  // len
 ```
 ---
 
@@ -146,7 +180,7 @@ Linear interpolation to another Vec2.
 **Example:**
 
 ```qd
-other 0.5 v lerp  // mid
+v2 other2 0.5 lerp  // mid
 ```
 ---
 
@@ -163,7 +197,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v neg  // neg_v
+v2 neg  // neg_v
 ```
 ---
 
@@ -180,7 +214,7 @@ Normalize this vector to unit length.
 **Example:**
 
 ```qd
-v normalize  // unit
+v2 normalize  // unit
 ```
 ---
 
@@ -201,7 +235,7 @@ Multiply this vector by a scalar.
 **Example:**
 
 ```qd
-2.0 v scale  // scaled
+v2 2.0 scale  // scaled
 ```
 ---
 
@@ -222,7 +256,7 @@ Subtract another Vec2 from this vector.
 **Example:**
 
 ```qd
-other v subtract  // diff
+v2 other2 subtract  // diff
 ```
 ---
 
@@ -243,7 +277,7 @@ Distance to another Vec2.
 **Example:**
 
 ```qd
-other v distance -> d
+v2 other2 distance -> d
 ```
 ---
 
@@ -260,7 +294,7 @@ Angle of this vector from positive X axis.
 **Example:**
 
 ```qd
-v angle -> a
+v2 angle -> a
 ```
 ---
 
@@ -281,7 +315,7 @@ Rotate this vector by an angle.
 **Example:**
 
 ```qd
-1.57 v rotate -> rotated
+v2 1.57 rotate -> rotated
 ```
 ---
 
@@ -298,7 +332,7 @@ Get perpendicular vector (90 degrees counterclockwise rotation).
 **Example:**
 
 ```qd
-v perpendicular -> perp
+v2 perpendicular -> perp
 ```
 
 ## Vec3
@@ -424,7 +458,7 @@ use math
 
 fn main() {
 	math::Vec3 { x = 1.0 y = 2.0 z = 2.0 } -> v
-	v <<x v <<y v <<z 2.0 math::v3_scale math::v3_length print  // 6.0
+	v <<x v <<y v <<z 2.0 math::v3_scale math::v3_length print  // 6
 }
 ```
 
@@ -447,7 +481,7 @@ Add another Vec3 to this vector.
 **Example:**
 
 ```qd
-other v add  // sum
+v3 other3 add  // sum
 ```
 ---
 
@@ -468,7 +502,7 @@ Cross product with another Vec3.
 **Example:**
 
 ```qd
-other v cross  // c
+v3 other3 cross  // c
 ```
 ---
 
@@ -489,7 +523,7 @@ Dot product with another Vec3.
 **Example:**
 
 ```qd
-other v dot  // d
+v3 other3 dot  // d
 ```
 ---
 
@@ -506,7 +540,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v length_sq  // len_sq
+v3 length_sq  // len_sq
 ```
 ---
 
@@ -523,7 +557,7 @@ Length (magnitude) of this vector.
 **Example:**
 
 ```qd
-v length  // len
+v3 length  // len
 ```
 ---
 
@@ -545,7 +579,7 @@ Linear interpolation to another Vec3.
 **Example:**
 
 ```qd
-other 0.5 v lerp  // mid
+v3 other3 0.5 lerp  // mid
 ```
 ---
 
@@ -562,7 +596,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v neg  // neg_v
+v3 neg  // neg_v
 ```
 ---
 
@@ -579,7 +613,7 @@ Normalize this vector to unit length.
 **Example:**
 
 ```qd
-v normalize  // unit
+v3 normalize  // unit
 ```
 ---
 
@@ -600,7 +634,7 @@ Reflect this vector around a normal.
 **Example:**
 
 ```qd
-normal v reflect  // reflected
+v3 normal reflect  // reflected
 ```
 ---
 
@@ -621,7 +655,7 @@ Multiply this vector by a scalar.
 **Example:**
 
 ```qd
-2.0 v scale  // scaled
+v3 2.0 scale  // scaled
 ```
 ---
 
@@ -642,7 +676,7 @@ Subtract another Vec3 from this vector.
 **Example:**
 
 ```qd
-other v subtract  // diff
+v3 other3 subtract  // diff
 ```
 ---
 
@@ -663,7 +697,7 @@ Distance to another Vec3.
 **Example:**
 
 ```qd
-other v distance -> d
+v3 other3 distance -> d
 ```
 ---
 
@@ -684,7 +718,7 @@ Angle between this vector and another.
 **Example:**
 
 ```qd
-other v angle_between -> a
+v3 other3 angle_between -> a
 ```
 
 ## Vec4
@@ -754,7 +788,7 @@ Add another Vec4 to this vector.
 **Example:**
 
 ```qd
-other v add  // sum
+v4 other4 add  // sum
 ```
 ---
 
@@ -775,7 +809,7 @@ Dot product with another Vec4.
 **Example:**
 
 ```qd
-other v dot  // d
+v4 other4 dot  // d
 ```
 ---
 
@@ -792,7 +826,7 @@ Length (magnitude) of this vector.
 **Example:**
 
 ```qd
-v length  // len
+v4 length  // len
 ```
 ---
 
@@ -809,7 +843,7 @@ Normalize this vector to unit length.
 **Example:**
 
 ```qd
-v normalize  // unit
+v4 normalize  // unit
 ```
 ---
 
@@ -830,7 +864,7 @@ Multiply this vector by a scalar.
 **Example:**
 
 ```qd
-2.0 v scale  // scaled
+v4 2.0 scale  // scaled
 ```
 ---
 
@@ -851,7 +885,7 @@ Subtract another Vec4 from this vector.
 **Example:**
 
 ```qd
-other v subtract  // diff
+v4 other4 subtract  // diff
 ```
 ---
 
@@ -868,7 +902,7 @@ Squared length of this vector (avoids sqrt).
 **Example:**
 
 ```qd
-v length_sq -> len_sq
+v4 length_sq -> len_sq
 ```
 ---
 
@@ -885,7 +919,7 @@ Negate this vector.
 **Example:**
 
 ```qd
-v neg -> neg_v
+v4 neg -> neg_v
 ```
 ---
 
@@ -907,5 +941,5 @@ Linear interpolation to another Vec4.
 **Example:**
 
 ```qd
-other 0.5 v lerp -> mid
+v4 other4 0.5 lerp -> mid
 ```

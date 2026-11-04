@@ -14,7 +14,7 @@ on one once it exists.
 | `set` | `(arr i x --)` | Store `x` at index `i` |
 | `append` | `(arr x -- arr)` | Append `x` |
 | `clone` | `(arr -- arr2)` | A shallow copy |
-| `free` | `(p --)` | Free an array or struct |
+| `free` | `(p --)` | Release one reference to an array or struct |
 
 ---
 
@@ -68,7 +68,8 @@ arr 42 append -> arr
 
 ### free
 
-Frees the memory used by an array or struct.
+Releases one reference to an array or struct. The memory is freed when that was the last
+reference; if another local, field or array still holds the value, it stays alive.
 
 **Signature:** `(p --)`
 

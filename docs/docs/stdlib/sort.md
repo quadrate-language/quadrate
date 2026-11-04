@@ -28,13 +28,14 @@ Sort an array of i64 by a comparator (quicksort). The comparator returns a negat
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `arr` | `[]i64` | Array of i64 values |
-| `cmp` | `fn` | Comparator (a b -- ordering) |
+| `cmp` | `fn(i64 i64 -- i64)` | Comparator (a b -- ordering) |
 
 **Example:**
 
 ```qd
 arr &by_length sort::by
 ```
+
 ---
 
 ### `fn` floats
@@ -52,6 +53,7 @@ Sort an array of f64 in ascending order (quicksort).
 ```qd
 farr sort::floats
 ```
+
 ---
 
 ### `fn` floats_desc
@@ -69,6 +71,7 @@ Sort an array of f64 in descending order (quicksort).
 ```qd
 farr sort::floats_desc
 ```
+
 ---
 
 ### `fn` ints
@@ -86,6 +89,7 @@ Sort an array of i64 in ascending order (quicksort).
 ```qd
 arr sort::ints
 ```
+
 ---
 
 ### `fn` ints_desc
@@ -103,6 +107,7 @@ Sort an array of i64 in descending order (quicksort).
 ```qd
 arr sort::ints_desc
 ```
+
 ---
 
 ### `fn` is_sorted
@@ -124,6 +129,7 @@ Check if array of i64 is sorted in ascending order.
 ```qd
 arr sort::is_sorted  // result
 ```
+
 ---
 
 ### `fn` is_sorted_by
@@ -135,7 +141,7 @@ Whether an array of i64 is sorted according to a comparator.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `arr` | `[]i64` | Array of i64 values |
-| `cmp` | `fn` | Comparator (a b -- ordering) |
+| `cmp` | `fn(i64 i64 -- i64)` | Comparator (a b -- ordering) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -146,6 +152,7 @@ Whether an array of i64 is sorted according to a comparator.
 ```qd
 arr &by_length sort::is_sorted_by print nl
 ```
+
 ---
 
 ### `fn` is_sorted_floats
@@ -167,6 +174,7 @@ Check if array of f64 is sorted in ascending order.
 ```qd
 farr sort::is_sorted_floats  // result
 ```
+
 ---
 
 ### `fn` lower_bound_by
@@ -179,7 +187,7 @@ Find the index of the first element not ordered before `needle` (binary search l
 |-----------|------|-------------|
 | `arr` | `[]i64` | Array of i64 values, sorted by `cmp` |
 | `needle` | `i64` | Value to locate |
-| `cmp` | `fn` | Comparator (a b -- ordering) |
+| `cmp` | `fn(i64 i64 -- i64)` | Comparator (a b -- ordering) |
 
 | Output | Type | Description |
 |--------|------|-------------|
@@ -190,6 +198,7 @@ Find the index of the first element not ordered before `needle` (binary search l
 ```qd
 arr 42 &ascending sort::lower_bound_by print nl
 ```
+
 ---
 
 ### `fn` max
@@ -211,6 +220,7 @@ Find maximum value in array.
 ```qd
 arr sort::max  // val
 ```
+
 ---
 
 ### `fn` min
@@ -232,6 +242,7 @@ Find minimum value in array.
 ```qd
 arr sort::min  // val
 ```
+
 ---
 
 ### `fn` reverse
@@ -249,6 +260,7 @@ Reverse an array in place.
 ```qd
 arr sort::reverse
 ```
+
 ---
 
 ### `fn` search
@@ -271,6 +283,7 @@ Binary search for value in sorted array.
 ```qd
 arr 42 sort::search  // idx
 ```
+
 ---
 
 ### `fn` strings
@@ -288,6 +301,7 @@ Sort an array of strings in ascending alphabetical order (insertion sort).
 ```qd
 strs sort::strings
 ```
+
 ---
 
 ### `fn` strings_desc
@@ -305,6 +319,7 @@ Sort an array of strings in descending alphabetical order.
 ```qd
 strs sort::strings_desc
 ```
+
 ---
 
 ### `fn` unique

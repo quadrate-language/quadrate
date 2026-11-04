@@ -11,7 +11,7 @@ fn main() {
 	0 5 1 for i {
 		i print nl
 	}
-	// Output: 0 1 2 3 4
+	// Output: 0 1 2 3 4, one per line
 }
 ```
 
@@ -33,7 +33,7 @@ fn main() {
 	0 10 2 for i {
 		i print nl
 	}
-	// Output: 0 2 4 6 8
+	// Output: 0 2 4 6 8, one per line
 }
 ```
 
@@ -46,7 +46,7 @@ fn main() {
 	5 0 -1 for i {
 		i print nl
 	}
-	// Output: 5 4 3 2 1
+	// Output: 5 4 3 2 1, one per line
 }
 ```
 
@@ -80,7 +80,7 @@ fn main() {
 			break
 		}
 	}
-	// Output: 0 1 2 3 4
+	// Output: 0 1 2 3 4, one per line
 }
 ```
 
@@ -96,7 +96,7 @@ fn main() {
 		count print nl
 		count 1 + -> count
 	}
-	// Output: 0 1 2 3 4
+	// Output: 0 1 2 3 4, one per line
 }
 ```
 
@@ -128,7 +128,7 @@ fn main() {
 		n 4 == until    // the line below does not run on the last pass
 		n print nl
 	}
-	// Output: 1 2 3
+	// Output: 1 2 3, one per line
 }
 ```
 
@@ -161,7 +161,7 @@ fn main() {
 		}
 		i print nl
 	}
-	// Output: 0 1 2 3 4
+	// Output: 0 1 2 3 4, one per line
 }
 ```
 
@@ -177,7 +177,7 @@ fn main() {
 		}
 		i print nl
 	}
-	// Output: 1 3 5 7 9 (odd numbers only)
+	// Output: 1 3 5 7 9, one per line (odd numbers only)
 }
 ```
 
@@ -245,7 +245,7 @@ fn main() {
 def sum_array(arr:[]i64 -- total:i64) {
 	0 -> total
 	0 arr len 1 for i {
-		total arr i nth cast<i64> + -> total
+		total arr i nth + -> total
 	}
 	total
 }

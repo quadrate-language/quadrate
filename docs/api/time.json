@@ -186,9 +186,9 @@
       "name": "add",
       "signature": "(ts:i64 duration:i64 -- new_ts:i64)",
       "failable": false,
-      "description": "Add duration to a timestamp.",
-      "params": [{"name": "ts", "type": "i64", "description": "Timestamp (use time::now for nanoseconds)"}, {"name": "duration", "type": "i64", "description": "Duration to add (use time constants)"}],
-      "returns": [{"name": "new_ts", "type": "i64", "description": "New timestamp"}],
+      "description": "Add duration to a timestamp. Both are in nanoseconds: ts as time::now returns it, the duration as the time constants (time::Second, time::Day, ...) express it.",
+      "params": [{"name": "ts", "type": "i64", "description": "Timestamp in nanoseconds since the epoch (as from time::now)"}, {"name": "duration", "type": "i64", "description": "Duration in nanoseconds (e.g. time::Day 4 *)"}],
+      "returns": [{"name": "new_ts", "type": "i64", "description": "New timestamp in nanoseconds"}],
       "errors": [],
       "examples": ["time::now time::Day 4 * time::add print"]
     },
@@ -460,7 +460,7 @@
       "params": [],
       "returns": [{"name": "timestamp", "type": "i64", "description": "Seconds since 1970-01-01 00:00:00 UTC"}],
       "errors": [],
-      "examples": ["time::unix print  // 1700000000"]
+      "examples": ["time::unix print  // e.g. 1700000000"]
     },
     {
       "name": "weekday",

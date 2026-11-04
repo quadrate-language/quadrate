@@ -37,6 +37,7 @@ Fold an array right to left: `f` runs on each element and the accumulator, last 
 ```qd
 arr 0 fn { + } hof::fold_right  // sum of array
 ```
+
 ---
 
 ### `fn` unless
@@ -48,7 +49,7 @@ Run a function value only if the condition is false, as `when` runs it when it i
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `cond` | `i64` | Condition (0 = false, non-zero = true) |
-| `q` | `fn` | Function value, run when the condition is false |
+| `q` | `fn(..a -- ..a)` | Function value, run when the condition is false |
 
 **Example:**
 
@@ -56,6 +57,7 @@ Run a function value only if the condition is false, as `when` runs it when it i
 5 0 fn { 2 * } hof::unless print nl  // 10
 5 1 fn { 2 * } hof::unless print nl  // 5
 ```
+
 ---
 
 ### `fn` when
@@ -67,7 +69,7 @@ Run a function value only if the condition is true. It must leave the stack the 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `cond` | `i64` | Condition (0 = false, non-zero = true) |
-| `q` | `fn` | Function value, run when the condition is true |
+| `q` | `fn(..a -- ..a)` | Function value, run when the condition is true |
 
 **Example:**
 

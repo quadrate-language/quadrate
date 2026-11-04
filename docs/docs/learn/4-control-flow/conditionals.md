@@ -73,7 +73,7 @@ fn main() {
 	}
 
 	// NOT: invert condition
-	has_id 0 == if {
+	has_id not if {
 		"No ID" print nl
 	}
 }

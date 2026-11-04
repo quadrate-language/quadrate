@@ -17,11 +17,11 @@ make format         # Format C/C++ source
 
 ### Platform dependencies
 
-**Arch Linux**: `pacman -S meson clang ninja llvm readline`
+**Arch Linux**: `pacman -S meson clang ninja llvm readline openssl`
 
 **Debian/Ubuntu**: `apt install clang llvm-dev meson ninja-build libreadline-dev libssl-dev pkg-config`
 
-**Alpine**: `apk add bash clang clang-dev compiler-rt llvm-dev meson musl-dev readline-dev`
+**Alpine**: `apk add bash clang clang-dev compiler-rt llvm-dev meson musl-dev readline-dev openssl-dev pkgconf`
 
 ### Build outputs
 

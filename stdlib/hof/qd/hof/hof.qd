@@ -13,7 +13,7 @@
 /// Run a function value only if the condition is true. It must leave the stack the shape it
 /// found it, since when the condition is false nothing runs.
 /// @param cond i64 Condition (0 = false, non-zero = true)
-/// @param q fn Function value, run when the condition is true
+/// @param q fn(..a -- ..a) Function value, run when the condition is true
 /// @example 5 1 fn { 2 * } hof::when print nl  // 10
 /// @example 5 0 fn { 2 * } hof::when print nl  // 5
 pub fn when<..a>(..a cond:i64 q:fn(..a -- ..a) -- ..a) {
@@ -22,7 +22,7 @@ pub fn when<..a>(..a cond:i64 q:fn(..a -- ..a) -- ..a) {
 
 /// Run a function value only if the condition is false, as `when` runs it when it is true.
 /// @param cond i64 Condition (0 = false, non-zero = true)
-/// @param q fn Function value, run when the condition is false
+/// @param q fn(..a -- ..a) Function value, run when the condition is false
 /// @example 5 0 fn { 2 * } hof::unless print nl  // 10
 /// @example 5 1 fn { 2 * } hof::unless print nl  // 5
 pub fn unless<..a>(..a cond:i64 q:fn(..a -- ..a) -- ..a) {

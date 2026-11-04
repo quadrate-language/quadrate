@@ -9,6 +9,7 @@ Quadrate requires the following build tools:
 - **Meson** (build system)
 - **Ninja** (build backend)
 - **Clang/LLVM** (compiler toolchain)
+- **OpenSSL** (the `tls` module links against it)
 
 ### Installing dependencies
 
@@ -17,24 +18,24 @@ Quadrate requires the following build tools:
 #### <img src="https://archlinux.org/static/logos/archlinux-logo-dark-scalable.svg" alt="https://archlinux.org/" style="height: 40px"> Arch Linux
 
 ```bash
-pacman -S meson clang ninja llvm readline
+pacman -S meson clang ninja llvm readline openssl
 ```
 
 #### <img src="https://alpinelinux.org/alpine-logo.ico" alt="https://alpinelinux.org/" style="height: 32px"> Alpine Linux
 
 ```bash
-apk add bash clang clang-dev compiler-rt llvm-dev meson musl-dev readline-dev
+apk add bash clang clang-dev compiler-rt llvm-dev meson musl-dev readline-dev openssl-dev pkgconf
 ```
 
 #### <img src="https://www.debian.org/logos/openlogo-nd.svg" alt="https://www.debian.org/" style="height: 32px"> Debian / Ubuntu
 ```bash
-apt install meson ninja-build clang llvm-dev libreadline-dev
+apt install meson ninja-build clang llvm-dev libreadline-dev libssl-dev pkg-config
 ```
 
 <img src="https://raw.githubusercontent.com/haiku/haiku/b31ff5b650da52911640cd5514a08887732f3342/data/artwork/HAIKU%20logo%20-%20black.svg" alt="https://www.haiku-os.org/" style="height: 32px">
 
 ```bash
-pkgman install meson llvm21 llvm21_clang readline_devel
+pkgman install meson llvm21 llvm21_clang readline_devel openssl3_devel
 ```
 
 ## Installation

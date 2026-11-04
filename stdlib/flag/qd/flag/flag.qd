@@ -1,5 +1,5 @@
 /// Command-line flag parsing.
-/// Error codes: Ok=1 (success), specific errors start at 2
+/// Error codes: Ok=0 (success); error codes start at 2
 /// doccheck: page-context
 /// doccheck: page-context use os
 /// doccheck: page-setup os::args flag::parse -> f
@@ -70,7 +70,6 @@ pub fn (f:Flag) destroy() {
 }
 
 /// Check if a boolean flag exists.
-/// @param f ptr Flag struct
 /// @param name str Flag name (e.g., "--verbose")
 /// @return present i64 1 if found, 0 otherwise
 /// @example f "--verbose" flag::boolean if { "verbose" print nl }
@@ -80,7 +79,6 @@ pub fn (f:Flag) boolean(name:str -- present:i64) {
 }
 
 /// Check if a boolean flag is given in either of its spellings.
-/// @param f ptr Flag struct
 /// @param short str Short spelling (e.g., "-v")
 /// @param long str Long spelling (e.g., "--verbose")
 /// @return present i64 1 if either is found, 0 otherwise
@@ -90,7 +88,6 @@ pub fn (f:Flag) either(short:str long:str -- present:i64) {
 }
 
 /// Get string value of a flag.
-/// @param f ptr Flag struct
 /// @param name str Flag name
 /// @return value str Flag value
 /// @error ErrNotFound Flag not found
@@ -116,7 +113,6 @@ pub def (f:Flag) string(name:str -- value:str)! {
 }
 
 /// Get integer value of a flag.
-/// @param f ptr Flag struct
 /// @param name str Flag name
 /// @return value i64 Flag value as integer
 /// @error ErrNotFound Flag not found
@@ -130,7 +126,6 @@ pub def (f:Flag) int(name:str -- value:i64)! {
 }
 
 /// Get float value of a flag.
-/// @param f ptr Flag struct
 /// @param name str Flag name
 /// @return value f64 Flag value as float
 /// @error ErrNotFound Flag not found
@@ -144,7 +139,6 @@ pub def (f:Flag) float(name:str -- value:f64)! {
 }
 
 /// Get positional argument at index.
-/// @param f ptr Flag struct
 /// @param index i64 Position (0-based, skips flags starting with -)
 /// @return value str Positional argument
 /// @error ErrNotFound Index out of bounds

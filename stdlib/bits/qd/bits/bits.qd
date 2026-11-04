@@ -87,10 +87,10 @@ pub fn extract(value:i64 start_bit:i64 num_bits:i64 -- result:i64) {
 }
 
 /// Set a bit field in a value.
-/// @param target i64 Target value to modify
-/// @param value i64 Value to insert
-/// @param start_bit i64 Start position (0 = LSB)
-/// @param num_bits i64 Number of bits to set
+/// @param tgt i64 Target value to modify
+/// @param val i64 Value to insert
+/// @param sb i64 Start position (0 = LSB)
+/// @param nb i64 Number of bits to set
 /// @return result i64 Modified target
 /// @example 0 0b101 2 3 bits::set_bits print  // 20 (0b10100)
 pub def set_bits(tgt:i64 val:i64 sb:i64 nb:i64 -- result:i64) {
@@ -101,9 +101,9 @@ pub def set_bits(tgt:i64 val:i64 sb:i64 nb:i64 -- result:i64) {
 }
 
 /// Rotate bits left within a width.
-/// @param value i64 Value to rotate
-/// @param bits i64 Positions to rotate
-/// @param width i64 Bit width to rotate within
+/// @param v i64 Value to rotate
+/// @param b i64 Positions to rotate
+/// @param w i64 Bit width to rotate within
 /// @return result i64 Rotated value
 /// @example 0b0011 1 4 bits::rotate_left print  // 6 (0b0110)
 pub def rotate_left(v:i64 b:i64 w:i64 -- result:i64) {
@@ -113,9 +113,9 @@ pub def rotate_left(v:i64 b:i64 w:i64 -- result:i64) {
 }
 
 /// Rotate bits right within a width.
-/// @param value i64 Value to rotate
-/// @param bits i64 Positions to rotate
-/// @param width i64 Bit width to rotate within
+/// @param v i64 Value to rotate
+/// @param b i64 Positions to rotate
+/// @param w i64 Bit width to rotate within
 /// @return result i64 Rotated value
 /// @example 0b0110 1 4 bits::rotate_right print  // 3 (0b0011)
 pub def rotate_right(v:i64 b:i64 w:i64 -- result:i64) {
@@ -137,8 +137,8 @@ pub fn popcount(value:i64 -- count:i64) {
 }
 
 /// Reverse the bottom N bits.
-/// @param value i64 Value to reverse
-/// @param width i64 Number of bits to reverse
+/// @param v i64 Value to reverse
+/// @param w i64 Number of bits to reverse
 /// @return result i64 Reversed value
 /// @example 0b1011 4 bits::reverse_bits print  // 13 (0b1101)
 pub def reverse_bits(v:i64 w:i64 -- result:i64) {
@@ -187,7 +187,7 @@ pub fn toggle_bit(value:i64 bit_pos:i64 -- result:i64) {
 }
 
 /// Count leading zeros (from MSB).
-/// @param value i64 Value to count
+/// @param v i64 Value to count
 /// @return count i64 Number of leading zero bits (0-64)
 /// @example 0x0F00000000000000 bits::clz print  // 4
 pub def clz(v:i64 -- count:i64) {
@@ -205,7 +205,7 @@ pub def clz(v:i64 -- count:i64) {
 }
 
 /// Count trailing zeros (from LSB).
-/// @param value i64 Value to count
+/// @param v i64 Value to count
 /// @return count i64 Number of trailing zero bits (0-64)
 /// @example 0x100 bits::ctz print  // 8
 pub def ctz(v:i64 -- count:i64) {
@@ -223,7 +223,7 @@ pub def ctz(v:i64 -- count:i64) {
 }
 
 /// Check if value is a power of two.
-/// @param value i64 Value to check
+/// @param v i64 Value to check
 /// @return flag i64 1 if power of two, 0 otherwise
 /// @example 8 bits::is_power_of_two print  // 1
 /// @example 7 bits::is_power_of_two print  // 0
@@ -232,7 +232,7 @@ pub def is_power_of_two(v:i64 -- flag:i64) {
 }
 
 /// Find the next power of two greater than or equal to value.
-/// @param value i64 Input value
+/// @param v i64 Input value
 /// @return result i64 Next power of two
 /// @example 5 bits::next_power_of_two print  // 8
 /// @example 8 bits::next_power_of_two print  // 8
@@ -252,7 +252,7 @@ pub fn next_power_of_two(v:i64 -- result:i64) {
 }
 
 /// Integer log base 2 (position of highest set bit).
-/// @param value i64 Value (must be > 0)
+/// @param v i64 Value (must be > 0)
 /// @return result i64 Floor of log2(value)
 /// @example 8 bits::log2 print  // 3
 /// @example 15 bits::log2 print  // 3
@@ -265,7 +265,7 @@ pub fn log2(v:i64 -- result:i64) {
 }
 
 /// Get the highest set bit as a value (isolate highest bit).
-/// @param value i64 Input value
+/// @param v i64 Input value
 /// @return result i64 Highest set bit as power of two, 0 if input is 0
 /// @example 0b1010 bits::highest_bit print  // 8 (0b1000)
 pub def highest_bit(v:i64 -- result:i64) {
@@ -277,7 +277,7 @@ pub def highest_bit(v:i64 -- result:i64) {
 }
 
 /// Get the lowest set bit as a value (isolate lowest bit).
-/// @param value i64 Input value
+/// @param v i64 Input value
 /// @return result i64 Lowest set bit as power of two, 0 if input is 0
 /// @example 0b1010 bits::lowest_bit print  // 2 (0b0010)
 pub fn lowest_bit(v:i64 -- result:i64) {

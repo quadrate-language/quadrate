@@ -109,6 +109,7 @@ Add file output (no rotation).
 ```qd
 logger "/var/log/app.log" log::add_file!
 ```
+
 ---
 
 #### `fn` add_file_rotate
@@ -133,6 +134,7 @@ Add file output with rotation.
 ```qd
 logger "/var/log/app.log" log::RotateDaily 0 7 log::add_file_rotate!
 ```
+
 ---
 
 #### `fn` check_rotate
@@ -146,6 +148,7 @@ Check and perform rotation if needed.  Called automatically before each log, but
 ```qd
 logger log::check_rotate
 ```
+
 ---
 
 #### `fn` debug
@@ -163,6 +166,7 @@ Log a debug message.
 ```qd
 logger "processing item" log::debug
 ```
+
 ---
 
 #### `fn` disable_stdout
@@ -176,6 +180,7 @@ Disable stdout output.
 ```qd
 logger log::disable_stdout
 ```
+
 ---
 
 #### `fn` enable_stdout
@@ -189,6 +194,7 @@ Enable stdout output (default).
 ```qd
 logger log::enable_stdout
 ```
+
 ---
 
 #### `fn` error
@@ -206,6 +212,7 @@ Log an error message.
 ```qd
 logger "connection failed" log::error
 ```
+
 ---
 
 #### `fn` flush
@@ -219,6 +226,7 @@ Flush all outputs.
 ```qd
 logger log::flush
 ```
+
 ---
 
 #### `fn` free
@@ -232,6 +240,7 @@ Free logger resources.
 ```qd
 logger log::free
 ```
+
 ---
 
 #### `fn` get_level
@@ -249,6 +258,7 @@ Get current log level.
 ```qd
 logger log::get_level  // level
 ```
+
 ---
 
 #### `fn` info
@@ -266,6 +276,7 @@ Log an info message.
 ```qd
 logger "server started" log::info
 ```
+
 ---
 
 #### `fn` log
@@ -284,6 +295,7 @@ Log a message at specified level. A level other than LevelDebug, LevelInfo, Leve
 ```qd
 logger log::LevelInfo "custom message" log::log
 ```
+
 ---
 
 #### `fn` set_format
@@ -301,6 +313,7 @@ Set output format.
 ```qd
 logger log::FormatJson log::set_format
 ```
+
 ---
 
 #### `fn` set_level
@@ -318,6 +331,7 @@ Set minimum log level.  Messages below this level are ignored.
 ```qd
 logger log::LevelWarn log::set_level
 ```
+
 ---
 
 #### `fn` warn

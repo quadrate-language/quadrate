@@ -44,6 +44,7 @@ Clear the pending flag for a signal.
 ```qd
 signal::SigInt signal::clear
 ```
+
 ---
 
 ### `fn` ignore
@@ -61,6 +62,7 @@ Ignore the specified signal completely.
 ```qd
 signal::SigPipe signal::ignore
 ```
+
 ---
 
 ### `fn` kill
@@ -83,6 +85,7 @@ Send a signal to another process.
 ```qd
 1234 signal::SigTerm signal::kill drop
 ```
+
 ---
 
 ### `fn` pending
@@ -104,6 +107,7 @@ Check if a signal is pending (received but not cleared). Returns 1 if pending, 0
 ```qd
 signal::SigInt signal::pending
 ```
+
 ---
 
 ### `fn` raise
@@ -125,6 +129,7 @@ Send a signal to the current process.
 ```qd
 signal::SigUsr1 signal::raise drop
 ```
+
 ---
 
 ### `fn` reset
@@ -142,6 +147,7 @@ Reset signal to default behavior.
 ```qd
 signal::SigInt signal::reset
 ```
+
 ---
 
 ### `fn` SigAbrt
@@ -149,6 +155,7 @@ signal::SigInt signal::reset
 Abort signal.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigAlrm
@@ -156,6 +163,7 @@ Abort signal.
 Alarm clock.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigChld
@@ -163,6 +171,7 @@ Alarm clock.
 Child process stopped or terminated.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigCont
@@ -170,6 +179,7 @@ Child process stopped or terminated.
 Continue if stopped.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigFpe
@@ -177,6 +187,7 @@ Continue if stopped.
 Floating point exception.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigHup
@@ -184,6 +195,7 @@ Floating point exception.
 Hangup signal (terminal closed).
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigIll
@@ -191,6 +203,7 @@ Hangup signal (terminal closed).
 Illegal instruction.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigInt
@@ -198,6 +211,7 @@ Illegal instruction.
 Interrupt signal (Ctrl+C).
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigKill
@@ -205,6 +219,7 @@ Interrupt signal (Ctrl+C).
 Kill signal (cannot be caught).
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigPipe
@@ -212,6 +227,7 @@ Kill signal (cannot be caught).
 Broken pipe.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigQuit
@@ -219,6 +235,7 @@ Broken pipe.
 Quit signal (Ctrl+\).
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigSegv
@@ -226,6 +243,7 @@ Quit signal (Ctrl+\).
 Segmentation fault.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigStop
@@ -233,6 +251,7 @@ Segmentation fault.
 Stop signal (cannot be caught).
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigTerm
@@ -240,6 +259,7 @@ Stop signal (cannot be caught).
 Termination signal.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigTstp
@@ -247,6 +267,7 @@ Termination signal.
 Terminal stop (Ctrl+Z).
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigTtin
@@ -254,6 +275,7 @@ Terminal stop (Ctrl+Z).
 Background read from terminal.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigTtou
@@ -261,6 +283,7 @@ Background read from terminal.
 Background write to terminal.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigUsr1
@@ -268,6 +291,7 @@ Background write to terminal.
 User-defined signal 1.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` SigUsr2
@@ -275,6 +299,7 @@ User-defined signal 1.
 User-defined signal 2.
 
 **Signature:** `( -- val:i64)`
+
 ---
 
 ### `fn` trap
@@ -292,6 +317,7 @@ Install a handler to catch the specified signal. After trapping, the signal sets
 ```qd
 signal::SigInt signal::trap
 ```
+
 ---
 
 ### `fn` wait

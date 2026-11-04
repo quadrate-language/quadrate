@@ -100,8 +100,8 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
 /**
  * @brief Push a pointer to raw memory: one from malloc, or into a string or a buffer
  *
- * Never an array or a struct. The slot is marked raw, so pushing and dropping it costs no
- * lookup in the registries of counted objects (see qd_ptr_kind).
+ * Never an array, a struct or a function value. The slot is marked raw: nothing is retained
+ * or released for it.
  *
  * @param ctx Execution context
  * @param value Pointer value to push
@@ -112,7 +112,7 @@ int qd_push_p(qd_context* ctx, void* value);
 /**
  * @brief Push a struct or an array the caller hands over, its slot marked as one
  *
- * Its retains and releases then go to the object's own count, not the registries.
+ * Its retains and releases go to the object's own count.
  */
 int qd_push_struct(qd_context* ctx, void* value);
 int qd_push_array(qd_context* ctx, void* value);

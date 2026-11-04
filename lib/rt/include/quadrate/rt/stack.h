@@ -79,13 +79,12 @@ typedef struct {
  * @brief What a pointer on the stack points at, as far as its slot knows
  *
  * A slot owns a counted object it holds -- an array or a struct -- and so retains and
- * releases it; a pointer to raw memory has nothing to count. QD_PTR_UNKNOWN asks the
- * registries which it is, as every pointer once did, at the price of two locked lookups
- * per push and pop. A slot that knows its pointer is raw (mem::alloc's, strings::data's)
- * skips them. Meaningful only for QD_STACK_TYPE_PTR; whatever writes that type writes this.
+ * releases it; a pointer to raw memory has nothing to count. Nothing is looked up: the slot
+ * says which it is, and a pointer of no kind is treated as raw. Meaningful only for
+ * QD_STACK_TYPE_PTR; whatever writes that type writes this.
  */
 typedef enum {
-	QD_PTR_UNKNOWN = 0, ///< Ask the registries
+	QD_PTR_UNKNOWN = 0, ///< No kind recorded: treated as raw memory
 	QD_PTR_RAW = 1,		///< Not counted: nothing to retain or release
 	QD_PTR_STRUCT = 2,	///< A struct: counted by its header, checked by its magic, no lookup
 	QD_PTR_ARRAY = 3	///< An array: the same

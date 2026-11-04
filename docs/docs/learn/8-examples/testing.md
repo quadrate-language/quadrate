@@ -71,13 +71,16 @@ test "assert_approx_eq for floats" {
 quad test
 ```
 
-This discovers and runs all `*_test.qd` files and any files containing `test` blocks.
+This finds the `*_test.qd` and `test_*.qd` files in the current directory and runs the `test`
+blocks in each.
 
-### Run tests in a directory
+### Run tests in subdirectories too
 
 ```bash
 quad test ./...
 ```
+
+`./...` searches the current directory and every directory below it.
 
 ### Run a specific test file
 

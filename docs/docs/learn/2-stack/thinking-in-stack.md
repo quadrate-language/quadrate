@@ -151,7 +151,7 @@ Or use named parameters in the function signature:
 
 ```qd
 def compute(a:f64 b:f64 c:f64 d:f64 -- result:f64) {
-    a b *           // named params are on the stack
+    a b *           // push the bound locals by name
     c d +
     /
 }

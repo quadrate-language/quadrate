@@ -1,38 +1,38 @@
-/// Map<V> - A String-Keyed Hash Map
-/// ====================================
-///
-/// Map stores key-value pairs with O(1) average lookup time.
-/// Keys are strings, values can be any type V.
-///
-/// ## Creating a Map
-///
-/// Create an empty map with a struct literal:
-///
-///     Map<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
-///
-/// ## Basic Operations
-///
-/// Insert a key-value pair (map is returned, must be captured):
-///
-///     m "alice" 42 insert! -> m
-///
-/// Get a value by key (returns error if not found):
-///
-///     m "alice" get! -> age
-///
-/// Check if key exists:
-///
-///     m "alice" has -> exists
-///
-/// Remove a key:
-///
-///     m "alice" remove! -> m
-///
-/// ## Memory Management
-///
-/// Always call release when done to free memory:
-///
-///     m release
+// Map<V> - A String-Keyed Hash Map
+// ====================================
+//
+// Map stores key-value pairs with O(1) average lookup time.
+// Keys are strings, values can be any type V.
+//
+// ## Creating a Map
+//
+// Create an empty map with a struct literal:
+//
+//     Map<i64> { keys = 0 values = 0 states = 0 len = 0 cap = 0 } -> m
+//
+// ## Basic Operations
+//
+// Insert a key-value pair (map is returned, must be captured):
+//
+//     m "alice" 42 insert! -> m
+//
+// Get a value by key (returns error if not found):
+//
+//     m "alice" get! -> age
+//
+// Check if key exists:
+//
+//     m "alice" has -> exists
+//
+// Remove a key:
+//
+//     m "alice" remove! -> m
+//
+// ## Memory Management
+//
+// Always call release when done to free memory:
+//
+//     m release
 
 use mem
 use strings
@@ -40,13 +40,11 @@ use strings
 /// Hash map with string keys and values of any type V -- i64, f64, str, ptr or a struct. A
 /// value lives in a tagged slot (mem::set_any), so it reads back as what was inserted, and the
 /// map holds a reference to a string or a struct for as long as the entry is in it.
-///
-/// Fields:
-///   keys   - Array of string key pointers
-///   values - Array of V values
-///   states - Array of slot states (0=empty, 1=occupied, 2=deleted)
-///   len    - Number of entries
-///   cap    - Allocated capacity
+/// @field keys ptr Array of string key pointers
+/// @field values ptr Array of V values
+/// @field states ptr Array of slot states (0=empty, 1=occupied, 2=deleted)
+/// @field len i64 Number of entries
+/// @field cap i64 Allocated capacity
 pub struct Map<V> {
 	keys:   ptr
 	values: ptr
@@ -165,14 +163,9 @@ def rehash(old_keys:ptr old_values:ptr old_states:ptr old_cap:i64 new_cap:i64 --
 }
 
 /// Insert a key-value pair into the map.
-///
 /// If the key already exists, the value is updated.
 /// Returns the updated map which must be captured.
-///
-/// Example:
-///     m "alice" 42 insert! -> m
-///
-/// Stack: (m key value -- m2)
+/// @example m "alice" 42 insert! -> m  // re-bind the returned map
 pub def (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 	m <<keys -> keys
 	m <<values -> values
@@ -222,13 +215,8 @@ pub def (m:Map<V>) insert<V>(key:str value:V -- m2:Map<V>)! {
 }
 
 /// Get the value for a key.
-///
 /// Returns an error if the key is not found.
-///
-/// Example:
-///     m "alice" get! -> age
-///
-/// Stack: (m key -- value)
+/// @example m "alice" get! -> age
 pub def (m:Map<V>) get<V>(key:str -- value:V)! {
 	m <<values -> values
 	m <<keys -> keys
@@ -249,11 +237,7 @@ pub def (m:Map<V>) get<V>(key:str -- value:V)! {
 }
 
 /// Check if a key exists in the map.
-///
-/// Example:
-///     m "alice" has if { "found!" print nl }
-///
-/// Stack: (m key -- exists)
+/// @example m "alice" has if { "found!" print nl }
 pub def (m:Map<V>) has<V>(key:str -- exists:i64) {
 	m <<cap -> cap
 
@@ -269,14 +253,9 @@ pub def (m:Map<V>) has<V>(key:str -- exists:i64) {
 }
 
 /// Remove a key from the map.
-///
 /// Returns error if the key is not found.
 /// Returns the updated map which must be captured.
-///
-/// Example:
-///     m "alice" remove! -> m
-///
-/// Stack: (m key -- m2)
+/// @example m "alice" remove! -> m  // re-bind the returned map
 pub def (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 	m <<keys -> keys
 	m <<values -> values
@@ -305,35 +284,22 @@ pub def (m:Map<V>) remove<V>(key:str -- m2:Map<V>)! {
 }
 
 /// Get the number of entries in the map.
-///
-/// Example:
-///     m length -> n
-///
-/// Stack: (m -- n)
+/// @example m length -> n
 pub fn (m:Map<V>) length<V>( -- n:i64) {
 	m <<len
 }
 
 /// Check if the map is empty.
-///
-/// Example:
-///     m is_empty if { "empty!" print nl }
-///
-/// Stack: (m -- bool)
+/// @example m is_empty if { "empty!" print nl }
 pub fn (m:Map<V>) is_empty<V>( -- b:i64) {
 	m <<len 0 ==
 }
 
 /// Free the map's memory.
-///
 /// IMPORTANT: Always call this when done with a map
 /// to prevent memory leaks. After calling release,
 /// the map should not be used.
-///
-/// Example:
-///     m release
-///
-/// Stack: (m --)
+/// @example m release
 pub fn (m:Map<V>) release<V>() {
 	m <<keys -> keys
 	m <<values -> values

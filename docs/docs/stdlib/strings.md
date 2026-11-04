@@ -5,7 +5,7 @@
 <!-- doccheck: page-context use mem -->
 
 String manipulation functions.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -37,6 +37,7 @@ Size of the string's UTF-8 encoding, in bytes. The builtin `len` counts characte
 ```qd
 "héllo" strings::byte_len print  // 6
 ```
+
 ---
 
 ### `fn` capitalize
@@ -58,6 +59,7 @@ Capitalize first character, lowercase rest.
 ```qd
 "hELLO" strings::capitalize print  // "Hello"
 ```
+
 ---
 
 ### `fn` center
@@ -81,6 +83,7 @@ Center string with padding on both sides.
 ```qd
 "hi" 6 "-" strings::center print  // "--hi--"
 ```
+
 ---
 
 ### `fn` char_at
@@ -104,6 +107,7 @@ Get character code at index, or NotAChar when the index is outside the string. T
 "héllo" 1 strings::char_at print  // 233 ('é')
 "héllo" 9 strings::char_at print  // -1 (NotAChar)
 ```
+
 ---
 
 ### `fn` column
@@ -121,6 +125,7 @@ Format strings into columns.
 | Output | Type | Description |
 |--------|------|-------------|
 | `result` | `str` | Formatted column output |
+
 ---
 
 ### `fn` compare
@@ -143,6 +148,7 @@ Compare two strings lexicographically.
 ```qd
 "abc" "abd" strings::compare print  // -1
 ```
+
 ---
 
 ### `fn` concat
@@ -165,6 +171,7 @@ Concatenate two strings.
 ```qd
 "hello" " world" strings::concat print  // "hello world"
 ```
+
 ---
 
 ### `fn` contains
@@ -187,6 +194,7 @@ Check if string contains substring.
 ```qd
 "hello" "ell" strings::contains print  // 1
 ```
+
 ---
 
 ### `fn` count
@@ -209,6 +217,7 @@ Count occurrences of substring.
 ```qd
 "ababa" "aba" strings::count print  // 1 (non-overlapping)
 ```
+
 ---
 
 ### `fn` data
@@ -224,6 +233,7 @@ Get raw char pointer to string data.
 | Output | Type | Description |
 |--------|------|-------------|
 | `ptr` | `ptr` | Raw pointer to string bytes |
+
 ---
 
 ### `fn` ends_with
@@ -246,6 +256,7 @@ Check if string ends with suffix.
 ```qd
 "hello" "lo" strings::ends_with print  // 1
 ```
+
 ---
 
 ### `fn` equals_ignore_case
@@ -268,6 +279,7 @@ Case-insensitive string comparison.
 ```qd
 "Hello" "HELLO" strings::equals_ignore_case print  // 1
 ```
+
 ---
 
 ### `fn` from_char
@@ -289,6 +301,7 @@ Create string from a Unicode codepoint, encoded as UTF-8. A value outside the Un
 ```qd
 233 strings::from_char print  // "é"
 ```
+
 ---
 
 ### `fn` from_ptr
@@ -310,6 +323,7 @@ Convert C string pointer to Quadrate string.
 ```qd
 2 mem::alloc! -> p  65 p 0 mem::set_byte  0 p 1 mem::set_byte  p strings::from_ptr  // s
 ```
+
 ---
 
 ### `fn` index_of_from
@@ -333,6 +347,7 @@ Find substring starting from position.
 ```qd
 "hello hello" "hello" 1 strings::index_of_from print  // 6
 ```
+
 ---
 
 ### `fn` index_of
@@ -355,6 +370,7 @@ Find first occurrence of substring.
 ```qd
 "hello" "ll" strings::index_of print  // 2
 ```
+
 ---
 
 ### `fn` insert
@@ -378,6 +394,7 @@ Insert string at position.
 ```qd
 "hello" 2 "XX" strings::insert print  // "heXXllo"
 ```
+
 ---
 
 ### `fn` is_alphanumeric
@@ -399,6 +416,7 @@ Check if string contains only letters and digits.
 ```qd
 "Hello123" strings::is_alphanumeric print  // 1
 ```
+
 ---
 
 ### `fn` is_alpha
@@ -420,6 +438,7 @@ Check if string contains only letters.
 ```qd
 "Hello" strings::is_alpha print  // 1
 ```
+
 ---
 
 ### `fn` is_ascii
@@ -441,6 +460,7 @@ Check if all characters are ASCII (0-127).
 ```qd
 "hello" strings::is_ascii print  // 1
 ```
+
 ---
 
 ### `fn` is_blank
@@ -462,6 +482,7 @@ Check if string is empty or only whitespace.
 ```qd
 "  " strings::is_blank print  // 1
 ```
+
 ---
 
 ### `fn` is_empty
@@ -483,6 +504,7 @@ Check if string is empty.
 ```qd
 "" strings::is_empty print  // 1
 ```
+
 ---
 
 ### `fn` is_lowercase
@@ -504,6 +526,7 @@ Check if all letters are lowercase.
 ```qd
 "hello" strings::is_lowercase print  // 1
 ```
+
 ---
 
 ### `fn` is_numeric
@@ -525,6 +548,7 @@ Check if string contains only digits.
 ```qd
 "12345" strings::is_numeric print  // 1
 ```
+
 ---
 
 ### `fn` is_uppercase
@@ -546,6 +570,7 @@ Check if all letters are uppercase.
 ```qd
 "HELLO" strings::is_uppercase print  // 1
 ```
+
 ---
 
 ### `fn` join
@@ -572,6 +597,7 @@ Join array of strings with delimiter.
 ```qd
 "usr,bin" "," strings::split! "/" strings::join!  // path
 ```
+
 ---
 
 ### `fn` last_index_of
@@ -594,6 +620,7 @@ Find last occurrence of substring.
 ```qd
 "hello hello" "hello" strings::last_index_of print  // 6
 ```
+
 ---
 
 ### `fn` lines
@@ -619,6 +646,7 @@ Split string by newlines.
 ```qd
 "a\nb\nc" strings::lines!  // ["a", "b", "c"]
 ```
+
 ---
 
 ### `fn` lower
@@ -640,6 +668,7 @@ Convert string to lowercase.
 ```qd
 "HELLO" strings::lower print  // "hello"
 ```
+
 ---
 
 ### `fn` pad_left
@@ -663,6 +692,7 @@ Left-pad string to target length.
 ```qd
 "42" 5 "0" strings::pad_left print  // "00042"
 ```
+
 ---
 
 ### `fn` pad_right
@@ -686,6 +716,7 @@ Right-pad string to target length.
 ```qd
 "hi" 5 "." strings::pad_right print  // "hi..."
 ```
+
 ---
 
 ### `fn` remove_range
@@ -709,6 +740,7 @@ Remove range from string.
 ```qd
 "hello" 1 3 strings::remove_range print  // "ho"
 ```
+
 ---
 
 ### `fn` repeat
@@ -731,6 +763,7 @@ Repeat string n times.
 ```qd
 "ab" 3 strings::repeat print  // "ababab"
 ```
+
 ---
 
 ### `fn` replace_first
@@ -754,6 +787,7 @@ Replace first occurrence only.
 ```qd
 "abab" "ab" "X" strings::replace_first print  // "Xab"
 ```
+
 ---
 
 ### `fn` replace
@@ -781,6 +815,7 @@ Replace all occurrences of substring.
 ```qd
 "hello" "l" "L" strings::replace! print  // "heLLo"
 ```
+
 ---
 
 ### `fn` reverse
@@ -802,6 +837,7 @@ Reverse a string.
 ```qd
 "hello" strings::reverse print  // "olleh"
 ```
+
 ---
 
 ### `fn` slice
@@ -825,6 +861,7 @@ Slice with negative index support (Python-style).
 ```qd
 "hello" 1 -1 strings::slice print  // "ell"
 ```
+
 ---
 
 ### `fn` sort
@@ -842,6 +879,7 @@ Sort array of strings in ascending alphabetical order.
 ```qd
 "b,a,c" "," strings::split! strings::sort
 ```
+
 ---
 
 ### `fn` sort_desc
@@ -859,6 +897,7 @@ Sort array of strings in descending alphabetical order.
 ```qd
 "b,a,c" "," strings::split! strings::sort_desc
 ```
+
 ---
 
 ### `fn` split_n
@@ -886,6 +925,7 @@ Split into at most n parts.
 ```qd
 "a:b:c:d" ":" 2 strings::split_n!  // ["a", "b:c:d"]
 ```
+
 ---
 
 ### `fn` split
@@ -912,6 +952,7 @@ Split string by delimiter.
 ```qd
 "a,b,c" "," strings::split!  // ["a","b","c"]
 ```
+
 ---
 
 ### `fn` starts_with
@@ -934,6 +975,7 @@ Check if string starts with prefix.
 ```qd
 "hello" "hel" strings::starts_with print  // 1
 ```
+
 ---
 
 ### `fn` substring
@@ -961,6 +1003,7 @@ Extract substring. A negative index, or a start past the end of the string, is E
 ```qd
 "hello" 1 3 strings::substring! print  // "ell"
 ```
+
 ---
 
 ### `fn` title
@@ -982,6 +1025,7 @@ Title case - capitalize first letter of each word.
 ```qd
 "hello world" strings::title print  // "Hello World"
 ```
+
 ---
 
 ### `fn` trim_left
@@ -1003,6 +1047,7 @@ Remove leading whitespace.
 ```qd
 "  hello" strings::trim_left print  // "hello"
 ```
+
 ---
 
 ### `fn` trim_prefix
@@ -1025,6 +1070,7 @@ Remove prefix if present.
 ```qd
 "hello" "hel" strings::trim_prefix print  // "lo"
 ```
+
 ---
 
 ### `fn` trim_right
@@ -1046,6 +1092,7 @@ Remove trailing whitespace.
 ```qd
 "hello  " strings::trim_right print  // "hello"
 ```
+
 ---
 
 ### `fn` trim
@@ -1067,6 +1114,7 @@ Remove leading and trailing whitespace.
 ```qd
 "  hello  " strings::trim print  // "hello"
 ```
+
 ---
 
 ### `fn` trim_suffix
@@ -1089,6 +1137,7 @@ Remove suffix if present.
 ```qd
 "hello" "lo" strings::trim_suffix print  // "hel"
 ```
+
 ---
 
 ### `fn` truncate
@@ -1112,6 +1161,7 @@ Truncate to max length with optional suffix.
 ```qd
 "hello world" 8 "..." strings::truncate print  // "hello..."
 ```
+
 ---
 
 ### `fn` upper
@@ -1133,6 +1183,7 @@ Convert string to uppercase.
 ```qd
 "hello" strings::upper print  // "HELLO"
 ```
+
 ---
 
 ### `fn` words

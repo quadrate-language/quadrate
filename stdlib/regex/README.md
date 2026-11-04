@@ -16,23 +16,26 @@ use regex
 use regex
 
 fn main() {
-    "hello world" "w.*d" regex::match if {
-        "matched!" print nl
-    }
+    "w.*d" "hello world" regex::is_match print nl   // 1
 
-    "abc123def" "[0-9]+" regex::find -> result found
-    found if {
-        result print nl  // prints "123"
-    }
+    "[0-9]+" regex::compile -> re
+    re "abc123def" regex::find -> end -> start
+    start print " " print end print nl              // 3 6
+    re "a1b22" "#" regex::replace print nl          // a#b#
+    re regex::release
 }
 ```
 
 ## Functions
 
-- `match(text:str pattern:str -- matched:bool)` - Check if pattern matches anywhere in text
-- `match_full(text:str pattern:str -- matched:bool)` - Check if pattern matches entire text
-- `find(text:str pattern:str -- result:str found:bool)` - Find first match
-- `replace(text:str pattern:str replacement:str -- result:str)` - Replace all matches
+- `is_match(pattern:str s:str -- result:i64)` - 1 if the pattern matches anywhere in s
+- `compile(pattern:str -- re:Regex)` - Compile a pattern once, for repeated use
+- `(re:Regex) matches(s:str -- result:i64)` - 1 if the compiled pattern matches anywhere in s
+- `(re:Regex) find(s:str -- start:i64 end:i64)` - Byte range of the first match, end exclusive; -1 -1 if none
+- `(re:Regex) find_all(s:str max:i64 -- results:ptr count:i64)` - Start/end pairs of every match; free `results` with `mem::free`
+- `(re:Regex) replace(s:str repl:str -- result:str)` - Replace every match
+- `(re:Regex) match_count(s:str -- count:i64)` - Number of non-overlapping matches
+- `(re:Regex) release()` - Free the compiled pattern
 
 ## Supported Syntax
 

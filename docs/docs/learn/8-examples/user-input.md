@@ -17,7 +17,7 @@ fn main() {
 }
 ```
 
-`io::readline` is a fallible function that reads one line from stdin (without the trailing newline). Use `!` to abort on error, or handle errors explicitly:
+`io::readline` is a fallible function that reads one line from stdin (without the trailing newline). It has two outputs: the line, and on top of it `more`, which is `1` when a line was read and `0` at the end of input. Running out of input is not an error; `-> _` above throws `more` away. Use `!` to abort on error, or handle errors explicitly:
 
 ```qd
 use io
@@ -118,8 +118,6 @@ fn main() {
 ```
 
 Run with: `quad run args.qd -- hello world`
-
-The `read` builtin pushes all arguments onto the stack with the count on top.
 
 ## Simple calculator
 

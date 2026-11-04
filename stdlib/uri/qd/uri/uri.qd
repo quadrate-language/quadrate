@@ -94,7 +94,10 @@ def is_unreserved(c:i64 -- result:i64) {
 /// @return encoded str Percent-encoded string
 /// @example "hello world" uri::encode -> encoded
 pub def encode(s:str -- encoded:str) {
-	s len -> slen
+	// Bytes, not characters: a percent escape is one byte of the UTF-8 encoding, so "é" is
+	// %C3%A9. Walking characters wrote only the low byte of each, and "é" came out as %E9.
+	s strings::byte_len -> slen
+	s strings::data -> bytes
 
 	slen 0 == if {
 		""
@@ -110,7 +113,7 @@ pub def encode(s:str -- encoded:str) {
 			i slen >= if {
 				break
 			}
-			s i strings::char_at -> c
+			bytes i mem::get_byte -> c
 
 			c is_unreserved if {
 				// Safe char, pass through
@@ -145,7 +148,10 @@ pub def encode(s:str -- encoded:str) {
 /// @return decoded str Decoded string
 /// @example "hello%20world" uri::decode -> decoded
 pub def decode(s:str -- decoded:str) {
-	s len -> slen
+	// Bytes, not characters: a percent escape is one byte of the UTF-8 encoding, so "é" is
+	// %C3%A9. Walking characters wrote only the low byte of each, and "é" came out as %E9.
+	s strings::byte_len -> slen
+	s strings::data -> bytes
 
 	slen 0 == if {
 		""
@@ -158,12 +164,12 @@ pub def decode(s:str -- decoded:str) {
 			i slen >= if {
 				break
 			}
-			s i strings::char_at -> c
+			bytes i mem::get_byte -> c
 
 			c unicode::percent == i 2 + slen < and if {
 				// Found '%', decode hex
-				s i 1 + strings::char_at hex_value -> high
-				s i 2 + strings::char_at hex_value -> low
+				bytes i 1 + mem::get_byte hex_value -> high
+				bytes i 2 + mem::get_byte hex_value -> low
 
 				high -1 != low -1 != and if {
 					high 4 bits::shl low bits::or -> byte

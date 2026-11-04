@@ -34,6 +34,7 @@ Assert that two floats are approximately equal within epsilon. Useful for compar
 ```qd
 3.14159 3.14160 0.0001 testing::assert_approx_eq  // passes
 ```
+
 ---
 
 ### `fn` assert_contains
@@ -52,6 +53,7 @@ Assert that a string contains a substring.
 ```qd
 "hello world" "world" testing::assert_contains  // passes
 ```
+
 ---
 
 ### `fn` assert_ends_with
@@ -70,6 +72,7 @@ Assert that a string ends with a suffix.
 ```qd
 "hello world" "world" testing::assert_ends_with  // passes
 ```
+
 ---
 
 ### `fn` assert_eq
@@ -89,6 +92,7 @@ Assert that two values are equal. Works with any type (i64, f64, str, ptr).
 5 5 testing::assert_eq  // passes
 "hello" "hello" testing::assert_eq  // passes
 ```
+
 ---
 
 ### `fn` assert_false
@@ -107,6 +111,7 @@ Assert that a value is falsy. Falsy means: zero for integers, zero for floats, e
 0 testing::assert_false  // passes
 "" testing::assert_false  // passes
 ```
+
 ---
 
 ### `fn` assert_ge
@@ -125,6 +130,7 @@ Assert that a is greater than or equal to b.
 ```qd
 5 5 testing::assert_ge  // passes
 ```
+
 ---
 
 ### `fn` assert_gt
@@ -143,6 +149,7 @@ Assert that a is greater than b.
 ```qd
 5 3 testing::assert_gt  // passes
 ```
+
 ---
 
 ### `fn` assert_gt_f
@@ -161,6 +168,7 @@ Assert that a float is greater than another.
 ```qd
 5.0 3.0 testing::assert_gt_f  // passes
 ```
+
 ---
 
 ### `fn` assert_in_range
@@ -180,6 +188,7 @@ Assert that value is within an inclusive range [min, max].
 ```qd
 5 0 10 testing::assert_in_range  // passes
 ```
+
 ---
 
 ### `fn` assert_le
@@ -198,6 +207,7 @@ Assert that a is less than or equal to b.
 ```qd
 5 5 testing::assert_le  // passes
 ```
+
 ---
 
 ### `fn` assert_lt
@@ -216,6 +226,7 @@ Assert that a is less than b.
 ```qd
 3 5 testing::assert_lt  // passes
 ```
+
 ---
 
 ### `fn` assert_lt_f
@@ -234,6 +245,7 @@ Assert that a float is less than another.
 ```qd
 3.0 5.0 testing::assert_lt_f  // passes
 ```
+
 ---
 
 ### `fn` assert_ne
@@ -252,6 +264,7 @@ Assert that two values are not equal. Works with any type (i64, f64, str, ptr).
 ```qd
 5 6 testing::assert_ne  // passes
 ```
+
 ---
 
 ### `fn` assert_negative
@@ -269,6 +282,7 @@ Assert that value is negative (< 0).
 ```qd
 -5 testing::assert_negative  // passes
 ```
+
 ---
 
 ### `fn` assert_nonzero
@@ -286,6 +300,7 @@ Assert that value is non-zero.
 ```qd
 5 testing::assert_nonzero  // passes
 ```
+
 ---
 
 ### `fn` assert_positive
@@ -303,6 +318,7 @@ Assert that value is positive (> 0).
 ```qd
 5 testing::assert_positive  // passes
 ```
+
 ---
 
 ### `fn` assert_starts_with
@@ -321,6 +337,7 @@ Assert that a string starts with a prefix.
 ```qd
 "hello world" "hello" testing::assert_starts_with  // passes
 ```
+
 ---
 
 ### `fn` assert_true
@@ -339,6 +356,7 @@ Assert that a value is truthy. Truthy means: non-zero for integers, non-zero for
 1 testing::assert_true  // passes
 "hello" testing::assert_true  // passes
 ```
+
 ---
 
 ### `fn` assert_zero
@@ -356,6 +374,7 @@ Assert that value is zero.
 ```qd
 0 testing::assert_zero  // passes
 ```
+
 ---
 
 ### `fn` fail

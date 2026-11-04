@@ -80,6 +80,7 @@ Set background to 256-color palette value (0-255).
 ```qd
 21 term::bg256 print "Blue BG" print term::Reset print nl
 ```
+
 ---
 
 ### `fn` bg_rgb
@@ -103,6 +104,7 @@ Set background to RGB color.
 ```qd
 0 0 128 term::bg_rgb print "Navy BG" print term::Reset print nl
 ```
+
 ---
 
 ### `fn` down
@@ -124,6 +126,7 @@ Move cursor down by n lines.
 ```qd
 5 term::down print
 ```
+
 ---
 
 ### `fn` fg256
@@ -145,6 +148,7 @@ Set foreground to 256-color palette value (0-255).
 ```qd
 196 term::fg256 print "Red" print term::Reset print nl
 ```
+
 ---
 
 ### `fn` goto
@@ -167,6 +171,7 @@ Move cursor to specific position (1-indexed).
 ```qd
 10 5 term::goto print
 ```
+
 ---
 
 ### `fn` left
@@ -188,6 +193,7 @@ Move cursor left by n columns.
 ```qd
 10 term::left print
 ```
+
 ---
 
 ### `fn` rgb
@@ -211,6 +217,7 @@ Set foreground to RGB color.
 ```qd
 255 128 0 term::rgb print "Orange" print term::Reset print nl
 ```
+
 ---
 
 ### `fn` right
@@ -232,6 +239,7 @@ Move cursor right by n columns.
 ```qd
 10 term::right print
 ```
+
 ---
 
 ### `fn` up

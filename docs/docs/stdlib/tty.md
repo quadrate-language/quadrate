@@ -30,6 +30,7 @@ Get terminal height in rows. Returns 0 if not a terminal.
 ```qd
 tty::height  // rows
 ```
+
 ---
 
 ### `fn` is_stderr
@@ -47,6 +48,7 @@ Check if stderr is connected to a terminal.
 ```qd
 tty::is_stderr if { "Error output to terminal" print nl }
 ```
+
 ---
 
 ### `fn` is_stdin
@@ -64,6 +66,7 @@ Check if stdin is connected to a terminal. Useful for detecting if input is pipe
 ```qd
 tty::is_stdin 0 == if { "Reading from pipe" print nl }
 ```
+
 ---
 
 ### `fn` is_stdout
@@ -81,6 +84,7 @@ Check if stdout is connected to a terminal.
 ```qd
 tty::is_stdout if { "Colors enabled" print nl }
 ```
+
 ---
 
 ### `fn` size
@@ -99,6 +103,7 @@ Get terminal dimensions. Returns 0, 0 if not a terminal.
 ```qd
 tty::size -> cols  // rows
 ```
+
 ---
 
 ### `fn` width

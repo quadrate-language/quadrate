@@ -39,6 +39,9 @@ var total_l:i64 = 0
 var total_w:i64 = 0
 var total_c:i64 = 0
 
+// Set when a file could not be read
+var unreadable:i64 = 0
+
 fn help() {
 	"Usage: wc [OPTION]... [FILE]..." print nl
 	"Print newline, word, and byte counts for each FILE." print nl
@@ -83,7 +86,7 @@ fn totals() { "total" total_l total_w total_c row }
 fn report(name:str path:str -- ) {
 	io::read_file switch {
 		Ok { counts tally row }
-		_ { drop "wc: " print print ": cannot read file" print nl }
+		_ { drop "wc: " print print ": cannot read file" print nl 1 -> unreadable }
 	}
 }
 
@@ -125,4 +128,6 @@ fn main() {
 	} else {
 		asked_version if { version } else { count }
 	}
+	// A file that could not be read fails the run, as GNU wc's does
+	unreadable if { 1 os::exit }
 }

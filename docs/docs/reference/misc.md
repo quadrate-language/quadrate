@@ -31,7 +31,7 @@ Works with primitive types (`i64`, `f64`, `str`, `ptr`) and struct types. Useful
 
 ---
 
-## Function pointers
+## Function values
 
 ### call
 
@@ -46,24 +46,27 @@ def double(x:i64 -- result:i64) {
 }
 
 fn main() {
-	&double -> fn_ptr
-	5 fn_ptr call print nl  // 10
+	&double -> f
+	5 f call print nl  // 10
 }
 ```
 
 ---
 
-## Getting function pointers
+## Getting function values
 
-Use `&` to get a pointer to a function:
+`&name` is a function value for a named function. It is static: nothing is allocated and
+nothing captured. A `fn { }` literal is a function value too.
 
 ```qd
-&myfunction -> ptr
+&myfunction -> f
 ```
 
-## Calling function pointers
+`ptr` is raw memory and is reserved as a type name, so it cannot name the local.
 
-Push arguments, then the pointer, then `call`:
+## Calling function values
+
+Push the arguments, then the function value, then `call`:
 
 ```qd
 // For: def addition(a:i64 b:i64 -- sum:i64)
@@ -146,4 +149,4 @@ fn main() {
 
 ## See also
 
-- [Function Pointers](../learn/7-advanced/function-pointers.md) in the Learn section
+- [Function values](../learn/7-advanced/function-pointers.md) in the Learn section

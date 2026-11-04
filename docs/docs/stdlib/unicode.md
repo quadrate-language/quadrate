@@ -131,6 +131,7 @@ Convert digit character to its numeric value.
 ```qd
 53 unicode::digit_value print  // 5
 ```
+
 ---
 
 ### `fn` hex_digit_value
@@ -152,6 +153,7 @@ Convert hex digit character to its numeric value.
 ```qd
 65 unicode::hex_digit_value print  // 10 (A)
 ```
+
 ---
 
 ### `fn` is_alnum
@@ -173,6 +175,7 @@ Check if a codepoint is a letter or a decimal digit.
 ```qd
 233 unicode::is_alnum print  // 1
 ```
+
 ---
 
 ### `fn` is_alpha
@@ -194,6 +197,7 @@ Check if a codepoint is a letter, in any script.
 ```qd
 233 unicode::is_alpha print  // 1
 ```
+
 ---
 
 ### `fn` is_ascii
@@ -215,6 +219,7 @@ Check if character is ASCII (0-127).
 ```qd
 65 unicode::is_ascii print  // 1
 ```
+
 ---
 
 ### `fn` is_control
@@ -236,6 +241,7 @@ Check if a codepoint is a control character (C0, C1 and delete).
 ```qd
 10 unicode::is_control print  // 1 (newline)
 ```
+
 ---
 
 ### `fn` is_digit
@@ -257,6 +263,7 @@ Check if a codepoint is a decimal digit (0-9). Only decimal digits: other script
 ```qd
 48 unicode::is_digit print  // 1
 ```
+
 ---
 
 ### `fn` is_hex_digit
@@ -278,6 +285,7 @@ Check if character is a hexadecimal digit (0-9, A-F, a-f).
 ```qd
 65 unicode::is_hex_digit print  // 1 (A)
 ```
+
 ---
 
 ### `fn` is_ident_cont
@@ -299,6 +307,7 @@ Check if character is a valid identifier continuation (ASCII letter, digit or un
 ```qd
 95 unicode::is_ident_cont print  // 1 (_)
 ```
+
 ---
 
 ### `fn` is_ident_start
@@ -320,6 +329,7 @@ Check if character is a valid identifier start (ASCII letter or underscore). Del
 ```qd
 95 unicode::is_ident_start print  // 1 (_)
 ```
+
 ---
 
 ### `fn` is_lower
@@ -341,6 +351,7 @@ Check if a codepoint is a lowercase letter.
 ```qd
 97 unicode::is_lower print  // 1
 ```
+
 ---
 
 ### `fn` is_print
@@ -362,6 +373,7 @@ Check if a codepoint is printable, which is anything that is not a control chara
 ```qd
 65 unicode::is_print print  // 1
 ```
+
 ---
 
 ### `fn` is_punct
@@ -383,6 +395,7 @@ Check if a codepoint is punctuation or a symbol. Printable, and none of letter, 
 ```qd
 33 unicode::is_punct print  // 1 (!)
 ```
+
 ---
 
 ### `fn` is_space
@@ -404,6 +417,7 @@ Check if a codepoint is whitespace. Includes the Unicode spaces, so a pasted non
 ```qd
 32 unicode::is_space print  // 1
 ```
+
 ---
 
 ### `fn` is_upper
@@ -425,6 +439,7 @@ Check if a codepoint is an uppercase letter.
 ```qd
 65 unicode::is_upper print  // 1
 ```
+
 ---
 
 ### `fn` is_utf8_cont
@@ -446,6 +461,7 @@ Check if byte is a UTF-8 continuation byte (10xxxxxx).
 ```qd
 0x80 unicode::is_utf8_cont print  // 1
 ```
+
 ---
 
 ### `fn` is_utf8_start
@@ -467,6 +483,7 @@ Check if byte is the start of a UTF-8 sequence.
 ```qd
 0xC2 unicode::is_utf8_start print  // 1
 ```
+
 ---
 
 ### `fn` is_valid_codepoint
@@ -488,6 +505,7 @@ Check if a codepoint is valid Unicode.
 ```qd
 0x1F600 unicode::is_valid_codepoint print  // 1 (😀)
 ```
+
 ---
 
 ### `fn` to_lower
@@ -509,6 +527,7 @@ Convert a codepoint to lowercase, or return it unchanged if it does not case.
 ```qd
 201 unicode::to_lower print  // 233
 ```
+
 ---
 
 ### `fn` to_upper
@@ -530,6 +549,7 @@ Convert a codepoint to uppercase, or return it unchanged if it does not case. Ma
 ```qd
 233 unicode::to_upper print  // 201
 ```
+
 ---
 
 ### `fn` utf8_encode_len
@@ -551,6 +571,7 @@ Get the number of UTF-8 bytes needed to encode a codepoint.
 ```qd
 0x00E9 unicode::utf8_encode_len print  // 2 (é)
 ```
+
 ---
 
 ### `fn` utf8_seq_len

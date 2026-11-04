@@ -36,6 +36,7 @@ Create a new StringBuilder with default capacity.
 ```qd
 sb::new  // builder
 ```
+
 ---
 
 #### `fn` with_capacity
@@ -79,6 +80,7 @@ Append a single character (by code point).
 ```qd
 builder 65 sb::append_char  // builder
 ```
+
 ---
 
 #### `fn` append_int
@@ -100,6 +102,7 @@ Append an integer as string.
 ```qd
 builder 42 sb::append_int  // builder
 ```
+
 ---
 
 #### `fn` append
@@ -121,6 +124,7 @@ Append a string to the builder.
 ```qd
 builder "hello" sb::append  // builder
 ```
+
 ---
 
 #### `fn` append_value
@@ -142,6 +146,7 @@ Append any value, spelled as `cast<str>` spells it. String interpolation uses th
 ```qd
 builder 1.5 sb::append_value  // builder
 ```
+
 ---
 
 #### `fn` build
@@ -159,6 +164,7 @@ Build the final string (does not consume builder).
 ```qd
 builder sb::build  // result
 ```
+
 ---
 
 #### `fn` capacity
@@ -176,6 +182,7 @@ Get the current capacity of the builder.
 ```qd
 builder sb::capacity  // cap
 ```
+
 ---
 
 #### `fn` finish
@@ -193,6 +200,7 @@ Build string and free builder in one call.
 ```qd
 builder sb::finish  // result
 ```
+
 ---
 
 #### `fn` free
@@ -206,6 +214,7 @@ Free the builder's resources.
 ```qd
 builder sb::free
 ```
+
 ---
 
 #### `fn` is_empty
@@ -223,6 +232,7 @@ Check if the builder is empty.
 ```qd
 builder sb::is_empty  // empty
 ```
+
 ---
 
 #### `fn` len
@@ -240,6 +250,7 @@ Get current length of builder content, in bytes -- the size of its UTF-8 encodin
 ```qd
 builder sb::len  // sblen
 ```
+
 ---
 
 #### `fn` newline
@@ -257,6 +268,7 @@ Append a newline character.
 ```qd
 builder sb::newline  // builder
 ```
+
 ---
 
 #### `fn` space

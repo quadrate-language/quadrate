@@ -22,6 +22,7 @@ Find the best matching items from a list, sorted by score descending. Items with
 |--------|------|-------------|
 | `results` | `[]str` | Array of matching strings |
 | `count` | `i64` | Number of results |
+
 ---
 
 ### `fn` contains_ci
@@ -38,6 +39,7 @@ Check if a string contains a substring (case-insensitive).
 | Output | Type | Description |
 |--------|------|-------------|
 | `contains` | `i64` | 1 if s contains substr, 0 otherwise |
+
 ---
 
 ### `fn` distance
@@ -62,6 +64,7 @@ Compute Levenshtein edit distance between two strings. The edit distance is the 
 "hello" "hello" fuzzy::distance  // 0
 "" "abc" fuzzy::distance  // 3
 ```
+
 ---
 
 ### `fn` matches
@@ -86,6 +89,7 @@ Check if query approximately matches target within a similarity threshold.
 "helo" "hello" 0.7 fuzzy::matches  // 1
 "xyz" "hello" 0.7 fuzzy::matches  // 0
 ```
+
 ---
 
 ### `fn` score
@@ -107,9 +111,10 @@ Compute a fuzzy match score combining multiple matching strategies. Higher score
 
 ```qd
 "sin" "sin" fuzzy::score  // 1000
-"sin" "asin" fuzzy::score  // ~350 (substring)
+"sin" "asin" fuzzy::score  // 375 (substring: 300 + 3/4 * 100)
 "rf" "read_file" fuzzy::score  // 200 (word boundary)
 ```
+
 ---
 
 ### `fn` similarity
@@ -134,6 +139,7 @@ Compute similarity between two strings as a value from 0.0 to 1.0. 1.0 means ide
 "hello" "hallo" fuzzy::similarity  // 0.8
 "abc" "xyz" fuzzy::similarity  // 0.0
 ```
+
 ---
 
 ### `fn` starts_with_ci

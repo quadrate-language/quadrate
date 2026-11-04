@@ -39,6 +39,7 @@ Parse decimal string to integer (base 10). Equivalent to: str 10 strconv::parse_
 ```qd
 "42" strconv::atoi! print  // 42
 ```
+
 ---
 
 ### `fn` format_bool
@@ -60,6 +61,7 @@ Format boolean to string. Non-zero becomes "true", zero becomes "false".
 ```qd
 1 strconv::format_bool print  // "true"
 ```
+
 ---
 
 ### `fn` format_float
@@ -81,6 +83,7 @@ Format float to string: the shortest text that parse_float reads back as the sam
 ```qd
 3.14159 strconv::format_float print  // "3.14159"
 ```
+
 ---
 
 ### `fn` format_int
@@ -103,6 +106,7 @@ Format integer in given base.
 ```qd
 255 16 strconv::format_int print  // "ff"
 ```
+
 ---
 
 ### `fn` itoa
@@ -124,6 +128,7 @@ Convert integer to decimal string (base 10). Equivalent to: value 10 strconv::fo
 ```qd
 42 strconv::itoa print  // "42"
 ```
+
 ---
 
 ### `fn` parse_bool
@@ -145,6 +150,7 @@ Parse string to boolean. Accepts "true"/"1" as true, "false"/"0" as false (case-
 ```qd
 "true" strconv::parse_bool! print  // 1
 ```
+
 ---
 
 ### `fn` parse_d128
@@ -166,6 +172,7 @@ Parse string to d128, rounding to 34 digits. Takes an optional sign, digits with
 ```qd
 "0.1" strconv::parse_d128! print  // 0.1
 ```
+
 ---
 
 ### `fn` parse_float
@@ -187,6 +194,7 @@ Parse string to float. A value too large for an f64 is an error, not infinity.
 ```qd
 "3.14" strconv::parse_float! print  // 3.14
 ```
+
 ---
 
 ### `fn` parse_int

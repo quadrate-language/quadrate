@@ -43,7 +43,7 @@
       "signature": "(buf:ptr offset:i64 len:i64 value:i64 -- result:i64)",
       "failable": false,
       "description": "Count occurrences of a byte value in a buffer.",
-      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "count", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to count"}],
+      "params": [{"name": "buf", "type": "ptr", "description": "Buffer to search"}, {"name": "offset", "type": "i64", "description": "Starting offset"}, {"name": "len", "type": "i64", "description": "Number of bytes to search"}, {"name": "value", "type": "i64", "description": "Byte value to count"}],
       "returns": [{"name": "result", "type": "i64", "description": "Number of occurrences"}],
       "errors": [],
       "examples": ["buf 0 10 0x41 bytes::count -> n"]

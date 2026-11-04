@@ -72,6 +72,7 @@ Add days to a timestamp.
 ```qd
 time::unix 7 time::add_days print
 ```
+
 ---
 
 ### `fn` add_hours
@@ -94,6 +95,7 @@ Add hours to a timestamp.
 ```qd
 time::unix 2 time::add_hours print
 ```
+
 ---
 
 ### `fn` add_minutes
@@ -116,28 +118,30 @@ Add minutes to a timestamp.
 ```qd
 time::unix 30 time::add_minutes print
 ```
+
 ---
 
 ### `fn` add
 
-Add duration to a timestamp.
+Add duration to a timestamp. Both are in nanoseconds: ts as time::now returns it, the duration as the time constants (time::Second, time::Day, ...) express it.
 
 **Signature:** `(ts:i64 duration:i64 -- new_ts:i64)`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `ts` | `i64` | Timestamp (use time::now for nanoseconds) |
-| `duration` | `i64` | Duration to add (use time constants) |
+| `ts` | `i64` | Timestamp in nanoseconds since the epoch (as from time::now) |
+| `duration` | `i64` | Duration in nanoseconds (e.g. time::Day 4 *) |
 
 | Output | Type | Description |
 |--------|------|-------------|
-| `new_ts` | `i64` | New timestamp |
+| `new_ts` | `i64` | New timestamp in nanoseconds |
 
 **Example:**
 
 ```qd
 time::now time::Day 4 * time::add print
 ```
+
 ---
 
 ### `fn` after
@@ -160,6 +164,7 @@ Check if timestamp is after another.
 ```qd
 ts1 ts2 time::after print
 ```
+
 ---
 
 ### `fn` before
@@ -182,6 +187,7 @@ Check if timestamp is before another.
 ```qd
 ts1 ts2 time::before print
 ```
+
 ---
 
 ### `fn` date
@@ -208,6 +214,7 @@ Create Unix timestamp from date components.
 ```qd
 2024 1 15 12 30 0 time::date print
 ```
+
 ---
 
 ### `fn` days_between
@@ -230,6 +237,7 @@ Get number of full days between two timestamps.
 ```qd
 end_ts start_ts time::days_between print
 ```
+
 ---
 
 ### `fn` days_in_month
@@ -252,6 +260,7 @@ Get number of days in a month.
 ```qd
 2024 2 time::days_in_month print  // 29
 ```
+
 ---
 
 ### `fn` days_in_year
@@ -273,6 +282,7 @@ Get number of days in a year.
 ```qd
 2024 time::days_in_year print  // 366
 ```
+
 ---
 
 ### `fn` day
@@ -294,6 +304,7 @@ Extract day of month from Unix timestamp (1-31).
 ```qd
 time::unix time::day print
 ```
+
 ---
 
 ### `fn` end_of_day
@@ -315,6 +326,7 @@ Get end of day (23:59:59) for a timestamp.
 ```qd
 time::unix time::end_of_day print
 ```
+
 ---
 
 ### `fn` format
@@ -341,6 +353,7 @@ Format timestamp using strftime format string. Common format specifiers: - %Y: 4
 ```qd
 time::unix "%Y-%m-%d %H:%M:%S" time::format! print
 ```
+
 ---
 
 ### `fn` hours_between
@@ -363,6 +376,7 @@ Get number of full hours between two timestamps.
 ```qd
 end_ts start_ts time::hours_between print
 ```
+
 ---
 
 ### `fn` hour
@@ -384,6 +398,7 @@ Extract hour from Unix timestamp (0-23).
 ```qd
 time::unix time::hour print
 ```
+
 ---
 
 ### `fn` is_leap_year
@@ -405,6 +420,7 @@ Check if year is a leap year.
 ```qd
 2024 time::is_leap_year print  // 1
 ```
+
 ---
 
 ### `fn` iso_week
@@ -426,6 +442,7 @@ Get ISO week number (1-53). Weeks start on Monday, and week 1 is the one holding
 ```qd
 time::unix time::iso_week print
 ```
+
 ---
 
 ### `fn` is_weekday
@@ -447,6 +464,7 @@ Check if weekday is a weekday (Monday-Friday).
 ```qd
 time::unix time::weekday time::is_weekday print
 ```
+
 ---
 
 ### `fn` is_weekend
@@ -468,6 +486,7 @@ Check if weekday is a weekend day (Saturday or Sunday).
 ```qd
 time::unix time::weekday time::is_weekend print
 ```
+
 ---
 
 ### `fn` micros
@@ -485,6 +504,7 @@ Get current time in microseconds since epoch.
 ```qd
 time::micros  // us
 ```
+
 ---
 
 ### `fn` millis
@@ -502,6 +522,7 @@ Get current time in milliseconds since epoch.
 ```qd
 time::millis  // ms
 ```
+
 ---
 
 ### `fn` minute
@@ -523,6 +544,7 @@ Extract minute from Unix timestamp (0-59).
 ```qd
 time::unix time::minute print
 ```
+
 ---
 
 ### `fn` month
@@ -544,6 +566,7 @@ Extract month from Unix timestamp (1-12).
 ```qd
 time::unix time::month print
 ```
+
 ---
 
 ### `fn` now
@@ -561,6 +584,7 @@ Get current time in nanoseconds since epoch.
 ```qd
 time::now  // start
 ```
+
 ---
 
 ### `fn` parse
@@ -587,6 +611,7 @@ Parse string to timestamp using strptime format string. The whole input must mat
 ```qd
 "2024-01-15" "%Y-%m-%d" time::parse!  // ts
 ```
+
 ---
 
 ### `fn` same_day
@@ -609,6 +634,7 @@ Check if two timestamps are on the same day.
 ```qd
 ts1 ts2 time::same_day print
 ```
+
 ---
 
 ### `fn` second
@@ -630,6 +656,7 @@ Extract second from Unix timestamp (0-59).
 ```qd
 time::unix time::second print
 ```
+
 ---
 
 ### `fn` sleep
@@ -647,6 +674,7 @@ Sleep for duration in nanoseconds. A signal does not cut it short.
 ```qd
 time::Second time::sleep
 ```
+
 ---
 
 ### `fn` start_of_day
@@ -668,6 +696,7 @@ Get start of day (midnight) for a timestamp.
 ```qd
 time::unix time::start_of_day print
 ```
+
 ---
 
 ### `fn` sub
@@ -690,6 +719,7 @@ Get difference between two timestamps in seconds.
 ```qd
 end_time start_time time::sub print
 ```
+
 ---
 
 ### `fn` unix
@@ -705,8 +735,9 @@ Get Unix timestamp in seconds.
 **Example:**
 
 ```qd
-time::unix print  // 1700000000
+time::unix print  // e.g. 1700000000
 ```
+
 ---
 
 ### `fn` weekday
@@ -728,6 +759,7 @@ Get day of week from Unix timestamp (0=Sunday, 6=Saturday).
 ```qd
 time::unix time::weekday print
 ```
+
 ---
 
 ### `fn` year_day
@@ -749,6 +781,7 @@ Get day of year from Unix timestamp (1-366).
 ```qd
 time::unix time::year_day print
 ```
+
 ---
 
 ### `fn` year

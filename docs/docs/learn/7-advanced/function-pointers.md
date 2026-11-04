@@ -1,34 +1,40 @@
-# Function pointers
+# Function values
 
-Function pointers let you store and call functions dynamically.
+A function is a value like any other: it can be stored in a local, passed to another function,
+kept in a struct field or an array, and called later. Its type is written `fn(...)` with the
+signature inside, such as `fn(i64 -- i64)`.
 
-## Getting a function pointer
+## Getting a function value
 
-Use `&` to get a pointer to a function:
+Use `&` in front of a function's name to get it as a value:
 
 ```qd
-def double(x:i64 -- result:i64) {
-	x 2 *
+fn double(x:i64 -- result:i64) {
+	2 *
 }
 
 fn main() {
-	&double -> fn_ptr
-	// fn_ptr now holds a reference to double
+	&double -> f
+	// f now holds double as a value of type fn(i64 -- i64)
 }
 ```
 
-## Calling function pointers
+A function value is a counted value, like a struct or an array. `&name` gives a static one: it
+refers to the named function and carries nothing else. An
+[anonymous function](anonymous-functions.md) that captures locals carries them with it.
 
-Use `call` to invoke a function pointer:
+## Calling function values
+
+Use `call` to invoke a function value:
 
 ```qd
-def double(x:i64 -- result:i64) {
-	x 2 *
+fn double(x:i64 -- result:i64) {
+	2 *
 }
 
 fn main() {
-	&double -> fn_ptr
-	5 fn_ptr call print nl  // 10
+	&double -> f
+	5 f call print nl  // 10
 }
 ```
 
@@ -39,9 +45,9 @@ def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
 	x f call
 }
 
-def double(x:i64 -- result:i64) { x 2 * }
+fn double(x:i64 -- result:i64) { 2 * }
 def square(x:i64 -- result:i64) { x x * }
-def increment(x:i64 -- result:i64) { x 1 + }
+fn increment(x:i64 -- result:i64) { 1 + }
 
 fn main() {
 	5 &double apply print nl  // 10
@@ -52,21 +58,24 @@ fn main() {
 
 ## Storing in arrays
 
+`[4]fn(i64 i64 -- i64)` makes a function table: an array of four function values with that
+signature.
+
 ```qd
-def addition(a:i64 b:i64 -- r:i64) {
-	a b +
+fn addition(a:i64 b:i64 -- r:i64) {
+	+
 }
 
-def subtraction(a:i64 b:i64 -- r:i64) {
-	a b -
+fn subtraction(a:i64 b:i64 -- r:i64) {
+	-
 }
 
-def multiplication(a:i64 b:i64 -- r:i64) {
-	a b *
+fn multiplication(a:i64 b:i64 -- r:i64) {
+	*
 }
 
-def div_op(a:i64 b:i64 -- r:i64) {
-	a b /
+fn div_op(a:i64 b:i64 -- r:i64) {
+	/
 }
 
 fn main() {
@@ -85,7 +94,7 @@ fn main() {
 
 ## Callbacks
 
-Use function pointers for callbacks:
+Use function values for callbacks:
 
 ```qd
 def for_each(arr:[]i64 callback:fn(i64 --) -- ) {
@@ -108,7 +117,7 @@ fn main() {
 
 `map`, `filter` and the other combinators are builtins (see
 [Higher-order functions](higher-order-functions.md)). Here is how such a function is written
-by hand, as a function taking a function pointer.
+by hand, as a function taking a function value.
 
 ### Map
 
@@ -121,7 +130,7 @@ def map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
 	result
 }
 
-def double(x:i64 -- r:i64) { x 2 * }
+fn double(x:i64 -- r:i64) { 2 * }
 
 fn main() {
 	[1 2 3 4 5] &double map_ints -> doubled
@@ -156,8 +165,8 @@ def filter_ints(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
 	result
 }
 
-def is_even(x:i64 -- result:i64) {
-	x 2 % 0 ==
+fn is_even(x:i64 -- result:i64) {
+	2 % 0 ==
 }
 
 fn main() {
@@ -180,8 +189,8 @@ def reduce(arr:[]i64 initial:i64 f:fn(i64 i64 -- i64) -- result:i64) {
 	result
 }
 
-def addition(a:i64 b:i64 -- r:i64) {
-	a b +
+fn addition(a:i64 b:i64 -- r:i64) {
+	+
 }
 
 fn main() {
@@ -258,7 +267,7 @@ fn cmd_quit() {
 
 ## Type aliases
 
-Use `type` to create readable names for function pointer types:
+Use `type` to create readable names for function types:
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd

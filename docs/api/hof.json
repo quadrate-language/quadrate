@@ -23,7 +23,7 @@
       "signature": "(..a cond:i64 q:fn(..a -- ..a) -- ..a)",
       "failable": false,
       "description": "Run a function value only if the condition is false, as `when` runs it when it is true.",
-      "params": [{"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "q", "type": "fn", "description": "Function value, run when the condition is false"}],
+      "params": [{"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "q", "type": "fn(..a -- ..a)", "description": "Function value, run when the condition is false"}],
       "returns": [],
       "errors": [],
       "examples": ["5 0 fn { 2 * } hof::unless print nl  // 10", "5 1 fn { 2 * } hof::unless print nl  // 5"]
@@ -33,7 +33,7 @@
       "signature": "(..a cond:i64 q:fn(..a -- ..a) -- ..a)",
       "failable": false,
       "description": "Run a function value only if the condition is true. It must leave the stack the shape it found it, since when the condition is false nothing runs.",
-      "params": [{"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "q", "type": "fn", "description": "Function value, run when the condition is true"}],
+      "params": [{"name": "cond", "type": "i64", "description": "Condition (0 = false, non-zero = true)"}, {"name": "q", "type": "fn(..a -- ..a)", "description": "Function value, run when the condition is true"}],
       "returns": [],
       "errors": [],
       "examples": ["5 1 fn { 2 * } hof::when print nl  // 10", "5 0 fn { 2 * } hof::when print nl  // 5"]

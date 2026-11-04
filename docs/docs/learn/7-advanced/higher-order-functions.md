@@ -194,8 +194,6 @@ takes one element and leaves a flag. `find` leaves the element it found and `1`,
 the element type and `0`; `index` leaves its position, or `-1`:
 
 ```qd
-use strings
-
 fn main() {
 	[1 5 12 3] fn { 10 > } any print nl  // 1
 	[1 5 12 3] fn { 0 > } all print nl  // 1

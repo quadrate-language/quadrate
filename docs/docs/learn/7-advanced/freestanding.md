@@ -51,11 +51,11 @@ operations — `set_byte`/`get_byte`, `set_i64`/`get_i64`, `set_f64`/`get_f64`,
 `to_string`, `from_string`) lives in `libmem.a` and is simply not linked, so reaching for
 it is a link error rather than a silent heap dependency.
 
-**Rejected builtins** — `print`, `dump`, `nl`, `read`, `panic`,
+**Rejected builtins** — `print`, `dump`, `nl`, `panic`,
 `err`. Each gives
 `builtin 'X' is not available in --freestanding mode`. Arithmetic, comparison, bitwise
 ops, stack manipulation, locals, `if`/`loop`/`for`/`switch`, structs, arrays, function
-pointers and FFI all work normally.
+values and FFI all work normally.
 
 ## The `sys` module
 
@@ -103,7 +103,7 @@ implement it yourself. Shifts and multiplication are fine.
 will compile and do nothing useful. Work in bytes.
 
 **There is no error reporting.** `panic` is rejected outright, and every internal fatal
-path (stack underflow, stack overflow, division, a failed `castp`) halts silently instead
+path (stack underflow, stack overflow, division, a failed `cast<ptr>`) halts silently instead
 of printing. Getting a wrong answer and getting a halt look the same from outside, so
 lean on the compile-time stack checker.
 
@@ -188,7 +188,7 @@ freestanding.o: lib/rt/src/freestanding.c
 
 mem.o: stdlib/mem/src/mem.c
 	clang --target=x86_64-unknown-none-elf -ffreestanding -fno-builtin -nostdlib \
-	      -Ilib/rt/include -Ilib/mem/include -c $< -o $@
+	      -Ilib/rt/include -Istdlib/mem/include -c $< -o $@
 
 kernel.elf: boot.o kernel.o freestanding.o mem.o linker.ld
 	ld -nostdlib -T linker.ld -o $@ boot.o kernel.o freestanding.o mem.o

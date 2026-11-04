@@ -1,6 +1,8 @@
 # Values and types
 
-Quadrate has five basic types. Understanding them is essential.
+Every value in Quadrate has a type. The basic ones are numbers (`i64`, `f64`, `d128`) and
+strings (`str`). On top of those come structs, arrays (`[]T`) and function values
+(`fn(...)`), and `ptr` for raw memory.
 
 ## Integer (i64)
 
@@ -40,7 +42,7 @@ fn main() {
 fn main() {
 	3.14 print nl
 	-0.5 print nl
-	2.0 print nl      // Note: 2.0, not 2
+	2.0 print nl      // prints 2; the literal is still an f64
 }
 ```
 
@@ -101,7 +103,8 @@ fn main() {
 	42 -> age
 	$"Hello, {name}!" print nl     // Hello, World!
 	$"Age: {age}" print nl         // Age: 42
-	$"Sum: {age}" print nl         // Sum: 42
+	10 20 + -> sum
+	$"Sum: {sum}" print nl         // Sum: 30
 }
 ```
 
@@ -115,9 +118,10 @@ Each `{...}` names a variable or constant, and its value is converted to a strin
 | `"a" "b" strings::concat` | Simple two-string join |
 | `sb::new` / `append` / `finish` | Building strings in loops or incrementally |
 
-## Pointer (ptr)
+## Structs, arrays and function values
 
-Pointers reference data in memory. You'll use them with structs and arrays:
+A struct value has its struct type, an array of `i64` has type `[]i64`, and a function value
+has a `fn(...)` type that spells out its signature:
 
 ```qd
 struct Point {
@@ -129,12 +133,23 @@ fn main() {
 	Point {
 		x = 1.0
 		y = 2.0
-	} -> p  // p is a ptr
-	p <<x print nl
+	} -> p          // p is a Point
+	p <<x print nl  // 1
+	[1 2 3] -> xs   // xs is a []i64
+	xs len print nl // 3
 }
 ```
 
-We'll cover pointers in detail in the [Structs](../5-data-structures/structs.md) section.
+These get their own chapters: [Structs](../5-data-structures/structs.md),
+[Arrays](../5-data-structures/arrays.md) and
+[Function values](../7-advanced/function-pointers.md).
+
+## Raw memory (ptr)
+
+A `ptr` is a raw memory address: what `mem::alloc` returns and what C functions take and
+return through [FFI](../7-advanced/ffi.md). It can be `null`. A `ptr` is not a struct, an
+array, a string or a function value, and a parameter declared `ptr` refuses all of those.
+Most programs never need one.
 
 ## Booleans
 
@@ -189,8 +204,8 @@ fn main() {
 When you write functions, you specify types:
 
 ```qd
-def sum(a:i64 b:i64 -- result:i64) {
-	a b +
+fn sum(a:i64 b:i64 -- result:i64) {
+	+
 }
 
 def greet(name:str -- ) {

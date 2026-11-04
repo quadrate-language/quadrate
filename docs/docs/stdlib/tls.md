@@ -12,7 +12,7 @@
 
 TLS/SSL secure socket operations.
 Provides encryption layer on top of TCP sockets using OpenSSL.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -51,6 +51,7 @@ Wrap a TCP socket with TLS encryption (server mode). Loads certificate and key, 
 ```qd
 client_sock "/path/cert.pem" "/path/key.pem" tls::accept!  // conn
 ```
+
 ---
 
 ### `fn` close
@@ -68,6 +69,7 @@ Close TLS connection and free resources. Performs TLS shutdown handshake. Does N
 ```qd
 conn tls::close  sock net::close
 ```
+
 ---
 
 ### `fn` connect_mtls
@@ -92,6 +94,7 @@ Wrap a TCP socket with TLS encryption using client certificate (mTLS). Performs 
 ```qd
 sock "api.example.com" "/path/client.crt" "/path/client.key" tls::connect_mtls!  // conn
 ```
+
 ---
 
 ### `fn` connect
@@ -119,6 +122,7 @@ Wrap a TCP socket with TLS encryption (client mode). Performs TLS handshake and 
 ```qd
 "example.com" 443 net::connect! -> sock  sock "example.com" tls::connect!  // conn
 ```
+
 ---
 
 ### `fn` receive
@@ -146,6 +150,7 @@ Receive data from TLS connection. Data is decrypted after reception. When the pe
 ```qd
 conn 4096 tls::receive! -> n  // data
 ```
+
 ---
 
 ### `fn` send

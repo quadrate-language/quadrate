@@ -1,48 +1,46 @@
-/// Deque<T> - A Double-Ended Queue
-/// ================================
-///
-/// Deque provides O(1) push/pop from both ends.
-/// Implemented using a circular buffer.
-///
-/// ## Creating a Deque
-///
-/// Create an empty deque:
-///
-///     Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
-///
-/// ## Basic Operations
-///
-/// Push to front/back:
-///
-///     d 42 push_front! -> d
-///     d 42 push_back! -> d
-///
-/// Pop from front/back:
-///
-///     d pop_front! -> d -> val
-///     d pop_back! -> d -> val
-///
-/// Peek front/back:
-///
-///     d peek_front! -> val
-///     d peek_back! -> val
-///
-/// ## Memory Management
-///
-/// Always call release when done:
-///
-///     d release
+// Deque<T> - A Double-Ended Queue
+// ================================
+//
+// Deque provides O(1) push/pop from both ends.
+// Implemented using a circular buffer.
+//
+// ## Creating a Deque
+//
+// Create an empty deque:
+//
+//     Deque<i64> { data = null head = 0 tail = 0 len = 0 cap = 0 } -> d
+//
+// ## Basic Operations
+//
+// Push to front/back:
+//
+//     d 42 push_front! -> d
+//     d 42 push_back! -> d
+//
+// Pop from front/back:
+//
+//     d pop_front! -> d -> val
+//     d pop_back! -> d -> val
+//
+// Peek front/back:
+//
+//     d peek_front! -> val
+//     d peek_back! -> val
+//
+// ## Memory Management
+//
+// Always call release when done:
+//
+//     d release
 
 use mem
 
 /// Double-ended queue with elements of type T.
-///
-/// Fields:
-///   data - Pointer to circular buffer
-///   head - Index of front element
-///   tail - Index after last element
-///   len  - Number of elements
-///   cap  - Buffer capacity
+/// @field data ptr Pointer to circular buffer
+/// @field head i64 Index of front element
+/// @field tail i64 Index after last element
+/// @field len i64 Number of elements
+/// @field cap i64 Buffer capacity
 pub struct Deque<T> {
 	data: ptr
 	head: i64
@@ -52,11 +50,7 @@ pub struct Deque<T> {
 }
 
 /// Push an element to the back.
-///
-/// Example:
-///     d 42 push_back! -> d
-///
-/// Stack: (d val -- d2)
+/// @example d 42 push_back! -> d  // re-bind the returned deque
 pub def (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 	d <<data -> data
 	d <<head -> head
@@ -101,11 +95,7 @@ pub def (d:Deque<T>) push_back<T>(val:T -- d2:Deque<T>)! {
 }
 
 /// Push an element to the front.
-///
-/// Example:
-///     d 42 push_front! -> d
-///
-/// Stack: (d val -- d2)
+/// @example d 42 push_front! -> d  // re-bind the returned deque
 pub def (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 	d <<data -> data
 	d <<head -> head
@@ -151,11 +141,7 @@ pub def (d:Deque<T>) push_front<T>(val:T -- d2:Deque<T>)! {
 }
 
 /// Remove and return the front element.
-///
-/// Example:
-///     d pop_front! -> d -> val
-///
-/// Stack: (d -- val d2)
+/// @example d pop_front! -> d -> val  // the deque is on top, the element under it
 pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
@@ -178,11 +164,7 @@ pub fn (d:Deque<T>) pop_front<T>( -- val:T d2:Deque<T>)! {
 }
 
 /// Remove and return the back element.
-///
-/// Example:
-///     d pop_back! -> d -> val
-///
-/// Stack: (d -- val d2)
+/// @example d pop_back! -> d -> val  // the deque is on top, the element under it
 pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 	d <<len -> len
 
@@ -209,8 +191,7 @@ pub fn (d:Deque<T>) pop_back<T>( -- val:T d2:Deque<T>)! {
 }
 
 /// View the front element without removing it.
-///
-/// Stack: (d -- val)
+/// @example d peek_front! -> val
 pub fn (d:Deque<T>) peek_front<T>( -- val:T)! {
 	d <<len -> len
 
@@ -225,8 +206,7 @@ pub fn (d:Deque<T>) peek_front<T>( -- val:T)! {
 }
 
 /// View the back element without removing it.
-///
-/// Stack: (d -- val)
+/// @example d peek_back! -> val
 pub fn (d:Deque<T>) peek_back<T>( -- val:T)! {
 	d <<len -> len
 
@@ -247,22 +227,19 @@ pub fn (d:Deque<T>) peek_back<T>( -- val:T)! {
 }
 
 /// Get the number of elements.
-///
-/// Stack: (d -- n)
+/// @example d length -> n
 pub fn (d:Deque<T>) length<T>( -- n:i64) {
 	d <<len
 }
 
 /// Check if the deque is empty.
-///
-/// Stack: (d -- bool)
+/// @example d is_empty if { "empty!" print nl }
 pub fn (d:Deque<T>) is_empty<T>( -- b:i64) {
 	d <<len 0 ==
 }
 
 /// Free the deque's memory.
-///
-/// Stack: (d --)
+/// @example d release
 pub fn (d:Deque<T>) release<T>() {
 	d <<data -> data
 	data 0 != if {

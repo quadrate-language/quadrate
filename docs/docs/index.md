@@ -45,7 +45,7 @@ quad run factorial.qd
 
 **Static type checking.** Stack types are validated at compile time. Type mismatches are caught before execution.
 
-**Native code generation.** LLVM backend produces optimized native binaries. No interpreter or VM overhead.
+**Native code generation.** LLVM backend produces native binaries. No interpreter or VM overhead. `quadc` compiles at `-O0` by default for fast builds; pass `-O2` or `-O3` for a release build.
 
 **Structured error handling.** Fallible functions are marked with `!` and must be explicitly handled at call sites. No exceptions.
 

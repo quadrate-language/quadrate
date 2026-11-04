@@ -345,10 +345,10 @@ BUILTIN(set, "( arr i x -- )", "Stores x at index i.")
 /// @example arr 42 append -> arr
 BUILTIN(append, "( arr x -- arr )", "Appends x and returns the array, which may have moved.")
 
-/// Free array memory.
+/// Release a reference: an array or a struct is freed when it was the last one; raw memory is freed.
 /// @signature ( p -- )
 /// @example arr free
-BUILTIN(free, "( p -- )", "Frees an array or a struct.")
+BUILTIN(free, "( p -- )", "Releases an array's or a struct's reference, freeing it when it was the last; frees raw memory.")
 
 // ============================================================================
 // STRUCT OPERATIONS
@@ -368,7 +368,7 @@ BUILTIN(clone, "( x -- x2 )", "Returns a shallow copy of a struct or an array: w
 /// Cast to type.
 /// @signature ( x -- T )
 /// @example 3.14 cast<i64> // 3
-/// @example 42 cast<f64> // 42.0
+/// @example 42 cast<f64> print // 42 (an f64, printed without a fraction)
 /// @example 42 cast<str> // "42"
 /// @example 42 cast<d128> // 42
 BUILTIN(cast, "( x -- T )", "Converts x to T, written cast<T>: one of i64, f64, d128, ptr and str.")
@@ -494,7 +494,7 @@ BUILTIN(map, "( arr q -- arr2 )", "Returns a new array of what q leaves for each
 
 /// A new array of the elements for which q leaves a true flag.
 /// @signature ( arr q -- arr2 )
-/// @example [1 2 3 4] fn { 2 mod 0 == } filter  // [2 4]
+/// @example [1 2 3 4] fn { 2 % 0 == } filter  // [2 4]
 BUILTIN(filter, "( arr q -- arr2 )", "Returns a new array of the elements q leaves a true flag for.")
 
 /// Runs q on the accumulator and each element in turn, starting from init.

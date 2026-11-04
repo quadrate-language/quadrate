@@ -59,6 +59,7 @@ Get array element as nested array by index.
 ```qd
 "[[1,2],[3,4]]" 0 json::array_get_array  // "[1,2]" 1
 ```
+
 ---
 
 ### `fn` array_get_float
@@ -82,6 +83,7 @@ Get array element as float by index.
 ```qd
 "[1.5,2.5]" 0 json::array_get_float  // 1.5 1
 ```
+
 ---
 
 ### `fn` array_get_int
@@ -105,6 +107,7 @@ Get array element as integer by index.
 ```qd
 "[10,20,30]" 2 json::array_get_int  // 30 1
 ```
+
 ---
 
 ### `fn` array_get_object
@@ -128,6 +131,7 @@ Get array element as object by index.
 ```qd
 "[{\"a\":1},{\"b\":2}]" 1 json::array_get_object  // "{\"b\":2}" 1
 ```
+
 ---
 
 ### `fn` array_get_string
@@ -151,6 +155,7 @@ Get array element as string by index.
 ```qd
 "[\"a\",\"b\"]" 1 json::array_get_string  // "b" 1
 ```
+
 ---
 
 ### `fn` array_len
@@ -172,6 +177,7 @@ Get length of JSON array.
 ```qd
 "[1,2,3]" json::array_len print  // 3
 ```
+
 ---
 
 ### `fn` arr
@@ -193,6 +199,7 @@ Build a JSON array from comma-separated elements.
 ```qd
 "1,2,3" json::arr print  // [1,2,3]
 ```
+
 ---
 
 ### `fn` empty_arr
@@ -210,6 +217,7 @@ Build an empty JSON array.
 ```qd
 json::empty_arr print  // []
 ```
+
 ---
 
 ### `fn` empty_obj
@@ -227,6 +235,7 @@ Build an empty JSON object.
 ```qd
 json::empty_obj print  // {}
 ```
+
 ---
 
 ### `fn` encode
@@ -248,6 +257,7 @@ Encode a string for JSON (add quotes and escape special chars).
 ```qd
 "hello" json::encode print  // "hello"
 ```
+
 ---
 
 ### `fn` extract_str
@@ -264,6 +274,7 @@ Extract string value at position.
 | Output | Type | Description |
 |--------|------|-------------|
 | `value` | `str` | Extracted string |
+
 ---
 
 ### `fn` find_str_end
@@ -280,6 +291,7 @@ Find end of JSON string (pos at opening quote).
 | Output | Type | Description |
 |--------|------|-------------|
 | `end_pos` | `i64` | Position after closing quote |
+
 ---
 
 ### `fn` get_array
@@ -303,6 +315,7 @@ Get nested array as string by key.
 ```qd
 "{\"arr\":[1,2]}" "arr" json::get_array  // "[1,2]" 1
 ```
+
 ---
 
 ### `fn` get_bool
@@ -326,6 +339,7 @@ Get boolean value by key from object.
 ```qd
 "{\"ok\":true}" "ok" json::get_bool  // 1 1
 ```
+
 ---
 
 ### `fn` get_float
@@ -349,6 +363,7 @@ Get float value by key from object.
 ```qd
 "{\"pi\":3.14}" "pi" json::get_float  // 3.14 1
 ```
+
 ---
 
 ### `fn` get_int
@@ -372,6 +387,7 @@ Get integer value by key from object.
 ```qd
 "{\"age\":42}" "age" json::get_int  // 42 1
 ```
+
 ---
 
 ### `fn` get_object
@@ -395,6 +411,7 @@ Get nested object as string by key.
 ```qd
 "{\"obj\":{\"x\":1}}" "obj" json::get_object  // "{\"x\":1}" 1
 ```
+
 ---
 
 ### `fn` get_string
@@ -418,6 +435,7 @@ Get string value by key from object.
 ```qd
 "{\"name\":\"Bob\"}" "name" json::get_string  // "Bob" 1
 ```
+
 ---
 
 ### `fn` has_key
@@ -440,6 +458,7 @@ Check if key exists in object.
 ```qd
 "{\"a\":1}" "a" json::has_key print  // 1
 ```
+
 ---
 
 ### `fn` is_null_at
@@ -462,6 +481,7 @@ Check if value at position is null.
 ```qd
 "null" 0 json::is_null_at print  // 1
 ```
+
 ---
 
 ### `fn` join
@@ -484,6 +504,7 @@ Join multiple JSON fragments with commas.
 ```qd
 "\"a\":1" "\"b\":2" json::join print  // "a":1,"b":2
 ```
+
 ---
 
 ### `fn` kv_bool
@@ -506,6 +527,7 @@ Build a key-value pair with boolean value.
 ```qd
 "active" 1 json::kv_bool print  // "active":true
 ```
+
 ---
 
 ### `fn` kv_int
@@ -528,6 +550,7 @@ Build a key-value pair with integer value.
 ```qd
 "age" 42 json::kv_int print  // "age":42
 ```
+
 ---
 
 ### `fn` kv
@@ -550,6 +573,7 @@ Build a key-value pair with string value.
 ```qd
 "name" "Bob" json::kv print  // "name":"Bob"
 ```
+
 ---
 
 ### `fn` kv_raw
@@ -572,6 +596,7 @@ Build a key-value pair with raw JSON value (object, array, or literal).
 ```qd
 "data" "{}" json::kv_raw print  // "data":{}
 ```
+
 ---
 
 ### `fn` obj
@@ -593,6 +618,7 @@ Build a JSON object from comma-separated key-value pairs.
 ```qd
 "\"a\":1,\"b\":2" json::obj print  // {"a":1,"b":2}
 ```
+
 ---
 
 ### `fn` type_at
@@ -651,6 +677,7 @@ Create an empty array.
 ```qd
 json::new_array  // v
 ```
+
 ---
 
 #### `fn` new_bool
@@ -672,6 +699,7 @@ Create a boolean value.
 ```qd
 1 json::new_bool  // v
 ```
+
 ---
 
 #### `fn` new_float
@@ -693,6 +721,7 @@ Create a number from a float.
 ```qd
 1.5 json::new_float  // v
 ```
+
 ---
 
 #### `fn` new_int
@@ -714,6 +743,7 @@ Create a number from an integer.
 ```qd
 42 json::new_int  // v
 ```
+
 ---
 
 #### `fn` new_null
@@ -731,6 +761,7 @@ Create a null value.
 ```qd
 json::new_null  // v
 ```
+
 ---
 
 #### `fn` new_object
@@ -748,6 +779,7 @@ Create an empty object.
 ```qd
 json::new_object  // v
 ```
+
 ---
 
 #### `fn` new_string
@@ -769,6 +801,7 @@ Create a string value.
 ```qd
 "hello" json::new_string  // v
 ```
+
 ---
 
 #### `fn` parse
@@ -812,6 +845,7 @@ Read a boolean value.
 ```qd
 v json::as_bool!  // b
 ```
+
 ---
 
 #### `fn` as_float
@@ -833,6 +867,7 @@ Read a number as a float.
 ```qd
 v json::as_float!  // f
 ```
+
 ---
 
 #### `fn` as_int
@@ -854,6 +889,7 @@ Read a number as an integer. A number written with a fraction or an exponent is 
 ```qd
 v json::as_int!  // n
 ```
+
 ---
 
 #### `fn` as_str
@@ -875,6 +911,7 @@ Read a string value.
 ```qd
 v json::as_str!  // s
 ```
+
 ---
 
 #### `fn` at
@@ -897,6 +934,7 @@ Read the element at an index. Works on an object too, where it reads the member 
 ```qd
 doc 0 json::at!  // first
 ```
+
 ---
 
 #### `fn` first
@@ -918,6 +956,7 @@ Read the first child of an array or object.
 ```qd
 doc json::first!  // c
 ```
+
 ---
 
 #### `fn` get
@@ -940,6 +979,7 @@ Read an object member by name.
 ```qd
 doc "name" json::get!  // name_value
 ```
+
 ---
 
 #### `fn` has_next
@@ -961,6 +1001,7 @@ Report whether this value has a sibling after it.
 ```qd
 c json::has_next  // b
 ```
+
 ---
 
 #### `fn` has
@@ -983,6 +1024,7 @@ Report whether an object has a member with this name.
 ```qd
 doc "name" json::has  // exists
 ```
+
 ---
 
 #### `fn` is_array
@@ -1004,6 +1046,7 @@ Report whether the value is an array.
 ```qd
 v json::is_array  // b
 ```
+
 ---
 
 #### `fn` is_bool
@@ -1025,6 +1068,7 @@ Report whether the value is a boolean.
 ```qd
 v json::is_bool  // b
 ```
+
 ---
 
 #### `fn` is_null
@@ -1046,6 +1090,7 @@ Report whether the value is JSON null.
 ```qd
 v json::is_null  // b
 ```
+
 ---
 
 #### `fn` is_number
@@ -1067,6 +1112,7 @@ Report whether the value is a number.
 ```qd
 v json::is_number  // b
 ```
+
 ---
 
 #### `fn` is_object
@@ -1088,6 +1134,7 @@ Report whether the value is an object.
 ```qd
 v json::is_object  // b
 ```
+
 ---
 
 #### `fn` is_string
@@ -1109,6 +1156,7 @@ Report whether the value is a string.
 ```qd
 v json::is_string  // b
 ```
+
 ---
 
 #### `fn` len
@@ -1130,6 +1178,7 @@ Count the elements of an array or the members of an object. Any other value has 
 ```qd
 v json::len  // n
 ```
+
 ---
 
 #### `fn` name
@@ -1151,6 +1200,7 @@ Read the name this value carries as a member of an object. Empty for a value tha
 ```qd
 v json::name  // k
 ```
+
 ---
 
 #### `fn` next
@@ -1172,6 +1222,7 @@ Read the sibling after this value. Walking `first` then `next` visits the childr
 ```qd
 c json::next!  // c
 ```
+
 ---
 
 #### `fn` pretty
@@ -1194,6 +1245,7 @@ Serialize a value to indented JSON text.
 ```qd
 doc 2 json::pretty print
 ```
+
 ---
 
 #### `fn` push
@@ -1216,6 +1268,7 @@ Append a value to an array.
 ```qd
 arr 42 json::new_int json::push!  // arr
 ```
+
 ---
 
 #### `fn` put
@@ -1239,6 +1292,7 @@ Set an object member. Replaces the member of that name if there is one, keeping 
 ```qd
 obj "n" 1 json::new_int json::put!  // obj
 ```
+
 ---
 
 #### `fn` stringify

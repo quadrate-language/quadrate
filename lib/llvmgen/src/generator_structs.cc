@@ -705,8 +705,8 @@ namespace Qd {
 				if (!structTypeName.empty()) {
 					std::cerr << " and '" << structTypeName << "' names no struct that is known here";
 				}
-				std::cerr << ". Use 'as StructType' to disambiguate, e.g.: value as " << selectedStruct << " <<"
-						  << fieldName << std::endl;
+				std::cerr << ". Declare the value with its struct type, e.g. a parameter 'v:" << selectedStruct << "'"
+						  << std::endl;
 				// Both of these give up without emitting the read, so the build has to fail:
 				// printing to stderr and carrying on produced a binary with a field access
 				// missing from it and an exit status that said everything was fine.

@@ -7,9 +7,9 @@ inputs and no outputs, on a stack of its own.
 
 | Function | Signature | Description |
 |----------|-----------|-------------|
-| `thread::spawn` | `(func:ptr -- t:Thread)!` | Start a thread running `func` |
-| `join` | `(t:Thread)!` | Wait for the thread to finish |
-| `detach` | `(t:Thread)!` | Let the thread run on its own; it cannot be joined after |
+| `thread::spawn` | `(func:fn(--) -- t:Thread)!` | Start a thread running `func` |
+| `join` | `(t:Thread -- )!` | Wait for the thread to finish |
+| `detach` | `(t:Thread -- )!` | Let the thread run on its own; it cannot be joined after |
 | `is_alive` | `(t:Thread -- alive:i64)` | 1 while the thread is running |
 
 `spawn`, `join` and `detach` are fallible: a thread that cannot be created or joined is an

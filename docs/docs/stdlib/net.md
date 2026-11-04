@@ -7,7 +7,7 @@
 <!-- doccheck: page-setup 0 -> server -->
 
 TCP network operations.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -47,6 +47,7 @@ Accept an incoming connection.
 ```qd
 server net::accept!  // client
 ```
+
 ---
 
 ### `fn` close
@@ -64,6 +65,7 @@ Close socket and release resources.
 ```qd
 sock net::close
 ```
+
 ---
 
 ### `fn` connect
@@ -91,6 +93,7 @@ Connect to a remote host, over IPv4 or IPv6.
 ```qd
 "localhost" 8080 net::connect!  // sock
 ```
+
 ---
 
 ### `fn` get_peer_addr
@@ -117,6 +120,7 @@ Get the remote address and port of a connected socket.
 ```qd
 sock net::get_peer_addr! -> port  // addr
 ```
+
 ---
 
 ### `fn` listen
@@ -143,6 +147,7 @@ Start listening for connections on a port.
 ```qd
 8080 net::listen!  // server
 ```
+
 ---
 
 ### `fn` lookup
@@ -168,6 +173,7 @@ Resolve a hostname to an IP address via DNS.
 ```qd
 "example.com" net::lookup!  // ip
 ```
+
 ---
 
 ### `fn` receive
@@ -197,6 +203,7 @@ Receive data from socket. At the end of the stream, the data is "" and bytes_rea
 ```qd
 sock 1024 net::receive! -> n  // data
 ```
+
 ---
 
 ### `fn` send
@@ -224,6 +231,7 @@ Send data over socket. All of it is sent, which may take several writes; a peer 
 ```qd
 sock "Hello" net::send!  // n
 ```
+
 ---
 
 ### `fn` set_keepalive
@@ -246,6 +254,7 @@ Enable or disable TCP keepalive on a socket.
 ```qd
 sock 1 net::set_keepalive!
 ```
+
 ---
 
 ### `fn` set_timeout
@@ -268,6 +277,7 @@ Set send and receive timeout on a socket.
 ```qd
 sock 5000 net::set_timeout!
 ```
+
 ---
 
 ### `fn` shutdown

@@ -1,0 +1,2 @@
+before
+Fatal error in append: Cannot put raw memory into an array of struct or function value

@@ -60,7 +60,7 @@ fn main() {
 		drop
 		err -> code -> msg
 		"code: " print code print nl     // 2
-		"message: " print msg print nl  // No such file or directory
+		"message: " print msg print nl  // io::open: No such file or directory
 	}
 }
 ```

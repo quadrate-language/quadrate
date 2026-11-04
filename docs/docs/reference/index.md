@@ -12,7 +12,7 @@ This section documents all Quadrate keywords and built-in instructions.
 - [Arrays](arrays.md) - Array creation and manipulation
 - [Structs](structs.md) - Struct definition, field access, methods
 - [Generics](generics.md) - Generic functions with `<T>`
-- [Type Casting](types.md) - `cast<T>`, `as TypeName`
+- [Type Casting](types.md) - `cast<T>`
 - [Input/Output](io.md) - `print`, `dump`, `nl`
 - [Error Handling](errors.md) - `panic`
 - [Threading](threading.md) - `thread::spawn`, `join`, `detach`
@@ -28,7 +28,7 @@ Quadrate has five basic types:
 | `f64` | 64-bit floating-point | `3.14`, `-0.5` |
 | `d128` | Decimal floating-point, 34 digits | `0.1d`, `19.99d` |
 | `str` | String | `"hello"` |
-| `ptr` | Pointer | Struct instances, arrays |
+| `ptr` | Raw memory | `mem::alloc`, C handles |
 
 ## Stack signatures
 
@@ -52,12 +52,15 @@ def divide(a:i64 b:i64 -- result:i64)! {
 }
 ```
 
-Call with `if-else` to handle errors:
+Test the status with `ok if` (or `fail if`, or a `switch` on it) to handle errors:
 
+<!-- doccheck: skip divide is shown above with its body elided -->
 ```qd
-10 2 divide if {
-	// success: result is on stack
+10 2 divide ok if {
+	// success: the result is on the stack
+	print nl
 } else {
-	// error: stack is clean (inputs consumed, no outputs)
+	// failure: a zero placeholder stands where the result would be
+	drop
 }
 ```

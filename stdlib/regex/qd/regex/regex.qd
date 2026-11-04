@@ -756,7 +756,7 @@ def match_from(re:Nfa s:str from:i64 -- start:i64 end:i64) {
 	nlist mem::free
 	visited mem::free
 
-	mend mstart
+	mstart mend
 }
 
 /// Find first match in string. Returns start and end (exclusive) indices.
@@ -787,7 +787,7 @@ pub def (self:Regex) find_all(s:str max:i64 -- results:ptr count:i64) {
 	loop {
 		max -1 != count max >= and if { break }
 
-		re s pos match_from -> fstart -> fend
+		re s pos match_from -> fend -> fstart
 		fstart -1 == if { break }
 
 		// Grow if needed
@@ -827,7 +827,7 @@ pub def (self:Regex) replace(s:str repl:str -- result:str) {
 	0 -> pos
 
 	loop {
-		re s pos match_from -> fstart -> fend
+		re s pos match_from -> fend -> fstart
 		fstart -1 == if {
 			// Append remaining
 			pos slen < if {
@@ -875,7 +875,7 @@ pub def (self:Regex) match_count(s:str -- count:i64) {
 	0 -> pos
 
 	loop {
-		re s pos match_from -> fstart -> fend
+		re s pos match_from -> fend -> fstart
 		fstart -1 == if { break }
 		count 1 + -> count
 		fend pos == if {

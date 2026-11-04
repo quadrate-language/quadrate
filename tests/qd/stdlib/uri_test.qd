@@ -92,3 +92,12 @@ test "uri decode edge cases" {
 	// Plus sign is decoded as space (form encoding)
 	"a+b" uri::decode "a b" testing::assert_eq
 }
+
+// A percent escape is a byte of the UTF-8 encoding. encode and decode walked characters and
+// kept only the low byte of each, so "é" became %E9 and came back as a lone 0xE9.
+test "uri::encode and decode non-ASCII by its UTF-8 bytes" {
+	"é" uri::encode "%C3%A9" testing::assert_eq
+	"€ 5" uri::encode "%E2%82%AC%205" testing::assert_eq
+	"%C3%A9t%C3%A9" uri::decode "été" testing::assert_eq
+	"naïve café" uri::encode uri::decode "naïve café" testing::assert_eq
+}

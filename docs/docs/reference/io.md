@@ -27,12 +27,13 @@ Prints a value to stdout without a newline.
 
 ### dump
 
-Prints a value with type information for debugging.
+Prints a value with type information for debugging, followed by its own newline.
 
 **Signature:** `(val --)`
 
 ```qd
-42 dump // prints: int:42
+42 dump      // prints: int:42 and a newline
+"hi" dump    // prints: string:hi and a newline
 ```
 
 ### nl
@@ -94,7 +95,7 @@ Expressions inside `{...}` are evaluated and converted to strings automatically.
 
 ```qd
 "Debug: " print
-dup dump // Show the top value and its type, leaving it
+dup dump // prints e.g. "Debug: int:7" and a newline, leaving the value
 ```
 
 ---

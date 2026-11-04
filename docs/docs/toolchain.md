@@ -80,7 +80,7 @@ quad clean             # Remove build artifacts
 |---------|------|---------|
 | `build` | `quadc` | Compile source files |
 | `run` | `quadc -r` | Build and run a program; `quad run greet.qd -- Alice` passes `Alice` to it |
-| `test` | `quadc --test` | Run the `test` blocks in the current directory |
+| `test` | `quadc --test` | Run the `test` blocks in the `*_test.qd` and `test_*.qd` files in the current directory; `quad test ./...` searches subdirectories too |
 | `fmt` | `quadfmt -w` | Format files in place; `quad fmt --check` only reports |
 | `lint` | `quadlint` | Check code for common issues |
 | `uses` | `quaduses -w` | Add and remove `use` statements; `quad uses --check` only reports |
@@ -105,8 +105,8 @@ For most development tasks, `quad` is all you need.
 Creates a new Quadrate project in the current directory:
 
 ```bash
-quad init           # Create project named "myproject"
-quad init myapp     # Create project with custom name
+quad init           # Name the project after the current directory
+quad init myapp     # Give the project a name of its own
 ```
 
 This creates three files:
@@ -128,14 +128,14 @@ quad run
 The Quadrate compiler. Compiles `.qd` source files to native executables via LLVM.
 
 ```bash
-quadc hello.qd               # Compile to ./hello
-quadc hello.qd -o myprogram  # Compile with a custom output name
-quadc -r hello.qd            # Compile and run immediately
-quadc -r -                   # Compile and run source piped on stdin
-quadc --verbose hello.qd     # Show compilation details
-quadc --dump-ir hello.qd     # Output LLVM IR (for debugging)
-quadc --dump-ast hello.qd    # Output the parsed AST
-quadc --dump-tokens hello.qd # Show the token stream
+quadc hello.qd                             # Compile to ./hello
+quadc hello.qd -o myprogram                # Compile with a custom output name
+quadc -r hello.qd                          # Compile and run immediately
+quadc -r -                                 # Compile and run source piped on stdin
+quadc --verbose hello.qd                   # Show compilation details
+quadc --dump-ir hello.qd -o /tmp/hello     # Output LLVM IR (for debugging)
+quadc --dump-ast hello.qd -o /tmp/hello    # Output the parsed AST
+quadc --dump-tokens hello.qd -o /tmp/hello # Show the token stream
 ```
 
 | Option | Description |
@@ -156,7 +156,7 @@ quadc --dump-tokens hello.qd # Show the token stream
 | `--werror` | Treat warnings as errors |
 | `--verbose` | Show detailed compilation steps |
 | `--save-temps` | Keep temporary files for debugging |
-| `--dump-tokens`, `--dump-ast`, `--dump-ir` | Print the token stream, the AST or the LLVM IR |
+| `--dump-tokens`, `--dump-ast`, `--dump-ir` | Print the token stream, the AST or the LLVM IR. The executable is still built, into the current directory unless `-o` says where |
 | `-- <args>` | With `-r`, pass the rest to the program |
 
 `--default-float d128` is for a calculator, where every number typed should be decimal: it
@@ -266,7 +266,7 @@ Interactive Read-Eval-Print Loop for experimenting with Quadrate expressions.
 
 ```bash
 quadrepl                    # Start an interactive session
-echo '1 2 add' | quadrepl   # Evaluate a pipe and print the final stack
+echo '1 2 +' | quadrepl     # Evaluate a pipe and print the final stack
 ```
 
 Inside the REPL, what a line leaves on the stack stays there, and the prompt shows it:

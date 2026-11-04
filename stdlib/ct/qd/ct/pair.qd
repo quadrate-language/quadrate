@@ -1,60 +1,45 @@
-/// Pair<T, U> - A Generic Two-Element Tuple
-/// ========================================
-///
-/// Pair holds two values of potentially different types.
-/// Useful for returning multiple values or key-value associations.
-///
-/// ## Creating a Pair
-///
-///     Pair<i64, str> { first = 42 second = "hello" } -> p
-///
-/// ## Accessing Elements
-///
-///     p <<first -> key
-///     p <<second -> value
-///
-/// ## Unpacking Both Elements
-///
-///     p unpack -> a -> b
+// Pair<T, U> - A Generic Two-Element Tuple
+// ========================================
+//
+// Pair holds two values of potentially different types.
+// Useful for returning multiple values or key-value associations.
+//
+// ## Creating a Pair
+//
+//     ct::Pair<i64, str> { first = 42 second = "hello" } -> p
+//
+// ## Accessing Elements
+//
+//     p <<first -> key
+//     p <<second -> value
+//
+// ## Unpacking Both Elements
+//
+//     p unpack -> b -> a
 
 /// A pair of two values.
-///
-/// Fields:
-///   first  - The first element of type T
-///   second - The second element of type U
+/// @field first T The first element of type T
+/// @field second U The second element of type U
 pub struct Pair<T, U> {
 	first: T
 	second: U
 }
 
 /// Get the first element of a pair.
-///
-/// Example:
-///     p first -> a
-///
-/// Stack: (p -- a)
+/// @example p first -> a
 pub fn (p:Pair<T, U>) first<T, U>( -- a:T) {
 	p <<first
 }
 
 /// Get the second element of a pair.
-///
-/// Example:
-///     p second -> b
-///
-/// Stack: (p -- b)
+/// @example p second -> b
 pub fn (p:Pair<T, U>) second<T, U>( -- b:U) {
 	p <<second
 }
 
 /// Unpack a pair onto the stack.
-///
 /// Returns both elements: first is deeper, second on top.
-///
-/// Example:
-///     p unpack -> first_val -> second_val
-///
-/// Stack: (p -- a b)
+/// @example p unpack -> b -> a  // second on top, so it binds first
 pub fn (p:Pair<T, U>) unpack<T, U>( -- a:T b:U) {
 	p <<first
 	p <<second

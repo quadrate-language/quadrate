@@ -116,7 +116,7 @@
       "failable": false,
       "description": "Get channel capacity. ",
       "params": [],
-      "returns": [{"name": "cap", "type": "i64", "description": "Buffer capacity (0 for unbuffered)"}],
+      "returns": [{"name": "c", "type": "i64", "description": "Buffer capacity (0 for unbuffered)"}],
       "errors": [],
       "examples": ["ch cap -> c"]
     },
@@ -182,10 +182,10 @@
     },
     {
       "name": "do",
-      "signature": "(o:Once) do(func:ptr -- )",
+      "signature": "(o:Once) do(func:fn(--) -- )",
       "failable": false,
       "description": "Execute the function exactly once. If multiple threads call this concurrently, only one will execute the function; the others will wait until it completes. ",
-      "params": [{"name": "func", "type": "ptr", "description": "Function to execute once"}],
+      "params": [{"name": "func", "type": "fn(--)", "description": "Function to execute once"}],
       "returns": [],
       "errors": [],
       "examples": ["o &init_stuff do"]

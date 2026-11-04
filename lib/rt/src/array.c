@@ -180,10 +180,20 @@ static void elem_release(const qd_array_t* arr, void* p) {
 	}
 }
 
-// The kind of the first pointer stored is the kind of all of them
-static void adopt_kind(qd_array_t* arr, const qd_stack_element_t* value) {
-	if (arr->elemType == QD_ARRAY_TYPE_PTR && value->type == QD_STACK_TYPE_PTR && arr->elemKind == 0) {
+// The kind of the first pointer stored is the kind of all of them. One of another kind is
+// refused: kept, it would be released as what it is not -- raw memory in a `[]fn` called as a
+// function, an array in a struct array released as a struct.
+static void adopt_kind(qd_context* ctx, const char* op, qd_array_t* arr, const qd_stack_element_t* value) {
+	if (arr->elemType != QD_ARRAY_TYPE_PTR || value->type != QD_STACK_TYPE_PTR || value->value.p == NULL) {
+		return;
+	}
+	if (arr->elemKind == 0) {
 		arr->elemKind = value->ptr_kind;
+	} else if (value->ptr_kind != arr->elemKind) {
+		static const char* const kinds[] = {"pointer", "raw memory", "struct or function value", "array"};
+		const char* has = arr->elemKind < 4 ? kinds[arr->elemKind] : "pointer";
+		const char* got = value->ptr_kind < 4 ? kinds[value->ptr_kind] : "pointer";
+		QDRT_FATAL(ctx, op, "Cannot put %s into an array of %s", got, has);
 	}
 }
 
@@ -761,7 +771,7 @@ int qd_append(qd_context* ctx) {
 	qd_args(ctx, "append", "pv", &p, &value);
 	qd_array_t* arr = array_arg(ctx, "append", p, &value);
 	adopt_type(ctx, "append", arr, &value);
-	adopt_kind(arr, &value);
+	adopt_kind(ctx, "append", arr, &value);
 	check_fits(ctx, "append", arr, &value);
 
 	int appended = 0;
@@ -804,7 +814,7 @@ int qd_set(qd_context* ctx) {
 	qd_array_t* arr = array_arg(ctx, "set", p, &value);
 	check_index(ctx, "set", arr, index, &value);
 	adopt_type(ctx, "set", arr, &value);
-	adopt_kind(arr, &value);
+	adopt_kind(ctx, "set", arr, &value);
 	check_fits(ctx, "set", arr, &value);
 
 	switch (arr->elemType) {

@@ -22,8 +22,6 @@
 
 static void dump_stack(qd_context* ctx);
 
-// Closure registry for safe closure detection
-
 // A target with no signals (a microcontroller under FreeRTOS, say) has no
 // sigaltstack either, and its own fault handler reports a crash.
 #ifdef SA_ONSTACK
@@ -707,8 +705,10 @@ int qd_call(qd_context* ctx) {
 	if (err != QD_STACK_OK) {
 		QDRT_FATAL(ctx, "call", "Stack underflow");
 	}
-	if (val.type != QD_STACK_TYPE_PTR) {
-		QDRT_FATAL(ctx, "call", "Expected a function value, got %d", val.type);
+	// A function value is a struct; raw memory is not one, and calling it would jump into data
+	if (val.type != QD_STACK_TYPE_PTR || val.ptr_kind != QD_PTR_STRUCT) {
+		QDRT_FATAL(ctx, "call", "Expected a function value, got %s",
+				val.type == QD_STACK_TYPE_PTR ? "raw memory" : qdrt_type_name(val.type));
 	}
 	const int result = qd_call_value(ctx, val.value.p);
 	qdrt_release_element(&val);

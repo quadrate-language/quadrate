@@ -66,7 +66,7 @@ test "regex whitespace via class" {
 
 test "regex find first match" {
 	"[0-9]+" regex::compile -> re
-	re "abc123def" regex::find -> start -> end
+	re "abc123def" regex::find -> end -> start
 	start 3 testing::assert_eq
 	end 6 testing::assert_eq
 	re regex::release
@@ -74,7 +74,7 @@ test "regex find first match" {
 
 test "regex find no match" {
 	"[0-9]+" regex::compile -> re
-	re "abcdef" regex::find -> start -> end
+	re "abcdef" regex::find -> end -> start
 	start -1 testing::assert_eq
 	end -1 testing::assert_eq
 	re regex::release
@@ -82,7 +82,7 @@ test "regex find no match" {
 
 test "regex find at start" {
 	"[a-z]+" regex::compile -> re
-	re "hello123" regex::find -> start -> end
+	re "hello123" regex::find -> end -> start
 	start 0 testing::assert_eq
 	end 5 testing::assert_eq
 	re regex::release

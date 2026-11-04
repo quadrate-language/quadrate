@@ -6,7 +6,7 @@ Functions are the building blocks of Quadrate programs. They transform values on
 
 <!-- doccheck: skip syntax template: `inputs`/`outputs` stand for type lists, not types -->
 ```qd
-def name(inputs -- outputs) {
+fn name(inputs -- outputs) {
 	// body
 }
 ```
@@ -39,8 +39,8 @@ The signature `(x:i64 -- result:i64)` means:
 The `--` separates inputs from outputs:
 
 ```qd
-def sum(a:i64 b:i64 -- result:i64) {
-	a b +
+fn sum(a:i64 b:i64 -- result:i64) {
+	+
 }
 
 def swap_print(a:i64 b:i64 -- ) {
@@ -170,8 +170,12 @@ Always specify types for parameters:
 |------|-------------|
 | `i64` | 64-bit integer |
 | `f64` | 64-bit float |
+| `d128` | Decimal with 34 significant digits |
 | `str` | String |
-| `ptr` | Pointer |
+| `[]T` | Array of `T`, such as `[]i64` |
+| `Point` (a struct name) | A value of that struct type |
+| `fn(i64 -- i64)` | A function value with that signature |
+| `ptr` | Raw memory address (FFI, `mem`; not structs, arrays, strings or functions) |
 | `any` | Any type |
 
 Booleans are represented as `i64` (0 = false, non-zero = true).
@@ -190,7 +194,7 @@ Use `///` for documentation:
 ```qd
 /// Calculates the factorial of n
 /// @param n The number to calculate factorial of
-/// <<output The factorial result
+/// @return The factorial result
 def factorial(n:i64 -- result:i64) {
 	n 1 <= if {
 		1
@@ -205,16 +209,16 @@ def factorial(n:i64 -- result:i64) {
 The `inline` keyword requests the compiler to inline the function body at call sites, eliminating function call overhead. The compiler will inline in most cases, but may decline for recursive functions or indirect calls.
 
 ```qd
-inline def double(x:i64 -- result:i64) {
-	x 2 *
+inline fn double(x:i64 -- result:i64) {
+	2 *
 }
 ```
 
 Can be combined with `pub`:
 
 ```qd
-pub inline def incr(x:i64 -- result:i64) {
-	x 1 +
+pub inline fn incr(x:i64 -- result:i64) {
+	1 +
 }
 ```
 

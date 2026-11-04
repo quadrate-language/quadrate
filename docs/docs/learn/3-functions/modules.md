@@ -22,7 +22,6 @@ Use `::` to call functions from a module:
 
 ```qd
 use math
-use strings
 
 fn main() {
 	3.14159 math::sin print nl
@@ -61,7 +60,7 @@ fn main() {
 	Point { x = 1.0 y = 2.0 } -> p1
 	Point { x = 3.0 y = 4.0 } -> p2
 	p1 p2 point_add -> p3
-	p3 <<x print nl  // 4.0
+	p3 <<x print nl  // 4
 }
 ```
 
@@ -69,7 +68,8 @@ No `use` statement is needed for files in the same directory. Files with their o
 
 ## Standard library modules
 
-These modules ship with Quadrate and are always available:
+These modules ship with Quadrate. Each one still needs a `use` line before its functions can
+be called:
 
 | Module | Purpose |
 |--------|---------|
@@ -97,6 +97,9 @@ These modules ship with Quadrate and are always available:
 | `base64` | Base64 encoding/decoding |
 | `crypto` | Cryptographic functions |
 | `ct` | Compile-time utilities |
+| `decimal` | `d128` decimal arithmetic beyond the operators |
+| `error` | Errors as values |
+| `fuzzy` | Fuzzy string matching |
 | `hex` | Hex encoding/decoding |
 | `hof` | Higher-order function combinators |
 | `http` | HTTP client and server |
@@ -104,7 +107,9 @@ These modules ship with Quadrate and are always available:
 | `log` | Logging |
 | `net` | Networking (TCP/UDP) |
 | `regex` | Regular expressions |
+| `rt` | Runtime version information |
 | `sort` | Sorting |
+| `sys` | Low-level port I/O and raw memory access |
 | `tls` | TLS/SSL |
 | `uri` | URI parsing |
 | `uuid` | UUID generation |
@@ -171,8 +176,8 @@ Create a folder `mymath/` with source files inside:
 // mymath/helpers.qd
 
 // Private helper (no pub keyword) - only visible within mymath/
-def square_internal(x:i64 -- result:i64) {
-	x dup *
+fn square_internal(x:i64 -- result:i64) {
+	dup *
 }
 ```
 
@@ -180,11 +185,11 @@ def square_internal(x:i64 -- result:i64) {
 ```qd
 // mymath/api.qd
 
-pub def square(x:i64 -- result:i64) {
+pub fn square(x:i64 -- result:i64) {
 	square_internal  // Can call functions from helpers.qd
 }
 
-pub def cube(x:i64 -- result:i64) {
+pub fn cube(x:i64 -- result:i64) {
 	dup square_internal *
 }
 ```
@@ -208,8 +213,8 @@ Use `pub` to mark symbols that can be accessed from outside the module:
 ```qd
 // mymodule/mymodule.qd
 
-pub def public_function(x:i64 -- result:i64) {
-	x helper 2 *
+pub fn public_function(x:i64 -- result:i64) {
+	helper 2 *
 }
 
 pub const PUBLIC_VALUE = 42
@@ -219,8 +224,8 @@ pub struct PublicStruct {
 }
 
 // No pub - only accessible within this module's directory
-def helper(x:i64 -- y:i64) {
-	x 1 +
+fn helper(x:i64 -- y:i64) {
+	1 +
 }
 
 const PRIVATE_VALUE = 99
@@ -256,17 +261,17 @@ pub struct Circle {
 	radius:f64
 }
 
-pub def circle_area(r:f64 -- area:f64) {
-	r square math::Pi *
+pub fn circle_area(r:f64 -- area:f64) {
+	square math::Pi *
 }
 
-pub def circle_circumference(r:f64 -- c:f64) {
-	r 2.0 * math::Pi *
+pub fn circle_circumference(r:f64 -- c:f64) {
+	2.0 * math::Pi *
 }
 
 // Private helper
-def square(x:f64 -- result:f64) {
-	x dup *
+fn square(x:f64 -- result:f64) {
+	dup *
 }
 ```
 
@@ -278,7 +283,8 @@ paths and `qd.json` dependencies, the packages quadpm installed, and the standar
 
 ## Conventions
 
-- Always use `module::function` for stdlib calls — e.g., `math::sqrt`, `len`
+- Always use `module::function` for stdlib calls — e.g., `math::sqrt`. Builtins such as `len`
+  and `print` need no prefix
 - Functions you define in the same directory are called without a namespace
 - Use `pub fn` to export functions from a module; `fn` is private by default
 

@@ -131,20 +131,20 @@ use io
 use mem
 
 def read_file(path:str -- content:str)! {
-	path io::Read io::open! -> file
+	path io::Read io::open? -> file
 	defer {
 		// Always runs
 		file io::close
 	}
 
 	4096 -> size
-	size mem::alloc! -> buf
+	size mem::alloc? -> buf
 	defer {
 		// Always runs
 		buf mem::free
 	}
 
-	file buf size io::read! -> bytes_read
+	file buf size io::read? -> bytes_read
 	buf bytes_read mem::to_string
 }
 ```
@@ -244,9 +244,11 @@ def retry(max_attempts:i64 -- result:i64)! {
 
 	loop {
 		success 0 == attempts max_attempts < and 0 == if { break }
-		unreliable_op if {
+		unreliable_op ok if {
 			-> last_result
 			1 -> success
+		} else {
+			drop // the placeholder result of the failed attempt
 		}
 		attempts ++ -> attempts
 	}
@@ -265,15 +267,17 @@ Add context to errors:
 
 <!-- doccheck: skip pattern sketch: read_file and parse_json stand for a program's own fallible words -->
 ```qd
-def parse_config(path:str -- cfg:ptr)! {
-	path read_file if {
+def parse_config(path:str -- cfg:Config)! {
+	path read_file ok if {
 		-> content  // bind content
-		content parse_json if {
-			// Success
+		content parse_json ok if {
+			// Success: the Config is on the stack
 		} else {
+			drop
 			"invalid JSON in config" 2 panic
 		}
 	} else {
+		drop
 		"failed to read config file" 1 panic
 	}
 }
@@ -290,10 +294,11 @@ def process_batch(items:[]i64 -- processed:i64 failed:i64) {
 	0 -> failed
 
 	0 items len 1 for i {
-		items i nth process_item if {
+		items i nth process_item ok if {
 			drop
 			processed ++ -> processed
 		} else {
+			drop // the placeholder result
 			"Failed: " print items i nth print nl
 			failed ++ -> failed
 		}
@@ -308,7 +313,7 @@ def process_batch(items:[]i64 -- processed:i64 failed:i64) {
 1. **Always handle errors** - Don't just `drop` without logging
 2. **Use meaningful messages** - Help debugging
 3. **Clean up resources** - Use `defer` for guaranteed cleanup
-4. **Propagate when appropriate** - Use `!` to bubble up errors
+4. **Propagate when appropriate** - Use `?` to pass an error to the caller; `!` aborts the program
 5. **Fail fast** - Validate early, fail early
 6. **Consider recovery** - Not every error should crash
 

@@ -140,8 +140,8 @@ pub fn matches(query:str target:str threshold:f64 -- i64) {
 /// @param query str Query string (typically shorter)
 /// @param target str Target string to match against
 /// @return score i64 Match score (0 = no match, higher = better)
-/// @example "sin" "sin" fuzzy::score -> 1000
-/// @example "sin" "asin" fuzzy::score  // ~350 (substring)
+/// @example "sin" "sin" fuzzy::score  // 1000
+/// @example "sin" "asin" fuzzy::score  // 375 (substring: 300 + 3/4 * 100)
 /// @example "rf" "read_file" fuzzy::score  // 200 (word boundary)
 pub def score(query:str target:str -- score:i64) {
 	query len -> qlen

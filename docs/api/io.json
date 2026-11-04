@@ -1,6 +1,6 @@
 {
   "name": "io",
-  "description": "File and stream I/O operations. Error codes: Ok=1 (success), specific errors start at 2",
+  "description": "File and stream I/O operations. Error codes: Ok=0 (success); error codes start at 2",
   "constants": [
     {
       "name": "Append",

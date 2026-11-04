@@ -1,7 +1,7 @@
 # `use` os
 
 Operating system interface.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -38,6 +38,7 @@ The command-line arguments, excluding the program name.
 ```qd
 os::args -> args  args len  // argc
 ```
+
 ---
 
 ### `fn` chdir
@@ -61,18 +62,19 @@ Change the current working directory.
 ```qd
 "/tmp" os::chdir!
 ```
+
 ---
 
 ### `fn` chmod
 
-Change file permissions. Mode is specified as Unix permission bits (e.g., 0o644, 0o755).
+Change file permissions. Mode is the Unix permission bits as a decimal integer (there are no octal literals): 420 is 0o644, 493 is 0o755.
 
 **Signature:** `(path:str mode:i64 -- )!`
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `path` | `str` | File or directory path |
-| `mode` | `i64` | Permission mode (e.g., 420 for 0o644) |
+| `mode` | `i64` | Permission mode (e.g. 420 for 0o644) |
 
 | Error | Description |
 |-------|-------------|
@@ -82,8 +84,9 @@ Change file permissions. Mode is specified as Unix permission bits (e.g., 0o644,
 **Example:**
 
 ```qd
-"/tmp/script.sh" 0o755 os::chmod!
+"/tmp/script.sh" 493 os::chmod!  // 0o755
 ```
+
 ---
 
 ### `fn` chown
@@ -108,6 +111,7 @@ Change file owner and group. Use -1 for uid or gid to leave unchanged.
 ```qd
 "/tmp/myfile" 1000 1000 os::chown!
 ```
+
 ---
 
 ### `fn` copy
@@ -131,6 +135,7 @@ Copy a file.
 ```qd
 "src.txt" "dst.txt" os::copy!
 ```
+
 ---
 
 ### `fn` cwd
@@ -152,6 +157,7 @@ Get current working directory.
 ```qd
 os::cwd!  // dir
 ```
+
 ---
 
 ### `fn` delete
@@ -174,6 +180,7 @@ Delete a file or empty directory.
 ```qd
 "/tmp/test.txt" os::delete!
 ```
+
 ---
 
 ### `fn` exec
@@ -201,6 +208,7 @@ Execute a command and capture all output. Simpler alternative to os::popen when 
 ```qd
 "echo hello" os::exec! -> exitcode  // stdout
 ```
+
 ---
 
 ### `fn` exists
@@ -222,6 +230,7 @@ Check if path exists.
 ```qd
 "/tmp" os::exists print  // 1
 ```
+
 ---
 
 ### `fn` exit
@@ -239,6 +248,7 @@ Exit the program with status code.
 ```qd
 os::ExitSuccess os::exit
 ```
+
 ---
 
 ### `fn` getenv
@@ -260,6 +270,7 @@ Get environment variable value.
 ```qd
 "HOME" os::getenv  // home
 ```
+
 ---
 
 ### `fn` getgid
@@ -277,6 +288,7 @@ Get the current group ID.
 ```qd
 os::getgid print
 ```
+
 ---
 
 ### `fn` getpid
@@ -294,6 +306,7 @@ Get the current process ID.
 ```qd
 os::getpid print nl
 ```
+
 ---
 
 ### `fn` getuid
@@ -311,6 +324,7 @@ Get the current user ID.
 ```qd
 os::getuid print
 ```
+
 ---
 
 ### `fn` glob
@@ -333,6 +347,7 @@ Match files using glob pattern. Supports *, ?, and ** for recursive matching.
 ```qd
 "*.qd" os::glob! -> count  // entries
 ```
+
 ---
 
 ### `fn` hostname
@@ -354,6 +369,7 @@ Get the system hostname.
 ```qd
 os::hostname! print
 ```
+
 ---
 
 ### `fn` is_dir
@@ -375,6 +391,7 @@ Check if path is a directory.
 ```qd
 "/tmp" os::is_dir print  // 1
 ```
+
 ---
 
 ### `fn` is_file
@@ -396,6 +413,7 @@ Check if path is a regular file.
 ```qd
 "/etc/passwd" os::is_file print  // 1
 ```
+
 ---
 
 ### `fn` is_symlink
@@ -417,11 +435,12 @@ Check if path is a symbolic link. Does not follow the link to check if the targe
 ```qd
 "/tmp/mylink" os::is_symlink print
 ```
+
 ---
 
 ### `fn` list
 
-List directory contents. so the bindings read in reverse of the declared outputs
+List directory contents.
 
 **Signature:** `(path:str -- entries:[]str count:i64)!`
 
@@ -442,8 +461,9 @@ List directory contents. so the bindings read in reverse of the declared outputs
 **Example:**
 
 ```qd
-"/tmp" os::list! -> count -> entries   // `->` binds top-of-stack first,
+"/tmp" os::list! -> count -> entries  // `->` binds the top of the stack first
 ```
+
 ---
 
 ### `fn` mkdir
@@ -465,6 +485,7 @@ Create a directory and all parent directories.
 ```qd
 "/tmp/a/b/c" os::mkdir!
 ```
+
 ---
 
 ### `fn` mktemp
@@ -486,6 +507,7 @@ Create a unique temporary directory. Creates a directory in /tmp with a unique n
 ```qd
 os::mktemp!  // tmpdir
 ```
+
 ---
 
 ### `fn` popen
@@ -510,8 +532,9 @@ Execute a command and stream output line-by-line to a callback. The callback is 
 **Example:**
 
 ```qd
-"ls -la" def (line:str -- ) { print nl } os::popen!  // code
+"ls -la" def (line:str -- ) { line print nl } os::popen!  // code
 ```
+
 ---
 
 ### `fn` program_name
@@ -529,6 +552,7 @@ The program name (argv[0]).
 ```qd
 os::program_name print nl
 ```
+
 ---
 
 ### `fn` readlink
@@ -555,6 +579,7 @@ Read the target of a symbolic link.
 ```qd
 "/tmp/mylink" os::readlink!  // target
 ```
+
 ---
 
 ### `fn` rename
@@ -578,6 +603,7 @@ Rename or move a file.
 ```qd
 "old.txt" "new.txt" os::rename!
 ```
+
 ---
 
 ### `fn` rmdir
@@ -600,6 +626,7 @@ Remove directory and all contents recursively.
 ```qd
 "/tmp/mydir" os::rmdir!
 ```
+
 ---
 
 ### `fn` setenv
@@ -618,6 +645,7 @@ Set environment variable.
 ```qd
 "MY_VAR" "hello" os::setenv
 ```
+
 ---
 
 ### `fn` symlink
@@ -641,6 +669,7 @@ Create a symbolic link.
 ```qd
 "/usr/bin/python3" "/tmp/python" os::symlink!
 ```
+
 ---
 
 ### `fn` system
@@ -662,6 +691,7 @@ Execute a shell command. SECURITY: cmd is passed to the system shell (/bin/sh -c
 ```qd
 "ls -la" os::system  // code
 ```
+
 ---
 
 ### `fn` unsetenv
@@ -679,6 +709,7 @@ Unset environment variable.
 ```qd
 "MY_VAR" os::unsetenv
 ```
+
 ---
 
 ### `fn` urandom
@@ -700,6 +731,7 @@ Get a cryptographically secure random 64-bit value from the OS entropy pool (/de
 ```qd
 os::urandom!  // n
 ```
+
 ---
 
 ### `fn` walk

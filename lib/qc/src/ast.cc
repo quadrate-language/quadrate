@@ -292,6 +292,13 @@ namespace Qd {
 				if (!hasExplicitType) {
 					typeName = refName;
 				}
+			} else if (refName == "null") {
+				// A `ptr` or `*T` global that starts empty: there is no other way to write one
+				value = "0";
+				sourceExpr = "null";
+				if (!hasExplicitType) {
+					typeName = "ptr";
+				}
 			} else {
 				value = lookupParsedConst(program, refName);
 				if (value.empty()) {
@@ -316,7 +323,7 @@ namespace Qd {
 			return;
 		}
 
-		if (!hasExplicitType && !structInit && !valueInit) {
+		if (!hasExplicitType && !structInit && !valueInit && sourceExpr != "null") {
 			typeName = inferTypeFromValue(value);
 		}
 

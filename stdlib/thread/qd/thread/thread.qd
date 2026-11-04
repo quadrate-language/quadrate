@@ -321,7 +321,7 @@ pub fn (ch:Channel) len( -- n:i64) {
 
 /// Get channel capacity.
 ///
-/// @return cap i64 Buffer capacity (0 for unbuffered)
+/// @return c i64 Buffer capacity (0 for unbuffered)
 /// @example ch cap -> c
 pub fn (ch:Channel) cap( -- c:i64) {
 	ch <<handle thread::raw_chan_cap

@@ -38,6 +38,7 @@ Absolute value. Clears the sign bit, so -0 becomes 0 and NaN stays NaN.
 ```qd
 -2.5d decimal::abs print  // 2.5
 ```
+
 ---
 
 ### `fn` acos
@@ -60,6 +61,7 @@ Arc cosine, in radians.
 ```qd
 1d decimal::acos print  // 0
 ```
+
 ---
 
 ### `fn` asin
@@ -82,6 +84,7 @@ Arc sine, in radians.
 ```qd
 1d decimal::asin print  // 1.570796326794896619231321691639751
 ```
+
 ---
 
 ### `fn` atan2
@@ -104,6 +107,7 @@ Angle of the point (x, y) from the positive x axis, in radians.
 ```qd
 1d -1d decimal::atan2 print  // 2.356194490192344928846982537459627
 ```
+
 ---
 
 ### `fn` atan
@@ -125,6 +129,7 @@ Arc tangent, in radians.
 ```qd
 1d decimal::atan print  // 0.7853981633974483096156608458198757
 ```
+
 ---
 
 ### `fn` ceil
@@ -146,6 +151,7 @@ Round toward positive infinity to an integral value.
 ```qd
 2.1d decimal::ceil print  // 3
 ```
+
 ---
 
 ### `fn` copysign
@@ -168,6 +174,7 @@ x with the sign of sign.
 ```qd
 3d -1d decimal::copysign print  // -3
 ```
+
 ---
 
 ### `fn` cos
@@ -189,6 +196,7 @@ Cosine of an angle in radians.
 ```qd
 0d decimal::cos print  // 1
 ```
+
 ---
 
 ### `fn` e
@@ -206,6 +214,7 @@ Euler's number e, correctly rounded to 34 digits.
 ```qd
 decimal::e print  // 2.718281828459045235360287471352662
 ```
+
 ---
 
 ### `fn` exp
@@ -227,6 +236,7 @@ e raised to x, correctly rounded.
 ```qd
 1d decimal::exp print  // 2.718281828459045235360287471352662
 ```
+
 ---
 
 ### `fn` floor
@@ -248,6 +258,7 @@ Round toward negative infinity to an integral value.
 ```qd
 -2.1d decimal::floor print  // -3
 ```
+
 ---
 
 ### `fn` fma
@@ -271,6 +282,7 @@ Fused multiply-add: a*b + c with a single rounding.
 ```qd
 2d 3d 1d decimal::fma print  // 7
 ```
+
 ---
 
 ### `fn` fmod
@@ -293,6 +305,7 @@ Truncated remainder: x - n*y where n is x/y truncated toward zero. It takes x's 
 ```qd
 -7d 2d decimal::fmod print  // -1
 ```
+
 ---
 
 ### `fn` inf
@@ -310,6 +323,7 @@ Positive infinity, which has no literal spelling.
 ```qd
 decimal::inf print  // inf
 ```
+
 ---
 
 ### `fn` is_finite
@@ -331,6 +345,7 @@ Whether x is neither infinite nor NaN.
 ```qd
 1d decimal::is_finite print  // 1
 ```
+
 ---
 
 ### `fn` is_inf
@@ -352,6 +367,7 @@ Whether x is an infinity of either sign.
 ```qd
 1d 0d / decimal::is_inf print  // 1
 ```
+
 ---
 
 ### `fn` is_nan
@@ -373,6 +389,7 @@ Whether x is NaN. NaN is unequal to everything, itself included, so `x x ==` can
 ```qd
 0d 0d / decimal::is_nan print  // 1
 ```
+
 ---
 
 ### `fn` is_normal
@@ -394,6 +411,7 @@ Whether x is normal: finite, non-zero, and not subnormal.
 ```qd
 1d decimal::is_normal print  // 1
 ```
+
 ---
 
 ### `fn` is_signed
@@ -415,6 +433,7 @@ Whether x's sign bit is set. True of -0 and of a negative NaN, which `0d <` is n
 ```qd
 -0d decimal::is_signed print  // 1
 ```
+
 ---
 
 ### `fn` is_subnormal
@@ -436,6 +455,7 @@ Whether x is subnormal: non-zero and below 1e-6143 in magnitude.
 ```qd
 1e-6150d decimal::is_subnormal print  // 1
 ```
+
 ---
 
 ### `fn` is_zero
@@ -457,6 +477,7 @@ Whether x is zero of either sign.
 ```qd
 -0d decimal::is_zero print  // 1
 ```
+
 ---
 
 ### `fn` ln
@@ -479,6 +500,7 @@ Natural logarithm, correctly rounded.
 ```qd
 10d decimal::ln print  // 2.302585092994045684017991454684364
 ```
+
 ---
 
 ### `fn` log10
@@ -500,6 +522,7 @@ Base-10 logarithm, correctly rounded.
 ```qd
 1000d decimal::log10 print  // 3
 ```
+
 ---
 
 ### `fn` logb
@@ -522,6 +545,7 @@ Exponent of x's leading digit: floor(log10(|x|)) for a finite non-zero x.
 ```qd
 1234d decimal::logb print  // 3
 ```
+
 ---
 
 ### `fn` max
@@ -544,6 +568,7 @@ IEEE maxNum: the larger of a and b, where a quiet NaN loses to a number.
 ```qd
 3d 7d decimal::max print  // 7
 ```
+
 ---
 
 ### `fn` min
@@ -566,6 +591,7 @@ IEEE minNum: the smaller of a and b, where a quiet NaN loses to a number.
 ```qd
 3d 7d decimal::min print  // 3
 ```
+
 ---
 
 ### `fn` nan
@@ -583,6 +609,7 @@ A quiet NaN, which has no literal spelling.
 ```qd
 decimal::nan decimal::is_nan print  // 1
 ```
+
 ---
 
 ### `fn` next_down
@@ -604,6 +631,7 @@ The next d128 below x.
 ```qd
 1d decimal::next_down print  // 0.9999999999999999999999999999999999
 ```
+
 ---
 
 ### `fn` next_up
@@ -625,6 +653,7 @@ The next d128 above x.
 ```qd
 1d decimal::next_up print  // 1.000000000000000000000000000000001
 ```
+
 ---
 
 ### `fn` pi
@@ -642,6 +671,7 @@ Pi, correctly rounded to 34 digits.
 ```qd
 decimal::pi print  // 3.141592653589793238462643383279503
 ```
+
 ---
 
 ### `fn` pow
@@ -664,6 +694,7 @@ base raised to exponent.
 ```qd
 2d 10d decimal::pow print  // 1024
 ```
+
 ---
 
 ### `fn` quantize
@@ -687,6 +718,7 @@ x rounded to the exponent of like: to the same number of decimal places.
 ```qd
 2.34567d 0.01d decimal::quantize print  // 2.35
 ```
+
 ---
 
 ### `fn` reduce
@@ -708,6 +740,7 @@ x without trailing zeros: the same value at the largest exponent that holds it.
 ```qd
 1.500d decimal::reduce print  // 1.5
 ```
+
 ---
 
 ### `fn` remainder
@@ -730,6 +763,7 @@ IEEE remainder: x - n*y where n is x/y rounded to the nearest integer, ties to e
 ```qd
 10d 3d decimal::remainder print  // 1
 ```
+
 ---
 
 ### `fn` round_even
@@ -752,6 +786,7 @@ Round to an integral value, ties to even.
 ```qd
 2.5d decimal::round_even print  // 2
 ```
+
 ---
 
 ### `fn` round
@@ -774,6 +809,7 @@ Round to an integral value, ties away from zero.
 ```qd
 2.5d decimal::round print  // 3
 ```
+
 ---
 
 ### `fn` scaleb
@@ -796,6 +832,7 @@ x times ten to the n.
 ```qd
 1.5d 3 decimal::scaleb print  // 1.5e+3
 ```
+
 ---
 
 ### `fn` sin
@@ -817,6 +854,7 @@ Sine of an angle in radians.
 ```qd
 0d decimal::sin print  // 0
 ```
+
 ---
 
 ### `fn` sqrt
@@ -839,6 +877,7 @@ Square root, correctly rounded.
 ```qd
 2d decimal::sqrt print  // 1.414213562373095048801688724209698
 ```
+
 ---
 
 ### `fn` tan
@@ -860,6 +899,7 @@ Tangent of an angle in radians.
 ```qd
 0d decimal::tan print  // 0
 ```
+
 ---
 
 ### `fn` total_order
@@ -882,6 +922,7 @@ IEEE totalOrder: a total order over every d128, NaNs and signed zeros included. 
 ```qd
 -0d 0d decimal::total_order print  // -1
 ```
+
 ---
 
 ### `fn` trunc

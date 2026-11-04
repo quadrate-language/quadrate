@@ -63,6 +63,7 @@ The error the last fallible call failed with, as one value.  Reading empties the
 ```qd
 error::last  // failure
 ```
+
 ---
 
 #### `fn` new
@@ -103,6 +104,7 @@ The error at the bottom of the cause chain -- the one that actually failed.
 ```qd
 e error::root <<code  // original_code
 ```
+
 ---
 
 #### `fn` wrap

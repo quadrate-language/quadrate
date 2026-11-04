@@ -5,8 +5,8 @@ In Quadrate, you call functions by simply writing their name.
 ## Basic calls
 
 ```qd
-def double(x:i64 -- result:i64) {
-	x 2 *
+fn double(x:i64 -- result:i64) {
+	2 *
 }
 
 fn main() {
@@ -21,16 +21,16 @@ No parentheses needed! Just push the arguments, then write the function name.
 Functions naturally chain together:
 
 ```qd
-def double(x:i64 -- result:i64) {
-	x 2 *
+fn double(x:i64 -- result:i64) {
+	2 *
 }
 
 def square(x:i64 -- result:i64) {
 	x x *
 }
 
-def add_one(x:i64 -- result:i64) {
-	x 1 +
+fn add_one(x:i64 -- result:i64) {
+	1 +
 }
 
 fn main() {
@@ -46,8 +46,8 @@ Each function consumes its inputs and produces outputs for the next.
 Push all arguments before calling:
 
 ```qd
-def add3(a:i64 b:i64 c:i64 -- sum:i64) {
-	a b + c +
+fn add3(a:i64 b:i64 c:i64 -- sum:i64) {
+	+ +
 }
 
 fn main() {
@@ -152,12 +152,12 @@ fn main() {
 Functions can call other functions:
 
 ```qd
-def inner(x:i64 -- result:i64) {
-	x 1 +
+fn inner(x:i64 -- result:i64) {
+	1 +
 }
 
-def outer(x:i64 -- result:i64) {
-	x inner 10 *
+fn outer(x:i64 -- result:i64) {
+	inner 10 *
 }
 
 fn main() {

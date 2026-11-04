@@ -34,7 +34,8 @@ fn main() {
 
 ## Reading with low-level API
 
-For more control, use `io::open!`, `io::read!`, etc:
+For more control, use `io::open`, `io::read` and the rest. Inside a fallible function, call
+them with `?`, so a failure is passed on to the caller and the defers still run:
 
 <!-- doccheck: compile-only reads a file that only exists on the reader's machine -->
 ```qd
@@ -42,16 +43,16 @@ use io
 use mem
 
 def read_file(path:str -- content:str)! {
-	path io::Read io::open! -> file
+	path io::Read io::open? -> file
 	defer { file io::close }
 
-	file 0 io::SeekEnd io::seek! -> size
-	file 0 io::SeekSet io::seek! drop
+	file 0 io::SeekEnd io::seek? -> size
+	file 0 io::SeekSet io::seek? drop
 
-	size mem::alloc! -> buf
+	size mem::alloc? -> buf
 	defer { buf mem::free }
 
-	file buf size io::read! -> bytes_read
+	file buf size io::read? -> bytes_read
 	buf bytes_read mem::to_string
 }
 
@@ -70,13 +71,13 @@ use io
 use mem
 
 def write_file(path:str content:str -- )! {
-	path io::Write io::open! -> file
+	path io::Write io::open? -> file
 	defer { file io::close }
 
 	content mem::from_string -> size -> buf
 	defer { buf mem::free }
 
-	file buf size io::write! drop
+	file buf size io::write? drop
 }
 
 fn main() {
@@ -112,6 +113,9 @@ fn main() {
 }
 ```
 
+`strings::lines` splits on `\n`, so a file that ends in a newline, as most do, gives one
+more, empty, line at the end.
+
 ## Word count
 
 <!-- doccheck: compile-only reads a file that only exists on the reader's machine -->
@@ -120,17 +124,17 @@ use io
 use strings
 
 def count_words(path:str -- words:i64 lines:i64 chars:i64)! {
-	path io::read_file! -> content
+	path io::read_file? -> content
 
 	content len -> chars
-	content strings::lines! -> line_array
+	content strings::lines? -> line_array
 	line_array len -> lines
 
 	0 -> words
 	0 lines 1 for i {
 		line_array i nth -> line
 		line len 0 > if {
-			line strings::words! -> word_arr
+			line strings::words? -> word_arr
 			words word_arr len + -> words
 			word_arr free
 		}
@@ -163,13 +167,13 @@ use mem
 const BufferSize = 4096
 
 def copy_file(src:str dst:str -- total:i64)! {
-	src io::ReadBinary io::open! -> src_file
+	src io::ReadBinary io::open? -> src_file
 	defer { src_file io::close }
 
-	dst io::WriteBinary io::open! -> dst_file
+	dst io::WriteBinary io::open? -> dst_file
 	defer { dst_file io::close }
 
-	BufferSize mem::alloc! -> buf
+	BufferSize mem::alloc? -> buf
 	defer { buf mem::free }
 
 	0 -> total_copied
@@ -177,11 +181,11 @@ def copy_file(src:str dst:str -- total:i64)! {
 
 	loop {
 		copying 0 == if { break }
-		src_file buf BufferSize io::read! -> bytes_read
+		src_file buf BufferSize io::read? -> bytes_read
 		bytes_read 0 == if {
 			0 -> copying
 		} else {
-			dst_file buf bytes_read io::write! drop
+			dst_file buf bytes_read io::write? drop
 			total_copied bytes_read + -> total_copied
 		}
 	}
@@ -199,11 +203,10 @@ fn main() {
 
 ## Key concepts
 
-1. **Fallible functions** - Mark with `!` suffix, use `switch { Ok { } _ { err panic } }` to propagate errors
-2. **defer for cleanup** - Files and buffers always cleaned up, even on error
+1. **Fallible functions** - Mark with `!` after the signature; inside one, call other fallible functions with `?` to pass their errors to the caller
+2. **defer for cleanup** - Files and buffers are cleaned up on return, on a panic and on `?`; only a `!` abort skips the defers
 3. **Error handling** - Use `switch { Ok { } _ { } }` to handle success/failure
-4. **Error propagation** - Use `err panic` to re-throw errors to caller
-5. **High-level vs low-level** - Use `io::read_file`/`io::write_file` for simple cases
+4. **High-level vs low-level** - Use `io::read_file`/`io::write_file` for simple cases
 
 ## What's next?
 

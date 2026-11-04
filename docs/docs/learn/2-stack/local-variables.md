@@ -125,10 +125,10 @@ fn main() {
 
 ```qd
 fn main() {
-	1 -> a
-	2 -> b
-	b print nl  // 2
-	a print nl  // 1
+	1 2 -> b -> a  // a = 1, b = 2
+	b a            // pushed in swapped order
+	print nl       // 1
+	print nl       // 2
 }
 ```
 

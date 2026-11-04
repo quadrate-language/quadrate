@@ -14,7 +14,7 @@
 
 HTTP module.
 Provides HTTP client and server functionality.
-Error codes: Ok=1 (success), specific errors start at 2
+Error codes: Ok=0 (success); error codes start at 2
 
 ## Constants
 
@@ -114,6 +114,7 @@ Abort request processing and send error response. Prevents further middleware/ha
 ```qd
 c 401 "Unauthorized" http::abort
 ```
+
 ---
 
 ### `fn` ANY
@@ -127,6 +128,7 @@ Register handler for any HTTP method.
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
 | `handler` | `fn(Ctx --)` | Handler function |
+
 ---
 
 ### `fn` body
@@ -145,6 +147,7 @@ Set request body.
 ```qd
 req "{\"key\":\"value\"}" http::body
 ```
+
 ---
 
 ### `fn` cert
@@ -164,6 +167,7 @@ Set client certificate for mTLS (mutual TLS).
 ```qd
 req "/path/client.crt" "/path/client.key" http::cert
 ```
+
 ---
 
 ### `fn` close
@@ -181,6 +185,7 @@ Close and free response.
 ```qd
 resp http::close
 ```
+
 ---
 
 ### `fn` DELETE
@@ -194,6 +199,7 @@ Register DELETE route.
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
 | `handler` | `fn(Ctx --)` | Handler function |
+
 ---
 
 ### `fn` engine
@@ -211,6 +217,7 @@ Create new HTTP engine.
 ```qd
 http::engine  // e
 ```
+
 ---
 
 ### `fn` free_engine
@@ -228,6 +235,7 @@ Free engine resources.
 ```qd
 e http::free_engine
 ```
+
 ---
 
 ### `fn` free_request
@@ -245,6 +253,7 @@ Free request object (call after send).
 ```qd
 req http::free_request
 ```
+
 ---
 
 ### `fn` GET
@@ -264,6 +273,7 @@ Register GET route.   - :param for path parameters (e.g., "/users/:id")   - /* f
 ```qd
 e "/" def(c:http::Ctx -- ) { c 200 "Hello" http::string } http::GET
 ```
+
 ---
 
 ### `fn` get_header
@@ -286,6 +296,7 @@ Get header value by name.
 ```qd
 c "Content-Type" http::get_header  // ct
 ```
+
 ---
 
 ### `fn` group_DELETE
@@ -293,6 +304,7 @@ c "Content-Type" http::get_header  // ct
 Register DELETE on group.
 
 **Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
+
 ---
 
 ### `fn` group
@@ -315,6 +327,7 @@ Create route group with prefix.
 ```qd
 e "/api" http::group  // api
 ```
+
 ---
 
 ### `fn` group_GET
@@ -334,6 +347,7 @@ Register GET on group.
 ```qd
 api "/users" def(c:http::Ctx -- ) { c 200 "users" http::string } http::group_GET
 ```
+
 ---
 
 ### `fn` group_POST
@@ -341,6 +355,7 @@ api "/users" def(c:http::Ctx -- ) { c 200 "users" http::string } http::group_GET
 Register POST on group.
 
 **Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
+
 ---
 
 ### `fn` group_PUT
@@ -348,6 +363,7 @@ Register POST on group.
 Register PUT on group.
 
 **Signature:** `(group:ptr path:str handler:fn(Ctx --) -- )`
+
 ---
 
 ### `fn` group_use
@@ -366,6 +382,7 @@ Add middleware to group.
 ```qd
 api def(c:http::Ctx -- ) { c "X-Group" "api" http::set_header } http::group_use
 ```
+
 ---
 
 ### `fn` handle_one
@@ -387,6 +404,7 @@ Handle a single request (non-blocking alternative to run). Returns 0 if no reque
 ```qd
 e http::handle_one  // handled
 ```
+
 ---
 
 ### `fn` header
@@ -406,6 +424,7 @@ Add request header. A line break in the name or value, or a colon in the name, i
 ```qd
 req "Content-Type" "application/json" http::header
 ```
+
 ---
 
 ### `fn` html
@@ -425,6 +444,7 @@ Send HTML response (sets Content-Type: text/html).
 ```qd
 c 200 "<h1>Hello</h1>" http::html
 ```
+
 ---
 
 ### `fn` is_responded
@@ -446,6 +466,7 @@ Check if response has already been sent.
 ```qd
 c http::is_responded  // sent
 ```
+
 ---
 
 ### `fn` json
@@ -465,6 +486,7 @@ Send JSON response (sets Content-Type: application/json).
 ```qd
 c 200 "{\"ok\":true}" http::json
 ```
+
 ---
 
 ### `fn` method
@@ -483,6 +505,7 @@ Set request HTTP method. A method with a line break in it is a runtime error.
 ```qd
 req "POST" http::method
 ```
+
 ---
 
 ### `fn` new
@@ -504,6 +527,7 @@ Create new HTTP request builder.
 ```qd
 "https://example.com" http::new  // req
 ```
+
 ---
 
 ### `fn` param
@@ -526,6 +550,7 @@ Get path parameter by name.
 ```qd
 c "id" http::param  // id
 ```
+
 ---
 
 ### `fn` POST
@@ -545,6 +570,7 @@ Register POST route.
 ```qd
 e "/api/users" def(c:http::Ctx -- ) { c 200 "created" http::string } http::POST
 ```
+
 ---
 
 ### `fn` PUT
@@ -558,6 +584,7 @@ Register PUT route.
 | `engine` | `ptr` | Engine |
 | `path` | `str` | Route path |
 | `handler` | `fn(Ctx --)` | Handler function |
+
 ---
 
 ### `fn` query_param
@@ -580,6 +607,7 @@ Get query parameter by name.
 ```qd
 c "page" http::query_param  // page
 ```
+
 ---
 
 ### `fn` request_body
@@ -601,6 +629,7 @@ Get the raw request body as a string. Useful for reading JSON payloads in POST/P
 ```qd
 c http::request_body  // json_payload
 ```
+
 ---
 
 ### `fn` run
@@ -623,6 +652,7 @@ Start server (blocking).
 ```qd
 e ":8080" http::run!
 ```
+
 ---
 
 ### `fn` set_header
@@ -642,6 +672,7 @@ Set response header. Must be called before sending response body. A line break i
 ```qd
 c "X-Custom" "value" http::set_header
 ```
+
 ---
 
 ### `fn` sse_end
@@ -659,6 +690,7 @@ End the SSE stream. Marks the stream as complete. The connection will be closed 
 ```qd
 c http::sse_end
 ```
+
 ---
 
 ### `fn` sse_event
@@ -678,6 +710,7 @@ Send a named SSE event. The event is sent as "event: <name>\ndata: <content>\n\n
 ```qd
 c "progress" "{\"percent\": 50}" http::sse_event
 ```
+
 ---
 
 ### `fn` sse_send
@@ -696,6 +729,7 @@ Send a data-only SSE event. The data is sent as "data: <content>\n\n".
 ```qd
 c "{\"count\": 1}" http::sse_send
 ```
+
 ---
 
 ### `fn` sse_start
@@ -713,11 +747,12 @@ Start an SSE (Server-Sent Events) stream. Sends SSE headers and keeps the connec
 ```qd
 c http::sse_start
 ```
+
 ---
 
 ### `fn` static
 
-Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts. // Serve files from ./public at /static/* def handle_static(c:http::Ctx -- ) {     c "/static" "./public" http::static } e "/static/*" &handle_static http::GET
+Serve files from a directory. Maps URL paths to filesystem paths. Use with a wildcard route (/*). Automatically serves index.html for directory requests. Returns 404 if file not found, 403 for path traversal attempts.
 
 **Signature:** `(c:Ctx prefix:str fs_path:str -- )`
 
@@ -726,6 +761,13 @@ Serve files from a directory. Maps URL paths to filesystem paths. Use with a wil
 | `c` | `Ctx` | Context |
 | `prefix` | `str` | URL prefix to strip (e.g., "/static") |
 | `fs_path` | `str` | Filesystem directory path (e.g., "./public") |
+
+**Example:**
+
+```qd
+e "/static/*" def (c:http::Ctx -- ) { c "/static" "./public" http::static } http::GET
+```
+
 ---
 
 ### `fn` static_file
@@ -744,6 +786,7 @@ Serve a single file from the filesystem. Automatically detects MIME type from fi
 ```qd
 c "/var/www/index.html" http::static_file
 ```
+
 ---
 
 ### `fn` stop
@@ -761,6 +804,7 @@ Stop the server.
 ```qd
 e http::stop
 ```
+
 ---
 
 ### `fn` string
@@ -780,6 +824,7 @@ Send plain text response.
 ```qd
 c 200 "Hello, World!" http::string
 ```
+
 ---
 
 ### `fn` use
@@ -848,6 +893,7 @@ Simple GET request. Fails as `send` does.
 ```qd
 "https://example.com" http::get!  // resp
 ```
+
 ---
 
 #### `fn` send

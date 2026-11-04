@@ -41,37 +41,37 @@ import "libmath.a" as "math" {
 	/// Sine of angle in radians.
 	/// @param x f64 Angle in radians
 	/// @return result f64 Sine value [-1, 1]
-	/// @example 0.0 math::sin print  // 0.0
+	/// @example 0.0 math::sin print  // 0
 	pub fn sin(x:f64 -- result:f64)
 
 	/// Cosine of angle in radians.
 	/// @param x f64 Angle in radians
 	/// @return result f64 Cosine value [-1, 1]
-	/// @example 0.0 math::cos print  // 1.0
+	/// @example 0.0 math::cos print  // 1
 	pub fn cos(x:f64 -- result:f64)
 
 	/// Tangent of angle in radians.
 	/// @param x f64 Angle in radians
 	/// @return result f64 Tangent value
-	/// @example 0.0 math::tan print  // 0.0
+	/// @example 0.0 math::tan print  // 0
 	pub fn tan(x:f64 -- result:f64)
 
 	/// Arc sine (inverse sine).
 	/// @param x f64 Value in range [-1, 1]
 	/// @return result f64 Angle in radians [-π/2, π/2]
-	/// @example 0.0 math::asin print  // 0.0
+	/// @example 0.0 math::asin print  // 0
 	pub fn asin(x:f64 -- result:f64)
 
 	/// Arc cosine (inverse cosine).
 	/// @param x f64 Value in range [-1, 1]
 	/// @return result f64 Angle in radians [0, π]
-	/// @example 1.0 math::acos print  // 0.0
+	/// @example 1.0 math::acos print  // 0
 	pub fn acos(x:f64 -- result:f64)
 
 	/// Arc tangent (inverse tangent).
 	/// @param x f64 Any value
 	/// @return result f64 Angle in radians [-π/2, π/2]
-	/// @example 0.0 math::atan print  // 0.0
+	/// @example 0.0 math::atan print  // 0
 	pub fn atan(x:f64 -- result:f64)
 
 	/// Two-argument arc tangent.
@@ -80,32 +80,32 @@ import "libmath.a" as "math" {
 	/// @param y f64 Y coordinate
 	/// @param x f64 X coordinate
 	/// @return result f64 Angle in radians [-π, π]
-	/// @example 1.0 1.0 math::atan2 print  // ~0.785 (π/4)
+	/// @example 1.0 1.0 math::atan2 print  // 0.785398 (π/4)
 	pub fn atan2(y:f64 x:f64 -- result:f64)
 
 	/// Square root.
 	/// @param x f64 Non-negative value
 	/// @return result f64 Square root of x
-	/// @example 4.0 math::sqrt print  // 2.0
+	/// @example 4.0 math::sqrt print  // 2
 	pub fn sqrt(x:f64 -- result:f64)
 
 	/// Cube root.
 	/// @param x f64 Any value
 	/// @return result f64 Cube root of x
-	/// @example 8.0 math::cbrt print  // 2.0
+	/// @example 8.0 math::cbrt print  // 2
 	pub fn cbrt(x:f64 -- result:f64)
 
 	/// Power function.
 	/// @param base f64 Base value
 	/// @param exp f64 Exponent
 	/// @return result f64 base raised to exp
-	/// @example 2.0 3.0 math::pow print  // 8.0
+	/// @example 2.0 3.0 math::pow print  // 8
 	pub fn pow(base:f64 exp:f64 -- result:f64)
 
 	/// Exponential function (e^x).
 	/// @param x f64 Exponent value
 	/// @return result f64 e raised to x
-	/// @example 1.0 math::exp print  // ~2.718 (e)
+	/// @example 1.0 math::exp print  // 2.71828 (e)
 	pub fn exp(x:f64 -- result:f64)
 
 	/// Hypotenuse (Euclidean distance).
@@ -113,37 +113,37 @@ import "libmath.a" as "math" {
 	/// @param x f64 First value
 	/// @param y f64 Second value
 	/// @return result f64 sqrt(x² + y²)
-	/// @example 3.0 4.0 math::hypot print  // 5.0
+	/// @example 3.0 4.0 math::hypot print  // 5
 	pub fn hypot(x:f64 y:f64 -- result:f64)
 
 	/// Natural logarithm (base e).
 	/// @param x f64 Positive value
 	/// @return result f64 Natural log of x
-	/// @example 2.718281828 math::ln print  // ~1.0
+	/// @example 2.718281828 math::ln print  // 1
 	pub fn ln(x:f64 -- result:f64)
 
 	/// Base-10 logarithm.
 	/// @param x f64 Positive value
 	/// @return result f64 Log base 10 of x
-	/// @example 100.0 math::log10 print  // 2.0
+	/// @example 100.0 math::log10 print  // 2
 	pub fn log10(x:f64 -- result:f64)
 
 	/// Ceiling (round up).
 	/// @param x f64 Any value
 	/// @return result f64 Smallest integer >= x
-	/// @example 2.3 math::ceil print  // 3.0
+	/// @example 2.3 math::ceil print  // 3
 	pub fn ceil(x:f64 -- result:f64)
 
 	/// Floor (round down).
 	/// @param x f64 Any value
 	/// @return result f64 Largest integer <= x
-	/// @example 2.7 math::floor print  // 2.0
+	/// @example 2.7 math::floor print  // 2
 	pub fn floor(x:f64 -- result:f64)
 
 	/// Round to nearest integer.
 	/// @param x f64 Any value
 	/// @return result f64 Nearest integer to x
-	/// @example 2.5 math::round print  // 3.0
+	/// @example 2.5 math::round print  // 3
 	pub fn round(x:f64 -- result:f64)
 
 	/// Floating-point modulo (remainder).
@@ -157,55 +157,55 @@ import "libmath.a" as "math" {
 	/// Hyperbolic sine.
 	/// @param x f64 Any value
 	/// @return result f64 Hyperbolic sine of x
-	/// @example 1.0 math::sinh print  // ~1.175
+	/// @example 1.0 math::sinh print  // 1.1752
 	pub fn sinh(x:f64 -- result:f64)
 
 	/// Hyperbolic cosine.
 	/// @param x f64 Any value
 	/// @return result f64 Hyperbolic cosine of x
-	/// @example 0.0 math::cosh print  // 1.0
+	/// @example 0.0 math::cosh print  // 1
 	pub fn cosh(x:f64 -- result:f64)
 
 	/// Hyperbolic tangent.
 	/// @param x f64 Any value
 	/// @return result f64 Hyperbolic tangent of x [-1, 1]
-	/// @example 0.0 math::tanh print  // 0.0
+	/// @example 0.0 math::tanh print  // 0
 	pub fn tanh(x:f64 -- result:f64)
 
 	/// Inverse hyperbolic sine.
 	/// @param x f64 Any value
 	/// @return result f64 Inverse hyperbolic sine of x
-	/// @example 0.0 math::asinh print  // 0.0
+	/// @example 0.0 math::asinh print  // 0
 	pub fn asinh(x:f64 -- result:f64)
 
 	/// Inverse hyperbolic cosine.
 	/// @param x f64 Value >= 1
 	/// @return result f64 Inverse hyperbolic cosine of x
-	/// @example 1.0 math::acosh print  // 0.0
+	/// @example 1.0 math::acosh print  // 0
 	pub fn acosh(x:f64 -- result:f64)
 
 	/// Inverse hyperbolic tangent.
 	/// @param x f64 Value in range (-1, 1)
 	/// @return result f64 Inverse hyperbolic tangent of x
-	/// @example 0.0 math::atanh print  // 0.0
+	/// @example 0.0 math::atanh print  // 0
 	pub fn atanh(x:f64 -- result:f64)
 
 	/// Base-2 logarithm.
 	/// @param x f64 Positive value
 	/// @return result f64 Log base 2 of x
-	/// @example 8.0 math::log2 print  // 3.0
+	/// @example 8.0 math::log2 print  // 3
 	pub fn log2(x:f64 -- result:f64)
 
 	/// Exponential base 2 (2^x).
 	/// @param x f64 Exponent
 	/// @return result f64 2 raised to x
-	/// @example 3.0 math::exp2 print  // 8.0
+	/// @example 3.0 math::exp2 print  // 8
 	pub fn exp2(x:f64 -- result:f64)
 
 	/// Truncate toward zero.
 	/// @param x f64 Any value
 	/// @return result f64 Integer part of x (toward zero)
-	/// @example -2.7 math::trunc print  // -2.0
+	/// @example -2.7 math::trunc print  // -2
 	pub fn trunc(x:f64 -- result:f64)
 
 	/// Factorial of a non-negative integer.
@@ -248,7 +248,7 @@ import "libmath.a" as "math" {
 /// Square a number.
 /// @param x f64 Value to square
 /// @return result f64 x * x
-/// @example 3.0 math::sq print  // 9.0
+/// @example 3.0 math::sq print  // 9
 pub fn sq(x:f64 -- f64) {
 	dup *
 }
@@ -256,7 +256,7 @@ pub fn sq(x:f64 -- f64) {
 /// Cube a number.
 /// @param x f64 Value to cube
 /// @return result f64 x * x * x
-/// @example 2.0 math::cb print  // 8.0
+/// @example 2.0 math::cb print  // 8
 pub fn cb(x:f64 -- f64) {
 	dup dup * *
 }
@@ -264,7 +264,7 @@ pub fn cb(x:f64 -- f64) {
 /// Absolute value.
 /// @param x f64 Any value
 /// @return result f64 |x|
-/// @example -5.0 math::abs print  // 5.0
+/// @example -5.0 math::abs print  // 5
 pub fn abs(x:f64 -- f64) {
 	dup 0.0 < if {
 		neg
@@ -309,7 +309,7 @@ pub fn max(a:any b:any -- any) {
 /// @param x f64 Positive value
 /// @param base f64 Logarithm base
 /// @return result f64 log_base(x)
-/// @example 8.0 2.0 math::log print  // 3.0
+/// @example 8.0 2.0 math::log print  // 3
 pub fn log(x:f64 base:f64 -- result:f64) {
 	fn { math::ln } both /
 }
@@ -319,7 +319,7 @@ pub fn log(x:f64 base:f64 -- result:f64) {
 /// @param min_val f64 Minimum bound
 /// @param max_val f64 Maximum bound
 /// @return result f64 x clamped to [min_val, max_val]
-/// @example 15.0 0.0 10.0 math::clamp print  // 10.0
+/// @example 15.0 0.0 10.0 math::clamp print  // 10
 pub fn clamp(x:f64 min_val:f64 max_val:f64 -- result:f64) {
 	swap fn { math::min } dip math::max
 }
@@ -329,7 +329,7 @@ pub fn clamp(x:f64 min_val:f64 max_val:f64 -- result:f64) {
 /// @param b f64 End value
 /// @param t f64 Interpolation factor [0, 1]
 /// @return result f64 a + (b - a) * t
-/// @example 0.0 10.0 0.5 math::lerp print  // 5.0
+/// @example 0.0 10.0 0.5 math::lerp print  // 5
 pub fn lerp(a:f64 b:f64 t:f64 -- result:f64) {
 	fn { over - } dip * +
 }
@@ -337,7 +337,7 @@ pub fn lerp(a:f64 b:f64 t:f64 -- result:f64) {
 /// Convert degrees to radians.
 /// @param degrees f64 Angle in degrees
 /// @return radians f64 Angle in radians
-/// @example 180.0 math::deg_to_rad print  // ~3.14159
+/// @example 180.0 math::deg_to_rad print  // 3.14159
 pub fn deg_to_rad(degrees:f64 -- f64) {
 	3.141592653589793 180 / *
 }
@@ -345,7 +345,7 @@ pub fn deg_to_rad(degrees:f64 -- f64) {
 /// Convert radians to degrees.
 /// @param radians f64 Angle in radians
 /// @return degrees f64 Angle in degrees
-/// @example 3.141592653589793 math::rad_to_deg print  // 180.0
+/// @example 3.141592653589793 math::rad_to_deg print  // 180
 pub fn rad_to_deg(radians:f64 -- f64) {
 	180 * 3.141592653589793 /
 }
@@ -1252,9 +1252,9 @@ pub fn (m:Mat4) transpose( -- result:Mat4) {
 }
 
 /// Create translation Mat4.
-/// @param x f64 X translation
-/// @param y f64 Y translation
-/// @param z f64 Z translation
+/// @param x_v f64 X translation
+/// @param y_v f64 Y translation
+/// @param z_v f64 Z translation
 /// @return m Mat4 Translation matrix
 /// @example 1.0 1.0 1.0 math::mat4_translation -> m
 pub def mat4_translation(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4) {
@@ -1279,9 +1279,9 @@ pub def mat4_translation(x_v:f64 y_v:f64 z_v:f64 -- m:Mat4) {
 }
 
 /// Create scale Mat4.
-/// @param sx f64 X scale factor
-/// @param sy f64 Y scale factor
-/// @param sz f64 Z scale factor
+/// @param sx_v f64 X scale factor
+/// @param sy_v f64 Y scale factor
+/// @param sz_v f64 Z scale factor
 /// @return m Mat4 Scale matrix
 /// @example 1.0 1.0 1.0 math::mat4_scaling -> m
 pub def mat4_scaling(sx_v:f64 sy_v:f64 sz_v:f64 -- m:Mat4) {
@@ -1682,7 +1682,7 @@ pub def mat4_from_quat(q:Quat -- m:Mat4) {
 /// Sign function.
 /// @param x f64 Input value
 /// @return result f64 -1 if x < 0, 0 if x == 0, 1 if x > 0
-/// @example -5.0 math::sign print  // -1.0
+/// @example -5.0 math::sign print  // -1
 pub def sign(x:f64 -- result:f64) {
 	x 0.0 < if {
 		1.0 neg
@@ -1702,7 +1702,7 @@ pub def sign(x:f64 -- result:f64) {
 /// Smooth step interpolation (cubic Hermite, zero derivatives at edges).
 /// @param edge0 f64 Lower edge
 /// @param edge1 f64 Upper edge
-/// @param x f64 Value to interpolate
+/// @param x_v f64 Value to interpolate
 /// @return result f64 Smoothly interpolated value [0, 1]
 /// @example 0.0 1.0 0.5 math::smoothstep print  // 0.5
 pub def smoothstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
@@ -1717,7 +1717,7 @@ pub def smoothstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
 /// Smoother step interpolation (quintic, zero first and second derivatives at edges).
 /// @param edge0 f64 Lower edge
 /// @param edge1 f64 Upper edge
-/// @param x f64 Value to interpolate
+/// @param x_v f64 Value to interpolate
 /// @return result f64 Smoothly interpolated value [0, 1]
 /// @example 0.0 1.0 0.5 math::smootherstep print  // 0.5
 pub def smootherstep(edge0:f64 edge1:f64 x_v:f64 -- result:f64) {
@@ -1759,7 +1759,7 @@ pub def cubic_hermite(p0:f64 p1:f64 p2:f64 p3:f64 t:f64 -- result:f64) {
 /// @param p2 f64 End point
 /// @param t f64 Parameter [0, 1]
 /// @return result f64 Point on curve
-/// @example 0.0 1.0 2.0 0.5 math::bezier2 print  // 1.0
+/// @example 0.0 1.0 2.0 0.5 math::bezier2 print  // 1
 pub def bezier2(p0:f64 p1:f64 p2:f64 t:f64 -- result:f64) {
 	1.0 t - -> u
 	// B(t) = (1-t)²p0 + 2(1-t)tp1 + t²p2
@@ -1859,7 +1859,7 @@ pub def inverse_lerp(a:f64 b:f64 v:f64 -- result:f64) {
 /// @param out_max f64 Output range maximum
 /// @param v f64 Value to remap
 /// @return result f64 Remapped value
-/// @example 0.0 10.0 0.0 100.0 5.0 math::remap print  // 50.0
+/// @example 0.0 10.0 0.0 100.0 5.0 math::remap print  // 50
 pub def remap(in_min:f64 in_max:f64 out_min:f64 out_max:f64 v:f64 -- result:f64) {
 	v in_min - in_max in_min - / -> t
 	out_min out_max out_min - t * +
