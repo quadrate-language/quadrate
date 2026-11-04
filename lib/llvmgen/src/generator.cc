@@ -3276,12 +3276,24 @@ namespace Qd {
 
 		// Use host CPU for native compilation, "generic" for cross-compilation
 		std::string cpu;
+		std::string features;
 		if (!mImpl->targetTriple.empty()) {
 			cpu = "generic";
 		} else {
 			cpu = std::string(llvm::sys::getHostCPUName());
+#if LLVM_VERSION_MAJOR >= 19
+			const llvm::StringMap<bool> hostFeatures = llvm::sys::getHostCPUFeatures();
+#else
+			llvm::StringMap<bool> hostFeatures;
+			llvm::sys::getHostCPUFeatures(hostFeatures);
+#endif
+			for (const auto& feature : hostFeatures) {
+				if (!features.empty()) {
+					features += ',';
+				}
+				features += (feature.getValue() ? "+" : "-") + feature.getKey().str();
+			}
 		}
-		auto features = "";
 		llvm::TargetOptions opt;
 
 		// Map optimization level to LLVM CodeGenOptLevel

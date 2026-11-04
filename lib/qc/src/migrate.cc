@@ -51,7 +51,7 @@ namespace Qd {
 					const size_t start = i;
 					i += c == '$' ? 2 : 1;
 					while (i < n && src[i] != '"') {
-						i += src[i] == '\\' ? 2 : 1;
+						i += src[i] == '\\' ? size_t{2} : size_t{1};
 					}
 					i = i < n ? i + 1 : n;
 					tokens.push_back({Token::Kind::String, src.substr(start, i - start), start, i});
