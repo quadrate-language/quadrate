@@ -249,7 +249,7 @@ namespace Qd {
 		pushStrFn = declareFn(ctxPtrToResultTy, "qd_push_s");
 		pushStrRefFn = declareFn(ctxPtrToResultTy, "qd_push_s_ref");
 		pushStructFn = declareFn(ctxPtrToResultTy, "qd_push_struct");
-		pushRawFn = declareFn(ctxPtrToResultTy, "qd_push_raw");
+		pushRawFn = declareFn(ctxPtrToResultTy, "qd_push_p");
 		pushArrayFn = declareFn(ctxPtrToResultTy, "qd_push_array");
 		pushPtrKindFn =
 				declareFn(llvm::FunctionType::get(execResultTy, {contextPtrTy, ptrTy, builder->getInt8Ty()}, false),

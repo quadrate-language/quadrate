@@ -522,7 +522,7 @@ TEST(StructFieldSetChaining) {
 	)";
 	std::string ir = generateIR(src);
 	ASSERT(!ir.empty(), "should generate IR for chained field set");
-	ASSERT(irContains(ir, "qd_push_raw"), "chained >>field should push struct back");
+	ASSERT(irContains(ir, "qd_push_p"), "chained >>field should push struct back");
 }
 
 TEST(StructFieldSetDiscard) {

@@ -143,7 +143,7 @@ int usr_io_open(qd_context* ctx) {
 		fclose(fp);
 		return qd_fail(ctx, IO_ERR_INVALID_HANDLE, "io::open: too many open files");
 	}
-	qd_push_raw(ctx, token);
+	qd_push_p(ctx, token);
 	return qd_push_i(ctx, IO_ERR_OK);
 }
 
@@ -193,7 +193,7 @@ int usr_io_eof(qd_context* ctx) {
 	void* handle;
 	qd_args(ctx, "io::eof", "p", &handle);
 	FILE* fp = file_handle_resolve(handle);
-	qd_push_raw(ctx, handle);
+	qd_push_p(ctx, handle);
 	return qd_push_i(ctx, fp && feof(fp) ? 1 : 0);
 }
 

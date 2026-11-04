@@ -67,7 +67,7 @@ int usr_thread_raw_spawn(qd_context* ctx) {
 	thread->joined = false;
 	thread->detached = false;
 
-	qd_push_raw(ctx, thread);
+	qd_push_p(ctx, thread);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -156,7 +156,7 @@ int usr_thread_raw_mutex_new(qd_context* ctx) {
 	}
 
 	mutex->initialized = true;
-	qd_push_raw(ctx, mutex);
+	qd_push_p(ctx, mutex);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -288,7 +288,7 @@ int usr_thread_raw_chan_new(qd_context* ctx) {
 		return qd_fail(ctx, THREAD_ERR_CHANNEL, "channel::new: failed to create channel");
 	}
 
-	qd_push_raw(ctx, ch);
+	qd_push_p(ctx, ch);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -307,7 +307,7 @@ int usr_thread_raw_chan_buffered(qd_context* ctx) {
 		return qd_fail(ctx, THREAD_ERR_CHANNEL, "channel::buffered: failed to create channel");
 	}
 
-	qd_push_raw(ctx, ch);
+	qd_push_p(ctx, ch);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -594,7 +594,7 @@ int usr_thread_raw_wg_new(qd_context* ctx) {
 	}
 
 	wg->count = 0;
-	qd_push_raw(ctx, wg);
+	qd_push_p(ctx, wg);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -692,7 +692,7 @@ int usr_thread_raw_once_new(qd_context* ctx) {
 
 	once->completed = false;
 
-	qd_push_raw(ctx, once);
+	qd_push_p(ctx, once);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -817,7 +817,7 @@ int usr_thread_raw_barrier_new(qd_context* ctx) {
 	barrier->count = 0;
 	barrier->generation = 0;
 
-	qd_push_raw(ctx, barrier);
+	qd_push_p(ctx, barrier);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }
@@ -908,7 +908,7 @@ int usr_thread_raw_rwlock_new(qd_context* ctx) {
 	rw->writers_waiting = 0;
 	rw->writer_active = false;
 
-	qd_push_raw(ctx, rw);
+	qd_push_p(ctx, rw);
 	qd_push_i(ctx, THREAD_OK);
 	return (int){0};
 }

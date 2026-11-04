@@ -107,7 +107,7 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value);
  * @param value Pointer value to push
  * @return 0
  */
-int qd_push_raw(qd_context* ctx, void* value);
+int qd_push_p(qd_context* ctx, void* value);
 
 /**
  * @brief Push a struct or an array the caller hands over, its slot marked as one

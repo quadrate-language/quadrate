@@ -362,7 +362,7 @@ void qd_array_release(struct qd_array* p) {
 }
 
 // Nothing is counted here, so raw and unknown are alike; the slot says which all the same
-int qd_push_raw(qd_context* ctx, void* value) {
+int qd_push_p(qd_context* ctx, void* value) {
 	qd_stack_element_t e;
 	e.type = QD_STACK_TYPE_PTR;
 	e.ptr_kind = QD_PTR_RAW;

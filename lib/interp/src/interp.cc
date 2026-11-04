@@ -340,7 +340,7 @@ namespace {
 			// 'true' and 'Ok' are 1, 'false' and 'Err' are 0
 			return qd_push_i(interp->ctx, Qd::predefinedConstantValue(text)) == 0;
 		case Qd::AstNodeLiteral::LiteralType::NULL_PTR:
-			return qd_push_raw(interp->ctx, nullptr) == 0;
+			return qd_push_p(interp->ctx, nullptr) == 0;
 		}
 
 		interp->error = "unknown literal kind";

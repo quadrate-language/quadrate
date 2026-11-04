@@ -24,7 +24,7 @@ static qdlog_logger_t* logger_arg(qd_context* ctx, const char* op) {
 
 // raw_new( -- logger:ptr ), null when it could not be made, which log::new checks for
 int usr_log_raw_new(qd_context* ctx) {
-	return qd_push_raw(ctx, qdlog_new());
+	return qd_push_p(ctx, qdlog_new());
 }
 
 // raw_free(logger:ptr -- )

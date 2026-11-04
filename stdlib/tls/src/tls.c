@@ -29,7 +29,7 @@ static int push_conn(qd_context* ctx, const char* op, tls_error_t err, tls_conn_
 	if (err != TLS_OK) {
 		return fail(ctx, op, err);
 	}
-	qd_push_raw(ctx, conn);
+	qd_push_p(ctx, conn);
 	return qd_push_i(ctx, TLS_OK);
 }
 

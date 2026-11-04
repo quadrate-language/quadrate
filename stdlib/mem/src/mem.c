@@ -182,7 +182,7 @@ int usr_mem_set_ptr(qd_context* ctx) {
 int usr_mem_get_ptr(qd_context* ctx) {
 	void* v;
 	memcpy(&v, load_at(ctx, "mem::get_ptr"), sizeof(void*));
-	return qd_push_raw(ctx, v);
+	return qd_push_p(ctx, v);
 }
 
 // Stack signature: ( dst:ptr src:ptr bytes:i64 -- )
@@ -202,7 +202,7 @@ int usr_mem_ptr_add(qd_context* ctx) {
 	int64_t offset;
 	qd_args(ctx, "mem::ptr_add", "pi", &base, &offset);
 	// A `ptr` is raw memory, and so is any address into it
-	return qd_push_raw(ctx, (char*)base + offset);
+	return qd_push_p(ctx, (char*)base + offset);
 }
 
 // Stack signature: ( address:ptr bytes:i64 -- )

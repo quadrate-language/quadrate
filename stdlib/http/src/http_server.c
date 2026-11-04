@@ -417,7 +417,7 @@ int usr_http_engine(qd_context* ctx) {
 	}
 	engine->server_fd = -1;
 	atomic_init(&engine->running, false);
-	return qd_push_raw(ctx, engine);
+	return qd_push_p(ctx, engine);
 }
 
 static void add_route(qd_context* ctx, const char* op, http_engine_t* engine, http_method_t method, qd_string_t* path,
@@ -587,7 +587,7 @@ static void release_ctx_strings(http_ctx_t* c) {
 }
 
 static void run_callback(qd_context* ctx, http_ctx_t* c, void* fn) {
-	qd_push_raw(ctx, c);
+	qd_push_p(ctx, c);
 	qd_call_value(ctx, fn);
 }
 
@@ -920,7 +920,7 @@ int usr_http_group(qd_context* ctx) {
 	group_handle->engine = engine;
 	group_handle->index = engine->group_count++;
 	engine->group_handles[engine->group_handle_count++] = group_handle;
-	return qd_push_raw(ctx, group_handle);
+	return qd_push_p(ctx, group_handle);
 }
 
 // Stack signature: ( group:ptr middleware:ptr -- )

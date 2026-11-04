@@ -407,7 +407,7 @@ int qd_push_s_ref(qd_context* ctx, qd_string_t* value) {
 	return 0;
 }
 
-int qd_push_raw(qd_context* ctx, void* value) {
+int qd_push_p(qd_context* ctx, void* value) {
 	return push_result(ctx, qd_stack_push_raw(ctx->st, value));
 }
 

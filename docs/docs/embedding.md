@@ -166,7 +166,7 @@ All pop functions return `QD_OK` on success, or an error code on underflow/type 
 qd_push_i(ctx, 42);           // Push integer
 qd_push_f(ctx, 3.14159);      // Push float
 qd_push_s(ctx, "hello");      // Push string (copied)
-qd_push_raw(ctx, my_pointer);   // Push pointer
+qd_push_p(ctx, my_pointer);   // Push pointer
 ```
 
 ### Userdata
@@ -801,7 +801,7 @@ Declared in `<quadrate/interp/interp.h>`. Link with `-linterp -lqc -lu8t -lrt`.
 | `qd_push_i(ctx, val)` | Push integer |
 | `qd_push_f(ctx, val)` | Push float |
 | `qd_push_s(ctx, str)` | Push string (copied) |
-| `qd_push_raw(ctx, ptr)` | Push a pointer to raw memory (never an array, a struct or a function value), which costs no reference counting |
+| `qd_push_p(ctx, ptr)` | Push a pointer to raw memory (never an array, a struct or a function value), which costs no reference counting |
 | `qd_push_struct(ctx, p)`, `qd_push_array(ctx, p)` | Push a struct or an array, handing the stack the reference the caller holds |
 | `qd_call_value(ctx, fn)` | Call a function value a native was given, with its inputs on the stack; the caller keeps its reference |
 | `qd_closure_new(fn, NULL, 0)` | Make a function value of a C function `int fn(qd_context*)` |

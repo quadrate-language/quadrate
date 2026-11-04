@@ -2480,7 +2480,7 @@ Implementations MUST provide the following runtime functions:
 - `qd_push_f(ctx, float64)` - Push float
 - `qd_push_s(ctx, string)` - Push string (copy)
 - `qd_push_s_ref(ctx, string)` - Push string (reference)
-- `qd_push_raw(ctx, ptr)` - Push a pointer to raw memory, never an array, a struct or a function value; nothing is counted for it
+- `qd_push_p(ctx, ptr)` - Push a pointer to raw memory, never an array, a struct or a function value; nothing is counted for it
 - `qd_push_struct(ctx, p)`, `qd_push_array(ctx, p)` - Push a struct or an array with the reference the caller holds
 - `qd_call_value(ctx, fn)` - Call a function value from native code
 - `qd_pop_i(ctx, &val)` - Pop integer
