@@ -32,6 +32,7 @@ are no nested parentheses to untangle.
 ### Variable assignment
 
 ```c
+// C
 int x = 42;
 int y = x * 2;
 ```
@@ -48,6 +49,7 @@ Read it as: "push 42, store it as x", "push x, push 2, multiply, store as y".
 ### If/else
 
 ```python
+# Python
 if x > 10:
     print("big")
 else:
@@ -67,6 +69,7 @@ x 10 > if {
 ### Function calls with multiple arguments
 
 ```go
+// Go
 result := clamp(value, 0, 100)
 ```
 
@@ -79,6 +82,7 @@ value 0 100 clamp -> result
 ### Method calls
 
 ```python
+# Python
 text = "hello".upper()
 ```
 
@@ -91,6 +95,7 @@ The receiver comes first, then the method name:
 ### Chained method calls
 
 ```python
+# Python
 result = " hello ".strip().upper()
 ```
 
@@ -104,6 +109,7 @@ left-to-right like a pipeline:
 ### Conditional expressions
 
 ```rust
+// Rust
 let color = if x > 0 { "positive" } else { "negative" };
 ```
 
@@ -162,6 +168,7 @@ def compute(a:f64 b:f64 c:f64 d:f64 -- result:f64) {
 In most languages, you reference a variable by name whenever you need it:
 
 ```python
+# Python
 x * x + y * y
 ```
 
@@ -184,6 +191,7 @@ values reads better with named bindings.
 Translate this Python function to Quadrate:
 
 ```python
+# Python
 def average_of_squares(nums):
     total = 0
     for n in nums:
