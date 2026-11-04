@@ -691,6 +691,7 @@ The Quadrate runtime MUST maintain a single data stack shared across all functio
 
 **Stack element structure:**
 ```c
+// C
 struct qd_stack_element {
     union {
         int64_t i;      // Integer value
@@ -2042,6 +2043,7 @@ machine.
 Heap objects MUST use atomic reference counting:
 
 ```c
+// C
 struct qd_refcounted {
     atomic_size_t refcount;  // Initially 1
     // ... object data ...
@@ -2141,6 +2143,7 @@ a linked structure, a returned struct, the JSON parser and the containers.
 Strings MUST be reference-counted and immutable:
 
 ```c
+// C
 struct qd_string {
     char* data;
     size_t length;
@@ -2158,6 +2161,7 @@ struct qd_string {
 Heap-allocated structs have a hidden header:
 
 ```c
+// C
 struct qd_struct_header {
     size_t magic;           // Validation marker
     atomic_size_t refcount;
@@ -2177,6 +2181,7 @@ environment and their count, and is retained and released as any struct is (§11
 ### 11.5 Array Memory
 
 ```c
+// C
 struct qd_array {
     size_t magic;
     atomic_size_t refcount;
@@ -2207,6 +2212,7 @@ struct qd_array {
 Variables referenced inside a closure MUST be automatically detected and captured (implicit capture). Captured variables MUST be heap-allocated with reference counting:
 
 ```c
+// C
 struct captured_var {
     int64_t refcount;
     qd_stack_element_t elem;
@@ -2534,6 +2540,7 @@ The `decimal` module: IEEE 754-2008 decimal128 operations on `d128` beyond the o
 The runtime MUST maintain an execution context:
 
 ```c
+// C
 typedef struct {
     qd_stack* st;           // Data stack
     int64_t error_code;     // Current error (0 = none)
@@ -2552,6 +2559,7 @@ typedef struct {
 ### 14.2 Stack Implementation
 
 ```c
+// C
 typedef struct {
     qd_stack_element_t* data;
     size_t capacity;

@@ -16,6 +16,7 @@ Let's create a simple C function that Quadrate can call.
 Create `greet.c`:
 
 ```c
+// C
 #include <quadrate/rt/ffi.h>
 #include <stdio.h>
 
@@ -72,6 +73,7 @@ Hello, Seb!
 All FFI functions must have this signature:
 
 ```c
+// C
 int function_name(qd_context* ctx)
 ```
 
@@ -80,6 +82,7 @@ The function name in C must match the name declared in the Quadrate import block
 ## Required header
 
 ```c
+// C
 #include <quadrate/rt/ffi.h>  // All FFI types and functions
 ```
 
@@ -88,6 +91,7 @@ The function name in C must match the name declared in the Quadrate import block
 ### Popping values
 
 ```c
+// C
 // Pop a typed value — returns QD_OK on success, error code on failure
 int64_t i;
 qd_pop_i(ctx, &i);
@@ -105,6 +109,7 @@ qd_pop_p(ctx, &p);
 ### Pushing values
 
 ```c
+// C
 qd_push_i(ctx, 42);
 qd_push_f(ctx, 3.14);
 qd_push_s(ctx, "hello");
@@ -127,6 +132,7 @@ Here's a more complete example with multiple functions and return values.
 ### math_ext.c
 
 ```c
+// C
 #include <quadrate/rt/ffi.h>
 #include <math.h>
 
@@ -181,6 +187,7 @@ script sees the call succeed with `Ok` (0). On failure, return `qd_fail`, which 
 error code and message and pushes the status itself. The code must not be `0` or `1`.
 
 ```c
+// C
 #include <quadrate/rt/ffi.h>
 #include <math.h>
 
@@ -241,6 +248,7 @@ hands the native the stack's reference to it; call it with `qd_call_value` as of
 and release it with `qd_struct_release` when done:
 
 ```c
+// C
 // each_up_to( n:i64 f:fn(i64 --) -- )
 int each_up_to(qd_context* ctx) {
 	int64_t n;
@@ -272,6 +280,7 @@ The `qd_pop_s` function copies the string into your buffer and releases
 the reference-counted string automatically. No manual cleanup needed:
 
 ```c
+// C
 char buf[256];
 qd_pop_s(ctx, buf, sizeof(buf));
 // buf is a plain C string — use it freely, no release needed
@@ -284,6 +293,7 @@ For larger projects, add FFI libraries to your build system:
 ### Makefile
 
 ```makefile
+# Makefile
 CFLAGS = -I$(QUADRATE_PREFIX)/include
 LDFLAGS = -L$(QUADRATE_PREFIX)/lib
 
@@ -297,6 +307,7 @@ mylib.o: mylib.c
 ### Meson
 
 ```meson
+# Meson
 mylib = static_library('mylib', 'mylib.c',
 	include_directories: include_directories('/usr/include'))
 ```

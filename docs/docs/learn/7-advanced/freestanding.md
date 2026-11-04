@@ -116,6 +116,7 @@ that codegen emitting them still links.
 ARM/AArch64. Define your own to report the failure before stopping:
 
 ```c
+// C
 void qd_freestanding_halt(void) {
 	vga_print("HALT");
 	for (;;) {
@@ -136,6 +137,7 @@ script, and a Makefile that compiles the freestanding runtime alongside your obj
 **`boot.S`** — multiboot header, a stack in `.bss`, and a jump to `_start`:
 
 ```asm
+/* Assembly */
 .section .multiboot
 	.align 8
 	/* multiboot header goes here */
@@ -160,6 +162,7 @@ _kernel_entry:
 the bootloader will not find it:
 
 ```ld
+/* Linker script */
 ENTRY(_kernel_entry)
 
 SECTIONS {
@@ -179,6 +182,7 @@ Put `.bss.stack` last so the downward-growing CPU stack cannot run into runtime 
 `mem`, then link with `-nostdlib`:
 
 ```make
+# Makefile
 kernel.o: kernel.qd
 	quadc --freestanding --target x86_64-unknown-none-elf -O2 kernel.qd -o kernel.o
 

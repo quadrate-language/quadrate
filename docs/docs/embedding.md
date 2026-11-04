@@ -12,6 +12,7 @@ This guide shows how to embed Quadrate as a scripting language in your C/C++ app
 Here's the minimal code to embed Quadrate:
 
 ```c
+// C
 #include <quadrate/qd/qd.h>
 
 int main(void) {
@@ -48,6 +49,7 @@ at run time without `LD_LIBRARY_PATH`.
 A `qd_context` holds the runtime state: the stack, error state, and loaded modules.
 
 ```c
+// C
 qd_context* ctx = qd_create_context(1024);  // Stack capacity
 // ... use context ...
 qd_free_context(ctx);
@@ -58,6 +60,7 @@ qd_free_context(ctx);
 Modules are containers for functions. Create or retrieve a module with `qd_get_module`:
 
 ```c
+// C
 qd_module* math = qd_get_module(ctx, "math");
 qd_module* game = qd_get_module(ctx, "game");
 ```
@@ -67,6 +70,7 @@ qd_module* game = qd_get_module(ctx, "game");
 Add Quadrate source code to a module:
 
 ```c
+// C
 qd_add_script(mod, "def square(x:i64 -- result:i64) { x x * }");
 qd_add_script(mod, "def cube(x:i64 -- result:i64) { x x * x * }");
 ```
@@ -78,6 +82,7 @@ You can call `qd_add_script` multiple times before building.
 Compile all added scripts:
 
 ```c
+// C
 qd_build(mod);
 
 // Check if compilation succeeded
@@ -91,6 +96,7 @@ if (!qd_is_compiled(mod)) {
 Execute Quadrate expressions:
 
 ```c
+// C
 qd_execute(ctx, "5 math::square print nl");  // Prints: 25
 qd_execute(ctx, "3 math::cube print nl");    // Prints: 27
 ```
@@ -104,6 +110,7 @@ The real power of embedding comes from exposing your application's functions to 
 Native functions take a `qd_context*` and a `void* userdata`, and return `int`. When registering, you provide a stack effect signature so the compiler can type-check calls:
 
 ```c
+// C
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/runtime.h>
 #include <time.h>
@@ -134,6 +141,7 @@ int main(void) {
 The signature string uses Quadrate stack effect syntax: `(inputs -- outputs)`. Parameter names are documentation-only; the types are what matter:
 
 ```c
+// C
 qd_register_function(mod, "add", "(a:i64 b:i64 -- sum:i64)", my_add, NULL);
 qd_register_function(mod, "greet", "(name:str -- msg:str)", my_greet, NULL);
 qd_register_function(mod, "reset", "( -- )", my_reset, NULL);
@@ -144,6 +152,7 @@ qd_register_function(mod, "reset", "( -- )", my_reset, NULL);
 Use the typed pop functions to read arguments. They handle type checking and string cleanup automatically:
 
 ```c
+// C
 // Native function: (a:i64 b:i64 -- sum:i64)
 int native_add(qd_context* ctx, void* userdata) {
     int64_t b, a;
@@ -156,6 +165,7 @@ int native_add(qd_context* ctx, void* userdata) {
 ### Pop Functions
 
 ```c
+// C
 int64_t i;  qd_pop_i(ctx, &i);              // Pop integer
 double f;   qd_pop_f(ctx, &f);              // Pop float
 char buf[256]; qd_pop_s(ctx, buf, sizeof(buf)); // Pop string into buffer
@@ -181,6 +191,7 @@ the stack's reference, which is now yours to release. On a wrong type or too few
 raises an error naming `op`, and leaves the stack as it was.
 
 ```c
+// C
 // Native: (a:i64 b:i64 -- sum:i64)
 int native_add(qd_context* ctx, void* userdata) {
     int64_t a, b;
@@ -192,6 +203,7 @@ int native_add(qd_context* ctx, void* userdata) {
 ### Push Functions
 
 ```c
+// C
 qd_push_i(ctx, 42);           // Push integer
 qd_push_f(ctx, 3.14159);      // Push float
 qd_push_s(ctx, "hello");      // Push string (copied)
@@ -206,6 +218,7 @@ qd_push_p(ctx, my_pointer);   // Push a pointer to raw memory (nothing counted)
 Each native function receives a `void* userdata` pointer that was passed at registration time. This lets callbacks access application state without globals:
 
 ```c
+// C
 typedef struct { int score; const char* name; } Player;
 
 int get_score(qd_context* ctx, void* userdata) {
@@ -220,6 +233,7 @@ qd_register_function(mod, "get_score", "( -- score:i64)", get_score, &player);
 For data that should be accessible from any native function regardless of which module it belongs to, use context-level userdata:
 
 ```c
+// C
 qd_set_userdata(ctx, &game_state);
 
 // Later, in any native function:
@@ -234,6 +248,7 @@ int some_func(qd_context* ctx, void* userdata) {
 You can create modules that consist entirely of registered native functions, with no Quadrate source code. When another module uses such a module, the embedding API automatically generates stub functions so compiled code can call your native functions transparently:
 
 ```c
+// C
 // Register a pure-native module
 qd_module* sensors = qd_get_module(ctx, "sensors");
 qd_register_function(sensors, "temperature", "( -- v:f64)", read_temp, &hw);
@@ -267,6 +282,7 @@ running — there is a second execution path that parses and walks the AST direc
 generation and no toolchain at run time:
 
 ```c
+// C
 #include <quadrate/interp/interp.h>
 #include <stdio.h>
 
@@ -297,6 +313,7 @@ The interpreter libraries are static and live in `$DIST/lib/quadrate`; the parse
 The stack persists across calls, which is what a prompt needs:
 
 ```c
+// C
 qd_interp_eval(interp, "2");
 qd_interp_eval(interp, "3");
 qd_interp_eval(interp, "+");      // 5
@@ -309,6 +326,7 @@ compiled modules work against the same stack. The interpreter borrows the contex
 free it:
 
 ```c
+// C
 qd_context* ctx = qd_create_context(1024);
 qd_module* mod = qd_get_module(ctx, "game");
 qd_add_script(mod, "def double(x:i64 -- r:i64) { x 2 * }");
@@ -337,6 +355,7 @@ division by zero, an array index past the end — runs inside a recovery point, 
 back to the interpreter instead of exiting:
 
 ```c
+// C
 if (!qd_interp_eval(interp, "1 0 /")) {
     printf("%s\n", qd_interp_error(interp));   // div: Division by zero
 }
@@ -386,6 +405,7 @@ my_game/
 ## Step 1: Define Game State
 
 ```c
+// C
 // engine.h
 #ifndef ENGINE_H
 #define ENGINE_H
@@ -422,6 +442,7 @@ void engine_move(GameState* game, int64_t id, double dx, double dy);
 ## Step 2: Implement Engine Functions
 
 ```c
+// C
 // engine.c
 #include "engine.h"
 #include <inttypes.h>
@@ -476,6 +497,7 @@ void engine_move(GameState* game, int64_t id, double dx, double dy) {
 ## Step 3: Create Script Bindings
 
 ```c
+// C
 // scripting.c
 #include <quadrate/qd/qd.h>
 #include <quadrate/rt/runtime.h>
@@ -706,6 +728,7 @@ fn update() {
 ## Step 5: Main Game Loop
 
 ```c
+// C
 // main.c
 #include <stdio.h>
 #include <stdlib.h>
@@ -894,6 +917,7 @@ Declared in `<quadrate/interp/interp.h>`. Link with `-L$DIST/lib/quadrate -linte
 ### Returning Multiple Values
 
 ```c
+// C
 // Native: ( -- x y z)
 int get_vector(qd_context* ctx, void* userdata) {
     qd_push_f(ctx, 1.0);  // x
@@ -920,6 +944,7 @@ fn process() {
 ```
 
 ```c
+// C
 // C side: (x:i64 f:fn(i64 -- i64) -- r:i64), applies f twice
 int with_callback(qd_context* ctx, void* userdata) {
     int64_t x;
@@ -944,6 +969,7 @@ Going the other way, a native can hand a script a function value made from a C f
 With a NULL environment the function is a plain `int fn(qd_context*)`:
 
 ```c
+// C
 static int forty_two(qd_context* ctx) { return qd_push_i(ctx, 42); }
 
 // Native: ( -- f:fn( -- i64))
@@ -965,6 +991,7 @@ message and pushes the code as the status. Push no outputs on failure: the calle
 placeholders in their place.
 
 ```c
+// C
 #include <inttypes.h>   // PRId64
 
 // Native: (x:i64 -- r:i64)!
