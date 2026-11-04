@@ -8,7 +8,7 @@ A fallible function is one that might fail. Mark it with `!` after the signature
 
 <!-- doccheck: skip signature shown with its body elided -->
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
+fn divide(a:i64 b:i64 -- result:i64)! {
 	// This function can fail
 }
 ```
@@ -20,11 +20,11 @@ The `!` tells the compiler this function can return an error.
 Use the `panic` instruction to signal an error:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" -1 panic
 	}
-	a b /
+	/
 }
 ```
 
@@ -39,11 +39,11 @@ A fallible call leaves its outputs and then a **status**: `Ok` (0) when it succe
 code when it failed. `ok` turns the status into a flag for `if`, and `fail` into the opposite one:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" -1 panic
 	}
-	a b /
+	/
 }
 
 fn main() {
@@ -73,11 +73,11 @@ The arm that does not use the outputs drops them. Because the status is an ordin
 also be kept and tested later:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" -1 panic
 	}
-	a b /
+	/
 }
 
 fn main() {
@@ -89,11 +89,11 @@ fn main() {
 ## Complete example
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" -1 panic
 	}
-	a b /
+	/
 }
 
 fn main() {
@@ -127,8 +127,8 @@ Call a fallible function with `!` to abort the program on error:
 
 <!-- doccheck: continues -->
 ```qd
-def divide_and_double(a:i64 b:i64 -- result:i64)! {
-	a b divide!  // Aborts if divide fails
+fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+	divide!  // Aborts if divide fails
 	2 *
 }
 ```
@@ -141,8 +141,8 @@ Call a fallible function with `?` to automatically propagate errors to the calle
 
 <!-- doccheck: continues -->
 ```qd
-def divide_and_double(a:i64 b:i64 -- result:i64)! {
-	a b divide?  // If divide fails, return the error to our caller
+fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+	divide?  // If divide fails, return the error to our caller
 	2 *
 }
 ```
@@ -151,8 +151,8 @@ This is equivalent to the more verbose:
 
 <!-- doccheck: continues -->
 ```qd
-def divide_and_double(a:i64 b:i64 -- result:i64)! {
-	a b divide switch {
+fn divide_and_double(a:i64 b:i64 -- result:i64)! {
+	divide switch {
 		Ok { }
 		_ { drop err panic }
 	}
@@ -164,8 +164,8 @@ The `?` operator is useful when you want to let the caller handle the error inst
 
 <!-- doccheck: skip pattern sketch: step1, step2 and step3 stand for a program's own fallible words -->
 ```qd
-def pipeline(x:i64 -- result:i64)! {
-	x step1?   // propagates step1 errors
+fn pipeline(x:i64 -- result:i64)! {
+	step1?     // propagates step1 errors
 	step2?     // propagates step2 errors
 	step3?     // propagates step3 errors
 }
@@ -186,9 +186,7 @@ fn get_two( -- a:i64 b:i64)! {
 fn main() {
 	get_two ok if {
 		// Success: the outputs are on the stack
-		-> b -> a
-		a print nl
-		b print nl
+		swap print nl print nl
 	} else {
 		// Failure: two zero placeholders, one per output
 		drop drop
@@ -207,9 +205,8 @@ use io
 fn main() {
 	"test.txt" io::Read io::open switch {
 		Ok {
-			-> file
 			"File opened" print nl
-			file io::close
+			io::close
 		}
 		_ {
 			drop
@@ -224,11 +221,11 @@ fn main() {
 Use the `err` instruction to retrieve the error message and code:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" 42 panic
 	}
-	a b /
+	/
 }
 
 fn main() {
@@ -236,8 +233,7 @@ fn main() {
 		print nl
 	} else {
 		drop
-		err -> code -> msg
-		"Error: " print msg print " (code " print code print ")" print nl
+		err swap "Error: " print print " (code " print print ")" print nl
 	}
 }
 ```
@@ -289,9 +285,8 @@ use io
 fn main() {
 	"test.txt" io::Read io::open switch {
 		Ok {
-			-> file
 			"File opened" print nl
-			file io::close
+			io::close
 		}
 		_ {
 			drop
@@ -310,13 +305,11 @@ To inspect the error details, use `err` in the error branch:
 ```qd
 "missing.txt" io::read_file switch {
 	Ok {
-		-> content
-		content print nl
+		print nl
 	}
 	_ {
 		drop
-		err -> code -> msg
-		"Error: " print msg print " (code " print code print ")" print nl
+		err swap "Error: " print print " (code " print print ")" print nl
 	}
 }
 ```
@@ -335,9 +328,9 @@ store one, return one, collect several, or say where a failure happened on the w
 ```qd
 use error
 
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if { "division by zero" 42 panic }
-	a b /
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if { "division by zero" 42 panic }
+	/
 }
 
 fn main() {
@@ -345,8 +338,7 @@ fn main() {
 		print nl
 	} else {
 		drop
-		error::last -> e
-		"Error: " print e <<message print " (code " print e <<code print ")" print nl
+		error::last "Error: " print dup <<message print " (code " print <<code print ")" print nl
 	}
 }
 ```
@@ -365,24 +357,24 @@ never do. Several failures can be collected while a loop carries on:
 ```qd
 use error
 
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if { "division by zero" 42 panic }
-	a b /
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if { "division by zero" 42 panic }
+	/
 }
 
 fn main() {
-	[] -> failures
 	[0 2 0] -> divisors
+	[]
 	0 divisors len 1 for i {
 		100 divisors i nth divide ok if {
 			drop
 		} else {
 			drop
-			failures error::last append -> failures
+			error::last append
 		}
 	}
-	failures len print nl
-	failures 0 nth <<message print nl
+	dup len print nl
+	0 nth <<message print nl
 }
 ```
 
@@ -397,11 +389,10 @@ wrapped.
 use error
 
 fn main() {
-	"no such file" 2 error::new -> cause
-	cause "cannot load the config" wrap -> e
-	e <<message print nl
-	e <<code print nl
-	e root <<message print nl
+	"no such file" 2 error::new "cannot load the config" wrap
+	dup <<message print nl
+	dup <<code print nl
+	root <<message print nl
 }
 ```
 
@@ -417,11 +408,11 @@ reads `panic` as diverging, so the arm needs nothing after it:
 
 <!-- doccheck: skip pattern sketch: 'load' stands for a program's own fallible word -->
 ```qd
-def read_config(path:str -- text:str)! {
-	path load fail if {
+fn read_config(path:str -- text:str)! {
+	load fail if {
 		drop
-		error::last "cannot read the config" wrap -> e
-		e <<message e <<code panic
+		error::last "cannot read the config" wrap
+		dup <<message swap <<code panic
 	}
 }
 ```

@@ -17,12 +17,12 @@ Constants are defined at the top level, outside functions.
 ```qd
 const Pi = 3.14159265358979
 
-def circle_area(r:f64 -- area:f64) {
-	r dup * Pi *
+fn circle_area(r:f64 -- area:f64) {
+	dup * Pi *
 }
 
-def circle_circumference(r:f64 -- c:f64) {
-	2.0 r * Pi *
+fn circle_circumference(r:f64 -- c:f64) {
+	2.0 * Pi *
 }
 
 fn main() {
@@ -162,8 +162,8 @@ Replace magic numbers with named constants:
 ### Before (unclear)
 
 ```qd
-def is_valid_port(port:i64 -- valid:i64) {
-	port 0 > port 65535 <= and
+fn is_valid_port(port:i64 -- valid:i64) {
+	dup 0 > swap 65535 <= and
 }
 ```
 
@@ -173,8 +173,8 @@ def is_valid_port(port:i64 -- valid:i64) {
 const MinPort = 1
 const MaxPort = 65535
 
-def is_valid_port(port:i64 -- valid:i64) {
-	port MinPort >= port MaxPort <= and
+fn is_valid_port(port:i64 -- valid:i64) {
+	dup MinPort >= swap MaxPort <= and
 }
 ```
 
@@ -186,8 +186,8 @@ const ErrNotFound = 1
 const ErrPermission = 2
 const ErrTimeout = 3
 
-def handle_error(code:i64 -- ) {
-	code switch {
+fn handle_error(code:i64 -- ) {
+	switch {
 		ErrNone { "Success" print nl }
 		ErrNotFound { "Not found" print nl }
 		ErrPermission { "Permission denied" print nl }
@@ -209,12 +209,12 @@ const FlagRead = 1
 const FlagWrite = 2
 const FlagExecute = 4
 
-def has_read(flags:i64 -- result:i64) {
-	flags FlagRead bits::and 0 !=
+fn has_read(flags:i64 -- result:i64) {
+	FlagRead bits::and 0 !=
 }
 
-def has_write(flags:i64 -- result:i64) {
-	flags FlagWrite bits::and 0 !=
+fn has_write(flags:i64 -- result:i64) {
+	FlagWrite bits::and 0 !=
 }
 
 fn main() {
@@ -294,8 +294,8 @@ enum Direction {
 	Right
 }
 
-def describe(d:i64 -- ) {
-	d switch {
+fn describe(d:i64 -- ) {
+	switch {
 		Direction::Up { "up" print nl }
 		Direction::Down { "down" print nl }
 		Direction::Left { "left" print nl }

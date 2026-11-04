@@ -33,20 +33,19 @@ fn double(x:i64 -- result:i64) {
 }
 
 fn main() {
-	&double -> f
-	5 f call print nl  // 10
+	5 &double call print nl  // 10
 }
 ```
 
 ## Passing functions as arguments
 
 ```qd
-def apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
-	x f call
+fn apply(x:i64 f:fn(i64 -- i64) -- result:i64) {
+	call
 }
 
 fn double(x:i64 -- result:i64) { 2 * }
-def square(x:i64 -- result:i64) { x x * }
+fn square(x:i64 -- result:i64) { dup * }
 fn increment(x:i64 -- result:i64) { 1 + }
 
 fn main() {
@@ -103,8 +102,8 @@ def for_each(arr:[]i64 callback:fn(i64 --) -- ) {
 	}
 }
 
-def print_item(x:i64 -- ) {
-	x print " " print
+fn print_item(x:i64 -- ) {
+	print " " print
 }
 
 fn main() {
@@ -123,11 +122,10 @@ by hand, as a function taking a function value.
 
 ```qd
 def map_ints(arr:[]i64 f:fn(i64 -- i64) -- result:[]i64) {
-	[arr len]i64 -> result
+	[arr len]i64
 	0 arr len 1 for i {
-		result i arr i nth f call set
+		dup i arr i nth f call set
 	}
-	result
 }
 
 fn double(x:i64 -- r:i64) { 2 * }
@@ -146,23 +144,21 @@ fn main() {
 ```qd
 def filter_ints(arr:[]i64 pred:fn(i64 -- i64) -- result:[]i64) {
 	// Count matches
-	0 -> count
+	0
 	0 arr len 1 for i {
-		arr i nth pred call if {
-			count 1 + -> count
-		}
+		arr i nth pred call if { 1 + }
 	}
+	-> count
 
 	// Create result
-	[count]i64 -> result
-	0 -> j
+	[count]i64 0
 	0 arr len 1 for i {
 		arr i nth pred call if {
-			result j arr i nth set
-			j 1 + -> j
+			dup2 arr i nth set
+			1 +
 		}
 	}
-	result
+	drop
 }
 
 fn is_even(x:i64 -- result:i64) {
@@ -182,11 +178,10 @@ fn main() {
 
 ```qd
 def reduce(arr:[]i64 initial:i64 f:fn(i64 i64 -- i64) -- result:i64) {
-	initial -> result
+	initial
 	0 arr len 1 for i {
-		result arr i nth f call -> result
+		arr i nth f call
 	}
-	result
 }
 
 fn addition(a:i64 b:i64 -- r:i64) {
@@ -206,12 +201,12 @@ struct Handler {
 	func:fn(str --)
 }
 
-def greet(name:str -- ) {
-	"Hello, " print name print nl
+fn greet(name:str -- ) {
+	"Hello, " print print nl
 }
 
-def farewell(name:str -- ) {
-	"Goodbye, " print name print nl
+fn farewell(name:str -- ) {
+	"Goodbye, " print print nl
 }
 
 fn main() {
@@ -234,17 +229,17 @@ fn main() {
 Dispatch based on a selector:
 
 ```qd
-def handle_cmd(cmd:i64 -- ) {
+fn handle_cmd(cmd:i64 -- ) {
 	[4]fn(--) -> handlers
 	handlers 0 &cmd_help set
 	handlers 1 &cmd_list set
 	handlers 2 &cmd_add set
 	handlers 3 &cmd_quit set
 
-	cmd 0 >= cmd 4 < and if {
-		handlers cmd nth call
+	dup 0 3 within if {
+		handlers swap nth call
 	} else {
-		"Unknown command" print nl
+		drop "Unknown command" print nl
 	}
 }
 
@@ -274,7 +269,7 @@ Use `type` to create readable names for function types:
 type Predicate = fn(i64 -- i64)
 type Reducer = fn(i64 i64 -- i64)
 
-def keep_if(arr:[]i64 pred:Predicate -- result:[]i64) { ... }
+fn keep_if(arr:[]i64 pred:Predicate -- result:[]i64) { ... }
 ```
 
 ## What's next?

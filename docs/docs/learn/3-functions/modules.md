@@ -57,10 +57,9 @@ def point_add(a:Point b:Point -- c:Point) {
 // main.qd
 fn main() {
 	// Point and point_add are automatically available
-	Point { x = 1.0 y = 2.0 } -> p1
-	Point { x = 3.0 y = 4.0 } -> p2
-	p1 p2 point_add -> p3
-	p3 <<x print nl  // 4
+	Point { x = 1.0 y = 2.0 }
+	Point { x = 3.0 y = 4.0 }
+	point_add <<x print nl  // 4
 }
 ```
 
@@ -153,16 +152,11 @@ use math
 use time
 
 fn main() {
-	// Get current time
-	time::now -> t
-
 	// Do some math
-	2.0 math::sqrt -> root
+	"Square root of 2: " print 2.0 math::sqrt print nl
 
-	// Print results
-	"Square root of 2: " print root print nl
-
-	"Current timestamp: " print t print nl
+	// Get current time
+	"Current timestamp: " print time::now print nl
 }
 ```
 

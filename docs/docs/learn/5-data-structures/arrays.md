@@ -8,8 +8,7 @@ Arrays store multiple values of the same type.
 
 ```qd
 fn main() {
-	[1 2 3 4 5] -> arr
-	arr len print nl  // 5
+	[1 2 3 4 5] len print nl  // 5
 }
 ```
 
@@ -46,11 +45,10 @@ Use `nth` to read elements (0-indexed):
 
 ```qd
 fn main() {
-	[10 20 30 40 50] -> arr
-
-	arr 0 nth print nl  // 10 (first)
-	arr 2 nth print nl  // 30 (third)
-	arr 4 nth print nl  // 50 (last)
+	[10 20 30 40 50]
+	dup 0 nth print nl  // 10 (first)
+	dup 2 nth print nl  // 30 (third)
+	4 nth print nl      // 50 (last)
 }
 ```
 
@@ -60,13 +58,12 @@ Use `set` to write elements:
 
 ```qd
 fn main() {
-	[5]i64 -> arr
+	[5]i64
+	dup 0 100 set  // Set first element to 100
+	dup 1 200 set  // Set second element to 200
 
-	arr 0 100 set  // Set first element to 100
-	arr 1 200 set  // Set second element to 200
-
-	arr 0 nth print nl  // 100
-	arr 1 nth print nl  // 200
+	dup 0 nth print nl  // 100
+	1 nth print nl      // 200
 }
 ```
 
@@ -76,11 +73,9 @@ Use `len` to get the length:
 
 ```qd
 fn main() {
-	[1 2 3 4 5] -> arr
-	arr len print nl  // 5
+	[1 2 3 4 5] len print nl  // 5
 
-	[10]i64 -> arr2
-	arr2 len print nl  // 10
+	[10]i64 len print nl      // 10
 }
 ```
 
@@ -90,14 +85,14 @@ Use `append` to add elements to an array:
 
 ```qd
 fn main() {
-	[]i64 -> arr          // Start with an empty []i64
-	arr 10 append -> arr  // Append 10
-	arr 20 append -> arr  // Append 20
-	arr 30 append -> arr  // Append 30
+	[]i64                 // Start with an empty []i64
+	10 append             // Append 10
+	20 append             // Append 20
+	30 append             // Append 30
 
-	arr len print nl      // 3
-	arr 0 nth print nl    // 10
-	arr 2 nth print nl    // 30
+	dup len print nl      // 3
+	dup 0 nth print nl    // 10
+	2 nth print nl        // 30
 }
 ```
 
@@ -109,11 +104,11 @@ fn main() {
 
 ```qd
 fn main() {
-	[10 20 30 40 50] -> arr
-
-	0 arr len 1 for i {
-		arr i nth print nl
+	[10 20 30 40 50]
+	0 over len 1 for i {
+		dup i nth print nl
 	}
+	drop
 }
 ```
 
@@ -123,9 +118,9 @@ Use `[]T` to declare the element type in function signatures:
 
 <!-- doccheck: skip signatures shown with their bodies elided -->
 ```qd
-def sum(arr:[]i64 -- total:i64) { ... }
-def names(arr:[]str -- ) { ... }
-def coords(arr:[]f64 -- ) { ... }
+fn sum(arr:[]i64 -- total:i64) { ... }
+fn names(arr:[]str -- ) { ... }
+fn coords(arr:[]f64 -- ) { ... }
 ```
 
 The compiler checks that you pass the right array type and that `nth` returns the correct element type.
@@ -135,12 +130,12 @@ The compiler checks that you pass the right array type and that `nth` returns th
 ### Sum
 
 ```qd
-def sum(arr:[]i64 -- total:i64) {
-	0 -> total
-	0 arr len 1 for i {
-		total arr i nth + -> total
+fn sum(arr:[]i64 -- total:i64) {
+	0
+	0 pick len 1 for i {
+		over i nth +
 	}
-	total
+	nip
 }
 
 fn main() {
@@ -151,14 +146,16 @@ fn main() {
 ### Find maximum
 
 ```qd
-def max(arr:[]i64 -- result:i64) {
-	arr 0 nth -> result
-	0 arr len 1 for i {
-		arr i nth result > if {
-			arr i nth -> result
-		}
+fn larger(a:i64 b:i64 -- c:i64) {
+	dup2 < if { nip } else { drop }
+}
+
+fn max(arr:[]i64 -- result:i64) {
+	dup 0 nth
+	0 pick len 1 for i {
+		over i nth larger
 	}
-	result
+	nip
 }
 
 fn main() {
@@ -170,13 +167,12 @@ fn main() {
 
 ```qd
 def count_if(arr:[]i64 value:i64 -- count:i64) {
-	0 -> count
+	0
 	0 arr len 1 for i {
 		arr i nth value == if {
-			count 1 + -> count
+			1 +
 		}
 	}
-	count
 }
 
 fn main() {
@@ -188,11 +184,11 @@ fn main() {
 
 ```qd
 fn main() {
-	[1.0 2.5 3.7 4.2] -> arr
-
-	0 arr len 1 for i {
-		arr i nth print nl
+	[1.0 2.5 3.7 4.2]
+	0 over len 1 for i {
+		dup i nth print nl
 	}
+	drop
 }
 ```
 
@@ -200,11 +196,11 @@ fn main() {
 
 ```qd
 fn main() {
-	["apple" "banana" "cherry"] -> fruits
-
-	0 fruits len 1 for i {
-		fruits i nth print nl
+	["apple" "banana" "cherry"]
+	0 over len 1 for i {
+		dup i nth print nl
 	}
+	drop
 }
 ```
 
@@ -237,18 +233,20 @@ fn main() {
 ### Initialize with value
 
 ```qd
-def fill(arr:[]i64 value:i64 -- ) {
-	0 arr len 1 for i {
-		arr i value set
+fn fill(arr:[]i64 value:i64 -- ) {
+	0 pick len 1 for i {
+		over i pick set
 	}
+	drop2
 }
 
 fn main() {
-	[5]i64 -> arr
-	arr 42 fill
-	0 arr len 1 for i {
-		arr i nth print " " print
+	[5]i64
+	dup 42 fill
+	0 over len 1 for i {
+		dup i nth print " " print
 	}
+	drop
 	nl  // 42 42 42 42 42
 }
 ```
@@ -270,11 +268,12 @@ def reverse(arr:[]i64 -- ) {
 }
 
 fn main() {
-	[1 2 3 4 5] -> arr
-	arr reverse
-	0 arr len 1 for i {
-		arr i nth print " " print
+	[1 2 3 4 5]
+	dup reverse
+	0 over len 1 for i {
+		dup i nth print " " print
 	}
+	drop
 	nl
 }
 ```
@@ -303,11 +302,11 @@ def filter_positive(arr:[]i64 -- result:[]i64) {
 }
 
 fn main() {
-	[1 2 -3 -4 5] -> arr
-	arr filter_positive -> result
-	0 result len 1 for i {
-		result i nth print " " print
+	[1 2 -3 -4 5] filter_positive
+	0 over len 1 for i {
+		dup i nth print " " print
 	}
+	drop
 	nl
 }
 ```

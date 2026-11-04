@@ -21,7 +21,7 @@ Compare these two approaches for computing `(x - y) * (x + y)`:
 
 ```qd
 fn diff_of_squares(x:i64 y:i64 -- result:i64) {
-	over over - rot rot + *
+	dup2 - rrot + *
 }
 ```
 
@@ -163,7 +163,7 @@ def quadratic(a:f64 b:f64 c:f64 x:f64 -- result:f64) {
 
 **Use variables when:**
 
-- Values are used multiple times
+- Several values are each used multiple times
 - Operations span many lines
 - Clarity is more important than brevity
 

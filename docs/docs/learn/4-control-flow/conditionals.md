@@ -22,26 +22,22 @@ Handle both cases:
 
 ```qd
 fn main() {
-	10 -> x
-
-	x 5 > if {
-		"x is greater than 5" print nl
+	10 dup 5 > if {
+		print " is greater than 5" print nl
 	} else {
-		"x is 5 or less" print nl
+		print " is 5 or less" print nl
 	}
 }
 ```
 
 ## Conditional expressions
 
-`if` can leave values on the stack:
+`if` works on the values already on the stack:
 
 ```qd
-def abs(x:i64 -- result:i64) {
-	x 0 < if {
-		x neg
-	} else {
-		x
+fn abs(x:i64 -- result:i64) {
+	dup 0 < if {
+		neg
 	}
 }
 
@@ -51,7 +47,8 @@ fn main() {
 }
 ```
 
-Both branches must leave the same number of values on the stack.
+Both branches must leave the same number of values on the stack, and an `if` without `else`
+must leave as many as it found.
 
 ## Combining conditions
 
@@ -111,11 +108,11 @@ fn main() {
 Handle edge cases first with `if`/`else`:
 
 ```qd
-def process(x:i64 -- result:i64) {
-	x 0 < if {
-		0              // Return 0 for invalid input
+fn process(x:i64 -- result:i64) {
+	dup 0 < if {
+		drop 0         // Return 0 for invalid input
 	} else {
-		x dup *        // Normal processing
+		dup *          // Normal processing
 	}
 }
 ```
@@ -123,11 +120,11 @@ def process(x:i64 -- result:i64) {
 ### Default values
 
 ```qd
-def get_or_default(value:i64 default:i64 -- result:i64) {
-	value 0 == if {
-		default
+fn get_or_default(value:i64 default:i64 -- result:i64) {
+	over 0 == if {
+		nip
 	} else {
-		value
+		drop
 	}
 }
 ```
@@ -135,8 +132,8 @@ def get_or_default(value:i64 default:i64 -- result:i64) {
 ### Range checking
 
 ```qd
-def is_valid_age(age:i64 -- valid:i64) {
-	age 0 >= age 150 <= and
+fn is_valid_age(age:i64 -- valid:i64) {
+	dup 0 >= swap 150 <= and
 }
 
 fn main() {

@@ -71,9 +71,14 @@ use sys
 
 const VGA_BASE = 0xB8000
 
-def vga_put(row:i64 col:i64 ch:i64 -- ) {
-	VGA_BASE row 80 * col + 2 * + 0 ch sys::st8
-	VGA_BASE row 80 * col + 2 * + 1 0x0F sys::st8
+fn cell(row:i64 col:i64 -- addr:i64) {
+	swap 80 * + 2 * VGA_BASE +
+}
+
+fn vga_put(row:i64 col:i64 ch:i64 -- ) {
+	rrot cell
+	dup 1 0x0F sys::st8
+	0 rot sys::st8
 }
 ```
 

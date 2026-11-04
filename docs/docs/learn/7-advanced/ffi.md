@@ -226,8 +226,8 @@ fn main() {
 		print nl
 	} else {
 		drop                       // the placeholder output
-		err -> code -> msg
-		msg print nl               // int_sqrt: -4 is negative
+		err drop                   // the code, leaving the message
+		print nl                   // int_sqrt: -4 is negative
 	}
 }
 ```

@@ -25,8 +25,8 @@ fn double(x:i64 -- result:i64) {
 	2 *
 }
 
-def square(x:i64 -- result:i64) {
-	x x *
+fn square(x:i64 -- result:i64) {
+	dup *
 }
 
 fn add_one(x:i64 -- result:i64) {
@@ -63,11 +63,9 @@ Stack after call: `[6]`
 Capture multiple outputs:
 
 ```qd
-def minmax(a:i64 b:i64 -- min:i64 max:i64) {
-	a b < if {
-		a b
-	} else {
-		b a
+fn minmax(a:i64 b:i64 -- min:i64 max:i64) {
+	dup2 > if {
+		swap
 	}
 }
 
@@ -84,8 +82,8 @@ fn main() {
 You can immediately use outputs:
 
 ```qd
-def square(x:i64 -- result:i64) {
-	x x *
+fn square(x:i64 -- result:i64) {
+	dup *
 }
 
 fn main() {
@@ -93,8 +91,7 @@ fn main() {
 	3 square 4 square + print nl  // 9 + 16 = 25
 
 	// Use result multiple times
-	5 square -> s
-	s print nl s print nl  // 25, 25
+	5 square dup print nl print nl  // 25, 25
 
 	// Store result
 	7 square -> sqd
@@ -107,11 +104,11 @@ fn main() {
 Functions can call themselves:
 
 ```qd
-def factorial(n:i64 -- result:i64) {
-	n 1 <= if {
-		1
+fn factorial(n:i64 -- result:i64) {
+	dup 1 <= if {
+		drop 1
 	} else {
-		n n 1 - factorial *
+		dup 1 - factorial *
 	}
 }
 
@@ -125,19 +122,19 @@ fn main() {
 Functions can call each other:
 
 ```qd
-def is_even(n:i64 -- result:i64) {
-	n 0 == if {
-		1
+fn is_even(n:i64 -- result:i64) {
+	dup 0 == if {
+		drop 1
 	} else {
-		n 1 - is_odd
+		1 - is_odd
 	}
 }
 
-def is_odd(n:i64 -- result:i64) {
-	n 0 == if {
-		0
+fn is_odd(n:i64 -- result:i64) {
+	dup 0 == if {
+		drop 0
 	} else {
-		n 1 - is_even
+		1 - is_even
 	}
 }
 

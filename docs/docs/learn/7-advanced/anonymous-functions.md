@@ -54,7 +54,7 @@ happens on failure — `call!` to abort, `call?` to propagate, or `call` followe
 
 ```qd
 fn main() {
-	0 def (x:i64 -- r:i64)! { x 0 == if { "divide by zero" 1 panic } 100 x / } call ok if {
+	0 fn (x:i64 -- r:i64)! { dup 0 == if { "divide by zero" 1 panic } 100 swap / } call ok if {
 		print nl
 	} else {
 		drop
@@ -93,10 +93,10 @@ Anonymous functions can be used directly without storing them:
 ```qd
 fn main() {
 	// Define and call immediately
-	5 def (x:i64 -- r:i64) { x 2 * } call print nl  // 10
+	5 fn (x:i64 -- r:i64) { 2 * } call print nl  // 10
 
 	// Multiple parameters
-	10 20 def (a:i64 b:i64 -- r:i64) { a b + } call print nl  // 30
+	10 20 fn (a:i64 b:i64 -- r:i64) { + } call print nl  // 30
 }
 ```
 
@@ -112,10 +112,10 @@ struct Ops {
 }
 
 fn main() {
-	Ops { add = def (x:i64 -- r:i64) { x 1 + }  name = "ops" } -> o
+	Ops { add = fn (x:i64 -- r:i64) { 1 + }  name = "ops" } -> o
 	10 o <<add call print nl  // 11
 
-	[def (x:i64 -- r:i64) { x 2 * }] -> fns
+	[fn (x:i64 -- r:i64) { 2 * }] -> fns
 	5 fns 0 nth call print nl  // 10
 	fns free
 }
@@ -130,7 +130,7 @@ struct Ops {
 }
 
 fn main() {
-	def (x:i64 -- r:i64) { x 2 * } -> double
+	fn (x:i64 -- r:i64) { 2 * } -> double
 	Ops { add = double  mul = double } -> o
 	5 o <<add call print nl  // 10
 }
@@ -156,7 +156,7 @@ Once stored, an anonymous function can be called multiple times:
 
 ```qd
 fn main() {
-	def (x:i64 -- r:i64) { x 2 * } -> double
+	fn (x:i64 -- r:i64) { 2 * } -> double
 
 	// Use in a loop
 	1 6 1 for i {
@@ -172,8 +172,8 @@ Anonymous functions can contain conditionals and other control flow:
 
 ```qd
 fn main() {
-	def (x:i64 -- r:i64) {
-		x 0 > if {
+	fn (x:i64 -- r:i64) {
+		0 > if {
 			10
 		} else {
 			0
@@ -194,7 +194,7 @@ fn main() {
 	10 -> multiplier
 
 	// This closure captures 'multiplier' from the outer scope
-	def (x:i64 -- r:i64) { x multiplier * } -> scale
+	fn (x:i64 -- r:i64) { multiplier * } -> scale
 
 	5 scale call print nl   // 50
 	7 scale call print nl   // 70
@@ -297,7 +297,7 @@ Functions can return closures that capture their local variables:
 ```qd
 fn make_adder(i64 -- adder:fn(i64 -- i64)) {
 	-> n
-	def (x:i64 -- r:i64) { x n + }
+	fn (x:i64 -- r:i64) { n + }
 }
 
 fn main() {
@@ -314,12 +314,12 @@ fn main() {
 Anonymous functions can call regular named functions:
 
 ```qd
-def helper(a:i64 -- r:i64) {
-	a 10 +
+fn helper(a:i64 -- r:i64) {
+	10 +
 }
 
 fn main() {
-	def (a:i64 -- r:i64) { a helper 2 * } -> process
+	fn (a:i64 -- r:i64) { helper 2 * } -> process
 	5 process call print nl  // 30 (5+10=15, 15*2=30)
 }
 ```
@@ -339,7 +339,7 @@ fn main() {
 	5 fp1 call print nl  // 10
 
 	// Anonymous function
-	def (x:i64 -- r:i64) { x 2 * } -> fp2
+	fn (x:i64 -- r:i64) { 2 * } -> fp2
 	5 fp2 call print nl  // 10
 }
 ```

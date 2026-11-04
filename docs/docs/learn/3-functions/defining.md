@@ -20,8 +20,8 @@ Every function has:
 ## Your first function
 
 ```qd
-def square(x:i64 -- result:i64) {
-	x x *
+fn square(x:i64 -- result:i64) {
+	dup *
 }
 
 fn main() {
@@ -43,8 +43,8 @@ fn sum(a:i64 b:i64 -- result:i64) {
 	+
 }
 
-def swap_print(a:i64 b:i64 -- ) {
-	b print nl a print nl
+fn swap_print(a:i64 b:i64 -- ) {
+	print nl print nl
 }
 
 fn push_two( -- a:i64 b:i64) {
@@ -108,9 +108,9 @@ The same applies to return types: name them for clarity in public APIs (`-- resu
 Functions can have multiple outputs:
 
 ```qd
-def divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
-	a b /      // quotient
-	a b %      // remainder
+fn divmod(a:i64 b:i64 -- quotient:i64 remainder:i64) {
+	dup2 /     // quotient
+	rrot %     // remainder
 }
 
 fn main() {
@@ -195,11 +195,11 @@ Use `///` for documentation:
 /// Calculates the factorial of n
 /// @param n The number to calculate factorial of
 /// @return The factorial result
-def factorial(n:i64 -- result:i64) {
-	n 1 <= if {
-		1
+fn factorial(n:i64 -- result:i64) {
+	dup 1 <= if {
+		drop 1
 	} else {
-		n n 1 - factorial *
+		dup 1 - factorial *
 	}
 }
 ```

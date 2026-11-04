@@ -30,9 +30,9 @@ fn main() {
 	Point {
 		x = 10.0
 		y = 20.0
-	} -> p
-	p <<x print nl  // 10
-	p <<y print nl  // 20
+	}
+	dup <<x print nl  // 10
+	<<y print nl      // 20
 }
 ```
 
@@ -53,8 +53,7 @@ fn new_point(x:f64 y:f64 -- p:Point) {
 }
 
 fn main() {
-	3.0 4.0 Point -> p
-	p <<y print nl  // 4
+	3.0 4.0 Point <<y print nl  // 4
 	1.0 2.0 new_point <<x print nl  // 1
 }
 ```
@@ -72,16 +71,15 @@ struct Rectangle {
 	height:f64
 }
 
-def area(rect:Rectangle -- a:f64) {
-	rect <<width rect <<height *
+fn area(rect:Rectangle -- a:f64) {
+	dup <<width swap <<height *
 }
 
 fn main() {
 	Rectangle {
 		width = 5.0
 		height = 3.0
-	} -> rect
-	rect area print nl  // 15
+	} area print nl  // 15
 }
 ```
 
@@ -96,8 +94,8 @@ struct Config {
 	debug:i64
 }
 
-def handler(data:Config -- ) {
-	data <<debug print nl
+fn handler(data:Config -- ) {
+	<<debug print nl
 }
 
 fn main() {
@@ -192,22 +190,12 @@ struct Line {
 }
 
 fn main() {
-	Point {
-		x = 0.0
-		y = 0.0
-	} -> p1
-	Point {
-		x = 10.0
-		y = 10.0
-	} -> p2
+	0.0 0.0 Point
+	10.0 10.0 Point
+	Line
 
-	Line {
-		start = p1
-		end = p2
-	} -> line
-
-	line <<start <<x print nl  // 0
-	line <<end <<x print nl    // 10
+	dup <<start <<x print nl  // 0
+	<<end <<x print nl        // 10
 }
 ```
 
@@ -224,28 +212,22 @@ struct Polygon {
 }
 
 fn main() {
-	[]Point -> pts
+	[]Point
 	Point {
 		x = 0.0
 		y = 0.0
-	} -> p0
+	} append
 	Point {
 		x = 1.0
 		y = 0.0
-	} -> p1
+	} append
 	Point {
 		x = 0.5
 		y = 1.0
-	} -> p2
-	pts p0 append -> pts
-	pts p1 append -> pts
-	pts p2 append -> pts
+	} append
+	Polygon
 
-	Polygon {
-		points = pts
-	} -> triangle
-
-	triangle <<points len print nl  // 3
+	<<points len print nl  // 3
 }
 ```
 
@@ -257,11 +239,11 @@ to declare a default:
 struct Point { x:f64 = 0.0  y:f64 = 0.0 }
 
 fn main() {
-	[3]Point -> pts
-	pts 0 nth <<x print nl   // 0 -- a real Point, not an empty slot
-	pts 1 nth 2.5 >>y drop   // each element is its own instance
-	pts 0 nth <<y print nl   // 0
-	pts 1 nth <<y print nl   // 2.5
+	[3]Point
+	dup 0 nth <<x print nl   // 0 -- a real Point, not an empty slot
+	dup 1 nth 2.5 >>y drop   // each element is its own instance
+	dup 0 nth <<y print nl   // 0
+	1 nth <<y print nl       // 2.5
 }
 ```
 
@@ -277,14 +259,14 @@ struct Point {
 	y:f64
 }
 
-// Method with receiver syntax: def (receiver:Type) name(params -- returns)
+// Method with receiver syntax: fn (receiver:Type) name(params -- returns)
 fn (p:Point) magnitude( -- m:f64) {
 	p <<x dup * p <<y dup * + math::sqrt
 }
 
-def (p:Point) move(dx:f64 dy:f64 -- ) {
-	p p <<x dx + >>x -> p
-	p p <<y dy + >>y -> p
+fn (p:Point) move(dx:f64 dy:f64 -- ) {
+	p <<y + p swap >>y drop
+	p <<x + p swap >>x drop
 }
 
 fn main() {
@@ -320,9 +302,8 @@ fn bump( -- result:i64) {
 }
 
 fn main() {
-	Counter { value = 10 } -> c
-	c bump print nl   // 11 (calls method)
-	bump print nl     // 999 (calls global function)
+	Counter { value = 10 } bump print nl   // 11 (calls method)
+	bump print nl                          // 999 (calls global function)
 }
 ```
 
@@ -345,10 +326,9 @@ def point_distance(p1:Point p2:Point -- d:f64) {
 }
 
 fn main() {
-	Point { x = 0.0 y = 0.0 } -> a
-	Point { x = 3.0 y = 4.0 } -> b
-
-	a b point_distance print nl  // 5
+	Point { x = 0.0 y = 0.0 }
+	Point { x = 3.0 y = 4.0 }
+	point_distance print nl  // 5
 }
 ```
 
@@ -371,14 +351,12 @@ fn config_new( -- cfg:Config) {
 	}
 }
 
-def config_set_debug(cfg:Config value:i64 -- cfg:Config) {
-	cfg value >>debug -> cfg
-	cfg
+fn config_set_debug(cfg:Config value:i64 -- cfg:Config) {
+	>>debug
 }
 
 fn main() {
-	config_new 1 config_set_debug -> cfg
-	cfg <<debug print nl  // 1
+	config_new 1 config_set_debug <<debug print nl  // 1
 }
 ```
 
@@ -390,11 +368,8 @@ struct Node {
 	next:*Node
 }
 
-def node_new(value:i64 -- node:Node) {
-	Node {
-		value = value
-		next = null
-	}
+fn node_new(value:i64 -- node:Node) {
+	null Node
 }
 
 fn main() {
@@ -406,12 +381,13 @@ fn main() {
 	second third >>next -> second
 
 	// Traverse
-	first -> current
+	first
 	loop {
-		current null == if { break }
-		current <<value print nl
-		current <<next -> current
+		dup null != while
+		dup <<value print nl
+		<<next
 	}
+	drop
 	// Output: 10 20 30, one per line
 }
 ```
@@ -426,12 +402,7 @@ struct Stack {
 }
 
 def stack_new(capacity:i64 -- s:Stack) {
-	[capacity]i64 -> data
-	Stack {
-		data = data
-		top = 0
-		capacity = capacity
-	}
+	[capacity]i64 0 capacity Stack
 }
 
 def stack_push(s:Stack value:i64 -- ) {
@@ -439,9 +410,9 @@ def stack_push(s:Stack value:i64 -- ) {
 	s s <<top 1 + >>top -> s
 }
 
-def stack_pop(s:Stack -- value:i64) {
-	s s <<top 1 - >>top -> s
-	s <<data s <<top nth
+fn stack_pop(s:Stack -- value:i64) {
+	dup <<top 1 - >>top
+	dup <<data swap <<top nth
 }
 
 fn main() {
@@ -501,13 +472,13 @@ struct Node {
 
 fn main() {
 	// Build a linked list: 3 -> 2 -> 1 -> null
-	Node { value = 1 next = null } -> a
-	Node { value = 2 next = a } -> b
-	Node { value = 3 next = b } -> c
+	1 null Node
+	2 swap Node
+	3 swap Node
 
 	// Traverse using <<field access through pointers
-	c <<value print nl         // 3
-	c <<next <<value print nl   // 2
+	dup <<value print nl      // 3
+	<<next <<value print nl   // 2
 }
 ```
 
@@ -519,13 +490,13 @@ struct Node {
 	next:*Node
 }
 
-def print_list(start:Node -- ) {
-	start -> cur
+fn print_list(start:Node -- ) {
 	loop {
-		cur null == if { break }
-		cur <<value print nl
-		cur <<next -> cur
+		dup null != while
+		dup <<value print nl
+		<<next
 	}
+	drop
 }
 ```
 
@@ -538,11 +509,13 @@ struct TreeNode {
 	right:*TreeNode
 }
 
-def inorder(n:TreeNode -- ) {
-	n null != if {
-		n <<left inorder
-		n <<value print nl
-		n <<right inorder
+fn inorder(n:TreeNode -- ) {
+	dup null != if {
+		dup <<left inorder
+		dup <<value print nl
+		<<right inorder
+	} else {
+		drop
 	}
 }
 ```
@@ -560,9 +533,9 @@ packed struct FileLump {
 // sizeof(FileLump) == 16 bytes (a plain struct would be 24).
 
 fn main() {
-	FileLump { offset = 100 size = 200 name = 0 } -> lump
-	lump <<offset print nl      // 100
-	lump <<size   print nl      // 200
+	FileLump { offset = 100 size = 200 name = 0 }
+	dup <<offset print nl      // 100
+	<<size print nl            // 200
 }
 ```
 

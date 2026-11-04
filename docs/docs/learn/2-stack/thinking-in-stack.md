@@ -76,7 +76,7 @@ result := clamp(value, 0, 100)
 Push args, then call:
 
 ```qd
-value 0 100 clamp -> result
+value 0 100 clamp
 ```
 
 ### Method calls
@@ -89,7 +89,7 @@ text = "hello".upper()
 The receiver comes first, then the method name:
 
 ```qd
-"hello" strings::upper -> text
+"hello" strings::upper
 ```
 
 ### Chained method calls
@@ -103,7 +103,7 @@ Each call consumes the previous result and produces a new one. Chains read
 left-to-right like a pipeline:
 
 ```qd
-" hello " strings::trim strings::upper -> result
+" hello " strings::trim strings::upper
 ```
 
 ### Conditional expressions
@@ -116,7 +116,7 @@ let color = if x > 0 { "positive" } else { "negative" };
 `if` can leave a value on the stack:
 
 ```qd
-x 0 > if { "positive" } else { "negative" } -> color
+x 0 > if { "positive" } else { "negative" }
 ```
 
 ## Reading the stack
@@ -206,23 +206,26 @@ Step by step:
 3. Divide by length.
 
 ```qd
-def average_of_squares(nums:[]i64 -- result:f64) {
-    0 -> total
-    0 nums len 1 for i {
-        nums i nth -> n
-        total n n * + -> total
+fn sum_of_squares(nums:[]i64 -- total:i64) {
+    0                     // Stack: [nums, total]
+    0 pick len 1 for i {
+        over i nth dup * +
     }
-    total cast<f64> nums len cast<f64> /
+    nip
+}
+
+fn average_of_squares(nums:[]i64 -- result:f64) {
+    dup sum_of_squares cast<f64> swap len cast<f64> /
 }
 ```
 
 Walkthrough:
 
-- `0 -> total` — initialize accumulator
-- `0 nums len 1 for i` — iterate `i` from 0 to len-1 with step 1
-- `nums i nth -> n` — get the i-th element
-- `total n n * + -> total` — add n² to total
-- After the loop, cast to f64 and divide
+- `0` — initialize the accumulator on top of `nums`
+- `0 pick len 1 for i` — `pick` copies `nums` from under the two zeros; iterate `i` from 0 to len-1 with step 1
+- `over i nth dup * +` — get the i-th element, square it, add it to total
+- `nip` — drop `nums`, leaving the total
+- `average_of_squares` keeps a copy of `nums` for its length, then casts both to f64 and divides
 
 ## The key insight
 

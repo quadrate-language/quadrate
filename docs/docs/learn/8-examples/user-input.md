@@ -12,12 +12,12 @@ use io
 
 fn main() {
 	"Enter your name: " print
-	io::readline! -> _ -> name
-	"Hello, " print name print "!" print nl
+	io::readline! drop
+	"Hello, " print print "!" print nl
 }
 ```
 
-`io::readline` is a fallible function that reads one line from stdin (without the trailing newline). It has two outputs: the line, and on top of it `more`, which is `1` when a line was read and `0` at the end of input. Running out of input is not an error; `-> _` above throws `more` away. Use `!` to abort on error, or handle errors explicitly:
+`io::readline` is a fallible function that reads one line from stdin (without the trailing newline). It has two outputs: the line, and on top of it `more`, which is `1` when a line was read and `0` at the end of input. Running out of input is not an error; `drop` above throws `more` away. Use `!` to abort on error, or handle errors explicitly:
 
 ```qd
 use io
@@ -26,8 +26,8 @@ fn main() {
 	"Enter your name: " print
 	io::readline switch {
 		Ok {
-			-> _ -> name
-			"Hello, " print name print "!" print nl
+			drop
+			"Hello, " print print "!" print nl
 		}
 		_ {
 			drop drop
@@ -49,10 +49,9 @@ use strconv
 
 fn main() {
 	"Enter a number: " print
-	io::readline! -> _ -> line
-	line strconv::atoi ok if {
-		-> n
-		"Double: " print n 2 * print nl
+	io::readline! drop
+	strconv::atoi ok if {
+		"Double: " print 2 * print nl
 	} else {
 		drop
 		"That is not a number." print nl
@@ -75,12 +74,11 @@ fn main() {
 		"> " print
 		io::readline switch {
 			Ok {
-				-> more -> line
-				more 0 == if {
-					nl
+				0 == if {
+					drop nl
 					break
 				}
-				"You said: " print line print nl
+				"You said: " print print nl
 			}
 			_ {
 				drop drop
@@ -133,16 +131,14 @@ fn main() {
 		"calc> " print
 		io::readline switch {
 			Ok {
-				-> got -> line
-				got 0 == if {
-					nl break
+				0 == if {
+					drop nl break
 				}
-				line len 0 == if {
-					continue
+				dup len 0 == if {
+					drop continue
 				}
-				line strconv::parse_float ok if {
-					-> num
-					"= " print num print nl
+				strconv::parse_float ok if {
+					"= " print print nl
 				} else {
 					drop
 					"not a number" print nl

@@ -11,7 +11,7 @@ use io
 
 fn main() {
 	"/etc/hostname" io::read_file switch {
-		Ok { -> content "Hostname: " print content print }
+		Ok { "Hostname: " print print }
 		_ { drop err drop drop "Could not read file" print nl }
 	}
 }
@@ -42,8 +42,8 @@ them with `?`, so a failure is passed on to the caller and the defers still run:
 use io
 use mem
 
-def read_file(path:str -- content:str)! {
-	path io::Read io::open? -> file
+fn read_file(path:str -- content:str)! {
+	io::Read io::open? -> file
 	defer { file io::close }
 
 	file 0 io::SeekEnd io::seek? -> size
@@ -58,7 +58,7 @@ def read_file(path:str -- content:str)! {
 
 fn main() {
 	"test.txt" read_file switch {
-		Ok { -> content "File contents:" print nl content print nl }
+		Ok { "File contents:" print nl print nl }
 		_ { drop err drop drop "Could not read file" print nl }
 	}
 }
@@ -70,11 +70,11 @@ fn main() {
 use io
 use mem
 
-def write_file(path:str content:str -- )! {
-	path io::Write io::open? -> file
+fn write_file(path:str content:str -- )! {
+	swap io::Write io::open? -> file
 	defer { file io::close }
 
-	content mem::from_string -> size -> buf
+	mem::from_string -> size -> buf
 	defer { buf mem::free }
 
 	file buf size io::write? drop
@@ -94,15 +94,14 @@ fn main() {
 use io
 use strings
 
-def process_line(num:i64 line:str -- ) {
-	num print ": " print line print nl
+fn process_line(num:i64 line:str -- ) {
+	swap print ": " print print nl
 }
 
 fn main() {
 	"data.txt" io::read_file switch {
 		Ok {
-			-> content
-			content strings::lines! -> lines
+			strings::lines! -> lines
 			0 lines len 1 for i {
 				i 1 + lines i nth process_line
 			}
@@ -166,36 +165,28 @@ use mem
 
 const BufferSize = 4096
 
-def copy_file(src:str dst:str -- total:i64)! {
-	src io::ReadBinary io::open? -> src_file
+fn copy_file(src:str dst:str -- total:i64)! {
+	swap io::ReadBinary io::open? -> src_file
 	defer { src_file io::close }
 
-	dst io::WriteBinary io::open? -> dst_file
+	io::WriteBinary io::open? -> dst_file
 	defer { dst_file io::close }
 
 	BufferSize mem::alloc? -> buf
 	defer { buf mem::free }
 
-	0 -> total_copied
-	1 -> copying
-
+	0
 	loop {
-		copying 0 == if { break }
-		src_file buf BufferSize io::read? -> bytes_read
-		bytes_read 0 == if {
-			0 -> copying
-		} else {
-			dst_file buf bytes_read io::write? drop
-			total_copied bytes_read + -> total_copied
-		}
+		src_file buf BufferSize io::read?
+		dup 0 == if { drop break }
+		dup dst_file buf rot io::write? drop
+		+
 	}
-
-	total_copied
 }
 
 fn main() {
 	"input.txt" "output.txt" copy_file switch {
-		Ok { -> total "Copied " print total print " bytes" print nl }
+		Ok { "Copied " print print " bytes" print nl }
 		_ { drop err drop drop "Copy failed" print nl }
 	}
 }

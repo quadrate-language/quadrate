@@ -37,15 +37,15 @@ Always pair `alloc` with `free`. Use `defer` to ensure cleanup.
 use mem
 
 fn main() {
-	10 mem::alloc! -> buf
+	10 mem::alloc!
 
-	65 buf 0 mem::set_byte  // Write 'A' at offset 0
-	66 buf 1 mem::set_byte  // Write 'B' at offset 1
+	65 over 0 mem::set_byte  // Write 'A' at offset 0
+	66 over 1 mem::set_byte  // Write 'B' at offset 1
 
-	buf 0 mem::get_byte print nl  // 65
-	buf 1 mem::get_byte print nl  // 66
+	dup 0 mem::get_byte print nl  // 65
+	dup 1 mem::get_byte print nl  // 66
 
-	buf mem::free
+	mem::free
 }
 ```
 
@@ -55,12 +55,12 @@ fn main() {
 use mem
 
 fn main() {
-	8 mem::alloc! -> buf
+	8 mem::alloc!
 
-	42 buf 0 mem::set_i64
-	buf 0 mem::get_i64 print nl  // 42
+	42 over 0 mem::set_i64
+	dup 0 mem::get_i64 print nl  // 42
 
-	buf mem::free
+	mem::free
 }
 ```
 
@@ -118,14 +118,14 @@ Use `mem::realloc` to resize:
 use mem
 
 fn main() {
-	10 mem::alloc! -> buf
+	10 mem::alloc!
 
 	// Grow buffer
-	buf 100 mem::realloc! -> buf
+	100 mem::realloc!
 
 	// Use larger buffer...
 
-	buf mem::free
+	mem::free
 }
 ```
 
@@ -151,8 +151,8 @@ def sb_new(capacity:i64 -- sb:StringBuffer) {
 	}
 }
 
-def sb_free(sb:StringBuffer -- ) {
-	sb <<data mem::free
+fn sb_free(sb:StringBuffer -- ) {
+	<<data mem::free
 }
 
 def sb_append_byte(sb:StringBuffer byte:i64 -- ) {
@@ -206,20 +206,19 @@ def pool_new(size:i64 -- pool:Pool) {
 
 def pool_alloc(pool:Pool bytes:i64 -- offset:i64) {
 	pool <<used bytes + pool <<size <= if {
-		pool <<used -> offset
-		pool pool <<used bytes + >>used -> pool
-		offset
+		pool <<used
+		pool pool <<used bytes + >>used drop
 	} else {
 		-1  // Out of memory
 	}
 }
 
-def pool_reset(pool:Pool -- ) {
-	pool 0 >>used drop
+fn pool_reset(pool:Pool -- ) {
+	0 >>used drop
 }
 
-def pool_free(pool:Pool -- ) {
-	pool <<memory mem::free
+fn pool_free(pool:Pool -- ) {
+	<<memory mem::free
 }
 
 fn main() {

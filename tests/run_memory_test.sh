@@ -120,15 +120,20 @@ check_flat() {
 	done
 
 	for n in "$low" "$high"; do
-		local measured
-		measured=$(python3 "$WORK_DIR/peak_rss.py" "$WORK_DIR/${name}_$n.err" "$WORK_DIR/${name}_$n")
-		if [[ "$measured" == FAILED* ]]; then
-			local why
-			why=$(tr '\n' ' ' < "$WORK_DIR/${name}_$n.err" | cut -c1-300)
-			echo -e "  ${RED}✗${NC} $name (the $n-iteration run exited ${measured#FAILED }: ${why:-no output on stderr})"
-			FAILED=$((FAILED + 1))
-			return
-		fi
+		local measured=0 sample attempt
+		for attempt in 1 2 3; do
+			sample=$(python3 "$WORK_DIR/peak_rss.py" "$WORK_DIR/${name}_$n.err" "$WORK_DIR/${name}_$n")
+			if [[ "$sample" == FAILED* ]]; then
+				local why
+				why=$(tr '\n' ' ' < "$WORK_DIR/${name}_$n.err" | cut -c1-300)
+				echo -e "  ${RED}✗${NC} $name (the $n-iteration run exited ${sample#FAILED }: ${why:-no output on stderr})"
+				FAILED=$((FAILED + 1))
+				return
+			fi
+			if [[ $sample -gt $measured ]]; then
+				measured=$sample
+			fi
+		done
 		if [[ "$n" == "$low" ]]; then
 			rss_low=$measured
 		else

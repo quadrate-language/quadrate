@@ -32,8 +32,8 @@ the spot. Inside a fallible function, use `?` so the cleanup still happens:
 use io
 use mem
 
-def process_file(path:str -- )! {
-	path io::Read io::open? -> file
+fn process_file(path:str -- )! {
+	io::Read io::open? -> file
 	defer {
 		// Runs even if the read fails
 		file io::close
@@ -93,11 +93,11 @@ fn with_buffer() {
 use io
 use mem
 
-def copy_file(src:str dst:str -- )! {
-	src io::Read io::open? -> src_file
+fn copy_file(src:str dst:str -- )! {
+	swap io::Read io::open? -> src_file
 	defer { src_file io::close }
 
-	dst io::Write io::open? -> dst_file
+	io::Write io::open? -> dst_file
 	defer { dst_file io::close }
 
 	4096 mem::alloc? -> buf

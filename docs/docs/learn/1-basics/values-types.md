@@ -133,10 +133,8 @@ fn main() {
 	Point {
 		x = 1.0
 		y = 2.0
-	} -> p          // p is a Point
-	p <<x print nl  // 1
-	[1 2 3] -> xs   // xs is a []i64
-	xs len print nl // 3
+	} <<x print nl        // 1
+	[1 2 3] len print nl  // 3
 }
 ```
 
@@ -190,8 +188,7 @@ use strconv
 
 fn main() {
 	"99" strconv::atoi ok if {
-		-> n
-		n print nl              // 99
+		print nl                // 99
 	} else {
 		drop
 		"not a number" print nl
@@ -208,8 +205,8 @@ fn sum(a:i64 b:i64 -- result:i64) {
 	+
 }
 
-def greet(name:str -- ) {
-	"Hello, " print name print nl
+fn greet(name:str -- ) {
+	"Hello, " print print nl
 }
 ```
 

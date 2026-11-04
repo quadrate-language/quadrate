@@ -240,8 +240,8 @@ passed as a parameter, or a named function's `&name`. It is called rather than i
 checked by its type.
 
 ```qd
-def square(x:i64 -- r:i64) {
-	x x *
+fn square(x:i64 -- r:i64) {
+	dup *
 }
 
 fn main() {
@@ -270,9 +270,9 @@ fn main() {
 ### Data validation
 
 ```qd
-def validate_age(age:i64 -- valid:i64) {
+fn validate_age(age:i64 -- valid:i64) {
 	// Must be at least 18 and at most 120
-	age fn { 18 >= } fn { 120 <= } bi and
+	fn { 18 >= } fn { 120 <= } bi and
 }
 
 fn main() {

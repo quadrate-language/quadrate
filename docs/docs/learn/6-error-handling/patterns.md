@@ -7,19 +7,18 @@ Common patterns for handling errors effectively.
 Return a default value when an error occurs:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" -1 panic
 	}
-	a b /
+	/
 }
 
-def safe_divide(a:i64 b:i64 default:i64 -- result:i64) {
-	a b divide ok if {
-		// Success - return result
+fn safe_divide(a:i64 b:i64 default:i64 -- result:i64) {
+	rrot divide ok if {
+		nip   // Success - return result
 	} else {
-		drop
-		default  // Return default on error
+		drop  // Return default on error
 	}
 }
 
@@ -35,16 +34,16 @@ Try alternatives when first option fails:
 
 <!-- doccheck: skip pattern sketch: try_parse stands for a program's own fallible word -->
 ```qd
-def try_parse(s:str -- value:i64)! {
+fn try_parse(s:str -- value:i64)! {
 	// ... parsing logic
 }
 
-def parse_with_fallback(primary:str fallback:str -- value:i64) {
-	primary try_parse ok if {
-		// Primary succeeded
+fn parse_with_fallback(primary:str fallback:str -- value:i64) {
+	swap try_parse ok if {
+		nip  // Primary succeeded
 	} else {
 		drop
-		fallback try_parse ok if {
+		try_parse ok if {
 			// Fallback succeeded
 		} else {
 			drop
@@ -59,30 +58,22 @@ def parse_with_fallback(primary:str fallback:str -- value:i64) {
 Continue despite errors, collect successes:
 
 ```qd
-def divide(a:i64 b:i64 -- result:i64)! {
-	b 0 == if {
+fn divide(a:i64 b:i64 -- result:i64)! {
+	dup 0 == if {
 		"division by zero" -1 panic
 	}
-	a b /
+	/
+}
+
+fn succeeded(a:i64 b:i64 -- flag:i64) {
+	// The result is on the stack whichever way the call went, so it is dropped under the status
+	divide nip ok
 }
 
 fn try_all( -- success_count:i64) {
-	0 -> count
-
-	// The result is on the stack whichever way the call went, so it is dropped after the `if`
-	10 2 divide ok if {
-		count ++ -> count
-	} drop
-
-	10 5 divide ok if {
-		count ++ -> count
-	} drop
-
-	10 0 divide ok if {
-		count ++ -> count
-	} drop
-
-	count
+	10 2 succeeded
+	10 5 succeeded +
+	10 0 succeeded +
 }
 
 fn main() {
@@ -95,22 +86,22 @@ fn main() {
 Propagate errors through multiple operations:
 
 ```qd
-def step1(x:i64 -- y:i64)! {
-	x 0 < if {
+fn step1(x:i64 -- y:i64)! {
+	dup 0 < if {
 		"negative input" 1 panic
 	}
-	x 2 *
+	2 *
 }
 
-def step2(x:i64 -- y:i64)! {
-	x 100 > if {
+fn step2(x:i64 -- y:i64)! {
+	dup 100 > if {
 		"overflow" 2 panic
 	}
-	x 10 +
+	10 +
 }
 
-def pipeline(x:i64 -- result:i64)! {
-	x step1 ok if {
+fn pipeline(x:i64 -- result:i64)! {
+	step1 ok if {
 		step2 ok if {
 			// Both succeeded
 		} else {
@@ -130,8 +121,8 @@ Use `defer` for guaranteed cleanup:
 use io
 use mem
 
-def read_file(path:str -- content:str)! {
-	path io::Read io::open? -> file
+fn read_file(path:str -- content:str)! {
+	io::Read io::open? -> file
 	defer {
 		// Always runs
 		file io::close
@@ -144,8 +135,8 @@ def read_file(path:str -- content:str)! {
 		buf mem::free
 	}
 
-	file buf size io::read? -> bytes_read
-	buf bytes_read mem::to_string
+	file buf size io::read?
+	buf swap mem::to_string
 }
 ```
 
@@ -163,14 +154,10 @@ struct File {
 	path:str
 }
 
-def file_open(path:str -- f:File)! {
-	path io::Read io::open switch {
+fn file_open(path:str -- f:File)! {
+	dup io::Read io::open switch {
 		Ok {
-			-> handle  // bind handle
-			File {
-				handle = handle
-				path = path
-			}
+			swap File  // handle first, then path
 		}
 		_ {
 			"open failed" 1 panic
@@ -178,12 +165,12 @@ def file_open(path:str -- f:File)! {
 	}
 }
 
-def file_close(f:File -- ) {
-	f <<handle io::close
+fn file_close(f:File -- ) {
+	<<handle io::close
 }
 
-def with_file(path:str -- ) {
-	path file_open switch {
+fn with_file(path:str -- ) {
+	file_open switch {
 		Ok {
 			-> f  // bind file
 			defer {
@@ -209,18 +196,18 @@ def with_file(path:str -- ) {
 Validate before processing:
 
 ```qd
-def validate_input(x:i64 -- )! {
-	x 0 < if {
+fn validate_input(x:i64 -- )! {
+	dup 0 < if {
 		"negative not allowed" 1 panic
 	}
-	x 1000 > if {
+	1000 > if {
 		"too large" 2 panic
 	}
 }
 
-def process(x:i64 -- result:i64)! {
-	x validate_input ok if {
-		x x *  // Safe to process
+fn process(x:i64 -- result:i64)! {
+	dup validate_input ok if {
+		dup *  // Safe to process
 	} else {
 		"validation failed" 1 panic
 	}
@@ -237,27 +224,12 @@ fn unreliable_op( -- result:i64)! {
 	// Might fail sometimes
 }
 
-def retry(max_attempts:i64 -- result:i64)! {
-	0 -> attempts
-	0 -> success
-	0 -> last_result
-
-	loop {
-		success 0 == attempts max_attempts < and 0 == if { break }
-		unreliable_op ok if {
-			-> last_result
-			1 -> success
-		} else {
-			drop // the placeholder result of the failed attempt
-		}
-		attempts ++ -> attempts
+fn retry(max_attempts:i64 -- result:i64)! {
+	0 swap 1 for attempt {
+		unreliable_op ok if { return }
+		drop // the placeholder result of the failed attempt
 	}
-
-	success if {
-		last_result
-	} else {
-		"all attempts failed" 1 panic
-	}
+	"all attempts failed" 1 panic
 }
 ```
 
@@ -267,10 +239,9 @@ Add context to errors:
 
 <!-- doccheck: skip pattern sketch: read_file and parse_json stand for a program's own fallible words -->
 ```qd
-def parse_config(path:str -- cfg:Config)! {
-	path read_file ok if {
-		-> content  // bind content
-		content parse_json ok if {
+fn parse_config(path:str -- cfg:Config)! {
+	read_file ok if {
+		parse_json ok if {
 			// Success: the Config is on the stack
 		} else {
 			drop

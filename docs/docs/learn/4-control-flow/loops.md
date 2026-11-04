@@ -56,11 +56,11 @@ Use index-based iteration:
 
 ```qd
 fn main() {
-	[1 2 3 4 5] -> arr
-
-	0 arr len 1 for i {
-		arr i nth print " " print
+	[1 2 3 4 5]
+	0 over len 1 for i {
+		dup i nth print " " print
 	}
+	drop
 	nl
 	// Output: 1 2 3 4 5
 }
@@ -72,14 +72,15 @@ Use `loop` with `break`:
 
 ```qd
 fn main() {
-	0 -> count
+	0
 	loop {
-		count print nl
-		count ++ -> count
-		count 5 >= if {
+		dup print nl
+		++
+		dup 5 >= if {
 			break
 		}
 	}
+	drop
 	// Output: 0 1 2 3 4, one per line
 }
 ```
@@ -90,12 +91,13 @@ Inside a `loop`, `while` takes a flag and leaves the loop when it is false:
 
 ```qd
 fn main() {
-	0 -> count
+	0
 	loop {
-		count 5 < while
-		count print nl
-		count 1 + -> count
+		dup 5 < while
+		dup print nl
+		1 +
 	}
+	drop
 	// Output: 0 1 2 3 4, one per line
 }
 ```
@@ -108,12 +110,12 @@ the bottom it runs at least once:
 
 ```qd
 fn main() {
-	0 -> tries
+	0
 	loop {
-		tries 1 + -> tries
-		tries 3 >= until
+		1 +
+		dup 3 >= until
 	}
-	tries print nl
+	print nl
 	// Output: 3
 }
 ```
@@ -122,12 +124,13 @@ In the middle, the loop leaves between the two halves of an iteration:
 
 ```qd
 fn main() {
-	0 -> n
+	0
 	loop {
-		n 1 + -> n
-		n 4 == until    // the line below does not run on the last pass
-		n print nl
+		1 +
+		dup 4 == until    // the line below does not run on the last pass
+		dup print nl
 	}
+	drop
 	// Output: 1 2 3, one per line
 }
 ```
@@ -138,12 +141,13 @@ under the loop is left alone:
 
 ```qd
 fn main() {
-	0 -> i
 	42                     // still there after the loop
+	0
 	loop {
-		i 3 < while
-		i 1 + -> i
+		dup 3 < while
+		1 +
 	}
+	drop
 	print nl
 	// Output: 42
 }
@@ -201,12 +205,10 @@ fn main() {
 Build up a result:
 
 ```qd
-def sum_to_n(n:i64 -- sum:i64) {
-	0 -> sum
-	1 n 1 + 1 for i {
-		sum i + -> sum
+fn sum_to_n(n:i64 -- sum:i64) {
+	0 1 rot 1 + 1 for i {
+		i +
 	}
-	sum
 }
 
 fn main() {
@@ -220,15 +222,13 @@ Search with early exit:
 
 ```qd
 def contains(arr:[]i64 value:i64 -- found:i64) {
-	0 -> found
-
+	0
 	0 arr len 1 for i {
 		arr i nth value == if {
-			1 -> found
+			drop 1
 			break
 		}
 	}
-	found
 }
 
 fn main() {
@@ -242,26 +242,26 @@ fn main() {
 ### Sum array
 
 ```qd
-def sum_array(arr:[]i64 -- total:i64) {
-	0 -> total
-	0 arr len 1 for i {
-		total arr i nth + -> total
+fn sum_array(arr:[]i64 -- total:i64) {
+	0
+	0 pick len 1 for i {
+		over i nth +
 	}
-	total
+	nip
 }
 ```
 
 ### Count matches
 
 ```qd
-def count_positive(arr:[]i64 -- count:i64) {
-	0 -> count
-	0 arr len 1 for i {
-		arr i nth 0 > if {
-			count 1 + -> count
+fn count_positive(arr:[]i64 -- count:i64) {
+	0
+	0 pick len 1 for i {
+		over i nth 0 > if {
+			1 +
 		}
 	}
-	count
+	nip
 }
 ```
 

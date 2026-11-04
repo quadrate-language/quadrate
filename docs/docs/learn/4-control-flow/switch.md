@@ -106,20 +106,20 @@ fn get_color(code:i64 -- name:str) {
 ### Equivalent if-else (more verbose)
 
 ```qd
-def get_color_if(code:i64 -- name:str) {
-	code 0 == if {
-		"black"
+fn get_color_if(code:i64 -- name:str) {
+	dup 0 == if {
+		drop "black"
 	} else {
-		code 1 == if {
-			"red"
+		dup 1 == if {
+			drop "red"
 		} else {
-			code 2 == if {
-				"green"
+			dup 2 == if {
+				drop "green"
 			} else {
-				code 3 == if {
-					"blue"
+				dup 3 == if {
+					drop "blue"
 				} else {
-					"unknown"
+					drop "unknown"
 				}
 			}
 		}
@@ -156,19 +156,19 @@ fn handle_menu(choice:i64 -- ) {
 ### State machine
 
 ```qd
-def next_state(current:i64 input:i64 -- next:i64) {
-	current switch {
+fn next_state(current:i64 input:i64 -- next:i64) {
+	swap switch {
 		0 {
-			input 97 == if { 1 } else { 0 }  // 'a'
+			97 == if { 1 } else { 0 }  // 'a'
 		}
 		1 {
-			input 98 == if { 2 } else { 0 }  // 'b'
+			98 == if { 2 } else { 0 }  // 'b'
 		}
 		2 {
-			input 99 == if { 3 } else { 0 }  // 'c'
+			99 == if { 3 } else { 0 }  // 'c'
 		}
 		_ {
-			0
+			drop 0
 		}
 	}
 }
