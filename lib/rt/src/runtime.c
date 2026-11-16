@@ -612,13 +612,6 @@ void qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_elemen
 	}
 }
 
-// Helper function to release string references if needed
-static void release_if_string(qd_stack_element_t* elem) {
-	if (elem->type == QD_STACK_TYPE_STR) {
-		qd_string_release(elem->value.s);
-	}
-}
-
 // Helper function to push a stack element, taking a reference to what it holds
 qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem) {
 	qd_stack_error err;
@@ -728,9 +721,11 @@ int qd_casti(qd_context* ctx) {
 		result = (int64_t)elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atoll(qd_string_data(elem.value.s));
-		release_if_string(&elem); // Release the string after conversion
+		qdrt_release_element(&elem); // Release the string after conversion
 	} else if (elem.type == QD_STACK_TYPE_PTR) {
+		// The address. A struct or an array gives up the reference its slot held, as in castp.
 		result = (int64_t)(uintptr_t)elem.value.p;
+		qdrt_release_element(&elem);
 	} else if (elem.type == QD_STACK_TYPE_D128) {
 		result = qd_d128_to_i64(elem.value.d);
 	} else {
@@ -766,7 +761,7 @@ int qd_castf(qd_context* ctx) {
 		result = elem.value.f;
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		result = atof(qd_string_data(elem.value.s));
-		release_if_string(&elem); // Release the string after conversion
+		qdrt_release_element(&elem); // Release the string after conversion
 	} else if (elem.type == QD_STACK_TYPE_D128) {
 		result = qd_d128_to_f64(elem.value.d);
 	} else {
@@ -807,7 +802,7 @@ int qd_casts(qd_context* ctx) {
 			QDRT_FATAL(ctx, "casts", "Stack overflow pushing string result");
 		}
 		// Release our reference from the pop
-		release_if_string(&elem);
+		qdrt_release_element(&elem);
 		return (int){0};
 	} else if (elem.type == QD_STACK_TYPE_PTR) {
 		// A raw pointer carries no string contents we can safely dereference -
@@ -819,6 +814,8 @@ int qd_casts(qd_context* ctx) {
 		} else {
 			snprintf(buffer, sizeof(buffer), "%" PRId64, (int64_t)(intptr_t)elem.value.p);
 		}
+		// A struct or an array gives up the reference its slot held, as in castp
+		qdrt_release_element(&elem);
 	} else if (elem.type == QD_STACK_TYPE_D128) {
 		qd_d128_format(elem.value.d, buffer, sizeof buffer);
 	} else {
@@ -1083,7 +1080,7 @@ int qd_panic(qd_context* ctx) {
 	// would read as a success. A literal 0 is rejected at compile time; this is the code that
 	// was computed.
 	if (error_code_elem.value.i == 0) {
-		release_if_string(&error_msg_elem);
+		qdrt_release_element(&error_msg_elem);
 		QDRT_FATAL(ctx, "panic", "Error code 0 is Ok; a failure needs a non-zero code (Err is 1)");
 	}
 
@@ -1101,7 +1098,7 @@ int qd_panic(qd_context* ctx) {
 	// strdup failure results in NULL error_msg, which is acceptable
 	// (error_code still indicates the error condition)
 	// Release the qd_string_t
-	release_if_string(&error_msg_elem);
+	qdrt_release_element(&error_msg_elem);
 
 	return (int){0};
 }
