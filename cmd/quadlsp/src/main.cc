@@ -253,7 +253,9 @@ std::string QuadrateLSP::getDocumentText(const std::string& uri) {
 		return it->second;
 	}
 	std::string filePath = lspUriToPath(uri);
-	if (filePath.empty()) {
+	std::error_code ec;
+	// Only something with an end: a URI naming /dev/zero would otherwise read forever
+	if (filePath.empty() || !std::filesystem::is_regular_file(filePath, ec)) {
 		return "";
 	}
 	std::ifstream file(filePath, std::ios::binary);
@@ -263,6 +265,25 @@ std::string QuadrateLSP::getDocumentText(const std::string& uri) {
 	std::stringstream buffer;
 	buffer << file.rdbuf();
 	return buffer.str();
+}
+
+bool lspParseModuleFile(const std::string& path, Qd::Ast& ast, Qd::IAstNode*& root, std::string* text) {
+	root = nullptr;
+	std::string source;
+	try {
+		source = qdcli::readFile(path);
+	} catch (const std::exception&) {
+		return false;
+	}
+	Qd::IAstNode* parsed = ast.generate(source.c_str(), false, nullptr);
+	if (!parsed || ast.hasErrors() || parsed->type() != Qd::IAstNode::Type::PROGRAM) {
+		return false;
+	}
+	root = parsed;
+	if (text) {
+		*text = std::move(source);
+	}
+	return true;
 }
 
 const std::vector<std::string>* QuadrateLSP::positionLines(const std::string& uri) {
@@ -1826,16 +1847,8 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 		if (!filePath.empty()) {
 			std::vector<std::string> siblings = qdcli::getSiblingQdFiles(filePath);
 			for (const auto& siblingPath : siblings) {
-				std::ifstream file(siblingPath);
-				if (file.good()) {
-					std::stringstream buffer;
-					buffer << file.rdbuf();
-					std::string siblingText = buffer.str();
-
-					std::vector<StructInfo> siblingStructs = extractStructs(siblingText);
-					for (const auto& s : siblingStructs) {
-						structTypeNames.insert(s.name);
-					}
+				for (const auto& s : extractStructs(getDocumentText(lspPathToUri(siblingPath)))) {
+					structTypeNames.insert(s.name);
 				}
 			}
 		}
@@ -3580,14 +3593,13 @@ void QuadrateLSP::handleWorkspaceSymbols(const std::string& id, const std::strin
 				continue; // Already processed as open document
 			}
 
-			// Read file from disk
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				std::string content = buffer.str();
-				processFile(filePath, content);
+			std::string content;
+			try {
+				content = qdcli::readFile(filePath);
+			} catch (const std::exception&) {
+				continue;
 			}
+			processFile(filePath, content);
 		}
 	}
 
@@ -3601,23 +3613,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		// Try to read from disk
-		std::string filePath = lspUriToPath(uri);
-		if (!filePath.empty()) {
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
+	const std::string documentText = getDocumentText(uri);
 
 	json_t* result = json_null();
 
@@ -3715,189 +3711,174 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 					// Resolve module path
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
-					if (!modulePath.empty()) {
-						// Read and parse the module file
-						std::ifstream file(modulePath);
-						if (file.good()) {
-							std::stringstream buffer;
-							buffer << file.rdbuf();
-							std::string moduleText = buffer.str();
+					Qd::Ast ast;
+					Qd::IAstNode* root = nullptr;
+					if (!modulePath.empty() && lspParseModuleFile(modulePath, ast, root)) {
+						// Search for the symbol
+						for (size_t i = 0; i < root->childCount(); i++) {
+							Qd::IAstNode* child = root->child(i);
 
-							Qd::Ast ast;
-							Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+							if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+								Qd::AstNodeFunctionDeclaration* funcNode =
+										static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+								if (funcNode->name() == symbolName) {
+									// Build function documentation
+									std::ostringstream docStream;
 
-							if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
-								// Search for the symbol
-								for (size_t i = 0; i < root->childCount(); i++) {
-									Qd::IAstNode* child = root->child(i);
-
-									if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-										Qd::AstNodeFunctionDeclaration* funcNode =
-												static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-										if (funcNode->name() == symbolName) {
-											// Build function documentation
-											std::ostringstream docStream;
-
-											// Show if it's a method
-											if (funcNode->hasReceiver()) {
-												docStream << "**Method on:** `" << funcNode->receiverType();
-												if (funcNode->hasReceiverTypeParams()) {
-													docStream << "<";
-													const auto& rTypeParams = funcNode->receiverTypeParams();
-													for (size_t j = 0; j < rTypeParams.size(); j++) {
-														if (j > 0) {
-															docStream << ", ";
-														}
-														docStream << rTypeParams[j];
-													}
-													docStream << ">";
+									// Show if it's a method
+									if (funcNode->hasReceiver()) {
+										docStream << "**Method on:** `" << funcNode->receiverType();
+										if (funcNode->hasReceiverTypeParams()) {
+											docStream << "<";
+											const auto& rTypeParams = funcNode->receiverTypeParams();
+											for (size_t j = 0; j < rTypeParams.size(); j++) {
+												if (j > 0) {
+													docStream << ", ";
 												}
-												docStream << "`\n\n";
+												docStream << rTypeParams[j];
 											}
-
-											// Show type parameters for generic functions
-											if (!funcNode->declaredParameters().empty()) {
-												docStream << "**Type parameters:** `<";
-												const auto typeParams = funcNode->declaredParameters();
-												for (size_t j = 0; j < typeParams.size(); j++) {
-													if (j > 0) {
-														docStream << ", ";
-													}
-													docStream << typeParams[j];
-												}
-												docStream << ">`\n\n";
-											}
-
-											docStream << "**" << (funcNode->hasReceiver() ? "Method" : "Function")
-													  << " (from " << moduleName << "):**\n```quadrate\n";
-
-											// Build full signature
-											if (funcNode->hasReceiver()) {
-												docStream << (funcNode->isStack() ? "fn (" : "def (")
-														  << funcNode->receiverName() << ":"
-														  << funcNode->receiverType();
-												if (funcNode->hasReceiverTypeParams()) {
-													docStream << "<";
-													const auto& rTypeParams = funcNode->receiverTypeParams();
-													for (size_t j = 0; j < rTypeParams.size(); j++) {
-														if (j > 0) {
-															docStream << ", ";
-														}
-														docStream << rTypeParams[j];
-													}
-													docStream << ">";
-												}
-												docStream << ") " << funcNode->name();
-											} else {
-												docStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name();
-											}
-
-											// Add type parameters
-											if (!funcNode->declaredParameters().empty()) {
-												docStream << "<";
-												const auto typeParams = funcNode->declaredParameters();
-												for (size_t j = 0; j < typeParams.size(); j++) {
-													if (j > 0) {
-														docStream << ", ";
-													}
-													docStream << typeParams[j];
-												}
-												docStream << ">";
-											}
-
-											docStream << "(";
-
-											// Inputs and outputs, a stack variable first in its list
-											const auto inputs = funcNode->inputItems();
-											for (size_t j = 0; j < inputs.size(); j++) {
-												docStream << (j > 0 ? " " : "") << inputs[j];
-											}
-											const auto outputs = funcNode->outputItems();
-											if (!inputs.empty() || !outputs.empty()) {
-												docStream << " -- ";
-											}
-											for (size_t j = 0; j < outputs.size(); j++) {
-												docStream << (j > 0 ? " " : "") << outputs[j];
-											}
-											docStream << ")";
-											if (funcNode->throws()) {
-												docStream << "!";
-											}
-											docStream << "\n```";
-
-											result = json_object();
-											json_t* contents = json_object();
-											json_object_set_new(contents, "kind", json_string("markdown"));
-											json_object_set_new(
-													contents, "value", json_string(docStream.str().c_str()));
-											json_object_set_new(result, "contents", contents);
-											break;
+											docStream << ">";
 										}
-									} else if (child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
-										Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
-										if (constNode->name() == symbolName) {
-											// Build constant documentation
-											std::ostringstream docStream;
-											docStream << "**Constant (from " << moduleName << "):** `"
-													  << constNode->name() << " = " << constNode->value() << "`";
-
-											result = json_object();
-											json_t* contents = json_object();
-											json_object_set_new(contents, "kind", json_string("markdown"));
-											json_object_set_new(
-													contents, "value", json_string(docStream.str().c_str()));
-											json_object_set_new(result, "contents", contents);
-											break;
-										}
-									} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
-										// Check for imported functions (like stdlib)
-										Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
-										const auto& importedFuncs = importNode->functions();
-										for (const auto& importedFunc : importedFuncs) {
-											if (importedFunc->name == symbolName) {
-												// Build imported function documentation
-												std::ostringstream docStream;
-												docStream << "**Function (from " << moduleName << "):** `fn "
-														  << importedFunc->name << "(";
-
-												// Input parameters
-												for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
-													if (j > 0) {
-														docStream << " ";
-													}
-													const auto* param = importedFunc->inputParameters[j].get();
-													docStream << param->displayString();
-												}
-
-												if (!importedFunc->inputParameters.empty() ||
-														!importedFunc->outputParameters.empty()) {
-													docStream << " -- ";
-												}
-
-												// Output parameters
-												for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
-													if (j > 0) {
-														docStream << " ";
-													}
-													const auto* param = importedFunc->outputParameters[j].get();
-													docStream << param->displayString();
-												}
-
-												docStream << ")`";
-
-												result = json_object();
-												json_t* contents = json_object();
-												json_object_set_new(contents, "kind", json_string("markdown"));
-												json_object_set_new(
-														contents, "value", json_string(docStream.str().c_str()));
-												json_object_set_new(result, "contents", contents);
-												break;
-											}
-										}
-										if (!json_is_null(result)) {
-											break;
-										}
+										docStream << "`\n\n";
 									}
+
+									// Show type parameters for generic functions
+									if (!funcNode->declaredParameters().empty()) {
+										docStream << "**Type parameters:** `<";
+										const auto typeParams = funcNode->declaredParameters();
+										for (size_t j = 0; j < typeParams.size(); j++) {
+											if (j > 0) {
+												docStream << ", ";
+											}
+											docStream << typeParams[j];
+										}
+										docStream << ">`\n\n";
+									}
+
+									docStream << "**" << (funcNode->hasReceiver() ? "Method" : "Function") << " (from "
+											  << moduleName << "):**\n```quadrate\n";
+
+									// Build full signature
+									if (funcNode->hasReceiver()) {
+										docStream << (funcNode->isStack() ? "fn (" : "def (")
+												  << funcNode->receiverName() << ":" << funcNode->receiverType();
+										if (funcNode->hasReceiverTypeParams()) {
+											docStream << "<";
+											const auto& rTypeParams = funcNode->receiverTypeParams();
+											for (size_t j = 0; j < rTypeParams.size(); j++) {
+												if (j > 0) {
+													docStream << ", ";
+												}
+												docStream << rTypeParams[j];
+											}
+											docStream << ">";
+										}
+										docStream << ") " << funcNode->name();
+									} else {
+										docStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name();
+									}
+
+									// Add type parameters
+									if (!funcNode->declaredParameters().empty()) {
+										docStream << "<";
+										const auto typeParams = funcNode->declaredParameters();
+										for (size_t j = 0; j < typeParams.size(); j++) {
+											if (j > 0) {
+												docStream << ", ";
+											}
+											docStream << typeParams[j];
+										}
+										docStream << ">";
+									}
+
+									docStream << "(";
+
+									// Inputs and outputs, a stack variable first in its list
+									const auto inputs = funcNode->inputItems();
+									for (size_t j = 0; j < inputs.size(); j++) {
+										docStream << (j > 0 ? " " : "") << inputs[j];
+									}
+									const auto outputs = funcNode->outputItems();
+									if (!inputs.empty() || !outputs.empty()) {
+										docStream << " -- ";
+									}
+									for (size_t j = 0; j < outputs.size(); j++) {
+										docStream << (j > 0 ? " " : "") << outputs[j];
+									}
+									docStream << ")";
+									if (funcNode->throws()) {
+										docStream << "!";
+									}
+									docStream << "\n```";
+
+									result = json_object();
+									json_t* contents = json_object();
+									json_object_set_new(contents, "kind", json_string("markdown"));
+									json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+									json_object_set_new(result, "contents", contents);
+									break;
+								}
+							} else if (child && child->type() == Qd::IAstNode::Type::CONSTANT_DECLARATION) {
+								Qd::AstNodeConstant* constNode = static_cast<Qd::AstNodeConstant*>(child);
+								if (constNode->name() == symbolName) {
+									// Build constant documentation
+									std::ostringstream docStream;
+									docStream << "**Constant (from " << moduleName << "):** `" << constNode->name()
+											  << " = " << constNode->value() << "`";
+
+									result = json_object();
+									json_t* contents = json_object();
+									json_object_set_new(contents, "kind", json_string("markdown"));
+									json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+									json_object_set_new(result, "contents", contents);
+									break;
+								}
+							} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+								// Check for imported functions (like stdlib)
+								Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+								const auto& importedFuncs = importNode->functions();
+								for (const auto& importedFunc : importedFuncs) {
+									if (importedFunc->name == symbolName) {
+										// Build imported function documentation
+										std::ostringstream docStream;
+										docStream << "**Function (from " << moduleName << "):** `fn "
+												  << importedFunc->name << "(";
+
+										// Input parameters
+										for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
+											if (j > 0) {
+												docStream << " ";
+											}
+											const auto* param = importedFunc->inputParameters[j].get();
+											docStream << param->displayString();
+										}
+
+										if (!importedFunc->inputParameters.empty() ||
+												!importedFunc->outputParameters.empty()) {
+											docStream << " -- ";
+										}
+
+										// Output parameters
+										for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
+											if (j > 0) {
+												docStream << " ";
+											}
+											const auto* param = importedFunc->outputParameters[j].get();
+											docStream << param->displayString();
+										}
+
+										docStream << ")`";
+
+										result = json_object();
+										json_t* contents = json_object();
+										json_object_set_new(contents, "kind", json_string("markdown"));
+										json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
+										json_object_set_new(result, "contents", contents);
+										break;
+									}
+								}
+								if (!json_is_null(result)) {
+									break;
 								}
 							}
 						}
@@ -3917,22 +3898,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		std::string filePath = lspUriToPath(uri);
-		if (!filePath.empty()) {
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
+	const std::string documentText = getDocumentText(uri);
 
 	json_t* result = json_null();
 
@@ -4030,95 +3996,84 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 						std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 						std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
-						if (!modulePath.empty()) {
-							std::ifstream file(modulePath);
-							if (file.good()) {
-								std::stringstream buffer;
-								buffer << file.rdbuf();
-								std::string moduleText = buffer.str();
+						Qd::Ast ast;
+						Qd::IAstNode* root = nullptr;
+						if (!modulePath.empty() && lspParseModuleFile(modulePath, ast, root)) {
+							for (size_t i = 0; i < root->childCount(); i++) {
+								Qd::IAstNode* child = root->child(i);
 
-								Qd::Ast ast;
-								Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
+								if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
+									Qd::AstNodeFunctionDeclaration* funcNode =
+											static_cast<Qd::AstNodeFunctionDeclaration*>(child);
+									if (funcNode->name() == symbolName) {
+										std::ostringstream sigStream;
+										sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name() << "(";
 
-								if (root && !ast.hasErrors() && root->type() == Qd::IAstNode::Type::PROGRAM) {
-									for (size_t i = 0; i < root->childCount(); i++) {
-										Qd::IAstNode* child = root->child(i);
-
-										if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
-											Qd::AstNodeFunctionDeclaration* funcNode =
-													static_cast<Qd::AstNodeFunctionDeclaration*>(child);
-											if (funcNode->name() == symbolName) {
-												std::ostringstream sigStream;
-												sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name()
-														  << "(";
-
-												const auto& inputs = funcNode->inputParameters();
-												for (size_t j = 0; j < inputs.size(); j++) {
-													if (j > 0) {
-														sigStream << " ";
-													}
-													Qd::AstNodeParameter* param =
-															static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-													sigStream << param->displayString();
-												}
-
-												if (!inputs.empty() || !funcNode->outputParameters().empty()) {
-													sigStream << " -- ";
-												}
-
-												const auto& outputs = funcNode->outputParameters();
-												for (size_t j = 0; j < outputs.size(); j++) {
-													if (j > 0) {
-														sigStream << " ";
-													}
-													Qd::AstNodeParameter* param =
-															static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-													sigStream << param->displayString();
-												}
-
-												sigStream << ")";
-												signature = sigStream.str();
-												documentation = "From module: " + moduleName;
-												break;
+										const auto& inputs = funcNode->inputParameters();
+										for (size_t j = 0; j < inputs.size(); j++) {
+											if (j > 0) {
+												sigStream << " ";
 											}
-										} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
-											Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
-											for (const auto& importedFunc : importNode->functions()) {
-												if (importedFunc->name == symbolName) {
-													std::ostringstream sigStream;
-													sigStream << "fn " << importedFunc->name << "(";
-
-													for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
-														if (j > 0) {
-															sigStream << " ";
-														}
-														const auto* param = importedFunc->inputParameters[j].get();
-														sigStream << param->displayString();
-													}
-
-													if (!importedFunc->inputParameters.empty() ||
-															!importedFunc->outputParameters.empty()) {
-														sigStream << " -- ";
-													}
-
-													for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
-														if (j > 0) {
-															sigStream << " ";
-														}
-														const auto* param = importedFunc->outputParameters[j].get();
-														sigStream << param->displayString();
-													}
-
-													sigStream << ")";
-													signature = sigStream.str();
-													documentation = "From module: " + moduleName;
-													break;
-												}
-											}
-											if (!signature.empty()) {
-												break;
-											}
+											Qd::AstNodeParameter* param =
+													static_cast<Qd::AstNodeParameter*>(inputs[j].get());
+											sigStream << param->displayString();
 										}
+
+										if (!inputs.empty() || !funcNode->outputParameters().empty()) {
+											sigStream << " -- ";
+										}
+
+										const auto& outputs = funcNode->outputParameters();
+										for (size_t j = 0; j < outputs.size(); j++) {
+											if (j > 0) {
+												sigStream << " ";
+											}
+											Qd::AstNodeParameter* param =
+													static_cast<Qd::AstNodeParameter*>(outputs[j].get());
+											sigStream << param->displayString();
+										}
+
+										sigStream << ")";
+										signature = sigStream.str();
+										documentation = "From module: " + moduleName;
+										break;
+									}
+								} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
+									Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);
+									for (const auto& importedFunc : importNode->functions()) {
+										if (importedFunc->name == symbolName) {
+											std::ostringstream sigStream;
+											sigStream << "fn " << importedFunc->name << "(";
+
+											for (size_t j = 0; j < importedFunc->inputParameters.size(); j++) {
+												if (j > 0) {
+													sigStream << " ";
+												}
+												const auto* param = importedFunc->inputParameters[j].get();
+												sigStream << param->displayString();
+											}
+
+											if (!importedFunc->inputParameters.empty() ||
+													!importedFunc->outputParameters.empty()) {
+												sigStream << " -- ";
+											}
+
+											for (size_t j = 0; j < importedFunc->outputParameters.size(); j++) {
+												if (j > 0) {
+													sigStream << " ";
+												}
+												const auto* param = importedFunc->outputParameters[j].get();
+												sigStream << param->displayString();
+											}
+
+											sigStream << ")";
+											signature = sigStream.str();
+											documentation = "From module: " + moduleName;
+											break;
+										}
+									}
+									if (!signature.empty()) {
+										break;
 									}
 								}
 							}
@@ -4155,23 +4110,7 @@ void QuadrateLSP::handleDocumentSymbols(const std::string& id, const std::string
 	json_object_set_new(response, "jsonrpc", json_string("2.0"));
 	json_object_set_new(response, "id", makeResponseId(id));
 
-	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		// Try to read from disk
-		std::string filePath = lspUriToPath(uri);
-		if (!filePath.empty()) {
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
+	const std::string documentText = getDocumentText(uri);
 
 	json_t* symbols = json_array();
 
