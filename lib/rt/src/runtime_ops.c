@@ -47,156 +47,80 @@ static bool d128_ge(int order) {
 	return order == 1 || order == 0;
 }
 
-int qd_add(qd_context* ctx) {
+// Binary arithmetic kinds for qdrt_arith_op.
+typedef enum {
+	QDRT_ARITH_ADD,
+	QDRT_ARITH_SUB,
+	QDRT_ARITH_MUL
+} qdrt_arith_kind;
+
+static inline int64_t qdrt_arith_int(qdrt_arith_kind kind, int64_t a, int64_t b) {
+	switch (kind) {
+	case QDRT_ARITH_ADD:
+		return a + b;
+	case QDRT_ARITH_SUB:
+		return a - b;
+	case QDRT_ARITH_MUL:
+		return a * b;
+	}
+	return 0;
+}
+
+static inline double qdrt_arith_float(qdrt_arith_kind kind, double a, double b) {
+	switch (kind) {
+	case QDRT_ARITH_ADD:
+		return a + b;
+	case QDRT_ARITH_SUB:
+		return a - b;
+	case QDRT_ARITH_MUL:
+		return a * b;
+	}
+	return 0.0;
+}
+
+// Shared implementation for +, - and *. Inlined into each caller so `kind` folds to a constant.
+static inline int qdrt_arith_op(
+		qd_context* ctx, const char* name, qdrt_arith_kind kind, qd_d128_t (*d128_op)(qd_d128_t, qd_d128_t)) {
 	qd_stack* st = ctx->st;
 
-	// Fast path: check stack has 2 elements and both are integers
 	if (st->size >= 2) {
 		qd_stack_element_t* top = &st->data[st->size - 1];
 		qd_stack_element_t* second = &st->data[st->size - 2];
 
 		if (top->type == QD_STACK_TYPE_INT && second->type == QD_STACK_TYPE_INT) {
-			// Fast integer addition - most common case
-			int64_t result = second->value.i + top->value.i;
+			int64_t result = qdrt_arith_int(kind, second->value.i, top->value.i);
 			st->size -= 2;
 			QD_STACK_PUSH_INT_FAST(st, result);
 			return (int){0};
 		}
-		// Fast float path
 		if (qdrt_is_numeric_type(top->type) && qdrt_is_numeric_type(second->type)) {
-			double a_val = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
-			double b_val = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
+			double result = qdrt_arith_float(kind, qdrt_to_double(second), qdrt_to_double(top));
 			st->size -= 2;
-			QD_STACK_PUSH_FLOAT_FAST(st, a_val + b_val);
+			QD_STACK_PUSH_FLOAT_FAST(st, result);
 			return (int){0};
 		}
 	}
 
 	if (d128_operand(st, 2)) {
-		qdrt_d128_binary(ctx, "add", qd_d128_add);
+		qdrt_d128_binary(ctx, name, d128_op);
 		return (int){0};
 	}
 
-	// Slow path with full error checking
-	qdrt_validate_binary_numeric_op(ctx, "add");
+	// Anything the fast path did not take is an underflow or a type error, which this raises.
+	qdrt_validate_binary_numeric_op(ctx, name);
+	return (int){-5};
+}
 
-	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
-
-	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
-		int64_t result = a.value.i + b.value.i;
-		qd_stack_error err = qd_stack_push_int(st, result);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "add", "Stack overflow pushing result");
-		}
-	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
-		double result = qdrt_to_double(&a) + qdrt_to_double(&b);
-		qd_stack_error err = qd_stack_push_float(st, result);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "add", "Stack overflow pushing result");
-		}
-	} else {
-		qdrt_release_element(&b);
-		qdrt_release_element(&a);
-		return (int){-5};
-	}
-	return (int){0};
+int qd_add(qd_context* ctx) {
+	return qdrt_arith_op(ctx, "add", QDRT_ARITH_ADD, qd_d128_add);
 }
 
 int qd_sub(qd_context* ctx) {
-	qd_stack* st = ctx->st;
-
-	// Fast path: check stack has 2 elements and both are integers
-	if (st->size >= 2) {
-		qd_stack_element_t* top = &st->data[st->size - 1];
-		qd_stack_element_t* second = &st->data[st->size - 2];
-
-		if (top->type == QD_STACK_TYPE_INT && second->type == QD_STACK_TYPE_INT) {
-			// Fast integer subtraction - most common case
-			int64_t result = second->value.i - top->value.i;
-			st->size -= 2;
-			QD_STACK_PUSH_INT_FAST(st, result);
-			return (int){0};
-		}
-		// Fast float path
-		if (qdrt_is_numeric_type(top->type) && qdrt_is_numeric_type(second->type)) {
-			double a_val = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
-			double b_val = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
-			st->size -= 2;
-			QD_STACK_PUSH_FLOAT_FAST(st, a_val - b_val);
-			return (int){0};
-		}
-	}
-
-	if (d128_operand(st, 2)) {
-		qdrt_d128_binary(ctx, "sub", qd_d128_sub);
-		return (int){0};
-	}
-
-	// Slow path with full error checking
-	qdrt_validate_binary_numeric_op(ctx, "sub");
-
-	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
-
-	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
-		int64_t result = a.value.i - b.value.i;
-		qd_stack_error err = qd_stack_push_int(st, result);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "sub", "Stack overflow pushing result");
-		}
-	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
-		double result = qdrt_to_double(&a) - qdrt_to_double(&b);
-		qd_stack_error err = qd_stack_push_float(st, result);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "sub", "Stack overflow pushing result");
-		}
-	} else {
-		qdrt_release_element(&b);
-		qdrt_release_element(&a);
-		return (int){-5};
-	}
-	return (int){0};
+	return qdrt_arith_op(ctx, "sub", QDRT_ARITH_SUB, qd_d128_sub);
 }
 
 int qd_mul(qd_context* ctx) {
-	if (d128_operand(ctx->st, 2)) {
-		qdrt_d128_binary(ctx, "mul", qd_d128_mul);
-		return (int){0};
-	}
-
-	qdrt_validate_binary_numeric_op(ctx, "mul");
-
-	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
-
-	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
-		int64_t result = a.value.i * b.value.i;
-		qd_stack_error err = qd_stack_push_int(ctx->st, result);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "mul", "Stack overflow pushing result");
-		}
-	} else if (qdrt_is_numeric_type(a.type) && qdrt_is_numeric_type(b.type)) {
-		double result = qdrt_to_double(&a) * qdrt_to_double(&b);
-		qd_stack_error err = qd_stack_push_float(ctx->st, result);
-		if (err != QD_STACK_OK) {
-			QDRT_FATAL(ctx, "mul", "Stack overflow pushing result");
-		}
-	} else {
-		qdrt_release_element(&b);
-		qdrt_release_element(&a);
-		return (int){-5};
-	}
-	return (int){0};
+	return qdrt_arith_op(ctx, "mul", QDRT_ARITH_MUL, qd_d128_mul);
 }
 
 int qd_div(qd_context* ctx) {
@@ -459,9 +383,7 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 		int64_t int_val = (a.type == QD_STACK_TYPE_INT) ? a.value.i : b.value.i;
 		equal = ((int64_t)(uintptr_t)ptr_val == int_val);
 	} else {
-		double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
-		double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
-		equal = (af == bf);
+		equal = (qdrt_to_double(&a) == qdrt_to_double(&b));
 	}
 
 	// Both operands were popped, so both references this call was handed have to go back.
@@ -485,10 +407,31 @@ static int qdrt_equality_op(qd_context* ctx, const char* name, bool want_equal) 
 typedef enum {
 	QDRT_ORDER_LT,
 	QDRT_ORDER_GT,
-	QDRT_ORDER_LTE
+	QDRT_ORDER_LTE,
+	QDRT_ORDER_GTE
 } qdrt_order_kind;
 
-// Shared implementation for the numeric-only ordering operators (<, >, <=).
+static bool (*const qdrt_order_d128[])(int) = {
+		[QDRT_ORDER_LT] = d128_lt, [QDRT_ORDER_GT] = d128_gt, [QDRT_ORDER_LTE] = d128_le, [QDRT_ORDER_GTE] = d128_ge};
+
+// Order of a against b: -1, 0 or 1, or 2 when unordered (a NaN is involved).
+static inline int qdrt_order_cmp(const qd_stack_element_t* a, const qd_stack_element_t* b) {
+	// Two ints compare exactly; through double they would collide above 2^53.
+	if (a->type == QD_STACK_TYPE_INT && b->type == QD_STACK_TYPE_INT) {
+		return (a->value.i > b->value.i) - (a->value.i < b->value.i);
+	}
+	double af = qdrt_to_double(a);
+	double bf = qdrt_to_double(b);
+	if (af < bf) {
+		return -1;
+	}
+	if (af > bf) {
+		return 1;
+	}
+	return (af == bf) ? 0 : 2;
+}
+
+// Shared implementation for the numeric-only ordering operators (<, >, <=, >=).
 static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -496,7 +439,7 @@ static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind
 	}
 
 	if (d128_operand(ctx->st, 2)) {
-		qdrt_d128_compare(ctx, name, kind == QDRT_ORDER_LT ? d128_lt : (kind == QDRT_ORDER_GT ? d128_gt : d128_le));
+		qdrt_d128_compare(ctx, name, qdrt_order_d128[kind]);
 		return (int){0};
 	}
 
@@ -509,8 +452,7 @@ static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind
 		qdrt_fatal_raise(ctx, name, "Failed to access stack elements");
 	}
 
-	if ((check_a.type != QD_STACK_TYPE_INT && check_a.type != QD_STACK_TYPE_FLOAT) ||
-			(check_b.type != QD_STACK_TYPE_INT && check_b.type != QD_STACK_TYPE_FLOAT)) {
+	if (!qdrt_is_numeric_type(check_a.type) || !qdrt_is_numeric_type(check_b.type)) {
 		qdrt_fatal_raise(ctx, name, "Type error (expected numeric types for comparison)");
 	}
 
@@ -525,21 +467,7 @@ static int qdrt_order_op(qd_context* ctx, const char* name, qdrt_order_kind kind
 		QDRT_FATAL(ctx, "comparison op", "Failed to pop value (stack changed unexpectedly)");
 	}
 
-	double af = (a.type == QD_STACK_TYPE_INT) ? (double)a.value.i : a.value.f;
-	double bf = (b.type == QD_STACK_TYPE_INT) ? (double)b.value.i : b.value.f;
-
-	int64_t result = 0;
-	switch (kind) {
-	case QDRT_ORDER_LT:
-		result = (af < bf) ? 1 : 0;
-		break;
-	case QDRT_ORDER_GT:
-		result = (af > bf) ? 1 : 0;
-		break;
-	case QDRT_ORDER_LTE:
-		result = (af <= bf) ? 1 : 0;
-		break;
-	}
+	int64_t result = qdrt_order_d128[kind](qdrt_order_cmp(&a, &b)) ? 1 : 0;
 
 	err = qd_stack_push_int(ctx->st, result);
 	if (err != QD_STACK_OK) {
@@ -633,43 +561,7 @@ int qd_lte(qd_context* ctx) {
 }
 
 int qd_gte(qd_context* ctx) {
-	qd_stack* st = ctx->st;
-
-	if (d128_operand(st, 2)) {
-		qdrt_d128_compare(ctx, "gte", d128_ge);
-		return (int){0};
-	}
-
-	// Fast path: check stack has 2 elements and both are integers
-	if (QD_STACK_SIZE(st) >= 2) {
-		qd_stack_element_t* top = &st->data[st->size - 1];
-		qd_stack_element_t* second = &st->data[st->size - 2];
-
-		if (top->type == QD_STACK_TYPE_INT && second->type == QD_STACK_TYPE_INT) {
-			// Fast integer comparison - most common case
-			int64_t b = top->value.i;
-			int64_t a = second->value.i;
-			st->size -= 2;
-			QD_STACK_PUSH_INT_FAST(st, (a >= b) ? 1 : 0);
-			return (int){0};
-		}
-
-		if ((top->type == QD_STACK_TYPE_INT || top->type == QD_STACK_TYPE_FLOAT) &&
-				(second->type == QD_STACK_TYPE_INT || second->type == QD_STACK_TYPE_FLOAT)) {
-			// Float comparison path
-			double bf = (top->type == QD_STACK_TYPE_INT) ? (double)top->value.i : top->value.f;
-			double af = (second->type == QD_STACK_TYPE_INT) ? (double)second->value.i : second->value.f;
-			st->size -= 2;
-			QD_STACK_PUSH_INT_FAST(st, (af >= bf) ? 1 : 0);
-			return (int){0};
-		}
-
-		// Type error
-		qdrt_fatal_raise(ctx, "gte", "Type error (expected numeric types for comparison)");
-	}
-
-	// Stack underflow
-	qdrt_fatal_raise(ctx, "gte", "Stack underflow (required 2 elements, have %zu)", (size_t)QD_STACK_SIZE(st));
+	return qdrt_order_op(ctx, "gte", QDRT_ORDER_GTE);
 }
 
 int qd_within(qd_context* ctx) {
@@ -714,9 +606,9 @@ int qd_within(qd_context* ctx) {
 	}
 
 	// Convert to double for comparison
-	double value_f = (value.type == QD_STACK_TYPE_INT) ? (double)value.value.i : value.value.f;
-	double min_f = (min.type == QD_STACK_TYPE_INT) ? (double)min.value.i : min.value.f;
-	double max_f = (max.type == QD_STACK_TYPE_INT) ? (double)max.value.i : max.value.f;
+	double value_f = qdrt_to_double(&value);
+	double min_f = qdrt_to_double(&min);
+	double max_f = qdrt_to_double(&max);
 
 	// Check if value is within [min, max]
 	int64_t result = (value_f >= min_f && value_f <= max_f) ? 1 : 0;

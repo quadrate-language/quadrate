@@ -573,11 +573,6 @@ int qd_peek(qd_context* ctx) {
 	return (int){0};
 }
 
-// Helper function to check if a stack type is numeric
-static inline bool is_numeric_type(qd_stack_type type) {
-	return type == QD_STACK_TYPE_INT || type == QD_STACK_TYPE_FLOAT;
-}
-
 // Helper function to validate binary numeric operation setup
 // Returns true if validation passed, false if error occurred (and already aborted)
 static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
@@ -597,7 +592,7 @@ static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 		QDRT_FATAL(ctx, op_name, "Failed to access stack elements");
 	}
 
-	if (!is_numeric_type(check_a.type) || !is_numeric_type(check_b.type)) {
+	if (!qdrt_is_numeric_type(check_a.type) || !qdrt_is_numeric_type(check_b.type)) {
 		QDRT_FATAL(ctx, op_name, "Type error (expected numeric types)");
 	}
 
