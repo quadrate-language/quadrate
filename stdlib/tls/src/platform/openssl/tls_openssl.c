@@ -6,7 +6,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "../tls_platform.h"
-#include <arpa/inet.h>
 #include <errno.h>
 #include <limits.h>
 #include <openssl/err.h>
@@ -27,23 +26,6 @@ typedef struct {
 	int socket_fd;
 	bool is_server;
 } tls_connection_t;
-
-/**
- * Sets the name the peer's certificate must carry. SSL_set1_host took a DNS name or an IP
- * literal; OpenSSL 4.0 deprecates it for SSL_set1_dnsname and SSL_set1_ipaddr, one for each.
- */
-static void set_expected_host(SSL* ssl, const char* hostname) {
-#if OPENSSL_VERSION_NUMBER >= 0x40000000L
-	unsigned char addr[sizeof(struct in6_addr)];
-	if (inet_pton(AF_INET, hostname, addr) == 1 || inet_pton(AF_INET6, hostname, addr) == 1) {
-		(void)SSL_set1_ipaddr(ssl, hostname);
-	} else {
-		(void)SSL_set1_dnsname(ssl, hostname);
-	}
-#else
-	(void)SSL_set1_host(ssl, hostname);
-#endif
-}
 
 /** Global initialization flag */
 static bool g_initialized = false;
@@ -188,7 +170,22 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-	set_expected_host(ssl, hostname);
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+	// SSL_set1_host took a name or an address; 4.0 splits it in two. The failed address parse
+	// of a name must not leave an error behind for fail_openssl to report later.
+	ERR_set_mark();
+	bool host_set = SSL_set1_ipaddr(ssl, hostname) == 1;
+	ERR_pop_to_mark();
+	host_set = host_set || SSL_set1_dnsname(ssl, hostname) == 1;
+#else
+	const bool host_set = SSL_set1_host(ssl, hostname) == 1;
+#endif
+	// Without it the certificate would be accepted for any name
+	if (!host_set) {
+		SSL_free(ssl);
+		SSL_CTX_free(ctx);
+		return fail_openssl(TLS_ERR_INIT, "could not set the host name to verify");
+	}
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);

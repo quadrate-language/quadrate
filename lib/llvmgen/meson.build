@@ -34,6 +34,7 @@ if llvm_dep.found()
 		'src/generator_nodes_locals.cc',
 		'src/generator_control.cc',
 		'src/generator_structs.cc',
+		'src/lib_paths.cc',
 	)
 
 	llvmgen_inc = include_directories('include')

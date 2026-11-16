@@ -479,11 +479,13 @@ namespace Qd {
 			const char* label;
 		};
 
+		// Float predicates follow IEEE 754 and must match the runtime (runtime_ops.c):
+		// every comparison involving NaN is false except `!=`, which is unordered (UNE).
 		static const Comparison COMPARISONS[] = {
 				{"<", "lt", llvm::CmpInst::FCMP_OLT, llvm::CmpInst::ICMP_SLT, "lt"},
 				{">", "gt", llvm::CmpInst::FCMP_OGT, llvm::CmpInst::ICMP_SGT, "gt"},
 				{"==", "eq", llvm::CmpInst::FCMP_OEQ, llvm::CmpInst::ICMP_EQ, "eq"},
-				{"!=", "neq", llvm::CmpInst::FCMP_ONE, llvm::CmpInst::ICMP_NE, "neq"},
+				{"!=", "neq", llvm::CmpInst::FCMP_UNE, llvm::CmpInst::ICMP_NE, "neq"},
 				{"<=", "lte", llvm::CmpInst::FCMP_OLE, llvm::CmpInst::ICMP_SLE, "lte"},
 				{">=", "gte", llvm::CmpInst::FCMP_OGE, llvm::CmpInst::ICMP_SGE, "gte"},
 		};

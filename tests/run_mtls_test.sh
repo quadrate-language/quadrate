@@ -83,10 +83,9 @@ openssl req -new -x509 -days 1 -key "$CERT_DIR/ca.key" -out "$CERT_DIR/ca.crt" \
 openssl genrsa -out "$CERT_DIR/server.key" 2048 2>/dev/null
 openssl req -new -key "$CERT_DIR/server.key" -out "$CERT_DIR/server.csr" \
     -subj "/CN=localhost" 2>/dev/null
-echo "subjectAltName=DNS:localhost" > "$CERT_DIR/server.ext"
 openssl x509 -req -days 1 -in "$CERT_DIR/server.csr" -CA "$CERT_DIR/ca.crt" \
-    -CAkey "$CERT_DIR/ca.key" -CAcreateserial -extfile "$CERT_DIR/server.ext" \
-    -out "$CERT_DIR/server.crt" 2>/dev/null
+    -CAkey "$CERT_DIR/ca.key" -CAcreateserial -out "$CERT_DIR/server.crt" \
+    -extfile <(printf "subjectAltName=DNS:localhost") 2>/dev/null
 
 # Create client cert
 openssl genrsa -out "$CERT_DIR/client.key" 2048 2>/dev/null

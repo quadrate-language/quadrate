@@ -81,10 +81,7 @@ int qd_add(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "add");
 
 	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
+	qdrt_pop_two_values(ctx, &a, &b);
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		int64_t result = a.value.i + b.value.i;
@@ -140,10 +137,7 @@ int qd_sub(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "sub");
 
 	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
+	qdrt_pop_two_values(ctx, &a, &b);
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		int64_t result = a.value.i - b.value.i;
@@ -174,10 +168,7 @@ int qd_mul(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "mul");
 
 	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
+	qdrt_pop_two_values(ctx, &a, &b);
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		int64_t result = a.value.i * b.value.i;
@@ -208,10 +199,7 @@ int qd_div(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "div");
 
 	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
+	qdrt_pop_two_values(ctx, &a, &b);
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		if (b.value.i == 0) {

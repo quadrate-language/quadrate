@@ -574,7 +574,7 @@ fn next(x:i64 -- r:i64) { 1 + }
 fn relay(a:any -- r:i64) { next }
 
 1 relay print nl       // 2
-"two" relay print nl   // fatal: Type mismatch for parameter 1 (expected int, got str)
+"two" relay print nl   // fatal: Type mismatch for parameter 1 (expected i64, got str)
 ```
 
 #### 3.5.1 `ptr`

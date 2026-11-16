@@ -1844,40 +1844,26 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 		std::istringstream importStream(documentText);
 		std::string importLine;
 		while (std::getline(importStream, importLine)) {
-			size_t usePos = importLine.find("use ");
-			if (usePos != std::string::npos) {
-				size_t moduleStart = usePos + 4;
-				while (moduleStart < importLine.size() && std::isspace(importLine[moduleStart])) {
-					moduleStart++;
-				}
-				size_t moduleEnd = moduleStart;
-				while (moduleEnd < importLine.size() &&
-						(std::isalnum(static_cast<unsigned char>(importLine[moduleEnd])) ||
-								importLine[moduleEnd] == '_' || importLine[moduleEnd] == '/' ||
-								importLine[moduleEnd] == ':' || importLine[moduleEnd] == '-')) {
-					moduleEnd++;
-				}
-				if (moduleEnd > moduleStart) {
-					std::string moduleName = importLine.substr(moduleStart, moduleEnd - moduleStart);
-					std::string modulePath = resolveModulePath(moduleName, sourceDir);
-					if (!modulePath.empty()) {
-						// Get the module directory and scan ALL .qd files for structs
-						std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
-						try {
-							for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
-								if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-									std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
-									for (const auto& s : moduleStructs) {
-										structTypeNames.insert(s.name);
-									}
+			if (auto span = lspFindUseModuleSpan(importLine)) {
+				std::string moduleName = importLine.substr(span->first, span->second - span->first);
+				std::string modulePath = resolveModulePath(moduleName, sourceDir);
+				if (!modulePath.empty()) {
+					// Get the module directory and scan ALL .qd files for structs
+					std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
+					try {
+						for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
+							if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+								std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
+								for (const auto& s : moduleStructs) {
+									structTypeNames.insert(s.name);
 								}
 							}
-						} catch (...) {
-							// Fallback to single file if directory iteration fails
-							std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
-							for (const auto& s : moduleStructs) {
-								structTypeNames.insert(s.name);
-							}
+						}
+					} catch (...) {
+						// Fallback to single file if directory iteration fails
+						std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
+						for (const auto& s : moduleStructs) {
+							structTypeNames.insert(s.name);
 						}
 					}
 				}
@@ -2220,75 +2206,32 @@ void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& 
 		size_t lineNum = 0;
 
 		while (std::getline(iss, line)) {
-			// Look for 'use' at the start of the line (with optional whitespace)
-			size_t usePos = line.find("use");
-			if (usePos != std::string::npos) {
-				// Check that 'use' is preceded only by whitespace
-				bool validUse = true;
-				for (size_t i = 0; i < usePos; i++) {
-					if (!std::isspace(static_cast<unsigned char>(line[i]))) {
-						validUse = false;
-						break;
-					}
-				}
+			if (auto span = lspFindUseModuleSpan(line)) {
+				auto [moduleStart, moduleEnd] = *span;
+				std::string moduleName = line.substr(moduleStart, moduleEnd - moduleStart);
+				std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
-				// Check that 'use' is followed by whitespace
-				if (validUse && usePos + 3 < line.size() &&
-						!std::isspace(static_cast<unsigned char>(line[usePos + 3]))) {
-					validUse = false;
-				}
+				if (!modulePath.empty() && std::filesystem::exists(modulePath)) {
+					json_t* link = json_object();
 
-				if (validUse) {
-					// Find the module name after 'use'
-					size_t moduleStart = usePos + 3;
-					while (moduleStart < line.size() && std::isspace(static_cast<unsigned char>(line[moduleStart]))) {
-						moduleStart++;
-					}
+					// Range covers the module name
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lineNum)));
+					json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(moduleStart)));
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineNum)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(moduleEnd)));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+					json_object_set_new(link, "range", range);
 
-					if (moduleStart < line.size()) {
-						size_t moduleEnd = moduleStart;
-						// Module names can contain alphanumeric, underscore, slash (for paths), and colons
-						while (moduleEnd < line.size() &&
-								(std::isalnum(static_cast<unsigned char>(line[moduleEnd])) || line[moduleEnd] == '_' ||
-										line[moduleEnd] == '/' || line[moduleEnd] == ':' || line[moduleEnd] == '-')) {
-							moduleEnd++;
-						}
+					json_object_set_new(link, "target", json_string(lspPathToUri(modulePath).c_str()));
 
-						if (moduleEnd > moduleStart) {
-							std::string moduleName = line.substr(moduleStart, moduleEnd - moduleStart);
+					std::string tooltip = "Open module: " + moduleName;
+					json_object_set_new(link, "tooltip", json_string(tooltip.c_str()));
 
-							// Resolve the module path
-							std::string modulePath = resolveModulePath(moduleName, sourceDir);
-
-							if (!modulePath.empty() && std::filesystem::exists(modulePath)) {
-								// Create document link
-								json_t* link = json_object();
-
-								// Range covers the module name
-								json_t* range = json_object();
-								json_t* start = json_object();
-								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lineNum)));
-								json_object_set_new(
-										start, "character", json_integer(static_cast<json_int_t>(moduleStart)));
-								json_t* end = json_object();
-								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineNum)));
-								json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(moduleEnd)));
-								json_object_set_new(range, "start", start);
-								json_object_set_new(range, "end", end);
-								json_object_set_new(link, "range", range);
-
-								// Target is the file URI
-								std::string targetUri = lspPathToUri(modulePath);
-								json_object_set_new(link, "target", json_string(targetUri.c_str()));
-
-								// Tooltip
-								std::string tooltip = "Open module: " + moduleName;
-								json_object_set_new(link, "tooltip", json_string(tooltip.c_str()));
-
-								json_array_append_new(links, link);
-							}
-						}
-					}
+					json_array_append_new(links, link);
 				}
 			}
 			lineNum++;
@@ -4048,36 +3991,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 											Qd::AstNodeFunctionDeclaration* funcNode =
 													static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 											if (funcNode->name() == symbolName) {
-												std::ostringstream sigStream;
-												sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name()
-														  << "(";
-
-												const auto& inputs = funcNode->inputParameters();
-												for (size_t j = 0; j < inputs.size(); j++) {
-													if (j > 0) {
-														sigStream << " ";
-													}
-													Qd::AstNodeParameter* param =
-															static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-													sigStream << param->displayString();
-												}
-
-												if (!inputs.empty() || !funcNode->outputParameters().empty()) {
-													sigStream << " -- ";
-												}
-
-												const auto& outputs = funcNode->outputParameters();
-												for (size_t j = 0; j < outputs.size(); j++) {
-													if (j > 0) {
-														sigStream << " ";
-													}
-													Qd::AstNodeParameter* param =
-															static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-													sigStream << param->displayString();
-												}
-
-												sigStream << ")";
-												signature = sigStream.str();
+												signature = lspMakeFunctionInfo(funcNode).signature;
 												documentation = "From module: " + moduleName;
 												break;
 											}
@@ -4365,121 +4279,10 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 		if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
 			Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 
-			FunctionInfo info;
-			info.name = funcNode->name();
+			FunctionInfo info = lspMakeFunctionInfo(funcNode);
 			// AST uses 1-based lines, convert to 0-based for LSP
 			info.line = funcNode->line() > 0 ? funcNode->line() - 1 : 0;
 			info.nameColumn = funcNode->column() > 0 ? funcNode->column() - 1 : 0;
-			info.binds = !funcNode->isStack();
-
-			// Extract generic type parameters, stack variables first
-			info.typeParams = funcNode->declaredParameters();
-			info.isGeneric = !info.typeParams.empty();
-
-			// Extract method receiver information
-			info.isMethod = funcNode->hasReceiver();
-			if (info.isMethod) {
-				info.receiverName = funcNode->receiverName();
-				info.receiverType = funcNode->receiverType();
-				if (funcNode->hasReceiverTypeParams()) {
-					info.receiverTypeParams = funcNode->receiverTypeParams();
-				}
-			}
-
-			// Build signature parts
-			std::ostringstream sigStream;
-
-			// Include receiver in signature for methods
-			if (info.isMethod) {
-				sigStream << (info.binds ? "def (" : "fn (") << info.receiverName << ":" << info.receiverType;
-				if (!info.receiverTypeParams.empty()) {
-					sigStream << "<";
-					for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
-						if (j > 0) {
-							sigStream << ", ";
-						}
-						sigStream << info.receiverTypeParams[j];
-					}
-					sigStream << ">";
-				}
-				sigStream << ") " << info.name;
-			} else {
-				sigStream << (info.binds ? "def " : "fn ") << info.name;
-			}
-
-			// Add type parameters to signature
-			if (info.isGeneric) {
-				sigStream << "<";
-				for (size_t j = 0; j < info.typeParams.size(); j++) {
-					if (j > 0) {
-						sigStream << ", ";
-					}
-					sigStream << info.typeParams[j];
-				}
-				sigStream << ">";
-			}
-
-			sigStream << "(";
-
-			// Extract input parameters
-			const auto& inputs = funcNode->inputParameters();
-			for (size_t j = 0; j < inputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-				std::string paramStr = param->displayString();
-				info.inputParams.push_back(paramStr);
-
-				if (j > 0) {
-					sigStream << " ";
-				}
-				sigStream << paramStr;
-			}
-
-			if (!inputs.empty() || !funcNode->outputParameters().empty()) {
-				sigStream << " -- ";
-			}
-
-			// Extract output parameters
-			const auto& outputs = funcNode->outputParameters();
-			for (size_t j = 0; j < outputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-				std::string paramStr = param->displayString();
-				info.outputParams.push_back(paramStr);
-
-				if (j > 0) {
-					sigStream << " ";
-				}
-				sigStream << paramStr;
-			}
-
-			sigStream << ")";
-			if (funcNode->throws()) {
-				sigStream << "!";
-			}
-			info.signature = sigStream.str();
-
-			// Build snippet with placeholders for input parameters
-			std::ostringstream snippetStream;
-			for (size_t j = 0; j < info.inputParams.size(); j++) {
-				const std::string& param = info.inputParams[j];
-				// Extract just the name part (before the colon)
-				size_t colonPos = param.find(':');
-				std::string paramName = (colonPos != std::string::npos) ? param.substr(0, colonPos) : param;
-
-				snippetStream << "${" << (j + 1) << ":" << paramName << "}";
-				if (j < info.inputParams.size() - 1) {
-					snippetStream << " ";
-				}
-			}
-			if (!info.inputParams.empty()) {
-				snippetStream << " ";
-			}
-			snippetStream << info.name;
-			if (funcNode->throws()) {
-				snippetStream << "!";
-			}
-
-			info.snippet = snippetStream.str();
-
 			functions.push_back(info);
 		} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
 			// Handle imported functions

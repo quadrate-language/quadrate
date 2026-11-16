@@ -291,6 +291,11 @@ namespace Qd {
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
 		void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
 		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
+		// Records a struct's fields under each of `keys`, for a struct in the program or in a module.
+		// `qualifyIn` is the module an unqualified struct-typed field belongs to, or empty to leave
+		// the name as written. Returns false after reporting a reserved or duplicate field name.
+		bool collectStructFields(class AstNodeStructDeclaration* structDecl, const std::vector<std::string>& keys,
+				const std::string& qualifyIn);
 		void collectModuleMethods(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Look up struct field types, handling both qualified and unqualified names
@@ -486,8 +491,6 @@ namespace Qd {
 		bool isNumericType(StackValueType type) const;
 
 		StackValueType getConstantType(const std::string& value) const;
-
-		const char* typeToString(StackValueType type) const;
 
 		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields) const;
 

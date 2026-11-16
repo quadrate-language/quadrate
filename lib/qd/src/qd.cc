@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <quadrate/llvmgen/generator.h>
+#include <quadrate/llvmgen/lib_paths.h>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_use.h>
@@ -25,99 +26,15 @@
 // Platform abstractions
 extern "C" {
 #include "src/platform/dynlib_platform.h"
-#include "src/platform/exe_path_platform.h"
 }
 
 namespace fs = std::filesystem;
 
-// Helper to find the library directory (either build or installed location)
 static std::string findLibraryDir() {
-	// Try 1: QUADRATE_LIBDIR environment variable (for development/testing)
-	const char* libDir = getenv("QUADRATE_LIBDIR");
-	if (libDir && fs::exists(libDir)) {
-		return libDir;
-	}
-
-	// Try 2: Build directory (MESON_BUILD_ROOT/lib, debug builds only)
-	if (MESON_BUILD_ROOT[0] != '\0') {
-		fs::path buildLibPath = fs::path(MESON_BUILD_ROOT) / "lib";
-		if (fs::exists(buildLibPath / "rt" / "librt_static.a") || fs::exists(buildLibPath / "rt" / "librt.a")) {
-			return buildLibPath.string();
-		}
-	}
-
-	// Try 3: Library directory relative to executable (installed binaries)
-	{
-		char exePathBuf[4096];
-		int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-		if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
-			try {
-				fs::path exePath = fs::canonical(exePathBuf);
-				fs::path exeDir = exePath.parent_path();
-				fs::path installedLib = exeDir / ".." / "lib";
-				if ((fs::exists(installedLib / "quadrate" / "librt.a") || fs::exists(installedLib / "libqdrt.so")) &&
-						fs::exists(installedLib / "quadrate" / "libqd.a")) {
-					return installedLib.string();
-				}
-			} catch (const std::filesystem::filesystem_error&) {
-				// Ignore errors resolving path
-			}
-		}
-	}
-
-#ifdef __HAIKU__
-	// Try 4: Haiku system library location
-	if (fs::exists("/boot/system/lib/quadrate/libqd.a")) {
-		return "/boot/system/lib";
-	}
-#else
-	// Try 4: System installed location (/usr/lib)
-	if (fs::exists("/usr/lib/quadrate/libqd.a")) {
-		return "/usr/lib";
-	}
-
-	// Try 5: /usr/local/lib
-	if (fs::exists("/usr/local/lib/quadrate/libqd.a")) {
-		return "/usr/local/lib";
-	}
-#endif
-
-	// Fallback
-#ifdef __HAIKU__
-	return "/boot/system/lib";
-#else
-	return "/usr/lib";
-#endif
+	return Qd::findLibraryDir(MESON_BUILD_ROOT);
 }
 
-// Helper to find a static library file
-static std::string findStaticLib(const std::string& libDir, const std::string& libName) {
-	// In build directory: lib/<name>/lib<name>_static.a or lib/<name>/lib<name>.a
-	fs::path nestedStatic = fs::path(libDir) / libName / ("lib" + libName + "_static.a");
-	if (fs::exists(nestedStatic)) {
-		return nestedStatic.string();
-	}
-	fs::path nestedLib = fs::path(libDir) / libName / ("lib" + libName + ".a");
-	if (fs::exists(nestedLib)) {
-		return nestedLib.string();
-	}
-	fs::path buildStdlib = fs::path(libDir).parent_path() / "stdlib" / libName / ("lib" + libName + ".a");
-	if (fs::exists(buildStdlib)) {
-		return buildStdlib.string();
-	}
-	// In installed location: quadrate/lib<name>.a
-	fs::path quadrateLib = fs::path(libDir) / "quadrate" / ("lib" + libName + ".a");
-	if (fs::exists(quadrateLib)) {
-		return quadrateLib.string();
-	}
-	// Legacy flat location: lib<name>.a
-	fs::path flatLib = fs::path(libDir) / ("lib" + libName + ".a");
-
-	if (fs::exists(flatLib)) {
-		return flatLib.string();
-	}
-	return "";
-}
+using Qd::findStaticLib;
 
 static const char* findCC() {
 	const char* cc = getenv("CC");
