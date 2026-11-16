@@ -1,0 +1,1 @@
+Type error in struct construction 'bool_fields::Flag': Field 'on' expects int, but got string

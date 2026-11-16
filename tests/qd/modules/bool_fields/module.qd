@@ -1,0 +1,4 @@
+// A struct with a field whose type is an alias: `bool` stands for i64.
+pub struct Flag {
+	on:bool
+}
