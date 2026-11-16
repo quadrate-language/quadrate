@@ -175,6 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Compiled `!=` on floats said NaN was equal to NaN.** The inlined compare used an ordered not-equal, so `nan nan !=` gave 0 where the runtime gave 1, depending on whether the compiler knew the operand types. It is now unordered, as IEEE 754 and the runtime have it.
+- **`tls` did not build against OpenSSL 4.0**, which deprecates `SSL_set1_host`. The name the certificate must carry is now set through the verify parameters, which works from OpenSSL 1.0.2 on, and a name OpenSSL refuses fails the connection instead of leaving the certificate's name unchecked.
 - **`uri::encode` and `uri::decode` corrupted non-ASCII text**: they walked characters but wrote one byte for each, so "é" encoded as `%E9`. They now work on the UTF-8 bytes (`%C3%A9`).
 - **`examples/links-api` did not build**: its handlers were declared `c:ptr`.
 - **The language reference generator** named sections after the last line of their prose and split examples at any `;`, and stdlib pages had a separator directly under a line of text, which Markdown read as a heading.
