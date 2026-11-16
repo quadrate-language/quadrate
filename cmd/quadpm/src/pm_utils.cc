@@ -2,6 +2,7 @@
 
 #include "pm_impl.h"
 #include <array>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -236,6 +237,18 @@ std::string getInstalledDirName(const std::string& hostPath, const std::string& 
 		return prefix + repoName + "@" + actualRef;
 	}
 	return hostPath + "@" + actualRef;
+}
+
+bool isSafeModuleName(const std::string& moduleName) {
+	if (moduleName.empty() || moduleName[0] == '-' || moduleName[0] == '.') {
+		return false;
+	}
+	for (char c : moduleName) {
+		if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '-' && c != '.') {
+			return false;
+		}
+	}
+	return true;
 }
 
 bool isSafeInstalledDirName(const std::string& installedDirName) {

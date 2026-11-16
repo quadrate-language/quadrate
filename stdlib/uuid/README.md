@@ -32,8 +32,8 @@ fn main() {
 
 ### Functions
 
-- `v4( -- uuid:str)` - Generate random UUID v4
-- `v4_seeded(seed:i64 -- uuid:str)` - Generate UUID v4 with seed
+- `v4( -- uuid:str)` - Generate random UUID v4 from OS entropy (`/dev/urandom`)
+- `v4_seeded(seed:i64 -- uuid:str)` - Generate UUID v4 with seed (deterministic, NOT secure; tests only)
 - `is_valid(s:str -- valid:i64)` - Check if string is valid UUID format
 
 ## License

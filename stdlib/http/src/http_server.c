@@ -1218,11 +1218,22 @@ int usr_http_sse_start(qd_context* ctx) {
 	return 0;
 }
 
-// Send one event, or end the stream when the client has gone
+// Send one event, or end the stream when the client has gone. A line break ends an SSE
+// field, so each line of data goes in its own data: field (the spec's multi-line form)
+// and cannot start a new field or event
 static void send_event(qd_context* ctx, const char* op, http_ctx_t* c, const char* name, const char* data) {
 	http_buf_t event = {0};
-	const bool built =
-			(!name || http_buf_printf(&event, "event: %s\n", name)) && http_buf_printf(&event, "data: %s\n\n", data);
+	bool built = !name || http_buf_printf(&event, "event: %s\n", name);
+	const char* line = data;
+	while (built) {
+		const size_t len = strcspn(line, "\r\n");
+		built = http_buf_printf(&event, "data: %.*s\n", (int)len, line);
+		if (line[len] == '\0') {
+			break;
+		}
+		line += len + (line[len] == '\r' && line[len + 1] == '\n' ? 2 : 1);
+	}
+	built = built && http_buf_printf(&event, "\n");
 	if (!built) {
 		free(event.data);
 		qd_fatal_raise(ctx, op, "Out of memory");
@@ -1253,6 +1264,11 @@ int usr_http_sse_event(qd_context* ctx) {
 	qd_string_t* name;
 	qd_string_t* data;
 	qd_args(ctx, "http::sse_event", "pss", &handle, &name, &data);
+	if (strpbrk(qd_string_data(name), "\r\n") != NULL) {
+		qd_string_release(name);
+		qd_string_release(data);
+		qd_fatal_raise(ctx, "http::sse_event", "the event name contains a line break");
+	}
 	http_ctx_t* c = (http_ctx_t*)handle;
 	if (c->sse_mode) {
 		send_event(ctx, "http::sse_event", c, qd_string_data(name), qd_string_data(data));

@@ -7,6 +7,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "http_internal.h"
+#include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
 #include <platform/tls_platform.h>
@@ -98,6 +99,14 @@ static int parse_url(const char* url, url_parts_t* parts) {
 	parts->path[0] = '/';
 	parts->path[1] = '\0';
 
+	// A control byte or space would end the request line early and let the rest of
+	// the URL be read as further headers, or as a second request
+	for (const unsigned char* c = (const unsigned char*)url; *c; c++) {
+		if (*c <= 0x20 || *c == 0x7f) {
+			return HTTP_ERR_INVALID_URL;
+		}
+	}
+
 	const char* p = url;
 
 	// Check scheme
@@ -122,6 +131,11 @@ static int parse_url(const char* url, url_parts_t* parts) {
 	size_t host_len = (size_t)(host_end - host_start);
 	if (host_len == 0 || host_len >= sizeof(parts->host)) {
 		return HTTP_ERR_INVALID_URL;
+	}
+	for (const char* c = host_start; c < host_end; c++) {
+		if (!isalnum((unsigned char)*c) && *c != '-' && *c != '.' && *c != '_') {
+			return HTTP_ERR_INVALID_URL;
+		}
 	}
 	memcpy(parts->host, host_start, host_len);
 	parts->host[host_len] = '\0';

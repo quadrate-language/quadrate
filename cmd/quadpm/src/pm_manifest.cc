@@ -158,6 +158,12 @@ std::vector<Dependency> parseDependencies(const std::string& manifestPath) {
 		const char* key;
 		json_t* value;
 		json_object_foreach(dependencies, key, value) {
+			if (!isSafeModuleName(key)) {
+				pmError(std::string("invalid dependency name (allowed: letters, digits, '_', '-' and '.', not leading "
+									"'-' or '.'): ") +
+						key);
+				continue;
+			}
 			Dependency dep;
 			dep.name = key;
 			dep.isPath = false;

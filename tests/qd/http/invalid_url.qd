@@ -1,9 +1,8 @@
 // Test: HTTP with invalid URL
 use http
 
-fn main( -- ) {
-	// Invalid URL (no scheme) - error code 6 = ErrInvalidUrl
-	"invalid-url" http::get switch {
+def check(url:str -- ) {
+	url http::get switch {
 		Ok {
 			-> resp
 			"unexpected success" print nl
@@ -18,4 +17,13 @@ fn main( -- ) {
 			"other error" print nl
 		}
 	}
+}
+
+fn main( -- ) {
+	// Invalid URL (no scheme) - error code 6 = ErrInvalidUrl
+	"invalid-url" check
+	// A line break in the path would inject headers or a second request
+	"http://127.0.0.1/a HTTP/1.1\r\nX-Injected: 1\r\n\r\nGET /b" check
+	// The host must be a plain hostname or IP
+	"http://exa mple.com/" check
 }
