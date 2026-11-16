@@ -4,6 +4,7 @@
 #include <cstring>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <quadrate/llvmgen/lib_paths.h>
 #include <quadrate/qc/ast_node_type_alias.h>
 #include <quadrate/qc/inline_words.h>
 #include <quadrate/qc/lower_combinators.h>
@@ -3452,58 +3453,7 @@ namespace Qd {
 			std::cerr << "[TIMING] writeObject: " << objMs << "ms" << std::endl;
 		}
 
-		// Determine library directory
-		std::string libDir;
-
-		// Check QUADRATE_LIBDIR environment variable first
-		if (const char* quadrateLibDir = std::getenv("QUADRATE_LIBDIR")) {
-			std::filesystem::path libPath(quadrateLibDir);
-			// Convert to absolute path if relative
-			if (libPath.is_relative()) {
-				libPath = std::filesystem::absolute(libPath);
-			}
-			if (std::filesystem::exists(libPath)) {
-				libDir = libPath.string();
-			}
-		}
-		// Check ./dist/lib (development build) - use absolute path
-		if (libDir.empty()) {
-			std::filesystem::path distLib = std::filesystem::absolute("./dist/lib");
-			if (std::filesystem::exists(distLib)) {
-				libDir = distLib.string();
-			}
-		}
-		// Check relative to executable (installed binaries)
-		if (libDir.empty()) {
-			char exePathBuf[4096];
-			int len = exe_path_platform_get(exePathBuf, sizeof(exePathBuf));
-			if (len > 0 && static_cast<size_t>(len) < sizeof(exePathBuf)) {
-				std::error_code ec;
-				std::filesystem::path exePath = std::filesystem::canonical(exePathBuf, ec);
-				if (!ec) {
-					std::filesystem::path exeDir = exePath.parent_path();
-					std::filesystem::path installedLib = exeDir / ".." / "lib";
-					if (std::filesystem::exists(installedLib)) {
-						libDir = installedLib.string();
-					}
-				}
-			}
-		}
-		// Check ~/.local/lib (user installation)
-		if (libDir.empty()) {
-			if (const char* home = std::getenv("HOME")) {
-				std::filesystem::path localLib = std::filesystem::path(home) / ".local" / "lib";
-				if (std::filesystem::exists(localLib)) {
-					libDir = localLib.string();
-				}
-			}
-		}
-		// Check system library path
-		if (libDir.empty()) {
-			if (std::filesystem::exists("/usr/lib")) {
-				libDir = "/usr/lib";
-			}
-		}
+		const std::string libDir = findLibraryDir();
 
 		// Standard library subdirectory (quadrate/) where static libs live
 		std::string stdlibDir = libDir + "/quadrate";
@@ -3571,15 +3521,11 @@ namespace Qd {
 									if (bn.size() > 7 && bn.substr(bn.size() - 7) == "_static") {
 										bn = bn.substr(0, bn.size() - 7);
 									}
-									std::string stdlibPath = stdlibDir + "/lib" + bn + ".a";
-									if (std::filesystem::exists(stdlibPath)) {
+									std::string stdlibPath = findStaticLib(libDir, bn);
+									if (!stdlibPath.empty()) {
 										resolvedDep = stdlibPath;
-									} else {
-										// Try original filename in libDir
-										stdlibPath = stdlibDir + "/" + fn;
-										if (std::filesystem::exists(stdlibPath)) {
-											resolvedDep = stdlibPath;
-										}
+									} else if (std::filesystem::exists(stdlibDir + "/" + fn)) {
+										resolvedDep = stdlibDir + "/" + fn;
 									}
 								}
 								allDeps.push_back(resolvedDep);
@@ -3587,21 +3533,10 @@ namespace Qd {
 							}
 							// For -l<name> entries, try to resolve to full path if it's a Quadrate library
 							else if (depLine.rfind("-l", 0) == 0 && depLine.size() > 2) {
-								std::string depLibName = depLine.substr(2);
-								std::string depLibFile = "lib" + depLibName + ".a";
-
-								// Check flat path (e.g., dist/lib/quadrate/libtls.a)
-								std::string flatDepLib = stdlibDir + "/" + depLibFile;
-								// Check nested path: directory name matches library name
-								// (e.g., build dir: stdlib/tls/libtls.a for -ltls)
-								std::string nestedDepLib = libDir + "/" + depLibName + "/" + depLibFile;
-
-								if (std::filesystem::exists(flatDepLib)) {
-									allDeps.push_back(flatDepLib);
-									processLibraryDeps(flatDepLib);
-								} else if (std::filesystem::exists(nestedDepLib)) {
-									allDeps.push_back(nestedDepLib);
-									processLibraryDeps(nestedDepLib);
+								std::string depLib = findStaticLib(libDir, depLine.substr(2));
+								if (!depLib.empty()) {
+									allDeps.push_back(depLib);
+									processLibraryDeps(depLib);
 								} else {
 									// System library, use -l flag as-is
 									appendWords(allDeps, depLine);
@@ -3615,24 +3550,10 @@ namespace Qd {
 			}
 		};
 
-		std::string qdrtStaticPath;
-		// Try quadrate/ subdirectory first, then build dir nested structure, then legacy flat
-		std::string quadratePath = stdlibDir + "/librt.a";
-		std::string nestedPath = libDir + "/rt/librt_static.a";
-		std::string flatPath = libDir + "/librt.a";
-		std::string flatPathLegacy = libDir + "/librt_static.a";
-
-		if (std::filesystem::exists(quadratePath)) {
-			qdrtStaticPath = quadratePath;
-		} else if (std::filesystem::exists(flatPath)) {
-			qdrtStaticPath = flatPath;
-		} else if (std::filesystem::exists(nestedPath)) {
-			qdrtStaticPath = nestedPath;
-		} else if (std::filesystem::exists(flatPathLegacy)) {
-			qdrtStaticPath = flatPathLegacy;
-		} else {
+		std::string qdrtStaticPath = findStaticLib(libDir, "rt");
+		if (qdrtStaticPath.empty()) {
 			// Fallback to flat path (will error later if doesn't exist)
-			qdrtStaticPath = flatPath;
+			qdrtStaticPath = libDir + "/librt.a";
 		}
 
 		std::vector<std::string> libraryFlags = {qdrtStaticPath};
@@ -3658,38 +3579,23 @@ namespace Qd {
 				}
 
 				// If not found in search paths, check main libDir
-				if (foundLibPath.empty()) {
-					std::string flatLib = stdlibDir + "/" + library;
-
-					// Extract library name for nested search
-					// Examples: "libmath.a" -> "math", "librt_static.a" -> "rt"
-					std::string libBaseName = library;
-					if (libBaseName.rfind("lib", 0) == 0) {
-						libBaseName = libBaseName.substr(3); // Remove "lib" prefix
-					}
-					// Remove ".a" suffix first
-					if (libBaseName.size() > 2 && libBaseName.substr(libBaseName.size() - 2) == ".a") {
-						libBaseName = libBaseName.substr(0, libBaseName.size() - 2);
-					}
-					// Remove "_static" suffix if present
+				if (foundLibPath.empty() && library.rfind("lib", 0) == 0) {
+					// "libmath.a" -> "math", "librt_static.a" -> "rt"
+					std::string libBaseName = library.substr(3, library.size() - 5);
 					if (libBaseName.size() > 7 && libBaseName.substr(libBaseName.size() - 7) == "_static") {
 						libBaseName = libBaseName.substr(0, libBaseName.size() - 7);
 					}
-					std::string nestedLib = libDir + "/" + libBaseName + "/" + library;
-
-					if (std::filesystem::exists(flatLib)) {
-						foundLibPath = flatLib;
-					} else if (std::filesystem::exists(nestedLib)) {
-						foundLibPath = nestedLib;
+					foundLibPath = findStaticLib(libDir, libBaseName);
+				}
+				if (foundLibPath.empty()) {
+					if (std::filesystem::exists(stdlibDir + "/" + library)) {
+						foundLibPath = stdlibDir + "/" + library;
+					} else if (std::filesystem::exists(libDir + "/" + library)) {
+						// User libraries in dist/lib/
+						foundLibPath = libDir + "/" + library;
 					} else {
-						// Try libDir directly (user libraries in dist/lib/)
-						std::string libDirLib = libDir + "/" + library;
-						if (std::filesystem::exists(libDirLib)) {
-							foundLibPath = libDirLib;
-						} else {
-							// Try bare path (fallback)
-							foundLibPath = library;
-						}
+						// Try bare path (fallback)
+						foundLibPath = library;
 					}
 				}
 
