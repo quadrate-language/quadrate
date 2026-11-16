@@ -457,8 +457,6 @@ namespace Qd {
 
 		StackValueType getConstantType(const std::string& value) const;
 
-		const char* typeToString(StackValueType type) const;
-
 		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields) const;
 
 		StackValueType stringToStackValueType(const std::string& typeStr) const;

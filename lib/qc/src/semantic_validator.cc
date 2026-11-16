@@ -858,29 +858,6 @@ namespace Qd {
 		return type == StackValueType::INT || type == StackValueType::FLOAT;
 	}
 
-	const char* SemanticValidator::typeToString(StackValueType type) const {
-		switch (type) {
-		case StackValueType::INT:
-			return "int";
-		case StackValueType::FLOAT:
-			return "float";
-		case StackValueType::D128:
-			return "d128";
-		case StackValueType::STRING:
-			return "string";
-		case StackValueType::PTR:
-			return "ptr";
-		case StackValueType::ANY:
-			return "any";
-		case StackValueType::UNKNOWN:
-			return "unknown";
-		case StackValueType::TYPEVAR:
-			return "typevar";
-		default:
-			return "unknown";
-		}
-	}
-
 	std::string SemanticValidator::resolveTypeAliasChain(const std::string& typeStr) const {
 		// `type A = B  type B = A` is a program a user can write; walking it needs a bound
 		// rather than a stack overflow. No real chain is anywhere near this long.

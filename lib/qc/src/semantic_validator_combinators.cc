@@ -6,17 +6,26 @@
 // right here on the real stack, with the real types -- or any other function value, which is
 // applied by its type exactly as `call` applies it.
 
+#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_anonymous_function.h>
 #include <quadrate/qc/ast_node_instruction.h>
+#include <quadrate/qc/ast_node_literal.h>
 #include <quadrate/qc/instructions.h>
+#include <quadrate/qc/numeric_literal.h>
 #include <quadrate/qc/semantic_validator.h>
 
 namespace Qd {
+
+#include "semantic_validator_internal.h"
 
 	namespace {
 		// A function value a combinator takes, and the literal that wrote it when that is the
@@ -62,30 +71,13 @@ namespace Qd {
 			return "a value and a function value";
 		}
 
-		const char* stackTypeName(StackValueType type) {
-			switch (type) {
-			case StackValueType::INT:
-				return "i64";
-			case StackValueType::FLOAT:
-				return "f64";
-			case StackValueType::D128:
-				return "d128";
-			case StackValueType::STRING:
-				return "str";
-			case StackValueType::PTR:
-				return "ptr";
-			default:
-				return "_";
-			}
-		}
-
 		// The type a value has, spelled as a type: its struct, array or function type when it
 		// has one, `_` when it is not known
 		std::string typeNameOf(StackValueType type, const std::string& structType) {
 			if (!structType.empty() && (type == StackValueType::PTR || type == StackValueType::TYPEVAR)) {
 				return structType;
 			}
-			return stackTypeName(type);
+			return qdTypeName(type, "_");
 		}
 
 		bool isOpen(StackValueType type) {
@@ -128,7 +120,7 @@ namespace Qd {
 			inPlace = inPlace && before && before->type() == IAstNode::Type::ANONYMOUS_FUNCTION;
 			q.literal = inPlace ? static_cast<AstNodeAnonymousFunction*>(before) : nullptr;
 			if (q.type != StackValueType::PTR && !isOpen(q.type)) {
-				reportError(instr, (prefix + "expects a function value, got " + stackTypeName(q.type)).c_str());
+				reportError(instr, (prefix + "expects a function value, got " + qdTypeName(q.type, "_")).c_str());
 				mHasUnpredictableStack = true;
 				return;
 			}

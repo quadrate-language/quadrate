@@ -213,6 +213,8 @@ inline const char* stackValueTypeToString(StackValueType type) {
 		return "any";
 	case StackValueType::UNKNOWN:
 		return "unknown";
+	case StackValueType::TYPEVAR:
+		return "typevar";
 	default:
 		return "unknown";
 	}
@@ -504,8 +506,9 @@ inline bool isTypeParamName(const std::string& t, const std::vector<std::string>
 	return std::find(typeParams.begin(), typeParams.end(), t) != typeParams.end();
 }
 
-// The type name a stack element has when nothing more specific is known.
-inline const char* qdTypeNameOf(StackValueType t) {
+// The Quadrate type name a stack element has when nothing more specific is known; `fallback`
+// for a type that has no name of its own (unknown, any, a type variable).
+inline const char* qdTypeName(StackValueType t, const char* fallback) {
 	switch (t) {
 	case StackValueType::INT:
 		return "i64";
@@ -515,8 +518,10 @@ inline const char* qdTypeNameOf(StackValueType t) {
 		return "d128";
 	case StackValueType::STRING:
 		return "str";
+	case StackValueType::PTR:
+		return "ptr";
 	default:
-		return "";
+		return fallback;
 	}
 }
 
