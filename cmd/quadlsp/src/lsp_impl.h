@@ -37,6 +37,10 @@ std::string lspPathToUri(const std::string& path);
 // be used as a user-defined name.
 bool lspIsReservedName(const std::string& name);
 
+// Completion and hover information for a declared function: its signature as written
+// (receiver, `<…>` parameters, `( … -- … )` list, `!`), its parameters and call snippet
+FunctionInfo lspMakeFunctionInfo(const Qd::AstNodeFunctionDeclaration* funcNode);
+
 // Get sibling .qd files in the same directory (for directory-based namespaces)
 
 // Where a symbol's name is spelled in a document, as a byte range on one line

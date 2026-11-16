@@ -4048,36 +4048,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 											Qd::AstNodeFunctionDeclaration* funcNode =
 													static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 											if (funcNode->name() == symbolName) {
-												std::ostringstream sigStream;
-												sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name()
-														  << "(";
-
-												const auto& inputs = funcNode->inputParameters();
-												for (size_t j = 0; j < inputs.size(); j++) {
-													if (j > 0) {
-														sigStream << " ";
-													}
-													Qd::AstNodeParameter* param =
-															static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-													sigStream << param->displayString();
-												}
-
-												if (!inputs.empty() || !funcNode->outputParameters().empty()) {
-													sigStream << " -- ";
-												}
-
-												const auto& outputs = funcNode->outputParameters();
-												for (size_t j = 0; j < outputs.size(); j++) {
-													if (j > 0) {
-														sigStream << " ";
-													}
-													Qd::AstNodeParameter* param =
-															static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-													sigStream << param->displayString();
-												}
-
-												sigStream << ")";
-												signature = sigStream.str();
+												signature = lspMakeFunctionInfo(funcNode).signature;
 												documentation = "From module: " + moduleName;
 												break;
 											}
@@ -4365,121 +4336,10 @@ std::vector<FunctionInfo> QuadrateLSP::extractFunctions(const std::string& text)
 		if (child && child->type() == Qd::IAstNode::Type::FUNCTION_DECLARATION) {
 			Qd::AstNodeFunctionDeclaration* funcNode = static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 
-			FunctionInfo info;
-			info.name = funcNode->name();
+			FunctionInfo info = lspMakeFunctionInfo(funcNode);
 			// AST uses 1-based lines, convert to 0-based for LSP
 			info.line = funcNode->line() > 0 ? funcNode->line() - 1 : 0;
 			info.nameColumn = funcNode->column() > 0 ? funcNode->column() - 1 : 0;
-			info.binds = !funcNode->isStack();
-
-			// Extract generic type parameters, stack variables first
-			info.typeParams = funcNode->declaredParameters();
-			info.isGeneric = !info.typeParams.empty();
-
-			// Extract method receiver information
-			info.isMethod = funcNode->hasReceiver();
-			if (info.isMethod) {
-				info.receiverName = funcNode->receiverName();
-				info.receiverType = funcNode->receiverType();
-				if (funcNode->hasReceiverTypeParams()) {
-					info.receiverTypeParams = funcNode->receiverTypeParams();
-				}
-			}
-
-			// Build signature parts
-			std::ostringstream sigStream;
-
-			// Include receiver in signature for methods
-			if (info.isMethod) {
-				sigStream << (info.binds ? "def (" : "fn (") << info.receiverName << ":" << info.receiverType;
-				if (!info.receiverTypeParams.empty()) {
-					sigStream << "<";
-					for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
-						if (j > 0) {
-							sigStream << ", ";
-						}
-						sigStream << info.receiverTypeParams[j];
-					}
-					sigStream << ">";
-				}
-				sigStream << ") " << info.name;
-			} else {
-				sigStream << (info.binds ? "def " : "fn ") << info.name;
-			}
-
-			// Add type parameters to signature
-			if (info.isGeneric) {
-				sigStream << "<";
-				for (size_t j = 0; j < info.typeParams.size(); j++) {
-					if (j > 0) {
-						sigStream << ", ";
-					}
-					sigStream << info.typeParams[j];
-				}
-				sigStream << ">";
-			}
-
-			sigStream << "(";
-
-			// Extract input parameters
-			const auto& inputs = funcNode->inputParameters();
-			for (size_t j = 0; j < inputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(inputs[j].get());
-				std::string paramStr = param->displayString();
-				info.inputParams.push_back(paramStr);
-
-				if (j > 0) {
-					sigStream << " ";
-				}
-				sigStream << paramStr;
-			}
-
-			if (!inputs.empty() || !funcNode->outputParameters().empty()) {
-				sigStream << " -- ";
-			}
-
-			// Extract output parameters
-			const auto& outputs = funcNode->outputParameters();
-			for (size_t j = 0; j < outputs.size(); j++) {
-				Qd::AstNodeParameter* param = static_cast<Qd::AstNodeParameter*>(outputs[j].get());
-				std::string paramStr = param->displayString();
-				info.outputParams.push_back(paramStr);
-
-				if (j > 0) {
-					sigStream << " ";
-				}
-				sigStream << paramStr;
-			}
-
-			sigStream << ")";
-			if (funcNode->throws()) {
-				sigStream << "!";
-			}
-			info.signature = sigStream.str();
-
-			// Build snippet with placeholders for input parameters
-			std::ostringstream snippetStream;
-			for (size_t j = 0; j < info.inputParams.size(); j++) {
-				const std::string& param = info.inputParams[j];
-				// Extract just the name part (before the colon)
-				size_t colonPos = param.find(':');
-				std::string paramName = (colonPos != std::string::npos) ? param.substr(0, colonPos) : param;
-
-				snippetStream << "${" << (j + 1) << ":" << paramName << "}";
-				if (j < info.inputParams.size() - 1) {
-					snippetStream << " ";
-				}
-			}
-			if (!info.inputParams.empty()) {
-				snippetStream << " ";
-			}
-			snippetStream << info.name;
-			if (funcNode->throws()) {
-				snippetStream << "!";
-			}
-
-			info.snippet = snippetStream.str();
-
 			functions.push_back(info);
 		} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
 			// Handle imported functions
