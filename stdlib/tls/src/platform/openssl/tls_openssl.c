@@ -170,7 +170,20 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-	SSL_set1_host(ssl, hostname);
+	// Through the verify parameters: OpenSSL 4.0 deprecates SSL_set1_host, and its
+	// replacements SSL_set1_dnsname/SSL_set1_ipaddr do not exist in 3.x. Like SSL_set1_host,
+	// an IP address is matched as one, anything else as a DNS name. Without either the
+	// handshake would accept any certificate the CAs vouch for, whoever it names.
+	X509_VERIFY_PARAM* param = SSL_get0_param(ssl);
+	if (X509_VERIFY_PARAM_set1_ip_asc(param, hostname) != 1) {
+		// Not an IP address; leave nothing on the error queue for SSL_get_error to find
+		ERR_clear_error();
+		if (X509_VERIFY_PARAM_set1_host(param, hostname, 0) != 1) {
+			SSL_free(ssl);
+			SSL_CTX_free(ctx);
+			return fail_openssl(TLS_ERR_INIT, "could not set the host name to verify");
+		}
+	}
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
