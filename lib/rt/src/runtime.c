@@ -20,7 +20,6 @@
 #include <string.h>
 #include <unistd.h>
 
-static void dump_stack(qd_context* ctx);
 
 // A target with no signals (a microcontroller under FreeRTOS, say) has no
 // sigaltstack either, and its own fault handler reports a crash.
@@ -580,7 +579,7 @@ static inline bool is_numeric_type(qd_stack_type type) {
 
 // Helper function to validate binary numeric operation setup
 // Returns true if validation passed, false if error occurred (and already aborted)
-static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
+bool qdrt_validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 	// Check we have at least 2 elements
 	size_t stack_size = qd_stack_size(ctx->st);
 	if (stack_size < 2) {
@@ -605,7 +604,7 @@ static bool validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
 }
 
 // Helper function to pop two values from stack for binary operations
-static int pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
+void qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
 	// Every caller validates the arity first, so a failure here means the stack changed
 	// underneath us -- an invariant violation, not a recoverable condition.
 	qd_stack_error err = qd_stack_pop(ctx->st, b);
@@ -616,7 +615,6 @@ static int pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_eleme
 	if (err != QD_STACK_OK) {
 		QDRT_FATAL(ctx, "binary op", "Failed to pop left operand");
 	}
-	return (int){0};
 }
 
 // Helper function to release string references if needed
@@ -627,7 +625,7 @@ static void release_if_string(qd_stack_element_t* elem) {
 }
 
 // Helper function to push a stack element, taking a reference to what it holds
-static qd_stack_error push_element(qd_stack* stack, const qd_stack_element_t* elem) {
+qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem) {
 	qd_stack_error err;
 	switch (elem->type) {
 	case QD_STACK_TYPE_INT:
@@ -708,7 +706,7 @@ int qd_call(qd_context* ctx) {
 	// A function value is a struct; raw memory is not one, and calling it would jump into data
 	if (val.type != QD_STACK_TYPE_PTR || val.ptr_kind != QD_PTR_STRUCT) {
 		QDRT_FATAL(ctx, "call", "Expected a function value, got %s",
-				val.type == QD_STACK_TYPE_PTR ? "raw memory" : qdrt_type_name(val.type));
+				val.type == QD_STACK_TYPE_PTR ? "raw memory" : qd_type_name(val.type));
 	}
 	const int result = qd_call_value(ctx, val.value.p);
 	qdrt_release_element(&val);
@@ -809,7 +807,7 @@ int qd_casts(qd_context* ctx) {
 		snprintf(buffer, sizeof(buffer), "%g", elem.value.f);
 	} else if (elem.type == QD_STACK_TYPE_STR) {
 		// Already a string - just push it back (retain it)
-		err = push_element(ctx->st, &elem);
+		err = qdrt_push_element(ctx->st, &elem);
 		if (err != QD_STACK_OK) {
 			QDRT_FATAL(ctx, "casts", "Stack overflow pushing string result");
 		}
@@ -899,7 +897,7 @@ int qd_castp(qd_context* ctx) {
 // within - check if value is within range [min, max]: ( value min max -- result )
 // Pops three values, pushes 1 if min <= value <= max, 0 otherwise
 // Dump current stack contents for debugging
-static void dump_stack(qd_context* ctx) {
+void qdrt_dump_stack(qd_context* ctx) {
 	size_t stack_size = qd_stack_size(ctx->st);
 	fprintf(stderr, "\nStack dump (%zu elements):\n", stack_size);
 
@@ -958,8 +956,8 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 			return; // Fast success
 		}
 		// Fall through to error reporting
-		const char* actual_type_name = qdrt_type_name(st->data[stack_size - 1].type);
-		QDRT_FATAL(ctx, func_name, "Type mismatch for parameter 1 (expected int, got %s)", actual_type_name);
+		const char* actual_type_name = qd_type_name(st->data[stack_size - 1].type);
+		QDRT_FATAL(ctx, func_name, "Type mismatch for parameter 1 (expected i64, got %s)", actual_type_name);
 	}
 
 	// Check types match (from bottom to top of required elements)
@@ -974,8 +972,8 @@ void qd_check_stack(qd_context* ctx, size_t count, const qd_stack_type* types, c
 		qd_stack_element_t* elem = &st->data[stack_index];
 
 		if (elem->type != types[i]) {
-			const char* expected_type_name = qdrt_type_name(types[i]);
-			const char* actual_type_name = qdrt_type_name(elem->type);
+			const char* expected_type_name = qd_type_name(types[i]);
+			const char* actual_type_name = qd_type_name(elem->type);
 
 			QDRT_FATAL(ctx, func_name, "Type mismatch for parameter %zu (expected %s, got %s)", i + 1,
 					expected_type_name, actual_type_name);
@@ -1480,40 +1478,6 @@ void qd_debug_print_stack(qd_context* ctx) {
 		}
 	}
 	fprintf(stderr, "Bottom of stack (oldest)\n");
-}
-
-// Exported helper functions for split runtime files (runtime_stack.c, etc.)
-
-void qdrt_dump_stack(qd_context* ctx) {
-	dump_stack(ctx);
-}
-
-bool qdrt_validate_binary_numeric_op(qd_context* ctx, const char* op_name) {
-	return validate_binary_numeric_op(ctx, op_name);
-}
-
-int qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b) {
-	return pop_two_values(ctx, a, b);
-}
-
-qd_stack_error qdrt_push_element(qd_stack* stack, const qd_stack_element_t* elem) {
-	return push_element(stack, elem);
-}
-
-const char* qdrt_type_name(qd_stack_type type) {
-	switch (type) {
-	case QD_STACK_TYPE_INT:
-		return "int";
-	case QD_STACK_TYPE_FLOAT:
-		return "float";
-	case QD_STACK_TYPE_STR:
-		return "str";
-	case QD_STACK_TYPE_PTR:
-		return "ptr";
-	case QD_STACK_TYPE_D128:
-		return "d128";
-	}
-	return "unknown";
 }
 
 // Public helper functions

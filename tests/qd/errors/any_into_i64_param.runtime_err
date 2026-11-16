@@ -1,1 +1,1 @@
-Type mismatch for parameter 1 (expected int, got str)
+Type mismatch for parameter 1 (expected i64, got str)
