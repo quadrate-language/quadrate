@@ -1409,15 +1409,7 @@ int generateLockfile() {
 
 		if (dep.isPath) {
 			// Local path dependency
-			std::string resolvedPath = dep.url;
-
-			if (resolvedPath.size() > 0 && resolvedPath[0] == '~') {
-				resolvedPath = getHomeDir() + resolvedPath.substr(1);
-			}
-			if (resolvedPath.size() > 0 && resolvedPath[0] != '/') {
-				resolvedPath = cwd + "/" + resolvedPath;
-			}
-			resolvedPath = fs::weakly_canonical(resolvedPath).string();
+			std::string resolvedPath = resolveLocalPath(dep.url, cwd);
 
 			if (!fs::exists(resolvedPath)) {
 				std::cout << COLOR_YELLOW << "⚠ not found" << COLOR_RESET << "\n";
