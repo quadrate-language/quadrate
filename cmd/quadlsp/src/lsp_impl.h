@@ -37,7 +37,14 @@ std::string lspPathToUri(const std::string& path);
 // be used as a user-defined name.
 bool lspIsReservedName(const std::string& name);
 
-// Get sibling .qd files in the same directory (for directory-based namespaces)
+namespace Qd {
+	class Ast;
+}
+
+// Read the .qd file at `path` from disk and parse it into `ast`. False, with `root` null,
+// if it is not a regular file, cannot be read, or does not parse cleanly. `text`, when
+// given, receives the file's contents, for turning node positions into locations.
+bool lspParseModuleFile(const std::string& path, Qd::Ast& ast, Qd::IAstNode*& root, std::string* text = nullptr);
 
 // Where a symbol's name is spelled in a document, as a byte range on one line
 struct NameOccurrence {

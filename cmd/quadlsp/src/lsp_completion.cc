@@ -5,7 +5,6 @@
 #include <cctype>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node_constant.h>
 #include <quadrate/qc/ast_node_enum.h>
@@ -15,6 +14,7 @@
 #include <quadrate/qc/ast_node_scoped.h>
 #include <quadrate/qc/ast_node_struct.h>
 #include <quadrate/qc/ast_node_use.h>
+#include <quadrate/qc/module_resolver.h>
 #include <quadrate/qc/reference.h>
 #include <quadrate/qc/type_names.h>
 #include <sstream>
@@ -298,20 +298,10 @@ static Qd::AstNodeImport* findImport(Qd::IAstNode* root, const std::string& name
 	return nullptr;
 }
 
-// Every .qd file of the module whose entry file is `modulePath`: a module is its whole
-// directory. Just the entry file if the directory cannot be read.
+// Every source file of the module whose entry file is `modulePath`: a module is its whole
+// directory
 static std::vector<std::string> moduleFiles(const std::string& modulePath) {
-	std::vector<std::string> files;
-	try {
-		for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::path(modulePath).parent_path())) {
-			if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-				files.push_back(entry.path().string());
-			}
-		}
-	} catch (const std::filesystem::filesystem_error&) {
-		files = {modulePath};
-	}
-	return files;
+	return Qd::moduleFiles(std::filesystem::path(modulePath).parent_path().string());
 }
 
 void QuadrateLSP::handleCompletion(const std::string& id, const std::string& uri, size_t line, size_t character) {
@@ -656,19 +646,9 @@ std::vector<std::pair<std::string, std::string>> QuadrateLSP::findStructFields(
 std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string& modulePath) {
 	std::vector<FunctionInfo> functions;
 
-	std::ifstream file(modulePath);
-	if (!file.good()) {
-		return functions;
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string moduleText = buffer.str();
-
 	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
-
-	if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+	Qd::IAstNode* root = nullptr;
+	if (!lspParseModuleFile(modulePath, ast, root)) {
 		return functions;
 	}
 
@@ -864,19 +844,9 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 std::vector<StructInfo> QuadrateLSP::extractModuleStructs(const std::string& modulePath) {
 	std::vector<StructInfo> structs;
 
-	std::ifstream file(modulePath);
-	if (!file.good()) {
-		return structs;
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string moduleText = buffer.str();
-
 	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
-
-	if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+	Qd::IAstNode* root = nullptr;
+	if (!lspParseModuleFile(modulePath, ast, root)) {
 		return structs;
 	}
 
@@ -935,19 +905,9 @@ std::vector<StructInfo> QuadrateLSP::extractModuleStructs(const std::string& mod
 std::vector<ConstantInfo> QuadrateLSP::extractModuleConstants(const std::string& modulePath) {
 	std::vector<ConstantInfo> constants;
 
-	std::ifstream file(modulePath);
-	if (!file.good()) {
-		return constants;
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string moduleText = buffer.str();
-
 	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
-
-	if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+	Qd::IAstNode* root = nullptr;
+	if (!lspParseModuleFile(modulePath, ast, root)) {
 		return constants;
 	}
 
