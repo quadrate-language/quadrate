@@ -6,6 +6,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "../tls_platform.h"
+#include <arpa/inet.h>
 #include <errno.h>
 #include <limits.h>
 #include <openssl/err.h>
@@ -134,6 +135,20 @@ static tls_error_t load_identity(SSL_CTX* ctx, const char* cert_path, const char
 	return TLS_OK;
 }
 
+// The name the server's certificate must carry. OpenSSL 4 split SSL_set1_host, which took a DNS
+// name or an IP address, into one call for each.
+static int set_peer_name(SSL* ssl, const char* hostname) {
+#if OPENSSL_VERSION_MAJOR >= 4
+	unsigned char addr[16];
+	if (inet_pton(AF_INET, hostname, addr) == 1 || inet_pton(AF_INET6, hostname, addr) == 1) {
+		return SSL_set1_ipaddr(ssl, hostname);
+	}
+	return SSL_set1_dnsname(ssl, hostname);
+#else
+	return SSL_set1_host(ssl, hostname);
+#endif
+}
+
 // The client side, with a client certificate when `cert_path` is not NULL
 static tls_error_t client_connect(
 		int socket_fd, const char* hostname, const char* cert_path, const char* key_path, tls_conn_t* out_conn) {
@@ -170,7 +185,11 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-	SSL_set1_host(ssl, hostname);
+	if (set_peer_name(ssl, hostname) != 1) {
+		SSL_free(ssl);
+		SSL_CTX_free(ctx);
+		return fail_openssl(TLS_ERR_INIT, "could not set the name the certificate must carry");
+	}
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
