@@ -1844,40 +1844,26 @@ void QuadrateLSP::handleSemanticTokens(const std::string& id, const std::string&
 		std::istringstream importStream(documentText);
 		std::string importLine;
 		while (std::getline(importStream, importLine)) {
-			size_t usePos = importLine.find("use ");
-			if (usePos != std::string::npos) {
-				size_t moduleStart = usePos + 4;
-				while (moduleStart < importLine.size() && std::isspace(importLine[moduleStart])) {
-					moduleStart++;
-				}
-				size_t moduleEnd = moduleStart;
-				while (moduleEnd < importLine.size() &&
-						(std::isalnum(static_cast<unsigned char>(importLine[moduleEnd])) ||
-								importLine[moduleEnd] == '_' || importLine[moduleEnd] == '/' ||
-								importLine[moduleEnd] == ':' || importLine[moduleEnd] == '-')) {
-					moduleEnd++;
-				}
-				if (moduleEnd > moduleStart) {
-					std::string moduleName = importLine.substr(moduleStart, moduleEnd - moduleStart);
-					std::string modulePath = resolveModulePath(moduleName, sourceDir);
-					if (!modulePath.empty()) {
-						// Get the module directory and scan ALL .qd files for structs
-						std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
-						try {
-							for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
-								if (entry.is_regular_file() && entry.path().extension() == ".qd") {
-									std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
-									for (const auto& s : moduleStructs) {
-										structTypeNames.insert(s.name);
-									}
+			if (auto span = lspFindUseModuleSpan(importLine)) {
+				std::string moduleName = importLine.substr(span->first, span->second - span->first);
+				std::string modulePath = resolveModulePath(moduleName, sourceDir);
+				if (!modulePath.empty()) {
+					// Get the module directory and scan ALL .qd files for structs
+					std::filesystem::path moduleDir = std::filesystem::path(modulePath).parent_path();
+					try {
+						for (const auto& entry : std::filesystem::directory_iterator(moduleDir)) {
+							if (entry.is_regular_file() && entry.path().extension() == ".qd") {
+								std::vector<StructInfo> moduleStructs = extractModuleStructs(entry.path().string());
+								for (const auto& s : moduleStructs) {
+									structTypeNames.insert(s.name);
 								}
 							}
-						} catch (...) {
-							// Fallback to single file if directory iteration fails
-							std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
-							for (const auto& s : moduleStructs) {
-								structTypeNames.insert(s.name);
-							}
+						}
+					} catch (...) {
+						// Fallback to single file if directory iteration fails
+						std::vector<StructInfo> moduleStructs = extractModuleStructs(modulePath);
+						for (const auto& s : moduleStructs) {
+							structTypeNames.insert(s.name);
 						}
 					}
 				}
@@ -2220,75 +2206,32 @@ void QuadrateLSP::handleDocumentLinks(const std::string& id, const std::string& 
 		size_t lineNum = 0;
 
 		while (std::getline(iss, line)) {
-			// Look for 'use' at the start of the line (with optional whitespace)
-			size_t usePos = line.find("use");
-			if (usePos != std::string::npos) {
-				// Check that 'use' is preceded only by whitespace
-				bool validUse = true;
-				for (size_t i = 0; i < usePos; i++) {
-					if (!std::isspace(static_cast<unsigned char>(line[i]))) {
-						validUse = false;
-						break;
-					}
-				}
+			if (auto span = lspFindUseModuleSpan(line)) {
+				auto [moduleStart, moduleEnd] = *span;
+				std::string moduleName = line.substr(moduleStart, moduleEnd - moduleStart);
+				std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
-				// Check that 'use' is followed by whitespace
-				if (validUse && usePos + 3 < line.size() &&
-						!std::isspace(static_cast<unsigned char>(line[usePos + 3]))) {
-					validUse = false;
-				}
+				if (!modulePath.empty() && std::filesystem::exists(modulePath)) {
+					json_t* link = json_object();
 
-				if (validUse) {
-					// Find the module name after 'use'
-					size_t moduleStart = usePos + 3;
-					while (moduleStart < line.size() && std::isspace(static_cast<unsigned char>(line[moduleStart]))) {
-						moduleStart++;
-					}
+					// Range covers the module name
+					json_t* range = json_object();
+					json_t* start = json_object();
+					json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lineNum)));
+					json_object_set_new(start, "character", json_integer(static_cast<json_int_t>(moduleStart)));
+					json_t* end = json_object();
+					json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineNum)));
+					json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(moduleEnd)));
+					json_object_set_new(range, "start", start);
+					json_object_set_new(range, "end", end);
+					json_object_set_new(link, "range", range);
 
-					if (moduleStart < line.size()) {
-						size_t moduleEnd = moduleStart;
-						// Module names can contain alphanumeric, underscore, slash (for paths), and colons
-						while (moduleEnd < line.size() &&
-								(std::isalnum(static_cast<unsigned char>(line[moduleEnd])) || line[moduleEnd] == '_' ||
-										line[moduleEnd] == '/' || line[moduleEnd] == ':' || line[moduleEnd] == '-')) {
-							moduleEnd++;
-						}
+					json_object_set_new(link, "target", json_string(lspPathToUri(modulePath).c_str()));
 
-						if (moduleEnd > moduleStart) {
-							std::string moduleName = line.substr(moduleStart, moduleEnd - moduleStart);
+					std::string tooltip = "Open module: " + moduleName;
+					json_object_set_new(link, "tooltip", json_string(tooltip.c_str()));
 
-							// Resolve the module path
-							std::string modulePath = resolveModulePath(moduleName, sourceDir);
-
-							if (!modulePath.empty() && std::filesystem::exists(modulePath)) {
-								// Create document link
-								json_t* link = json_object();
-
-								// Range covers the module name
-								json_t* range = json_object();
-								json_t* start = json_object();
-								json_object_set_new(start, "line", json_integer(static_cast<json_int_t>(lineNum)));
-								json_object_set_new(
-										start, "character", json_integer(static_cast<json_int_t>(moduleStart)));
-								json_t* end = json_object();
-								json_object_set_new(end, "line", json_integer(static_cast<json_int_t>(lineNum)));
-								json_object_set_new(end, "character", json_integer(static_cast<json_int_t>(moduleEnd)));
-								json_object_set_new(range, "start", start);
-								json_object_set_new(range, "end", end);
-								json_object_set_new(link, "range", range);
-
-								// Target is the file URI
-								std::string targetUri = lspPathToUri(modulePath);
-								json_object_set_new(link, "target", json_string(targetUri.c_str()));
-
-								// Tooltip
-								std::string tooltip = "Open module: " + moduleName;
-								json_object_set_new(link, "tooltip", json_string(tooltip.c_str()));
-
-								json_array_append_new(links, link);
-							}
-						}
-					}
+					json_array_append_new(links, link);
 				}
 			}
 			lineNum++;

@@ -1025,21 +1025,10 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 		}
 		if (line < docLines.size()) {
 			const std::string& targetLine = docLines[line];
-			// Check if line starts with "use "
-			size_t usePos = targetLine.find("use ");
-			if (usePos != std::string::npos && usePos < 10) { // Allow some leading whitespace
-				// Extract module name after "use "
-				size_t moduleStart = usePos + 4;
-				while (moduleStart < targetLine.length() && isspace(targetLine[moduleStart])) {
-					moduleStart++;
-				}
-				size_t moduleEnd = moduleStart;
-				while (moduleEnd < targetLine.length() &&
-						(isalnum(targetLine[moduleEnd]) || targetLine[moduleEnd] == '_')) {
-					moduleEnd++;
-				}
+			if (auto span = lspFindUseModuleSpan(targetLine)) {
+				auto [moduleStart, moduleEnd] = *span;
 				// Only navigate if cursor is on the module name, not on "use" keyword
-				if (moduleEnd > moduleStart && character >= moduleStart && character < moduleEnd) {
+				if (character >= moduleStart && character < moduleEnd) {
 					std::string moduleName = targetLine.substr(moduleStart, moduleEnd - moduleStart);
 					std::string sourceDir = std::filesystem::path(lspUriToPath(uri)).parent_path().string();
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
