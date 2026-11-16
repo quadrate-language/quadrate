@@ -3694,6 +3694,27 @@ TEST(CloneContextSharesStringStorage) {
 	destroy_test_context(src);
 }
 
+TEST(CloneStackOwnsArrayReferences) {
+	// A slot owns a reference to the array it holds. The clone takes one of its own,
+	// and destroying a stack drops every slot's, so the array dies with the last holder.
+	qd_stack* src = NULL;
+	ASSERT(qd_stack_init(&src, 4) == QD_STACK_OK, "init succeeds");
+	qd_array_t* arr = qd_array_create(2, QD_ARRAY_TYPE_INT);
+	qd_array_retain(arr); // the test's own reference, to watch the count
+	qd_stack_push_kind(src, arr, QD_PTR_ARRAY);
+	ASSERT_EQ((int)atomic_load(&arr->refcount), 2, "the test and the source slot");
+
+	qd_stack* clone = NULL;
+	ASSERT(qd_stack_clone(&clone, src) == QD_STACK_OK, "clone succeeds");
+	ASSERT_EQ((int)atomic_load(&arr->refcount), 3, "the clone's slot takes a reference");
+
+	qd_stack_destroy(clone);
+	ASSERT_EQ((int)atomic_load(&arr->refcount), 2, "destroying the clone drops its reference");
+	qd_stack_destroy(src);
+	ASSERT_EQ((int)atomic_load(&arr->refcount), 1, "destroying the source drops its reference");
+	qd_array_release(arr);
+}
+
 TEST(CloneContextEmptyStack) {
 	qd_context* src = create_test_context();
 	qd_context* clone = qd_clone_context(src);

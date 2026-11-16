@@ -174,6 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`qd_free_context` leaked structs and arrays left on the stack**: `qd_stack_destroy` released only strings. It now drops every slot's reference, and `qd_stack_clone` (so `qd_clone_context`) takes its own reference to each struct and array instead of sharing the source's. `qd_stack_pop` and `qd_stack_remove_at` with no element to return release them too.
 - **`uri::encode` and `uri::decode` corrupted non-ASCII text**: they walked characters but wrote one byte for each, so "é" encoded as `%E9`. They now work on the UTF-8 bytes (`%C3%A9`).
 - **`examples/links-api` did not build**: its handlers were declared `c:ptr`.
 - **The language reference generator** named sections after the last line of their prose and split examples at any `;`, and stdlib pages had a separator directly under a line of text, which Markdown read as a heading.
