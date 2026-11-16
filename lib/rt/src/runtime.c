@@ -451,17 +451,25 @@ int qd_d128_matches_bits(const qd_stack_element_t* subject, uint64_t low, uint64
 	return qd_d128_compare(subject->value.d, label) == 0;
 }
 
+static int pop_typed(qd_context* ctx, qd_stack_type expected, qd_stack_element_t* out) {
+	if (qd_stack_pop(ctx->st, out) != QD_STACK_OK) {
+		return QD_ERR_GENERIC;
+	}
+	if (out->type != expected) {
+		qdrt_release_element(out);
+		return QD_ERR_TYPE_MISMATCH;
+	}
+	return QD_OK;
+}
+
 int qd_pop_i(qd_context* ctx, int64_t* value) {
 	if (!ctx || !value) {
 		return QD_ERR_NULL_POINTER;
 	}
 	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		return QD_ERR_GENERIC;
-	}
-	if (elem.type != QD_STACK_TYPE_INT) {
-		return QD_ERR_TYPE_MISMATCH;
+	int err = pop_typed(ctx, QD_STACK_TYPE_INT, &elem);
+	if (err != QD_OK) {
+		return err;
 	}
 	*value = elem.value.i;
 	return QD_OK;
@@ -472,12 +480,9 @@ int qd_pop_f(qd_context* ctx, double* value) {
 		return QD_ERR_NULL_POINTER;
 	}
 	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		return QD_ERR_GENERIC;
-	}
-	if (elem.type != QD_STACK_TYPE_FLOAT) {
-		return QD_ERR_TYPE_MISMATCH;
+	int err = pop_typed(ctx, QD_STACK_TYPE_FLOAT, &elem);
+	if (err != QD_OK) {
+		return err;
 	}
 	*value = elem.value.f;
 	return QD_OK;
@@ -488,12 +493,9 @@ int qd_pop_s(qd_context* ctx, char* buf, size_t buf_size) {
 		return QD_ERR_NULL_POINTER;
 	}
 	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		return QD_ERR_GENERIC;
-	}
-	if (elem.type != QD_STACK_TYPE_STR) {
-		return QD_ERR_TYPE_MISMATCH;
+	int err = pop_typed(ctx, QD_STACK_TYPE_STR, &elem);
+	if (err != QD_OK) {
+		return err;
 	}
 	const char* str = qd_string_data(elem.value.s);
 	size_t len = qd_string_length(elem.value.s);
@@ -513,13 +515,9 @@ int qd_pop_d(qd_context* ctx, qd_d128_t* value) {
 		return QD_ERR_NULL_POINTER;
 	}
 	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		return QD_ERR_GENERIC;
-	}
-	if (elem.type != QD_STACK_TYPE_D128) {
-		qdrt_release_element(&elem);
-		return QD_ERR_TYPE_MISMATCH;
+	int err = pop_typed(ctx, QD_STACK_TYPE_D128, &elem);
+	if (err != QD_OK) {
+		return err;
 	}
 	*value = elem.value.d;
 	return QD_OK;
@@ -530,12 +528,9 @@ int qd_pop_p(qd_context* ctx, void** value) {
 		return QD_ERR_NULL_POINTER;
 	}
 	qd_stack_element_t elem;
-	qd_stack_error err = qd_stack_pop(ctx->st, &elem);
-	if (err != QD_STACK_OK) {
-		return QD_ERR_GENERIC;
-	}
-	if (elem.type != QD_STACK_TYPE_PTR) {
-		return QD_ERR_TYPE_MISMATCH;
+	int err = pop_typed(ctx, QD_STACK_TYPE_PTR, &elem);
+	if (err != QD_OK) {
+		return err;
 	}
 	*value = elem.value.p;
 	return QD_OK;
