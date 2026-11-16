@@ -428,7 +428,8 @@ import "libhttp.a" as "http" {
 	pub fn sse_start(c:Ctx -- )
 
 	/// Send a data-only SSE event.
-	/// The data is sent as "data: <content>\n\n".
+	/// The data is sent as "data: <content>\n\n"; each line of multi-line data
+	/// goes in its own "data:" field, so a line break cannot start a new event.
 	/// @param c Ctx Context
 	/// @param data str Event data (typically JSON)
 	/// @example c "{\"count\": 1}" http::sse_send
@@ -437,6 +438,7 @@ import "libhttp.a" as "http" {
 	/// Send a named SSE event.
 	/// The event is sent as "event: <name>\ndata: <content>\n\n".
 	/// Clients can listen for specific event types with addEventListener.
+	/// Multi-line data is split as in sse_send. Raises if name contains a line break.
 	/// @param c Ctx Context
 	/// @param name str Event name
 	/// @param data str Event data (typically JSON)

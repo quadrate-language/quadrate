@@ -7,17 +7,22 @@ use rand
 use strings
 
 /// Generate a new random UUIDv4 string.
+/// The 122 random bits come from the OS entropy pool (`rand::secure_i64`),
+/// so the result is unpredictable and fit for use as an unguessable token.
 /// @return uuid str UUID string (36 chars)
 /// @example uuid::v4 -> id
 pub fn v4( -- uuid:str) {
-	rand::new -> rng
+	rand::secure_i64 -> r0
+	rand::secure_i64 -> r1
 
-	// Generate 16 random bytes
+	// Split the 128 secure random bits into 16 bytes
 	16 mem::alloc! -> bytes
-	0 16 1 for it {
+	0 8 1 for it {
 		it -> i
-		rng 256 rand::int -> b -> rng
+		r0 i 8 * bits::shr 255 bits::and -> b
 		b bytes i mem::set_byte
+		r1 i 8 * bits::shr 255 bits::and -> b
+		b bytes i 8 + mem::set_byte
 	}
 
 	// Set version (4) in byte 6: xxxx4xxx
@@ -141,6 +146,9 @@ pub fn v4( -- uuid:str) {
 }
 
 /// Generate UUID with specific seed (for reproducibility).
+/// NOT secure: the output is fully determined by the seed (xorshift64*).
+/// Use only for tests and fixtures, never for tokens or IDs that must be
+/// unguessable - use `v4` for those.
 /// @param seed i64 Seed value
 /// @return uuid str UUID string (36 chars)
 /// @example 12345 uuid::v4_seeded -> id

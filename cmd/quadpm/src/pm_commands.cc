@@ -439,6 +439,11 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	}
 	std::sort(cFiles.begin(), cFiles.end());
 
+	if (!isSafeModuleName(moduleName)) {
+		pmError("invalid module name: '" + moduleName + "'");
+		return false;
+	}
+
 	std::vector<std::string> extraFlags;
 	for (const auto& flag : nativeConfig.cflags) {
 		std::string resolved;
@@ -463,6 +468,18 @@ bool compileCsources(const std::string& moduleDir, const std::string& moduleName
 	// Create lib directory
 	std::string libDir = moduleDir + "/lib";
 	fs::create_directories(libDir);
+
+	// A module could ship lib/ as a symlink; the libraries must still land inside the module
+	{
+		std::error_code ec;
+		fs::path base = fs::weakly_canonical(moduleDir, ec);
+		fs::path target = ec ? fs::path() : fs::weakly_canonical(libDir, ec);
+		auto rel = target.lexically_relative(base);
+		if (ec || rel.empty() || *rel.begin() == "..") {
+			pmError("lib/ of '" + moduleName + "' resolves outside the module");
+			return false;
+		}
+	}
 
 	// Auto-detect naming convention by checking C source files
 	// If C files use usr_<module>_* functions, use libqd* prefix for name mangling
@@ -1068,6 +1085,11 @@ InstallResult installSingleDependency(const Dependency& dep, const std::string& 
 	InstallResult result;
 	result.success = false;
 	result.alreadyInstalled = false;
+
+	if (!isSafeModuleName(dep.name)) {
+		pmError("invalid dependency name: " + dep.name);
+		return result;
+	}
 
 	std::string modulesDir = getModulesDir();
 
