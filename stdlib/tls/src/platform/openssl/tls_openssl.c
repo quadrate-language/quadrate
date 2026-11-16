@@ -170,7 +170,17 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-	SSL_set1_host(ssl, hostname);
+	// Through the verify parameters rather than SSL_set1_host, which OpenSSL 4.0 deprecates;
+	// an IP address literal must match the certificate's IP addresses, anything else its names
+	X509_VERIFY_PARAM* param = SSL_get0_param(ssl);
+	if (X509_VERIFY_PARAM_set1_ip_asc(param, hostname) != 1) {
+		ERR_clear_error(); // not an IP address
+		if (X509_VERIFY_PARAM_set1_host(param, hostname, 0) != 1) {
+			SSL_free(ssl);
+			SSL_CTX_free(ctx);
+			return fail_openssl(TLS_ERR_INIT, "could not set the expected host name");
+		}
+	}
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
