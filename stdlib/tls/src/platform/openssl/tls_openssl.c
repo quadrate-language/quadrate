@@ -170,7 +170,13 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-	SSL_set1_host(ssl, hostname);
+	// SSL_set1_host is deprecated in OpenSSL 4.0; this is what it did: an IP literal must match
+	// an IP SAN, anything else a DNS name
+	X509_VERIFY_PARAM* param = SSL_get0_param(ssl);
+	if (X509_VERIFY_PARAM_set1_ip_asc(param, hostname) != 1) {
+		ERR_clear_error();
+		X509_VERIFY_PARAM_set1_host(param, hostname, 0);
+	}
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
