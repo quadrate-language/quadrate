@@ -6,9 +6,52 @@
 
 #include <cctype>
 #include <cstddef>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
+
+static bool isSpace(char c) {
+	return std::isspace(static_cast<unsigned char>(c)) != 0;
+}
+
+static bool isModuleNameChar(char c) {
+	return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '/' || c == ':' || c == '-' || c == '.';
+}
+
+std::optional<std::pair<size_t, size_t>> lspFindUseModuleSpan(const std::string& line) {
+	size_t pos = 0;
+	while (pos < line.size() && isSpace(line[pos])) {
+		pos++;
+	}
+	if (line.compare(pos, 3, "use") != 0) {
+		return std::nullopt;
+	}
+	pos += 3;
+	if (pos >= line.size() || !isSpace(line[pos])) {
+		return std::nullopt;
+	}
+	while (pos < line.size() && isSpace(line[pos])) {
+		pos++;
+	}
+	if (pos < line.size() && line[pos] == '"') {
+		size_t start = pos + 1;
+		size_t end = line.find('"', start);
+		if (end == std::string::npos || end == start) {
+			return std::nullopt;
+		}
+		return std::make_pair(start, end);
+	}
+	size_t end = pos;
+	while (end < line.size() && isModuleNameChar(line[end])) {
+		end++;
+	}
+	if (end == pos) {
+		return std::nullopt;
+	}
+	return std::make_pair(pos, end);
+}
 
 std::string lspGetWordAtPosition(const std::string& text, size_t line, size_t character) {
 	// Split text into lines

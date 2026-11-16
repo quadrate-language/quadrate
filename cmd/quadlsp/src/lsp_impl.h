@@ -4,6 +4,7 @@
 #include "lsp_types.h"
 #include <jansson.h>
 #include <map>
+#include <optional>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_local.h>
@@ -32,6 +33,13 @@ std::string lspUriToPath(const std::string& uri);
 
 // Convert a filesystem path to a percent-encoded file:// URI.
 std::string lspPathToUri(const std::string& path);
+
+// Find the module name on a `use <module>` line. `use` must be preceded only
+// by whitespace and followed by whitespace. A bare name may contain letters,
+// digits, '_', '/', ':', '-' and '.'; a quoted name (`use "github.com/x/y"`)
+// runs to the closing quote, which is excluded from the span. Returns the
+// [start, end) byte span of the name, or nullopt if the line is not a use.
+std::optional<std::pair<size_t, size_t>> lspFindUseModuleSpan(const std::string& line);
 
 // True for keywords, type names and built-in instructions, none of which can
 // be used as a user-defined name.
