@@ -170,16 +170,21 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
-	// Through the verify parameters rather than SSL_set1_host, which OpenSSL 4.0 deprecates;
-	// an IP address literal must match the certificate's IP addresses, anything else its names
-	X509_VERIFY_PARAM* param = SSL_get0_param(ssl);
-	if (X509_VERIFY_PARAM_set1_ip_asc(param, hostname) != 1) {
-		ERR_clear_error(); // not an IP address
-		if (X509_VERIFY_PARAM_set1_host(param, hostname, 0) != 1) {
-			SSL_free(ssl);
-			SSL_CTX_free(ctx);
-			return fail_openssl(TLS_ERR_INIT, "could not set the expected host name");
-		}
+#if OPENSSL_VERSION_NUMBER >= 0x40000000L
+	// SSL_set1_host took a name or an address; 4.0 splits it in two. The failed address parse
+	// of a name must not leave an error behind for fail_openssl to report later.
+	ERR_set_mark();
+	bool host_set = SSL_set1_ipaddr(ssl, hostname) == 1;
+	ERR_pop_to_mark();
+	host_set = host_set || SSL_set1_dnsname(ssl, hostname) == 1;
+#else
+	const bool host_set = SSL_set1_host(ssl, hostname) == 1;
+#endif
+	// Without it the certificate would be accepted for any name
+	if (!host_set) {
+		SSL_free(ssl);
+		SSL_CTX_free(ctx);
+		return fail_openssl(TLS_ERR_INIT, "could not set the host name to verify");
 	}
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
