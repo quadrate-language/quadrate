@@ -170,7 +170,18 @@ static tls_error_t client_connect(
 	}
 	// SNI, and the name the certificate must carry
 	SSL_set_tlsext_host_name(ssl, hostname);
+#if OPENSSL_VERSION_MAJOR >= 4
+	// SSL_set1_host is deprecated; IP literals must be matched as IP SANs
+	ASN1_OCTET_STRING* ip = a2i_IPADDRESS(hostname);
+	if (ip != NULL) {
+		ASN1_OCTET_STRING_free(ip);
+		SSL_set1_ipaddr(ssl, hostname);
+	} else {
+		SSL_set1_dnsname(ssl, hostname);
+	}
+#else
 	SSL_set1_host(ssl, hostname);
+#endif
 	if (SSL_set_fd(ssl, socket_fd) != 1) {
 		SSL_free(ssl);
 		SSL_CTX_free(ctx);
