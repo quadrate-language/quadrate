@@ -1,0 +1,8 @@
+// Test: a module struct's field type sees through aliases, as a program struct's does --
+// `on:bool` is i64, so a string is not one.
+use bool_fields
+
+fn main() {
+	"yes" bool_fields::Flag -> f
+	f drop
+}
