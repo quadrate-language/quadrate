@@ -64,6 +64,49 @@ static bool applyUses(const std::string& source, const std::string& name, std::s
 	return false;
 }
 
+// Format (or migrate) source text, applying --uses first if asked for. Writes any
+// error or warning to stderr itself. On failure returns false and leaves `out`
+// unspecified; the caller decides what to do with the original source.
+static bool formatText(const std::string& source, const std::string& name, const FmtOptions& opts,
+		const FormatOptions& fmtOpts, std::string& out) {
+	if (!qdcli::isValidUtf8(source)) {
+		std::cerr << "quadfmt: " << name << ": invalid UTF-8 encoding or binary input\n";
+		return false;
+	}
+
+	std::string input = source;
+	if (opts.uses && !applyUses(source, name, input)) {
+		return false;
+	}
+
+	// The formatter returns its input unchanged if it has parse errors.
+	out = opts.migrate ? migrateSource(input) : formatSource(input, fmtOpts);
+
+	// Validate the output by parsing it.
+	Ast validationAst;
+	IAstNode* validationRoot = validationAst.generate(out.c_str(), false, name.c_str());
+	if (validationRoot && !validationAst.hasErrors()) {
+		return true;
+	}
+
+	if (opts.migrate) {
+		// The old source never parses now, so there is nothing to tell a migration bug from a
+		// file that was meant not to parse -- a compile-error test. Migrate it all the same.
+		std::cerr << "quadfmt: " << name << ": warning: does not parse after migrating\n";
+		return true;
+	}
+
+	// Distinguish parse errors in the source from formatter bugs.
+	Ast sourceAst;
+	sourceAst.generate(source.c_str(), false, name.c_str());
+	if (sourceAst.hasErrors()) {
+		std::cerr << "quadfmt: " << name << ": failed to parse (contains errors)\n";
+	} else {
+		std::cerr << "quadfmt: " << name << ": internal error, formatter produced output that does not parse\n";
+	}
+	return false;
+}
+
 // Format source read from stdin and write the result to stdout.
 //
 // Editors format-on-save by piping the buffer through the formatter rather than
@@ -72,30 +115,8 @@ static bool applyUses(const std::string& source, const std::string& name, std::s
 static bool formatStdin(const FmtOptions& opts, const FormatOptions& fmtOpts) {
 	std::string source((std::istreambuf_iterator<char>(std::cin)), std::istreambuf_iterator<char>());
 
-	if (!qdcli::isValidUtf8(source)) {
-		std::cerr << "quadfmt: <stdin>: invalid UTF-8 encoding or binary input\n";
-		return false;
-	}
-
-	std::string input = source;
-	if (opts.uses && !applyUses(source, "<stdin>", input)) {
-		// Pass the input through untouched: an editor must never lose the buffer.
-		std::cout << source;
-		return false;
-	}
-
-	std::string formatted = opts.migrate ? migrateSource(input) : formatSource(input, fmtOpts);
-
-	Ast validationAst;
-	IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, "<stdin>");
-	if (!validationRoot || validationAst.hasErrors()) {
-		Ast sourceAst;
-		sourceAst.generate(source.c_str(), false, "<stdin>");
-		if (sourceAst.hasErrors()) {
-			std::cerr << "quadfmt: <stdin>: failed to parse (contains errors)\n";
-		} else {
-			std::cerr << "quadfmt: <stdin>: internal error, formatted output does not parse\n";
-		}
+	std::string formatted;
+	if (!formatText(source, "<stdin>", opts, fmtOpts, formatted)) {
 		// Pass the input through untouched: an editor must never lose the buffer
 		// because the formatter could not handle it.
 		std::cout << source;
@@ -108,41 +129,10 @@ static bool formatStdin(const FmtOptions& opts, const FormatOptions& fmtOpts) {
 
 bool formatFile(const std::string& filename, const FmtOptions& opts, const FormatOptions& fmtOpts) {
 	try {
-		// Read source file
 		std::string source = qdcli::readFile(filename);
 
-		// Validate UTF-8 encoding
-		if (!qdcli::isValidUtf8(source)) {
-			std::cerr << "quadfmt: " << filename << ": invalid UTF-8 encoding or binary file\n";
-			return false;
-		}
-
-		std::string input = source;
-		if (opts.uses && !applyUses(source, filename, input)) {
-			return false;
-		}
-
-		// Format using AST-based formatter
-		// Returns original unchanged if file has parse errors
-		std::string formatted = opts.migrate ? migrateSource(input) : formatSource(input, fmtOpts);
-
-		// Validate formatted output by parsing it
-		Ast validationAst;
-		IAstNode* validationRoot = validationAst.generate(formatted.c_str(), false, filename.c_str());
-
-		if (opts.migrate && (!validationRoot || validationAst.hasErrors())) {
-			// The old source never parses now, so there is nothing to tell a migration bug from a
-			// file that was meant not to parse -- a compile-error test. Migrate it all the same.
-			std::cerr << "quadfmt: " << filename << ": warning: does not parse after migrating\n";
-		} else if (!validationRoot || validationAst.hasErrors()) {
-			// Distinguish parse errors in source vs formatter bugs
-			Ast sourceAst;
-			sourceAst.generate(source.c_str(), false, filename.c_str());
-			if (sourceAst.hasErrors()) {
-				std::cerr << "quadfmt: " << filename << ": failed to parse (contains errors)\n";
-			} else {
-				std::cerr << "quadfmt: " << filename << ": formatter produced invalid output, not saving\n";
-			}
+		std::string formatted;
+		if (!formatText(source, filename, opts, fmtOpts, formatted)) {
 			return false;
 		}
 
