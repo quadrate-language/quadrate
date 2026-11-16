@@ -1,6 +1,135 @@
 #include "ast_parse.h"
 
+#include <type_traits>
+
 namespace Qd {
+
+	namespace {
+
+		// Append a parsed parameter to the inputs or the outputs of `func`.
+		template <typename Func>
+		void addParameter(Func* func, AstNodeParameter* param, bool isOutput, u8t_scanner* scanner, const char* src) {
+			setNodePosition(param, scanner, src);
+			param->setParent(func);
+			if (isOutput) {
+				func->addOutputParameter(param);
+			} else {
+				func->addInputParameter(param);
+			}
+		}
+
+		/**
+		 * Parse a signature's `( name:type … -- … )` after its '(' has been consumed, up to and
+		 * including the closing ')'. Shared by named and anonymous functions; only a named function
+		 * (AstNodeFunctionDeclaration) takes `..a` stack variables.
+		 *
+		 * Returns true when parameters were given without the `--` separator, for the caller to
+		 * report with an example in its own spelling.
+		 */
+		template <typename Func>
+		bool parseParameterList(Func* func, u8t_scanner* scanner, ErrorReporter* errorReporter, const char* src) {
+			constexpr bool allowStackVariables = std::is_same_v<Func, AstNodeFunctionDeclaration>;
+			bool isOutput = false;
+			bool hasSeparator = false;
+			bool hasParams = false;
+			size_t n;
+			char32_t token;
+			while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
+				if (token == ')') {
+					break;
+				}
+
+				// A brace or a slash can never appear in a parameter list, and the loop below
+				// skips tokens it does not recognise -- so `fn n(){fn(}){}}` let the signature
+				// swallow the body's braces, and `fn a(){fn(//){` let it read a comment's `){`
+				// as parameters. Everything downstream that counts braces (the formatter most
+				// of all) then disagreed with the parser about where the body was. Stop here
+				// instead, leaving the scanner on the offending token for the body parse.
+				if (token == '{' || token == '}' || token == '/') {
+					errorReporter->reportError(scanner, "Unexpected '{', '}' or '/' in parameter list");
+					break;
+				}
+
+				if (token == '-') {
+					char32_t nextToken = u8t_scanner_scan(scanner);
+					if (nextToken == '-') {
+						isOutput = true;
+						hasSeparator = true;
+					} else {
+						// A lone '-' is not the `--` separator and nothing else spells it. The token
+						// after has already been scanned, so accepting this in silence swallowed it:
+						// `fn m(){fn(-}){}}` lost the brace that closed the signature's block.
+						errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
+						break;
+					}
+				} else if (token == '.') {
+					if constexpr (allowStackVariables) {
+						// A stack variable, `..a`, at the bottom of the inputs or the outputs
+						const std::string variable = scanStackVariableTail(scanner);
+						if (variable.empty()) {
+							errorReporter->reportError(scanner, "Expected a stack variable such as '..a'");
+							break;
+						}
+						const bool listStarted =
+								isOutput ? !func->outputParameters().empty() : !func->inputParameters().empty();
+						const std::string& already =
+								isOutput ? func->outputStackVariable() : func->inputStackVariable();
+						if (listStarted || !already.empty()) {
+							errorReporter->reportError(
+									scanner, ("The stack variable '" + variable +
+													 "' must come first in its list, and a list has at most one")
+													 .c_str());
+						} else if (isOutput) {
+							func->setOutputStackVariable(variable);
+						} else {
+							func->setInputStackVariable(variable);
+						}
+					}
+				} else if (token == U8T_IDENTIFIER) {
+					hasParams = true;
+					const std::string paramNameStr(u8t_scanner_token_text(scanner, &n));
+
+					// Check if there's a type annotation
+					char32_t paramPeek = u8t_scanner_peek(scanner);
+					if (paramPeek == ':') {
+						// Consume the ':'
+						u8t_scanner_scan(scanner);
+						// A malformed type has been scanned by the time parseType reports it, so
+						// carrying on here loses whatever came next: `fn a(){def(n:}--){}}` used to
+						// lose the brace that closed the signature's block and still parse clean.
+						const std::string paramTypeStr = parseType(scanner, errorReporter);
+						if (paramTypeStr.empty()) {
+							break;
+						}
+						addParameter(func, new AstNodeParameter(paramNameStr, paramTypeStr, isOutput), isOutput,
+								scanner, src);
+					} else if (paramPeek == '<' && !isTypeName(paramNameStr)) {
+						// Unnamed generic type parameter (e.g., def foo(Vec<i64> -- ))
+						std::string typeStr = paramNameStr;
+						u8t_scanner_scan(scanner); // consume '<'
+						parseTypeArgumentList(scanner, errorReporter, typeStr);
+						addParameter(func, new AstNodeParameter("", typeStr, isOutput), isOutput, scanner, src);
+					} else {
+						// Unnamed parameter (e.g., def foo(i64 P -- i64)) -- a bare identifier in a
+						// parameter list can only be a type, since a name is always written
+						// `name:type`. This used to store it as the *name* with an empty type, so
+						// `def f(P -- r:i64)` over a struct reported "Invalid type ''" and then a
+						// cascade from the body.
+						addParameter(func, new AstNodeParameter("", paramNameStr, isOutput), isOutput, scanner, src);
+					}
+				} else if (token == '[') {
+					// Unnamed array type parameter: []T
+					const std::string typeStr = parseTypeFrom(token, scanner, errorReporter);
+					if (typeStr.empty()) {
+						break;
+					}
+					addParameter(func, new AstNodeParameter("", typeStr, isOutput), isOutput, scanner, src);
+				}
+			}
+			return hasParams && !hasSeparator;
+		}
+
+	} // namespace
 
 	/**
 	 * Parse an anonymous function: def (params -- outputs) { body }, or fn { body }
@@ -35,156 +164,15 @@ namespace Qd {
 			return nullptr;
 		}
 
-		size_t n;
-		bool isOutput = false;
-		bool anonHasSeparator = false;
-		bool anonHasParams = false;
-		bool anonHasNamedInput = false;
-		bool anonHasUnnamedInput = false;
-
 		// Parse parameters: (input:type input2:type -- output:type)
-		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			if (token == ')') {
-				break;
-			}
-
-			// A brace or a slash can never appear in a parameter list, and the loop below
-			// skips tokens it does not recognise -- so `fn n(){fn(}){}}` let the signature
-			// swallow the body's braces, and `fn a(){fn(//){` let it read a comment's `){`
-			// as parameters. Everything downstream that counts braces (the formatter most
-			// of all) then disagreed with the parser about where the body was. Stop here
-			// instead, leaving the scanner on the offending token for the body parse.
-			if (token == '{' || token == '}' || token == '/') {
-				errorReporter->reportError(scanner, "Unexpected '{', '}' or '/' in parameter list");
-				break;
-			}
-
-			if (token == '-') {
-				char32_t nextToken = u8t_scanner_scan(scanner);
-				if (nextToken == '-') {
-					isOutput = true;
-					anonHasSeparator = true;
-				} else {
-					// A lone '-' is not the `--` separator and nothing else spells it. The token
-					// after has already been scanned, so accepting this in silence swallowed it:
-					// `fn m(){fn(-}){}}` lost the brace that closed the signature's block.
-					errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
-					break;
-				}
-			} else if (token == U8T_IDENTIFIER) {
-				anonHasParams = true;
-				const char* paramName = u8t_scanner_token_text(scanner, &n);
-				std::string paramNameStr(paramName);
-
-				// Check if there's a type annotation
-				char32_t paramPeek = u8t_scanner_peek(scanner);
-				if (paramPeek == ':') {
-					if (!isOutput) {
-						anonHasNamedInput = true;
-					}
-					// Consume the ':'
-					u8t_scanner_scan(scanner);
-					// A malformed type has been scanned by the time parseType reports it, so
-					// carrying on here loses whatever came next: `fn a(){def(n:}--){}}` used to
-					// lose the brace that closed the signature's block and still parse clean.
-					const std::string paramTypeStr = parseType(scanner, errorReporter);
-					if (paramTypeStr.empty()) {
-						break;
-					}
-					AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				} else if (isTypeName(paramNameStr)) {
-					// Unnamed typed parameter (e.g., def (i64 -- i64) { ... })
-					if (!isOutput) {
-						anonHasUnnamedInput = true;
-					}
-					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				} else if (paramPeek == '<') {
-					// Unnamed generic type parameter (e.g., def (Vec<i64> -- ) { ... })
-					std::string typeStr = paramNameStr;
-					u8t_scanner_scan(scanner); // consume '<'
-					parseTypeArgumentList(scanner, errorReporter, typeStr);
-					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				} else {
-					// Unnamed parameter — the identifier is the type, not a name. It used to be
-					// read the other way round, as a name with no type, so `fn (Str -- )` bound a
-					// local called `Str` and left the body an empty stack; a named function's
-					// parameter list has always read it as a type.
-					if (!isOutput) {
-						anonHasUnnamedInput = true;
-					}
-					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				}
-			} else if (token == '[') {
-				// Unnamed array type parameter: []T -- same as the named form above.
-				const std::string typeStr = parseTypeFrom(token, scanner, errorReporter);
-				if (typeStr.empty()) {
-					break;
-				}
-				AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
-				setNodePosition(param, scanner, src);
-				param->setParent(func.get());
-				if (isOutput) {
-					func->addOutputParameter(param);
-				} else {
-					func->addInputParameter(param);
-				}
-			} else if (token == U8T_IDENTIFIER) {
-				// Check for unnamed fn(...) type parameter
-				const char* typeName = u8t_scanner_token_text(scanner, &n);
-				if (strcmp(typeName, "fn") == 0) {
-					std::string fnType = tryParseFnType(scanner);
-					if (!fnType.empty()) {
-						AstNodeParameter* param = new AstNodeParameter("", fnType, isOutput);
-						setNodePosition(param, scanner, src);
-						param->setParent(func.get());
-						if (isOutput) {
-							func->addOutputParameter(param);
-						} else {
-							func->addInputParameter(param);
-						}
-					}
-				}
-			}
-		}
-
-		if (anonHasParams && !anonHasSeparator) {
+		if (parseParameterList(func.get(), scanner, errorReporter, src)) {
 			errorReporter->reportError(scanner, "Function signature requires '--' separator (e.g., 'fn(x:i64 -- )' "
 												"or 'fn(x:i64 -- y:i64)')");
 		}
 		// Whether inputs are bound is carried by `def`, not by whether someone wrote a name, so
-		// mixing named and unnamed inputs is no longer a parse error: in a `fn` the names are
-		// partial documentation, and with it the validator reports each unnamed input the way it
-		// does for a named function. `anonHasNamedInput` is kept for the parse either way.
-		(void)anonHasNamedInput;
-		(void)anonHasUnnamedInput;
+		// mixing named and unnamed inputs is not a parse error: in a `fn` the names are partial
+		// documentation, and with it the validator reports each unnamed input the way it does
+		// for a named function.
 
 		// A '!' before the body marks the function fallible, as it does after a named function's
 		// signature.
@@ -372,148 +360,8 @@ namespace Qd {
 			return nullptr;
 		}
 
-		bool isOutput = false;
-		bool hasSeparator = false;
-		bool hasParams = false;
-		while ((token = u8t_scanner_scan(scanner)) != U8T_EOF) {
-			if (token == ')') {
-				break;
-			}
-
-			// As in parseAnonymousFunction above: a brace or a slash is not a parameter, and
-			// skipping it let the signature swallow the body's own braces.
-			if (token == '{' || token == '}' || token == '/') {
-				errorReporter->reportError(scanner, "Unexpected '{', '}' or '/' in parameter list");
-				break;
-			}
-
-			if (token == '-') {
-				char32_t nextToken = u8t_scanner_scan(scanner);
-				if (nextToken == '-') {
-					isOutput = true;
-					hasSeparator = true;
-				} else {
-					// Same as above: the token after a lone '-' has been scanned and is gone.
-					errorReporter->reportError(scanner, "Expected '--' between inputs and outputs");
-					break;
-				}
-			} else if (token == '.') {
-				// A stack variable, `..a`, at the bottom of the inputs or the outputs
-				const std::string variable = scanStackVariableTail(scanner);
-				if (variable.empty()) {
-					errorReporter->reportError(scanner, "Expected a stack variable such as '..a'");
-					break;
-				}
-				const bool listStarted =
-						isOutput ? !func->outputParameters().empty() : !func->inputParameters().empty();
-				const std::string& already = isOutput ? func->outputStackVariable() : func->inputStackVariable();
-				if (listStarted || !already.empty()) {
-					errorReporter->reportError(
-							scanner, ("The stack variable '" + variable +
-											 "' must come first in its list, and a list has at most one")
-											 .c_str());
-				} else if (isOutput) {
-					func->setOutputStackVariable(variable);
-				} else {
-					func->setInputStackVariable(variable);
-				}
-			} else if (token == U8T_IDENTIFIER) {
-				hasParams = true;
-				const char* paramName = u8t_scanner_token_text(scanner, &n);
-				std::string paramNameStr(paramName);
-
-				// Check if there's a type annotation
-				char32_t paramPeek = u8t_scanner_peek(scanner);
-				if (paramPeek == ':') {
-					// Consume the ':'
-					u8t_scanner_scan(scanner);
-					// A malformed type has been scanned by the time parseType reports it, so
-					// carrying on here loses whatever came next: `fn a(){def(n:}--){}}` used to
-					// lose the brace that closed the signature's block and still parse clean.
-					const std::string paramTypeStr = parseType(scanner, errorReporter);
-					if (paramTypeStr.empty()) {
-						break;
-					}
-					AstNodeParameter* param = new AstNodeParameter(paramNameStr, paramTypeStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				} else if (isTypeName(paramNameStr)) {
-					// Unnamed typed parameter (e.g., def foo(i64 f64 -- i64))
-					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				} else if (paramPeek == '<') {
-					// Unnamed generic type parameter (e.g., def foo(Vec<i64> -- ))
-					std::string typeStr = paramNameStr;
-					u8t_scanner_scan(scanner); // consume '<'
-					parseTypeArgumentList(scanner, errorReporter, typeStr);
-					AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				} else {
-					// Unnamed parameter — a bare identifier in a parameter list can only be a
-					// type, since a name is always written `name:type`. This used to store it
-					// as the *name* with an empty type, so `def f(P -- r:i64)` over a struct
-					// reported "Invalid type ''" and then a cascade from the body.
-					AstNodeParameter* param = new AstNodeParameter("", paramNameStr, isOutput);
-					setNodePosition(param, scanner, src);
-					param->setParent(func.get());
-					if (isOutput) {
-						func->addOutputParameter(param);
-					} else {
-						func->addInputParameter(param);
-					}
-				}
-			} else if (token == '[') {
-				// Unnamed array type parameter: []T -- same as the named form above.
-				const std::string typeStr = parseTypeFrom(token, scanner, errorReporter);
-				if (typeStr.empty()) {
-					break;
-				}
-				AstNodeParameter* param = new AstNodeParameter("", typeStr, isOutput);
-				setNodePosition(param, scanner, src);
-				param->setParent(func.get());
-				if (isOutput) {
-					func->addOutputParameter(param);
-				} else {
-					func->addInputParameter(param);
-				}
-			} else if (token == U8T_IDENTIFIER) {
-				// Check for unnamed fn(...) type parameter
-				const char* typeName = u8t_scanner_token_text(scanner, &n);
-				if (strcmp(typeName, "fn") == 0) {
-					std::string fnType = tryParseFnType(scanner);
-					if (!fnType.empty()) {
-						AstNodeParameter* param = new AstNodeParameter("", fnType, isOutput);
-						setNodePosition(param, scanner, src);
-						param->setParent(func.get());
-						if (isOutput) {
-							func->addOutputParameter(param);
-						} else {
-							func->addInputParameter(param);
-						}
-					}
-				}
-			}
-		}
-
 		// Require '--' separator when parameters are present
-		if (hasParams && !hasSeparator) {
+		if (parseParameterList(func.get(), scanner, errorReporter, src)) {
 			errorReporter->reportError(scanner, "Function signature requires '--' separator (e.g., 'fn foo(x:i64 -- )' "
 												"or 'fn foo(x:i64 -- y:i64)')");
 		}
