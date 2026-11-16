@@ -653,6 +653,65 @@ std::vector<std::pair<std::string, std::string>> QuadrateLSP::findStructFields(
 	return fields;
 }
 
+FunctionInfo lspMakeFunctionInfo(const Qd::AstNodeFunctionDeclaration* funcNode) {
+	FunctionInfo info;
+	info.name = funcNode->name();
+	info.binds = !funcNode->isStack();
+	info.typeParams = funcNode->declaredParameters();
+	info.isGeneric = !info.typeParams.empty();
+	info.isMethod = funcNode->hasReceiver();
+	if (info.isMethod) {
+		info.receiverName = funcNode->receiverName();
+		info.receiverType = funcNode->receiverType();
+		info.receiverTypeParams = funcNode->receiverTypeParams();
+	}
+
+	std::ostringstream sigStream;
+	sigStream << (info.binds ? "def " : "fn ");
+	if (info.isMethod) {
+		sigStream << "(" << info.receiverName << ":" << info.receiverType
+				  << typeParamSuffix(!info.receiverTypeParams.empty(), info.receiverTypeParams) << ") ";
+	}
+	sigStream << info.name << typeParamSuffix(info.isGeneric, info.typeParams) << "(";
+
+	// The signature shows a stack variable first in its list. The parameter lists do not:
+	// they feed the call snippet and the inlay hints, where a stack variable is no argument.
+	const auto inputItems = funcNode->inputItems();
+	const auto outputItems = funcNode->outputItems();
+	sigStream << joinNames(inputItems, " ");
+	if (!inputItems.empty() || !outputItems.empty()) {
+		sigStream << " -- ";
+	}
+	sigStream << joinNames(outputItems, " ") << ")";
+	if (funcNode->throws()) {
+		sigStream << "!";
+	}
+	info.signature = sigStream.str();
+
+	for (const auto& param : funcNode->inputParameters()) {
+		info.inputParams.push_back(static_cast<Qd::AstNodeParameter*>(param.get())->displayString());
+	}
+	for (const auto& param : funcNode->outputParameters()) {
+		info.outputParams.push_back(static_cast<Qd::AstNodeParameter*>(param.get())->displayString());
+	}
+
+	// Snippet with a placeholder for each input parameter's name
+	std::ostringstream snippetStream;
+	for (size_t j = 0; j < info.inputParams.size(); j++) {
+		const std::string& param = info.inputParams[j];
+		size_t colonPos = param.find(':');
+		std::string paramName = (colonPos != std::string::npos) ? param.substr(0, colonPos) : param;
+		snippetStream << "${" << (j + 1) << ":" << paramName << "} ";
+	}
+	snippetStream << info.name;
+	if (funcNode->throws()) {
+		snippetStream << "!";
+	}
+	info.snippet = snippetStream.str();
+
+	return info;
+}
+
 std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string& modulePath) {
 	std::vector<FunctionInfo> functions;
 
@@ -683,107 +742,7 @@ std::vector<FunctionInfo> QuadrateLSP::extractModuleFunctions(const std::string&
 				continue;
 			}
 
-			FunctionInfo info;
-			info.name = funcNode->name();
-
-			// Extract generic type parameters, stack variables first
-			info.typeParams = funcNode->declaredParameters();
-			info.isGeneric = !info.typeParams.empty();
-
-			// Extract method receiver information
-			info.isMethod = funcNode->hasReceiver();
-			if (info.isMethod) {
-				info.receiverName = funcNode->receiverName();
-				info.receiverType = funcNode->receiverType();
-				if (funcNode->hasReceiverTypeParams()) {
-					info.receiverTypeParams = funcNode->receiverTypeParams();
-				}
-			}
-
-			// Build signature parts
-			std::ostringstream sigStream;
-
-			// Include receiver in signature for methods
-			if (info.isMethod) {
-				sigStream << (info.binds ? "def (" : "fn (") << info.receiverName << ":" << info.receiverType;
-				if (!info.receiverTypeParams.empty()) {
-					sigStream << "<";
-					for (size_t j = 0; j < info.receiverTypeParams.size(); j++) {
-						if (j > 0) {
-							sigStream << ", ";
-						}
-						sigStream << info.receiverTypeParams[j];
-					}
-					sigStream << ">";
-				}
-				sigStream << ") " << info.name;
-			} else {
-				sigStream << (info.binds ? "def " : "fn ") << info.name;
-			}
-
-			// Add type parameters to signature
-			if (info.isGeneric) {
-				sigStream << "<";
-				for (size_t j = 0; j < info.typeParams.size(); j++) {
-					if (j > 0) {
-						sigStream << ", ";
-					}
-					sigStream << info.typeParams[j];
-				}
-				sigStream << ">";
-			}
-
-			sigStream << "(";
-
-			// The signature shows a stack variable first in its list. The parameter lists do not:
-			// they feed the call snippet and the inlay hints, where a stack variable is no argument.
-			const auto inputItems = funcNode->inputItems();
-			const auto outputItems = funcNode->outputItems();
-			for (size_t j = 0; j < inputItems.size(); j++) {
-				sigStream << (j > 0 ? " " : "") << inputItems[j];
-			}
-			if (!inputItems.empty() || !outputItems.empty()) {
-				sigStream << " -- ";
-			}
-			for (size_t j = 0; j < outputItems.size(); j++) {
-				sigStream << (j > 0 ? " " : "") << outputItems[j];
-			}
-			for (const auto& param : funcNode->inputParameters()) {
-				info.inputParams.push_back(static_cast<Qd::AstNodeParameter*>(param.get())->displayString());
-			}
-			for (const auto& param : funcNode->outputParameters()) {
-				info.outputParams.push_back(static_cast<Qd::AstNodeParameter*>(param.get())->displayString());
-			}
-
-			sigStream << ")";
-			if (funcNode->throws()) {
-				sigStream << "!";
-			}
-			info.signature = sigStream.str();
-
-			// Build snippet with placeholders for input parameters
-			std::ostringstream snippetStream;
-			for (size_t j = 0; j < info.inputParams.size(); j++) {
-				const std::string& param = info.inputParams[j];
-				size_t colonPos = param.find(':');
-				std::string paramName = (colonPos != std::string::npos) ? param.substr(0, colonPos) : param;
-
-				snippetStream << "${" << (j + 1) << ":" << paramName << "}";
-				if (j < info.inputParams.size() - 1) {
-					snippetStream << " ";
-				}
-			}
-			if (!info.inputParams.empty()) {
-				snippetStream << " ";
-			}
-			snippetStream << info.name;
-			if (funcNode->throws()) {
-				snippetStream << "!";
-			}
-
-			info.snippet = snippetStream.str();
-
-			functions.push_back(info);
+			functions.push_back(lspMakeFunctionInfo(funcNode));
 		} else if (child && child->type() == Qd::IAstNode::Type::IMPORT_STATEMENT) {
 			// Handle imported native functions (e.g., from C libraries)
 			Qd::AstNodeImport* importNode = static_cast<Qd::AstNodeImport*>(child);

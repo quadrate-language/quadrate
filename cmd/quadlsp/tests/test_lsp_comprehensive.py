@@ -100,7 +100,13 @@ class LSPSession:
 
         content_length = int(headers.get('Content-Length', 0))
         if content_length > 0:
-            content = self.proc.stdout.read(content_length)
+            # Unbuffered reads can return less than asked for, so read until the body is whole
+            content = b""
+            while len(content) < content_length:
+                chunk = self.proc.stdout.read(content_length - len(content))
+                if not chunk:
+                    return None
+                content += chunk
             return json.loads(content.decode('utf-8'))
         return None
 
