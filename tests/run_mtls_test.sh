@@ -78,7 +78,8 @@ openssl genrsa -out "$CERT_DIR/ca.key" 2048 2>/dev/null
 openssl req -new -x509 -days 1 -key "$CERT_DIR/ca.key" -out "$CERT_DIR/ca.crt" \
     -subj "/CN=Test CA" 2>/dev/null
 
-# Create server cert
+# Create server cert. The name goes in a subjectAltName: hostname checks match against
+# that, and OpenSSL 4.0 no longer falls back to the subject CN by default.
 openssl genrsa -out "$CERT_DIR/server.key" 2048 2>/dev/null
 openssl req -new -key "$CERT_DIR/server.key" -out "$CERT_DIR/server.csr" \
     -subj "/CN=localhost" 2>/dev/null
