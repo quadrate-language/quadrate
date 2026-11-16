@@ -1,0 +1,28 @@
+// NaN comparisons follow IEEE 754: every ordered comparison is false and `!=` is true,
+// NaN against itself included. The inlined compare and the runtime's qd_neq must agree;
+// the inlined path once used an ordered not-equal, so `nan nan !=` gave 0.
+use math
+
+def neq(a:f64 b:f64 -- r:i64) {
+	a b !=
+}
+
+fn main() {
+	math::nan -> n
+
+	n n != print nl
+	n 1.0 != print nl
+	1.0 n != print nl
+	n n neq print nl
+	0.0 0.0 / dup != print nl
+
+	n n == print nl
+	n 1.0 < print nl
+	n 1.0 > print nl
+	n 1.0 <= print nl
+	n 1.0 >= print nl
+
+	// ordinary values are unaffected
+	1.0 1.0 != print nl
+	1.0 2.0 != print nl
+}
