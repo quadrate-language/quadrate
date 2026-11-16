@@ -55,35 +55,12 @@
 #include <quadrate/qc/lower_combinators.h>
 
 #include "ast_node_block.h"
+#include "ast_walk.h"
 
 namespace Qd {
 
 	namespace {
 		using Names = std::unordered_set<std::string>;
-
-		bool isHiddenName(const std::string& name) {
-			return !name.empty() && name[0] == '$';
-		}
-
-		// Every name a function body declares, wherever: a local of that name shadows a builtin
-		// from where it is declared, and a combinator so shadowed is not one
-		void collectDeclaredNames(const IAstNode* node, Names& names) {
-			if (!node) {
-				return;
-			}
-			if (node->type() == IAstNode::Type::LOCAL) {
-				for (const std::string& name : static_cast<const AstNodeLocal*>(node)->names()) {
-					names.insert(name);
-				}
-			} else if (node->type() == IAstNode::Type::FOR_STATEMENT) {
-				names.insert(static_cast<const AstNodeForStatement*>(node)->iteratorName());
-			} else if (node->type() == IAstNode::Type::VARIABLE_DECLARATION) {
-				names.insert(static_cast<const AstNodeParameter*>(node)->name());
-			}
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectDeclaredNames(node->child(i), names);
-			}
-		}
 
 		// Whether this body can be spliced into the enclosing function as it is: nothing in it
 		// may mean something different there. A local would be a local of the enclosing
