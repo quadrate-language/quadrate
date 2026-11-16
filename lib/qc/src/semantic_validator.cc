@@ -174,32 +174,12 @@ namespace Qd {
 			if (!isStructTypeName(baseType)) {
 				return false;
 			}
-			// Extract and validate type arguments
-			size_t closePos = typeStr.rfind('>');
-			if (closePos == std::string::npos || closePos <= anglePos) {
+			if (typeStr.back() != '>') {
 				return false;
 			}
-			std::string typeArgs = typeStr.substr(anglePos + 1, closePos - anglePos - 1);
-			// Parse comma-separated type arguments
-			size_t start = 0;
-			while (start < typeArgs.size()) {
-				size_t commaPos = typeArgs.find(',', start);
-				std::string arg;
-				if (commaPos == std::string::npos) {
-					arg = typeArgs.substr(start);
-					start = typeArgs.size();
-				} else {
-					arg = typeArgs.substr(start, commaPos - start);
-					start = commaPos + 1;
-				}
-				// Trim whitespace
-				while (!arg.empty() && arg.front() == ' ') {
-					arg.erase(0, 1);
-				}
-				while (!arg.empty() && arg.back() == ' ') {
-					arg.pop_back();
-				}
-				// Each type arg must be a valid type (recursive)
+			// Each type argument must be a valid type (recursive); typeArgsOf splits only on
+			// top-level commas, so nested generics like Map<K, Pair<A, B>> stay intact
+			for (const auto& arg : typeArgsOf(typeStr)) {
 				if (!arg.empty() && !isValidTypeName(arg)) {
 					return false;
 				}
