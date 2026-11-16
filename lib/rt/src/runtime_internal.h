@@ -70,7 +70,6 @@ static inline double qdrt_to_double(const qd_stack_element_t* elem) {
 	return (elem->type == QD_STACK_TYPE_INT) ? (double)elem->value.i : elem->value.f;
 }
 
-// Release string reference if element is a string
 // Drop a stack slot's reference to what it holds.
 //
 // A slot owns one reference to a refcounted value, whether that is a string or a pointer to
