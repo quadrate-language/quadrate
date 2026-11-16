@@ -324,8 +324,8 @@ namespace Qd {
 		bool checkStructConstructionRef(class AstNodeStructConstruction* construct,
 				std::unordered_set<std::string>& localVariables, std::unordered_set<std::string>& iteratorNames);
 		void checkScopedRef(class AstNodeScopedIdentifier* scoped);
-		void validateFunctionRefs(class AstNodeFunctionDeclaration* func,
-				const std::unordered_set<std::string>& localVariables);
+		void validateFunctionRefs(
+				class AstNodeFunctionDeclaration* func, const std::unordered_set<std::string>& localVariables);
 		void validateAnonymousFunctionRefs(class AstNodeAnonymousFunction* anonFunc,
 				const std::unordered_set<std::string>& localVariables,
 				const std::unordered_set<std::string>& iteratorNames);

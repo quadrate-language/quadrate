@@ -143,8 +143,9 @@ namespace Qd {
 				AstNodeParameter* param = static_cast<AstNodeParameter*>(paramNode.get());
 				if (!param->hasName()) {
 					std::string errorMsg = "Unnamed input parameter '" + param->typeString() + "' in 'def " +
-										   func->name() + "', which binds every input: name it ('value:" +
-										   param->typeString() + "'), or write 'fn " + func->name() +
+										   func->name() +
+										   "', which binds every input: name it ('value:" + param->typeString() +
+										   "'), or write 'fn " + func->name() +
 										   "' to leave the arguments "
 										   "on the stack for the body to work on";
 					reportError(param, errorMsg.c_str());
@@ -689,9 +690,8 @@ namespace Qd {
 							  : node->type() == IAstNode::Type::CONTINUE_STATEMENT
 									  ? "continue"
 									  : static_cast<AstNodeConditionalBreak*>(node)->keyword();
-		const char* example = node->type() == IAstNode::Type::BREAK_STATEMENT ? "loop { done if { break } }"
-							  : node->type() == IAstNode::Type::CONTINUE_STATEMENT
-									  ? "loop { skip if { continue } }"
+		const char* example = node->type() == IAstNode::Type::BREAK_STATEMENT	   ? "loop { done if { break } }"
+							  : node->type() == IAstNode::Type::CONTINUE_STATEMENT ? "loop { skip if { continue } }"
 							  : node->type() == IAstNode::Type::CONDITIONAL_BREAK &&
 											  static_cast<AstNodeConditionalBreak*>(node)->breakWhen()
 									  ? "loop { done until }"
@@ -847,7 +847,8 @@ namespace Qd {
 	// An identifier is a function call or a local variable reference. Returns true when it
 	// resolves to something, or reports what is wrong with it.
 	bool SemanticValidator::checkIdentifierRef(AstNodeIdentifier* ident,
-			const std::unordered_set<std::string>& localVariables, const std::unordered_set<std::string>& iteratorNames) {
+			const std::unordered_set<std::string>& localVariables,
+			const std::unordered_set<std::string>& iteratorNames) {
 		const char* name = ident->name().c_str();
 
 		// A for loop iterator, a local variable or a built-in instruction
@@ -1234,7 +1235,8 @@ namespace Qd {
 	// An anonymous function's body is a new scope, holding its parameters and the variables
 	// it captures from the enclosing scope
 	void SemanticValidator::validateAnonymousFunctionRefs(AstNodeAnonymousFunction* anonFunc,
-			const std::unordered_set<std::string>& localVariables, const std::unordered_set<std::string>& iteratorNames) {
+			const std::unordered_set<std::string>& localVariables,
+			const std::unordered_set<std::string>& iteratorNames) {
 		// A new scope for the anonymous function, holding its own parameters
 		std::unordered_set<std::string> anonLocals = lambdaParameterNames(anonFunc);
 		std::unordered_set<std::string> anonIterators;
