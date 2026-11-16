@@ -3711,9 +3711,9 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 					// Resolve module path
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
-						Qd::Ast ast;
-						Qd::IAstNode* root = nullptr;
-						if (!modulePath.empty() && lspParseModuleFile(modulePath, ast, root)) {
+					Qd::Ast ast;
+					Qd::IAstNode* root = nullptr;
+					if (!modulePath.empty() && lspParseModuleFile(modulePath, ast, root)) {
 						// Search for the symbol
 						for (size_t i = 0; i < root->childCount(); i++) {
 							Qd::IAstNode* child = root->child(i);
@@ -3755,14 +3755,13 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 										docStream << ">`\n\n";
 									}
 
-									docStream << "**" << (funcNode->hasReceiver() ? "Method" : "Function")
-											  << " (from " << moduleName << "):**\n```quadrate\n";
+									docStream << "**" << (funcNode->hasReceiver() ? "Method" : "Function") << " (from "
+											  << moduleName << "):**\n```quadrate\n";
 
 									// Build full signature
 									if (funcNode->hasReceiver()) {
 										docStream << (funcNode->isStack() ? "fn (" : "def (")
-												  << funcNode->receiverName() << ":"
-												  << funcNode->receiverType();
+												  << funcNode->receiverName() << ":" << funcNode->receiverType();
 										if (funcNode->hasReceiverTypeParams()) {
 											docStream << "<";
 											const auto& rTypeParams = funcNode->receiverTypeParams();
@@ -3815,8 +3814,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 									result = json_object();
 									json_t* contents = json_object();
 									json_object_set_new(contents, "kind", json_string("markdown"));
-									json_object_set_new(
-											contents, "value", json_string(docStream.str().c_str()));
+									json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
 									json_object_set_new(result, "contents", contents);
 									break;
 								}
@@ -3825,14 +3823,13 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 								if (constNode->name() == symbolName) {
 									// Build constant documentation
 									std::ostringstream docStream;
-									docStream << "**Constant (from " << moduleName << "):** `"
-											  << constNode->name() << " = " << constNode->value() << "`";
+									docStream << "**Constant (from " << moduleName << "):** `" << constNode->name()
+											  << " = " << constNode->value() << "`";
 
 									result = json_object();
 									json_t* contents = json_object();
 									json_object_set_new(contents, "kind", json_string("markdown"));
-									json_object_set_new(
-											contents, "value", json_string(docStream.str().c_str()));
+									json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
 									json_object_set_new(result, "contents", contents);
 									break;
 								}
@@ -3875,8 +3872,7 @@ void QuadrateLSP::handleHover(const std::string& id, const std::string& uri, siz
 										result = json_object();
 										json_t* contents = json_object();
 										json_object_set_new(contents, "kind", json_string("markdown"));
-										json_object_set_new(
-												contents, "value", json_string(docStream.str().c_str()));
+										json_object_set_new(contents, "value", json_string(docStream.str().c_str()));
 										json_object_set_new(result, "contents", contents);
 										break;
 									}
@@ -4000,9 +3996,9 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 						std::string sourceDir = std::filesystem::path(filePath).parent_path().string();
 						std::string modulePath = resolveModulePath(moduleName, sourceDir);
 
-							Qd::Ast ast;
-							Qd::IAstNode* root = nullptr;
-							if (!modulePath.empty() && lspParseModuleFile(modulePath, ast, root)) {
+						Qd::Ast ast;
+						Qd::IAstNode* root = nullptr;
+						if (!modulePath.empty() && lspParseModuleFile(modulePath, ast, root)) {
 							for (size_t i = 0; i < root->childCount(); i++) {
 								Qd::IAstNode* child = root->child(i);
 
@@ -4011,8 +4007,7 @@ void QuadrateLSP::handleSignatureHelp(const std::string& id, const std::string& 
 											static_cast<Qd::AstNodeFunctionDeclaration*>(child);
 									if (funcNode->name() == symbolName) {
 										std::ostringstream sigStream;
-										sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name()
-												  << "(";
+										sigStream << (funcNode->isStack() ? "fn " : "def ") << funcNode->name() << "(";
 
 										const auto& inputs = funcNode->inputParameters();
 										for (size_t j = 0; j < inputs.size(); j++) {
