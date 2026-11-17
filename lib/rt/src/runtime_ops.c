@@ -132,10 +132,7 @@ int qd_div(qd_context* ctx) {
 	qdrt_validate_binary_numeric_op(ctx, "div");
 
 	qd_stack_element_t a, b;
-	int pop_result = qdrt_pop_two_values(ctx, &a, &b);
-	if (pop_result != 0) {
-		return pop_result;
-	}
+	qdrt_pop_two_values(ctx, &a, &b);
 
 	if (a.type == QD_STACK_TYPE_INT && b.type == QD_STACK_TYPE_INT) {
 		if (b.value.i == 0) {

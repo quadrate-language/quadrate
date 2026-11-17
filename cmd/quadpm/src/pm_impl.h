@@ -117,6 +117,10 @@ std::string getInstalledDirName(const std::string& hostPath, const std::string& 
 // Check that modulesDir/installedDirName is a plain relative path that stays inside the modules dir
 bool isSafeInstalledDirName(const std::string& installedDirName);
 
+// Check that a module (dependency) name is a plain [A-Za-z0-9_.-]+ token not starting with '-' or '.',
+// so it cannot steer the library paths built from it outside the module
+bool isSafeModuleName(const std::string& moduleName);
+
 // Create a fresh empty staging directory inside the modules dir; empty string on failure
 std::string makeStagingDir();
 

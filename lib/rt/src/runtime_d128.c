@@ -38,7 +38,7 @@ static void pop_two_d128(qd_context* ctx, const char* op, qd_d128_t* a, qd_d128_
 	const qd_stack_element_t* eb = &st->data[st->size - 1];
 	if (!as_d128(ea, a) || !as_d128(eb, b)) {
 		QDRT_FATAL(ctx, op, "Type error (d128 does not mix with %s; cast one side)",
-				qdrt_type_name(ea->type == QD_STACK_TYPE_D128 ? eb->type : ea->type));
+				qd_type_name(ea->type == QD_STACK_TYPE_D128 ? eb->type : ea->type));
 	}
 	st->size -= 2;
 }
@@ -80,7 +80,7 @@ int qd_castd(qd_context* ctx) {
 		break;
 	default:
 		qdrt_release_element(&elem);
-		QDRT_FATAL(ctx, "castd", "Cannot cast %s to d128", qdrt_type_name(elem.type));
+		QDRT_FATAL(ctx, "castd", "Cannot cast %s to d128", qd_type_name(elem.type));
 	}
 	qdrt_push_d128(ctx, "castd", result);
 	return (int){0};
@@ -100,7 +100,7 @@ int qd_cast_param(qd_context* ctx, int64_t depth, int64_t type) {
 		e->value.i = (int64_t)e->value.f;
 	} else {
 		QDRT_FATAL(
-				ctx, "cast", "Cannot convert %s to %s", qdrt_type_name(e->type), qdrt_type_name((qd_stack_type)type));
+				ctx, "cast", "Cannot convert %s to %s", qd_type_name(e->type), qd_type_name((qd_stack_type)type));
 	}
 	e->type = (qd_stack_type)type;
 	return (int){0};
@@ -118,7 +118,7 @@ int qd_check_param(qd_context* ctx, int64_t depth, int64_t type, int64_t param, 
 		e->value.f = (double)e->value.i;
 	} else {
 		QDRT_FATAL(ctx, func_name, "Type mismatch for parameter %lld (expected %s, got %s)", (long long)param,
-				qdrt_type_name((qd_stack_type)type), qdrt_type_name(e->type));
+				qd_type_name((qd_stack_type)type), qd_type_name(e->type));
 	}
 	e->type = (qd_stack_type)type;
 	return (int){0};

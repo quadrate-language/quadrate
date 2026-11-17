@@ -388,15 +388,6 @@ namespace {
 		return qd_push_i(interp->ctx, Qd::integerLiteralOr(text, 0)) == 0;
 	}
 
-	// The stack owns a reference to every string on it; a popped element that
-	// nothing takes over has to drop it.
-	void releaseElement(qd_stack_element_t& element) {
-		if (element.type == QD_STACK_TYPE_STR && element.value.s != nullptr) {
-			qd_string_release(element.value.s);
-			element.value.s = nullptr;
-		}
-	}
-
 	// A pointer binding as the stack slot it came from, kind and all
 	qd_stack_element_t pointerSlot(const Local& value) {
 		qd_stack_element_t slot{};
@@ -458,7 +449,11 @@ namespace {
 			break;
 		}
 		}
-		releaseElement(element);
+		// The binding keeps a copy of a string's text, so the slot's reference goes; a struct or
+		// an array moved its reference into the binding and keeps it
+		if (element.type == QD_STACK_TYPE_STR) {
+			qd_release_slot(&element);
+		}
 	}
 
 	// Reading a name pushes a copy, leaving the binding in place. A pointer is
@@ -499,7 +494,7 @@ namespace {
 				return false;
 			}
 			if (name == "_") {
-				releaseElement(element);
+				qd_release_slot(&element);
 				continue;
 			}
 			bindLocal(interp, name, element);
@@ -530,9 +525,9 @@ namespace {
 			} else if (bounds[i].type == QD_STACK_TYPE_FLOAT) {
 				numbers[i] = bounds[i].value.f;
 			} else {
-				releaseElement(bounds[0]);
-				releaseElement(bounds[1]);
-				releaseElement(bounds[2]);
+				qd_release_slot(&bounds[0]);
+				qd_release_slot(&bounds[1]);
+				qd_release_slot(&bounds[2]);
 				interp->error = "'for' bounds must be numbers";
 				return false;
 			}
@@ -1244,18 +1239,18 @@ namespace {
 			bool resolved = false;
 			const bool matched = caseMatches(interp, branch->value(), subject, resolved);
 			if (!resolved) {
-				releaseElement(subject);
+				qd_release_slot(&subject);
 				interp->error = "a case label must be a literal, a constant or an enum variant";
 				return false;
 			}
 			if (matched) {
-				releaseElement(subject);
+				qd_release_slot(&subject);
 				return branch->body() == nullptr || evalNode(interp, branch->body());
 			}
 		}
 
 		// Nothing matched and no '_': the value is spent and nothing runs
-		releaseElement(subject);
+		qd_release_slot(&subject);
 		if (fallback != nullptr && fallback->body() != nullptr) {
 			return evalNode(interp, fallback->body());
 		}

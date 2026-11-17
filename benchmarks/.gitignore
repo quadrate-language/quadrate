@@ -4,7 +4,7 @@ arithmetic_qd_o3
 arithmetic_c
 arithmetic_rust
 arithmetic_go
-string_ops
+string_ops_qd
 string_ops_c
 string_ops_rust
 string_ops_go

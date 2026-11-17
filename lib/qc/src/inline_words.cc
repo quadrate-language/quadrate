@@ -29,15 +29,12 @@
 #include <quadrate/qc/inline_words.h>
 
 #include "ast_node_block.h"
+#include "ast_walk.h"
 
 namespace Qd {
 
 	namespace {
 		using Names = std::unordered_set<std::string>;
-
-		bool isHiddenName(const std::string& name) {
-			return !name.empty() && name[0] == '$';
-		}
 
 		// Whether a body can be copied into a caller and mean the same there: built only of the
 		// nodes Copier knows, with nothing in it about the function it is in
@@ -102,25 +99,6 @@ namespace Qd {
 			}
 			for (size_t i = 0; i < node->childCount(); i++) {
 				collectNames(node->child(i), names);
-			}
-		}
-
-		// Every name a function declares: a local, an iterator, a parameter of a `def`
-		void collectDeclaredNames(const IAstNode* node, Names& names) {
-			if (!node) {
-				return;
-			}
-			if (node->type() == IAstNode::Type::LOCAL) {
-				for (const std::string& name : static_cast<const AstNodeLocal*>(node)->names()) {
-					names.insert(name);
-				}
-			} else if (node->type() == IAstNode::Type::FOR_STATEMENT) {
-				names.insert(static_cast<const AstNodeForStatement*>(node)->iteratorName());
-			} else if (node->type() == IAstNode::Type::VARIABLE_DECLARATION) {
-				names.insert(static_cast<const AstNodeParameter*>(node)->name());
-			}
-			for (size_t i = 0; i < node->childCount(); i++) {
-				collectDeclaredNames(node->child(i), names);
 			}
 		}
 

@@ -25,6 +25,8 @@
 #include <quadrate/qc/ast_node_struct_declaration.h>
 #include <quadrate/qc/resolve_names.h>
 
+#include "ast_walk.h"
+
 namespace Qd {
 
 	namespace {
@@ -106,23 +108,7 @@ namespace Qd {
 			// with a global's name stores to the global -- a local never shadows one -- and is no
 			// declaration.
 			void collectLocals(const IAstNode* node, Names& names) const {
-				if (!node) {
-					return;
-				}
-				if (node->type() == IAstNode::Type::LOCAL) {
-					for (const std::string& name : static_cast<const AstNodeLocal*>(node)->names()) {
-						if (!mGlobals.count(name)) {
-							names.insert(name);
-						}
-					}
-				} else if (node->type() == IAstNode::Type::FOR_STATEMENT) {
-					names.insert(static_cast<const AstNodeForStatement*>(node)->iteratorName());
-				} else if (node->type() == IAstNode::Type::VARIABLE_DECLARATION) {
-					names.insert(static_cast<const AstNodeParameter*>(node)->name());
-				}
-				for (size_t i = 0; i < node->childCount(); i++) {
-					collectLocals(node->child(i), names);
-				}
+				collectDeclaredNames(node, names, [this](const std::string& name) { return !mGlobals.count(name); });
 			}
 
 			void resolve(IAstNode* node, const Names& locals) {
