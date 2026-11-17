@@ -1522,8 +1522,7 @@ private:
 		return true;
 	}
 
-	// The clone takes its own reference to every struct and array it holds, and
-	// qd_stack_destroy drops them, so a snapshot needs no counting of its own.
+	// The clone holds a reference of its own to every struct and array on the stack
 	qd_stack* snapshotStack() {
 		qd_stack* snapshot = nullptr;
 		if (qd_stack_clone(&snapshot, ctx->st) != QD_STACK_OK) {
@@ -1532,10 +1531,9 @@ private:
 		return snapshot;
 	}
 
+	// Releases what the snapshot holds
 	static void discardSnapshot(qd_stack* snapshot) {
-		if (snapshot) {
-			qd_stack_destroy(snapshot);
-		}
+		qd_stack_destroy(snapshot);
 	}
 };
 

@@ -39,7 +39,7 @@ void qd_stack_destroy(qd_stack* stack) {
 		return;
 	}
 
-	/* Each slot owns a reference to what it holds: a string, struct or array */
+	/* Release the reference each slot owns: strings, structs and arrays */
 	for (size_t i = 0; i < stack->size; i++) {
 		qdrt_release_element(&stack->data[i]);
 	}
@@ -80,8 +80,7 @@ qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src) {
 				return QD_STACK_ERR_ALLOC;
 			}
 		} else {
-			/* Shallow copy for non-string types; the clone's slot takes its own
-			 * reference to a struct or array, so destroying either stack is safe */
+			/* Share structs and arrays, but with a reference of the clone's own */
 			d->data[i].value = src->data[i].value;
 			qdrt_retain_element(&d->data[i]);
 		}

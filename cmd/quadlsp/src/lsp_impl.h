@@ -5,6 +5,7 @@
 #include <jansson.h>
 #include <map>
 #include <optional>
+#include <quadrate/qc/ast.h>
 #include <quadrate/qc/ast_node.h>
 #include <quadrate/qc/ast_node_function.h>
 #include <quadrate/qc/ast_node_local.h>
@@ -49,7 +50,10 @@ bool lspIsReservedName(const std::string& name);
 // (receiver, `<…>` parameters, `( … -- … )` list, `!`), its parameters and call snippet
 FunctionInfo lspMakeFunctionInfo(const Qd::AstNodeFunctionDeclaration* funcNode);
 
-// Get sibling .qd files in the same directory (for directory-based namespaces)
+// Read a module file from disk (regular files only, via qdcli::readFile) and parse it into
+// `ast`. Returns the PROGRAM root, or nullptr if the file cannot be read or has parse errors.
+// The source text is stored in `text` when given, for mapping nodes back to positions.
+Qd::IAstNode* lspParseModuleFile(const std::string& path, Qd::Ast& ast, std::string* text = nullptr);
 
 // Where a symbol's name is spelled in a document, as a byte range on one line
 struct NameOccurrence {
