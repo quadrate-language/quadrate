@@ -167,7 +167,7 @@ namespace Qd {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
 				errorMsg += "': Expected numeric type, got ";
-				errorMsg += typeToString(top);
+				errorMsg += stackValueTypeToString(top);
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
@@ -341,7 +341,7 @@ namespace Qd {
 			StackValueType top = typeStack.back();
 			if (top != StackValueType::PTR && top != StackValueType::STRING) {
 				std::string errorMsg = "Type error in 'len': Expected an array or a string, got ";
-				errorMsg += typeToString(top);
+				errorMsg += stackValueTypeToString(top);
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
@@ -365,7 +365,7 @@ namespace Qd {
 			StackValueType top = typeStack.back();
 			if (top != StackValueType::PTR) {
 				std::string errorMsg = "Type error in 'len': Expected array (ptr), got ";
-				errorMsg += typeToString(top);
+				errorMsg += stackValueTypeToString(top);
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
@@ -431,7 +431,7 @@ namespace Qd {
 			StackValueType top = typeStack.back();
 			if (top != StackValueType::PTR) {
 				std::string errorMsg = "Type error in 'free': Expected a struct or an array, got ";
-				errorMsg += typeToString(top);
+				errorMsg += stackValueTypeToString(top);
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 				return;
 			}
@@ -501,7 +501,7 @@ namespace Qd {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
 				errorMsg += "': d128 does not mix with ";
-				errorMsg += typeToString(other);
+				errorMsg += stackValueTypeToString(other);
 				reportErrorConditionalWithHint(node, errorMsg.c_str(),
 						"convert the other operand with 'cast<d128>', or write the literal with a 'd': '2.5d'",
 						reportErrors);
@@ -520,7 +520,7 @@ namespace Qd {
 				std::string errorMsg = "Type error in '";
 				errorMsg += name;
 				errorMsg += "': Expected numeric types, got ";
-				errorMsg += typeToString(other);
+				errorMsg += stackValueTypeToString(other);
 				reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 			}
 			typeStack.push_back(other == StackValueType::FLOAT ? StackValueType::FLOAT : StackValueType::UNKNOWN);
@@ -532,9 +532,9 @@ namespace Qd {
 			std::string errorMsg = "Type error in '";
 			errorMsg += name;
 			errorMsg += "': Expected numeric types, got ";
-			errorMsg += typeToString(a);
+			errorMsg += stackValueTypeToString(a);
 			errorMsg += " and ";
-			errorMsg += typeToString(b);
+			errorMsg += stackValueTypeToString(b);
 			reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 			return;
 		}
@@ -569,7 +569,7 @@ namespace Qd {
 					std::string errorMsg = "Type error in '";
 					errorMsg += name;
 					errorMsg += "': a d128 compares only with a d128 or an i64, not with ";
-					errorMsg += typeToString(other);
+					errorMsg += stackValueTypeToString(other);
 					reportErrorConditionalWithHint(node, errorMsg.c_str(),
 							"convert the other operand with 'cast<d128>', or write the literal with a 'd': '2.5d'",
 							reportErrors);
@@ -840,7 +840,7 @@ namespace Qd {
 		}
 		if (arr != StackValueType::PTR) {
 			std::string errorMsg = "Type error in 'nth': Expected an array or a string, got ";
-			errorMsg += typeToString(arr);
+			errorMsg += stackValueTypeToString(arr);
 			reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 			return;
 		}
@@ -1014,7 +1014,7 @@ namespace Qd {
 		StackValueType arr = typeStack.back();
 		if (arr != StackValueType::PTR) {
 			std::string errorMsg = "Type error in 'append': Expected array (ptr), got ";
-			errorMsg += typeToString(arr);
+			errorMsg += stackValueTypeToString(arr);
 			reportErrorConditional(node, errorMsg.c_str(), reportErrors);
 			return;
 		}
@@ -1047,7 +1047,7 @@ namespace Qd {
 						   lookupStructFieldTypes(structType) != nullptr;
 		if (!known) {
 			std::string errorMsg = "Type error in 'clone': Expected a struct or an array, got ";
-			errorMsg += structType.empty() ? typeToString(typeStack.back()) : structType;
+			errorMsg += structType.empty() ? stackValueTypeToString(typeStack.back()) : structType;
 			if (typeStack.back() == StackValueType::PTR && structType.empty()) {
 				reportErrorConditionalWithHint(node, errorMsg.c_str(),
 						"the type has to be known here: declare the value with its struct type, e.g. 'p:Point'",

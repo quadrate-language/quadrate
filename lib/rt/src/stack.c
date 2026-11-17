@@ -39,11 +39,9 @@ void qd_stack_destroy(qd_stack* stack) {
 		return;
 	}
 
-	/* Release all string references */
+	/* Release the reference each slot owns: strings, structs and arrays */
 	for (size_t i = 0; i < stack->size; i++) {
-		if (stack->data[i].type == QD_STACK_TYPE_STR) {
-			qd_string_release(stack->data[i].value.s);
-		}
+		qdrt_release_element(&stack->data[i]);
 	}
 
 	free(stack->data);
@@ -82,8 +80,9 @@ qd_stack_error qd_stack_clone(qd_stack** dest, const qd_stack* src) {
 				return QD_STACK_ERR_ALLOC;
 			}
 		} else {
-			/* Shallow copy for non-string types */
+			/* Share structs and arrays, but with a reference of the clone's own */
 			d->data[i].value = src->data[i].value;
+			qdrt_retain_element(&d->data[i]);
 		}
 	}
 
@@ -220,10 +219,8 @@ qd_stack_error qd_stack_pop(qd_stack* stack, qd_stack_element_t* element) {
 	if (element != NULL) {
 		qdrt_copy_element(element, &stack->data[stack->size]);
 	} else {
-		/* Release string reference if element not saved */
-		if (stack->data[stack->size].type == QD_STACK_TYPE_STR) {
-			qd_string_release(stack->data[stack->size].value.s);
-		}
+		/* Drop the slot's reference if the element is not saved */
+		qdrt_release_element(&stack->data[stack->size]);
 	}
 	return QD_STACK_OK;
 }
@@ -240,10 +237,8 @@ qd_stack_error qd_stack_remove_at(qd_stack* stack, size_t index, qd_stack_elemen
 	if (element != NULL) {
 		qdrt_copy_element(element, &stack->data[index]);
 	} else {
-		/* Release string reference if element not saved */
-		if (stack->data[index].type == QD_STACK_TYPE_STR) {
-			qd_string_release(stack->data[index].value.s);
-		}
+		/* Drop the slot's reference if the element is not saved */
+		qdrt_release_element(&stack->data[index]);
 	}
 
 	/* Shift all elements above this index down by one */

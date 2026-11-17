@@ -2,6 +2,7 @@
 
 #include "pm_impl.h"
 #include <array>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -184,20 +185,14 @@ bool commandExists(const std::string& cmd) {
 
 // Get the path to a local module's directory
 std::string resolveLocalPath(const std::string& path, const std::string& basePath) {
-	std::string resolvedPath = path;
-
-	// Expand ~ to home directory
-	if (resolvedPath.size() > 0 && resolvedPath[0] == '~') {
-		resolvedPath = getHomeDir() + resolvedPath.substr(1);
+	fs::path resolvedPath(Qd::expandTilde(path));
+	if (resolvedPath.is_relative()) {
+		resolvedPath = fs::path(basePath) / resolvedPath;
 	}
 
-	// Make relative paths absolute
-	if (resolvedPath.size() > 0 && resolvedPath[0] != '/') {
-		resolvedPath = basePath + "/" + resolvedPath;
-	}
-
-	// Normalize the path
-	return fs::weakly_canonical(resolvedPath).string();
+	std::error_code ec;
+	fs::path normalized = fs::weakly_canonical(resolvedPath, ec);
+	return ec ? resolvedPath.string() : normalized.string();
 }
 
 // Get current platform name for platform-specific config
@@ -236,6 +231,18 @@ std::string getInstalledDirName(const std::string& hostPath, const std::string& 
 		return prefix + repoName + "@" + actualRef;
 	}
 	return hostPath + "@" + actualRef;
+}
+
+bool isSafeModuleName(const std::string& moduleName) {
+	if (moduleName.empty() || moduleName[0] == '-' || moduleName[0] == '.') {
+		return false;
+	}
+	for (char c : moduleName) {
+		if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '-' && c != '.') {
+			return false;
+		}
+	}
+	return true;
 }
 
 bool isSafeInstalledDirName(const std::string& installedDirName) {

@@ -42,24 +42,6 @@ namespace Qd {
 
 #include "semantic_validator_internal.h"
 
-	// Helper: Convert StackValueType to Quadrate type name
-	static const char* stackTypeToQdType(StackValueType type) {
-		switch (type) {
-		case StackValueType::INT:
-			return "i64";
-		case StackValueType::FLOAT:
-			return "f64";
-		case StackValueType::D128:
-			return "d128";
-		case StackValueType::STRING:
-			return "str";
-		case StackValueType::PTR:
-			return "ptr";
-		default:
-			return "any";
-		}
-	}
-
 	// Helper: Build fn type string from FunctionSignature, e.g. "fn(i64 -- i64)".
 	// Prefers the declared type name of each parameter and result, so a function returning a
 	// struct renders as `fn( -- Point)` rather than `fn( -- ptr)`; the coarse stack types cannot
@@ -67,7 +49,7 @@ namespace Qd {
 	static std::string buildFnTypeString(const FunctionSignature& sig) {
 		auto nameAt = [](const std::unordered_map<size_t, std::string>& names, size_t i, StackValueType t) {
 			auto it = names.find(i);
-			return it != names.end() && !it->second.empty() ? it->second : std::string(stackTypeToQdType(t));
+			return it != names.end() && !it->second.empty() ? it->second : std::string(qdTypeName(t, "any"));
 		};
 		std::string s = "fn(";
 		for (size_t i = 0; i < sig.consumes.size(); i++) {
@@ -250,7 +232,7 @@ namespace Qd {
 				actual = structTypeStack[structTypeStack.size() - fromTop];
 			}
 			if (actual.empty()) {
-				actual = qdTypeNameOf(actualType);
+				actual = qdTypeName(actualType, "", "");
 			}
 			if (actual.empty()) {
 				if (actualType == StackValueType::PTR && expected.compare(0, 3, "fn(") == 0) {
@@ -968,18 +950,7 @@ namespace Qd {
 				if (it == localVariables.end()) {
 					return "";
 				}
-				switch (it->second) {
-				case StackValueType::INT:
-					return "i64";
-				case StackValueType::FLOAT:
-					return "f64";
-				case StackValueType::D128:
-					return "d128";
-				case StackValueType::STRING:
-					return "str";
-				default:
-					return "";
-				}
+				return qdTypeName(it->second, "", "");
 			}
 			default:
 				return "";
@@ -2074,7 +2045,7 @@ namespace Qd {
 			for (size_t k = 0; k < in.types.size(); k++) {
 				std::string actual = structTypeStack.size() > at + k ? structTypeStack[at + k] : std::string();
 				if (actual.empty()) {
-					actual = qdTypeNameOf(typeStack[at + k]);
+					actual = qdTypeName(typeStack[at + k], "", "");
 				}
 				std::map<std::string, std::string> scratch = bindings;
 				std::string why;
@@ -2500,9 +2471,9 @@ namespace Qd {
 				continue;
 			}
 			std::string msg = "Type error in 'switch': the case label is ";
-			msg += typeToString(labelType);
+			msg += stackValueTypeToString(labelType);
 			msg += " but the value switched on is ";
-			msg += typeToString(scrutineeType);
+			msg += stackValueTypeToString(scrutineeType);
 			reportErrorWithHint(label, msg.c_str(),
 					scrutineeType == StackValueType::D128 ? "write the label as a d128: '1.5d'"
 														  : "a d128 label matches only a d128 value");

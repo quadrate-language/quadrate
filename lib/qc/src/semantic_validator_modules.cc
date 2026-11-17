@@ -549,113 +549,15 @@ namespace Qd {
 				// Also register in mStructDeclarations for direct unqualified lookup
 				mStructDeclarations[unqualifiedName] = structDecl;
 			}
-			std::unordered_map<std::string, StackValueType> fieldTypes;
-			std::vector<std::string> fieldOrder;
-			std::unordered_set<std::string> seenFieldNames;
-
-			for (const auto& field : structDecl->fields()) {
-				// Check for duplicate field names
-				if (seenFieldNames.count(field->name())) {
-					std::string errorMsg =
-							"Duplicate field name '" + field->name() + "' in struct '" + structDecl->name() + "'";
-					reportError(field.get(), errorMsg.c_str());
-					return;
-				}
-				seenFieldNames.insert(field->name());
-				fieldOrder.push_back(field->name());
-
-				StackValueType fieldType = StackValueType::UNKNOWN;
-				const std::string& typeName = field->typeName();
-				if (typeName == "f64") {
-					fieldType = StackValueType::FLOAT;
-				} else if (typeName == "d128") {
-					fieldType = StackValueType::D128;
-				} else if (typeName == "i64" || typeName == "i32" || typeName == "i16" || typeName == "i8" ||
-						   typeName == "u64" || typeName == "u32" || typeName == "u16" || typeName == "u8") {
-					fieldType = StackValueType::INT;
-				} else if (typeName == "str") {
-					fieldType = StackValueType::STRING;
-				} else if (typeName.size() > 1 && typeName[0] == '*') {
-					// A pointer to a struct still names the struct -- see the same case in
-					// semantic_validator_collect.cc.
-					fieldType = StackValueType::PTR;
-					std::string pointeeType = typeName.substr(1);
-					if (pointeeType.find("::") == std::string::npos && !moduleName.empty() && moduleName != "main" &&
-							!mergeIntoMain) {
-						pointeeType = moduleName + "::" + pointeeType;
-					}
-					mStructFieldStructTypes[qualifiedName][field->name()] = pointeeType;
-					mStructPointerFields[qualifiedName].insert(field->name());
-					if (mergeIntoMain) {
-						mStructFieldStructTypes[unqualifiedName][field->name()] = pointeeType;
-						mStructPointerFields[unqualifiedName].insert(field->name());
-					}
-				} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
-					// Recorded rather than left blank -- see the same case in
-					// semantic_validator_collect.cc.
-					fieldType = StackValueType::PTR;
-					mStructFieldStructTypes[qualifiedName][field->name()] = "ptr";
-					if (mergeIntoMain) {
-						mStructFieldStructTypes[unqualifiedName][field->name()] = "ptr";
-					}
-				} else if (typeName.size() > 2 && typeName[0] == '[' && typeName[1] == ']') {
-					// Array type: []T - treat as PTR and track the array type
-					fieldType = StackValueType::PTR;
-					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
-					if (mergeIntoMain) {
-						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
-					}
-				} else if (typeName.size() > 3 && typeName.substr(0, 3) == "fn(") {
-					// Function pointer type: fn(i64 -- i64) - treat as PTR
-					fieldType = StackValueType::PTR;
-					mStructFieldStructTypes[qualifiedName][field->name()] = typeName;
-					if (mergeIntoMain) {
-						mStructFieldStructTypes[unqualifiedName][field->name()] = typeName;
-					}
-				} else if (looksLikeStructType(typeName)) {
-					// Struct type - treat as PTR and record the struct type name
-					fieldType = StackValueType::PTR;
-					// If the type is unqualified (no ::), qualify it with the current module name
-					// This ensures "ControlPoint" in module "spline" becomes "spline::ControlPoint"
-					// so it matches when compared against fully qualified types
-					// BUT: don't qualify if merging into main (sibling files share main namespace),
-					// and not if the "type" is one of the struct's own type parameters -- `U` in
-					// `struct Pair<T, U>` is not a struct in this module, and qualifying it to
-					// `ct::U` stopped it being recognised as a parameter at all: constructing a
-					// `Pair<i64, str>` was rejected with "Field 'second' expects ct::U, but got
-					// string". A struct declared in the program rather than a module never went
-					// through this path, which is why the same declaration worked there.
-					const auto& structTypeParams = structDecl->typeParams();
-					bool isOwnTypeParam = std::find(structTypeParams.begin(), structTypeParams.end(), typeName) !=
-										  structTypeParams.end();
-					std::string qualifiedTypeName = typeName;
-					if (!isOwnTypeParam && typeName.find("::") == std::string::npos && !moduleName.empty() &&
-							moduleName != "main" && !mergeIntoMain) {
-						qualifiedTypeName = moduleName + "::" + typeName;
-					}
-					mStructFieldStructTypes[qualifiedName][field->name()] = qualifiedTypeName;
-					// For local file imports that merge into main namespace, also register with unqualified name
-					if (mergeIntoMain) {
-						mStructFieldStructTypes[unqualifiedName][field->name()] = qualifiedTypeName;
-					}
-				}
-				fieldTypes[field->name()] = fieldType;
-
-				// Track fields with default values
-				if (field->hasDefaultValue()) {
-					mStructFieldsWithDefaults[qualifiedName].insert(field->name());
-					// For local file imports that merge into main namespace, also register with unqualified name
-					if (mergeIntoMain) {
-						mStructFieldsWithDefaults[unqualifiedName].insert(field->name());
-					}
-				}
-			}
-			mStructFieldTypes[qualifiedName] = fieldTypes;
-			mStructFieldOrder[qualifiedName] = fieldOrder;
+			std::vector<std::string> keys{qualifiedName};
 			// For local file imports that merge into main namespace, also register with unqualified name
 			if (mergeIntoMain) {
-				mStructFieldTypes[unqualifiedName] = fieldTypes;
-				mStructFieldOrder[unqualifiedName] = fieldOrder;
+				keys.push_back(unqualifiedName);
+			}
+			// Sibling files that merge into main share its namespace, so their names stay as written
+			const std::string qualifyIn = moduleName != "main" && !mergeIntoMain ? moduleName : std::string();
+			if (!collectStructFields(structDecl, keys, qualifyIn)) {
+				return;
 			}
 		}
 
@@ -663,6 +565,95 @@ namespace Qd {
 		for (auto* child : node->children()) {
 			collectModuleStructFieldTypes(child, moduleName, mergeIntoMain);
 		}
+	}
+
+	bool SemanticValidator::collectStructFields(
+			AstNodeStructDeclaration* structDecl, const std::vector<std::string>& keys, const std::string& qualifyIn) {
+		std::unordered_map<std::string, StackValueType> fieldTypes;
+		std::vector<std::string> fieldOrder;
+		std::unordered_set<std::string> seenFieldNames;
+		const auto& structTypeParams = structDecl->typeParams();
+
+		for (const auto& field : structDecl->fields()) {
+			if (isReservedKeyword(field->name())) {
+				std::string errorMsg = "'" + field->name() +
+									   "' is a reserved keyword and cannot be used as a field name in struct '" +
+									   structDecl->name() + "'";
+				reportError(field.get(), errorMsg.c_str());
+				return false;
+			}
+			if (!seenFieldNames.insert(field->name()).second) {
+				std::string errorMsg =
+						"Duplicate field name '" + field->name() + "' in struct '" + structDecl->name() + "'";
+				reportError(field.get(), errorMsg.c_str());
+				return false;
+			}
+			fieldOrder.push_back(field->name());
+
+			const std::string typeName = resolveTypeAliasChain(field->typeName());
+			const auto qualify = [&](const std::string& name) {
+				return qualifyIn.empty() || name.find("::") != std::string::npos ? name : qualifyIn + "::" + name;
+			};
+			StackValueType fieldType = StackValueType::UNKNOWN;
+			std::string tracked;
+			bool isPointerField = false;
+			if (typeName == "f64") {
+				fieldType = StackValueType::FLOAT;
+			} else if (typeName == "d128") {
+				fieldType = StackValueType::D128;
+			} else if (typeName == "i64" || isSizedIntTypeName(typeName)) {
+				// Sized integer fields widen to INT on the stack: their size lives in memory
+				fieldType = StackValueType::INT;
+			} else if (typeName == "str") {
+				fieldType = StackValueType::STRING;
+			} else if (typeName.size() > 1 && typeName[0] == '*') {
+				// `next:*Node` is a pointer to a struct: a pointer on the stack, but a pointer to
+				// something with a name. Dropping the name is what left a method call on
+				// `n <<next` unresolvable.
+				fieldType = StackValueType::PTR;
+				tracked = qualify(typeName.substr(1));
+				isPointerField = true;
+			} else if (typeName == "ptr" || typeName.find('*') != std::string::npos) {
+				// A plain `ptr` field used to record no type at all, which left the field
+				// unchecked: `struct C { data:ptr }` accepted `C { data = [1 2 3] }`, and the
+				// array then reached every raw-buffer function through `c <<data`. Recording
+				// it makes the field say what it is, so the same rule a declared `ptr`
+				// parameter gets applies here.
+				fieldType = StackValueType::PTR;
+				tracked = "ptr";
+			} else if (isArrayTypeName(typeName) || typeName.compare(0, 3, "fn(") == 0) {
+				fieldType = StackValueType::PTR;
+				tracked = typeName;
+			} else if (looksLikeStructType(typeName)) {
+				// An unqualified struct name in a module is that module's struct: "ControlPoint" in
+				// module "spline" is "spline::ControlPoint". Not so a struct's own type parameter --
+				// qualifying `U` in `struct Pair<T, U>` to `ct::U` stopped it being recognised as a
+				// parameter, and constructing a `Pair<i64, str>` was rejected with "Field 'second'
+				// expects ct::U, but got string".
+				fieldType = StackValueType::PTR;
+				const bool isOwnTypeParam =
+						std::find(structTypeParams.begin(), structTypeParams.end(), typeName) != structTypeParams.end();
+				tracked = isOwnTypeParam ? typeName : qualify(typeName);
+			}
+			fieldTypes[field->name()] = fieldType;
+
+			for (const auto& key : keys) {
+				if (!tracked.empty()) {
+					mStructFieldStructTypes[key][field->name()] = tracked;
+				}
+				if (isPointerField) {
+					mStructPointerFields[key].insert(field->name());
+				}
+				if (field->hasDefaultValue()) {
+					mStructFieldsWithDefaults[key].insert(field->name());
+				}
+			}
+		}
+		for (const auto& key : keys) {
+			mStructFieldTypes[key] = fieldTypes;
+			mStructFieldOrder[key] = fieldOrder;
+		}
+		return true;
 	}
 
 	void SemanticValidator::collectModuleImportedFunctions(IAstNode* node, const std::string& moduleName,

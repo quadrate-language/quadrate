@@ -63,6 +63,19 @@ class LSPTester:
             print(f"  Got: {actual}")
             return False
 
+    def assert_true(self, condition, test_name):
+        """Assert that condition is truthy"""
+        self.test_count += 1
+        if condition:
+            self.passed += 1
+            print(f"✓ {test_name}")
+            return True
+        else:
+            self.failed += 1
+            print(f"✗ {test_name}")
+            print(f"  Expected condition to be true")
+            return False
+
     def assert_contains(self, container, item, test_name):
         """Assert that item is in container"""
         self.test_count += 1

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -536,20 +535,10 @@ json_t* QuadrateLSP::findDefinitionInModule(
 
 	// Search all files for the symbol
 	for (const auto& searchPath : filesToSearch) {
-		std::ifstream file(searchPath);
-		if (!file.good()) {
-			continue;
-		}
-
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string moduleText = buffer.str();
-
-		// Parse the module file
+		std::string moduleText;
 		Qd::Ast ast;
-		Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
-
-		if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+		Qd::IAstNode* root = lspParseModuleFile(searchPath, ast, &moduleText);
+		if (!root) {
 			continue;
 		}
 
@@ -610,21 +599,10 @@ json_t* QuadrateLSP::findDefinitionInModule(
 }
 
 json_t* QuadrateLSP::findMethodInModule(const std::string& modulePath, const std::string& methodName) {
-	// Read the module file
-	std::ifstream file(modulePath);
-	if (!file.good()) {
-		return json_null();
-	}
-
-	std::stringstream buffer;
-	buffer << file.rdbuf();
-	std::string moduleText = buffer.str();
-
-	// Parse the module file
+	std::string moduleText;
 	Qd::Ast ast;
-	Qd::IAstNode* root = ast.generate(moduleText.c_str(), false, nullptr);
-
-	if (!root || ast.hasErrors() || root->type() != Qd::IAstNode::Type::PROGRAM) {
+	Qd::IAstNode* root = lspParseModuleFile(modulePath, ast, &moduleText);
+	if (!root) {
 		return json_null();
 	}
 
@@ -874,33 +852,25 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 			// Resolve module path
 			std::string modulePath = resolveModulePath(moduleName, sourceDir);
 			if (!modulePath.empty()) {
-				// Parse the module file
-				std::ifstream moduleFile(modulePath);
-				if (moduleFile.good()) {
-					std::stringstream buffer;
-					buffer << moduleFile.rdbuf();
-					std::string moduleContent = buffer.str();
-
-					Qd::Ast moduleAst;
-					Qd::IAstNode* moduleRoot = moduleAst.generate(moduleContent.c_str(), false, nullptr);
-
-					if (moduleRoot && !moduleAst.hasErrors()) {
-						// Find the struct in the module
-						for (size_t i = 0; i < moduleRoot->childCount(); i++) {
-							Qd::IAstNode* child = moduleRoot->child(i);
-							if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
-								Qd::AstNodeStructDeclaration* structNode =
-										static_cast<Qd::AstNodeStructDeclaration*>(child);
-								if (structNode->name() == structName) {
-									// Found the struct - now find the field
-									const auto& fields = structNode->fields();
-									for (const auto& field : fields) {
-										if (field->name() == foundFieldName) {
-											// Found the field!
-											json_t* location = makeNameLocation(lspPathToUri(modulePath), moduleContent,
-													field.get(), field->name());
-											return location;
-										}
+				std::string moduleContent;
+				Qd::Ast moduleAst;
+				Qd::IAstNode* moduleRoot = lspParseModuleFile(modulePath, moduleAst, &moduleContent);
+				if (moduleRoot) {
+					// Find the struct in the module
+					for (size_t i = 0; i < moduleRoot->childCount(); i++) {
+						Qd::IAstNode* child = moduleRoot->child(i);
+						if (child && child->type() == Qd::IAstNode::Type::STRUCT_DECLARATION) {
+							Qd::AstNodeStructDeclaration* structNode =
+									static_cast<Qd::AstNodeStructDeclaration*>(child);
+							if (structNode->name() == structName) {
+								// Found the struct - now find the field
+								const auto& fields = structNode->fields();
+								for (const auto& field : fields) {
+									if (field->name() == foundFieldName) {
+										// Found the field!
+										json_t* location = makeNameLocation(
+												lspPathToUri(modulePath), moduleContent, field.get(), field->name());
+										return location;
 									}
 								}
 							}
@@ -957,22 +927,13 @@ json_t* QuadrateLSP::handleFieldAccessDefinition(
 					for (const auto& entry : std::filesystem::directory_iterator(sourceDir)) {
 						if (entry.path().extension() == ".qd" &&
 								entry.path().string() != lspUriToPath(uri)) { // Skip current file
-							// Parse the file
-							std::ifstream file(entry.path());
-							if (file.good()) {
-								std::stringstream buffer;
-								buffer << file.rdbuf();
-								std::string fileContent = buffer.str();
-
-								Qd::Ast fileAst;
-								Qd::IAstNode* fileRoot = fileAst.generate(fileContent.c_str(), false, nullptr);
-
-								if (fileRoot && !fileAst.hasErrors()) {
-									std::string fileUri = lspPathToUri(entry.path().string());
-									result = searchStructField(fileRoot, fileUri);
-									if (result) {
-										return result;
-									}
+							Qd::Ast fileAst;
+							Qd::IAstNode* fileRoot = lspParseModuleFile(entry.path().string(), fileAst);
+							if (fileRoot) {
+								std::string fileUri = lspPathToUri(entry.path().string());
+								result = searchStructField(fileRoot, fileUri);
+								if (result) {
+									return result;
 								}
 							}
 						}
@@ -993,22 +954,7 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		// Try to read from disk
-		std::string filePath = lspUriToPath(uri);
-		if (!filePath.empty()) {
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
+	std::string documentText = getDocumentText(uri);
 
 	json_t* result = json_null();
 
@@ -1025,21 +971,10 @@ void QuadrateLSP::handleDefinition(const std::string& id, const std::string& uri
 		}
 		if (line < docLines.size()) {
 			const std::string& targetLine = docLines[line];
-			// Check if line starts with "use "
-			size_t usePos = targetLine.find("use ");
-			if (usePos != std::string::npos && usePos < 10) { // Allow some leading whitespace
-				// Extract module name after "use "
-				size_t moduleStart = usePos + 4;
-				while (moduleStart < targetLine.length() && isspace(targetLine[moduleStart])) {
-					moduleStart++;
-				}
-				size_t moduleEnd = moduleStart;
-				while (moduleEnd < targetLine.length() &&
-						(isalnum(targetLine[moduleEnd]) || targetLine[moduleEnd] == '_')) {
-					moduleEnd++;
-				}
+			if (auto span = lspFindUseModuleSpan(targetLine)) {
+				auto [moduleStart, moduleEnd] = *span;
 				// Only navigate if cursor is on the module name, not on "use" keyword
-				if (moduleEnd > moduleStart && character >= moduleStart && character < moduleEnd) {
+				if (character >= moduleStart && character < moduleEnd) {
 					std::string moduleName = targetLine.substr(moduleStart, moduleEnd - moduleStart);
 					std::string sourceDir = std::filesystem::path(lspUriToPath(uri)).parent_path().string();
 					std::string modulePath = resolveModulePath(moduleName, sourceDir);
@@ -1321,21 +1256,7 @@ void QuadrateLSP::handleFoldingRange(const std::string& id, const std::string& u
 	json_object_set_new(response, "id", makeResponseId(id));
 
 	// Get document text
-	std::string documentText;
-	auto docIter = documents_.find(uri);
-	if (docIter != documents_.end()) {
-		documentText = docIter->second;
-	} else {
-		std::string filePath = lspUriToPath(uri);
-		if (!filePath.empty()) {
-			std::ifstream file(filePath);
-			if (file.good()) {
-				std::stringstream buffer;
-				buffer << file.rdbuf();
-				documentText = buffer.str();
-			}
-		}
-	}
+	std::string documentText = getDocumentText(uri);
 
 	json_t* ranges = json_array();
 

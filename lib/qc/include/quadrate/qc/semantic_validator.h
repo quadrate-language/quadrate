@@ -260,6 +260,20 @@ namespace Qd {
 		void printSourceContext(size_t line, size_t column);
 		// Pass 1: Collect all function definitions
 		void collectDefinitions(IAstNode* node);
+		// One per declaration kind collectDefinitions registers. Each returns false when the
+		// declaration was rejected and its children are not to be walked.
+		bool collectFunctionDefinition(class AstNodeFunctionDeclaration* func);
+		bool collectConstantDefinition(class AstNodeConstant* constant);
+		bool collectGlobalVarDefinition(class AstNodeGlobalVar* varNode);
+		bool collectEnumDefinition(class AstNodeEnumDeclaration* enumDecl);
+		bool collectTypeAliasDefinition(class AstNodeTypeAlias* typeAlias);
+		bool collectStructDefinition(class AstNodeStructDeclaration* structDecl);
+		bool collectTestDefinition(class AstNodeTest* test);
+		void collectUseStatement(class AstNodeUse* use);
+		void collectImportStatement(class AstNodeImport* import);
+		// Reports `name` if it is a reserved keyword; `usedAs` completes "cannot be used as ...",
+		// e.g. "a function name". Returns true when the name may be declared.
+		bool checkDeclName(IAstNode* node, const std::string& name, const std::string& usedAs);
 
 		// importerDirectory is the directory of the file containing the `use`, so a relative
 		// path resolves against its own file rather than against the main source file.
@@ -277,6 +291,11 @@ namespace Qd {
 		void collectModuleConstantValues(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
 		void collectModuleStructs(IAstNode* node, std::unordered_map<std::string, bool>& structs);
 		void collectModuleStructFieldTypes(IAstNode* node, const std::string& moduleName, bool mergeIntoMain = false);
+		// Records a struct's fields under each of `keys`, for a struct in the program or in a module.
+		// `qualifyIn` is the module an unqualified struct-typed field belongs to, or empty to leave
+		// the name as written. Returns false after reporting a reserved or duplicate field name.
+		bool collectStructFields(class AstNodeStructDeclaration* structDecl, const std::vector<std::string>& keys,
+				const std::string& qualifyIn);
 		void collectModuleMethods(IAstNode* node, const std::string& moduleName);
 
 		// Helper: Look up struct field types, handling both qualified and unqualified names
@@ -299,6 +318,22 @@ namespace Qd {
 
 		void validateReferencesInternal(IAstNode* node, std::unordered_set<std::string>& localVariables,
 				std::unordered_set<std::string>& iteratorNames);
+		// The per-kind checks validateReferencesInternal makes. Those returning bool return true
+		// when the node is fully handled and its children are not to be walked.
+		void checkLoopControlRef(IAstNode* node, const std::unordered_set<std::string>& iteratorNames);
+		void checkStructFieldTypes(class AstNodeStructDeclaration* structDecl);
+		void checkSwitchCases(class AstNodeSwitchStatement* switchStmt);
+		bool checkIdentifierRef(class AstNodeIdentifier* ident, const std::unordered_set<std::string>& localVariables,
+				const std::unordered_set<std::string>& iteratorNames);
+		void checkFunctionPointerRef(class AstNodeFunctionPointerReference* funcPtr);
+		bool checkStructConstructionRef(class AstNodeStructConstruction* construct,
+				std::unordered_set<std::string>& localVariables, std::unordered_set<std::string>& iteratorNames);
+		void checkScopedRef(class AstNodeScopedIdentifier* scoped);
+		void validateFunctionRefs(
+				class AstNodeFunctionDeclaration* func, const std::unordered_set<std::string>& localVariables);
+		void validateAnonymousFunctionRefs(class AstNodeAnonymousFunction* anonFunc,
+				const std::unordered_set<std::string>& localVariables,
+				const std::unordered_set<std::string>& iteratorNames);
 
 		// Helper: Collect captured variables for closures (anonymous functions accessing outer scope)
 		void collectCapturedVariables(IAstNode* node, std::unordered_set<std::string>& localVariables,
@@ -456,8 +491,6 @@ namespace Qd {
 		bool isNumericType(StackValueType type) const;
 
 		StackValueType getConstantType(const std::string& value) const;
-
-		const char* typeToString(StackValueType type) const;
 
 		std::string findStructTypeByFields(const std::unordered_map<std::string, StackValueType>& accessedFields) const;
 

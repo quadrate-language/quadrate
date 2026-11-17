@@ -63,14 +63,13 @@ static inline bool qdrt_is_numeric_type(qd_stack_type type) {
 bool qdrt_validate_binary_numeric_op(qd_context* ctx, const char* op_name);
 
 // Pop two values from stack for binary operations
-int qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b);
+void qdrt_pop_two_values(qd_context* ctx, qd_stack_element_t* a, qd_stack_element_t* b);
 
 // Convert stack element to double
 static inline double qdrt_to_double(const qd_stack_element_t* elem) {
 	return (elem->type == QD_STACK_TYPE_INT) ? (double)elem->value.i : elem->value.f;
 }
 
-// Release string reference if element is a string
 // Drop a stack slot's reference to what it holds.
 //
 // A slot owns one reference to a refcounted value, whether that is a string or a pointer to
@@ -134,8 +133,5 @@ void qdrt_push_d128(qd_context* ctx, const char* op, qd_d128_t value);
 // with its operands on top, both already known to be d128.
 void qdrt_d128_binary(qd_context* ctx, const char* op, qd_d128_t (*fn)(qd_d128_t, qd_d128_t));
 void qdrt_d128_compare(qd_context* ctx, const char* op, bool (*test)(int order));
-
-// Type name of a stack element's tag, as diagnostics spell it
-const char* qdrt_type_name(qd_stack_type type);
 
 #endif // QDRT_RUNTIME_INTERNAL_H

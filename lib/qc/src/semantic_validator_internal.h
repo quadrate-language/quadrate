@@ -196,7 +196,8 @@ inline std::string serializeCaseValue(IAstNode* node) {
 	return "node:" + std::to_string(reinterpret_cast<std::uintptr_t>(node));
 }
 
-// Convert stack value type to string
+// A stack value type's display name, for messages about the coarse stack types
+// (`int`, `float`, ...). See `qdTypeName` for the type as a program spells it.
 inline const char* stackValueTypeToString(StackValueType type) {
 	switch (type) {
 	case StackValueType::INT:
@@ -213,9 +214,10 @@ inline const char* stackValueTypeToString(StackValueType type) {
 		return "any";
 	case StackValueType::UNKNOWN:
 		return "unknown";
-	default:
-		return "unknown";
+	case StackValueType::TYPEVAR:
+		return "typevar";
 	}
+	return "unknown";
 }
 
 // Check if actual type can be implicitly cast to expected type
@@ -504,8 +506,10 @@ inline bool isTypeParamName(const std::string& t, const std::vector<std::string>
 	return std::find(typeParams.begin(), typeParams.end(), t) != typeParams.end();
 }
 
-// The type name a stack element has when nothing more specific is known.
-inline const char* qdTypeNameOf(StackValueType t) {
+// A stack type spelled as a Quadrate type (`i64`, `str`, ...). A type with no spelling gives
+// `fallback`. A `ptr` could be an array, a struct or a string-like; callers that need the
+// precise type pass `ptrName = fallback` so it counts as unknown rather than as `ptr`.
+inline const char* qdTypeName(StackValueType t, const char* fallback, const char* ptrName = "ptr") {
 	switch (t) {
 	case StackValueType::INT:
 		return "i64";
@@ -515,8 +519,10 @@ inline const char* qdTypeNameOf(StackValueType t) {
 		return "d128";
 	case StackValueType::STRING:
 		return "str";
+	case StackValueType::PTR:
+		return ptrName;
 	default:
-		return "";
+		return fallback;
 	}
 }
 
