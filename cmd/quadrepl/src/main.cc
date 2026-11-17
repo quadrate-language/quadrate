@@ -1490,7 +1490,6 @@ private:
 			ctx->call_stack_depth = 0;
 
 			if (snapshot) {
-				releasePointers(ctx->st);
 				qd_stack_destroy(ctx->st);
 				ctx->st = snapshot;
 			} else {
@@ -1523,36 +1522,18 @@ private:
 		return true;
 	}
 
-	static void releasePointers(qd_stack* stack) {
-		const size_t depth = qd_stack_size(stack);
-		for (size_t i = 0; i < depth; i++) {
-			qd_stack_element_t elem;
-			if (qd_stack_element(stack, i, &elem) == QD_STACK_OK && elem.type == QD_STACK_TYPE_PTR) {
-				qd_release_slot(&elem); // as its kind says
-			}
-		}
-	}
-
+	// The clone holds a reference of its own to every struct and array on the stack
 	qd_stack* snapshotStack() {
 		qd_stack* snapshot = nullptr;
 		if (qd_stack_clone(&snapshot, ctx->st) != QD_STACK_OK) {
 			return nullptr;
 		}
-		const size_t depth = qd_stack_size(snapshot);
-		for (size_t i = 0; i < depth; i++) {
-			qd_stack_element_t elem;
-			if (qd_stack_element(snapshot, i, &elem) == QD_STACK_OK && elem.type == QD_STACK_TYPE_PTR) {
-				qd_retain_slot(&elem);
-			}
-		}
 		return snapshot;
 	}
 
+	// Releases what the snapshot holds
 	static void discardSnapshot(qd_stack* snapshot) {
-		if (snapshot) {
-			releasePointers(snapshot);
-			qd_stack_destroy(snapshot);
-		}
+		qd_stack_destroy(snapshot);
 	}
 };
 

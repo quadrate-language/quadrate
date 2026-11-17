@@ -118,14 +118,15 @@ qd_stack_error qd_stack_init(qd_stack** stack, size_t capacity);
  *
  * @param stack Stack to destroy (can be NULL)
  *
- * @note Releases all string references owned by the stack
+ * @note Releases every reference the stack owns: strings, structs and arrays
  */
 void qd_stack_destroy(qd_stack* stack);
 
 /**
  * @brief Clone a stack (deep copy for strings)
  *
- * Creates a copy of the source stack. Numeric and pointer values are copied directly.
+ * Creates a copy of the source stack. Numeric and raw pointer values are copied directly.
+ * Struct and array pointers are shared, with the clone retaining a reference of its own.
  * String values are deep-copied (a new independent qd_string_t is allocated for each)
  * so that the cloned stack is fully isolated from the source - this is relied on by
  * qd_clone_context for context isolation.
