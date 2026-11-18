@@ -83,7 +83,6 @@ openssl req -new -x509 -days 1 -key "$CERT_DIR/ca.key" -out "$CERT_DIR/ca.crt" \
 openssl genrsa -out "$CERT_DIR/server.key" 2048 2>/dev/null
 openssl req -new -key "$CERT_DIR/server.key" -out "$CERT_DIR/server.csr" \
     -subj "/CN=localhost" 2>/dev/null
-# The name goes in subjectAltName: OpenSSL 4 no longer matches a host name against the CN
 openssl x509 -req -days 1 -in "$CERT_DIR/server.csr" -CA "$CERT_DIR/ca.crt" \
     -CAkey "$CERT_DIR/ca.key" -CAcreateserial -out "$CERT_DIR/server.crt" \
     -extfile <(printf "subjectAltName=DNS:localhost") 2>/dev/null
