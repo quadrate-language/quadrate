@@ -7,6 +7,7 @@
 
 use bits
 use http
+use os
 use strconv
 use time
 
@@ -183,5 +184,8 @@ fn main() {
 	tests "/counter" &test_counter http::group_GET
 	tests "/progress" &test_progress http::group_GET
 
-	e ":19877" http::run!
+	// The listen address, e.g. ":19877", comes from tests/run_http_test.sh
+	os::args -> args
+	e args 0 nth http::run!
+	args free
 }
