@@ -1,6 +1,7 @@
 // Test: Integration test for HTTP server
 /// This test starts a server and handles requests
 use http
+use os
 use strings
 
 def handle_hello(c:http::Ctx -- ) {
@@ -53,7 +54,9 @@ fn main() {
 	e "/body" &handle_body http::POST
 	e "/big-header" &handle_big_header http::GET
 
-	// Start server (blocking) - use with run.sh script
-	e ":8765" http::run!
+	// Start server (blocking) on the address tests/run_http_test.sh passes, e.g. ":8765"
+	os::args -> args
+	e args 0 nth http::run!
 	e http::free_engine
+	args free
 }

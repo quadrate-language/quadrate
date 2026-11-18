@@ -56,14 +56,31 @@ fi
 TESTS_RUN=0
 TESTS_FAILED=0
 
-# start_server <binary> <readiness-url>
+# free_port: a random port nothing listens on. Fixed ports collided when two runs of
+# this script overlapped (parallel worktrees or CI jobs): one run's checks reached the
+# other's server and failed once that server stopped.
+free_port() {
+    local port i
+    for i in $(seq 1 50); do
+        port=$((20000 + RANDOM % 12000))
+        if ! (exec 3<> "/dev/tcp/127.0.0.1/$port") 2>/dev/null; then
+            echo "$port"
+            return 0
+        fi
+    done
+    echo "no free port found" >&2
+    return 1
+}
+
+# start_server <readiness-url> <command...>
 start_server() {
-    local binary="$1" ready_url="$2" i
-    "$binary" > "$WORK_DIR/server.log" 2>&1 &
+    local ready_url="$1" i
+    shift
+    "$@" > "$WORK_DIR/server.log" 2>&1 &
     SERVER_PID=$!
 
     for i in $(seq 1 100); do
-        if curl -s -o /dev/null --max-time 2 "$ready_url" 2>/dev/null; then
+        if curl -sk -o /dev/null --max-time 2 "$ready_url" 2>/dev/null && kill -0 "$SERVER_PID" 2>/dev/null; then
             return 0
         fi
         if ! kill -0 "$SERVER_PID" 2>/dev/null; then
@@ -111,8 +128,9 @@ echo "=== HTTP server integration ==="
     exit 1
 }
 
-BASE="http://127.0.0.1:8765"
-start_server "$WORK_DIR/server" "$BASE/"
+PORT=$(free_port)
+BASE="http://127.0.0.1:$PORT"
+start_server "$BASE/" "$WORK_DIR/server" ":$PORT"
 
 check "GET /"                "Hello, World!"   "$BASE/"
 check "GET /json"            "{}"              "$BASE/json"
@@ -176,15 +194,12 @@ class Chunked(http.server.BaseHTTPRequestHandler):
         self.close_connection = True
     def log_message(self, *args):
         pass
-http.server.HTTPServer(("127.0.0.1", 18766), Chunked).serve_forever()
+import sys
+http.server.HTTPServer(("127.0.0.1", int(sys.argv[1])), Chunked).serve_forever()
 ENDOFPY
-    python3 -I "$WORK_DIR/chunked.py" > "$WORK_DIR/server.log" 2>&1 &
-    SERVER_PID=$!
-    for i in $(seq 1 50); do
-        curl -s -o /dev/null --max-time 2 "http://127.0.0.1:18766/" 2>/dev/null && break
-        sleep 0.1
-    done
-    client_check "chunked response" "$(printf '200\nhello chunked world')" "http://127.0.0.1:18766/"
+    PORT=$(free_port)
+    start_server "http://127.0.0.1:$PORT/" python3 -I "$WORK_DIR/chunked.py" "$PORT"
+    client_check "chunked response" "$(printf '200\nhello chunked world')" "http://127.0.0.1:$PORT/"
     stop_server
 fi
 
@@ -197,15 +212,11 @@ if command -v openssl > /dev/null 2>&1; then
     printf 'subjectAltName=DNS:localhost\n' > "$WORK_DIR/srv.ext"
     openssl x509 -req -in "$WORK_DIR/srv.csr" -CA "$WORK_DIR/ca.crt" -CAkey "$WORK_DIR/ca.key" \
         -CAcreateserial -out "$WORK_DIR/srv.crt" -days 1 -extfile "$WORK_DIR/srv.ext" > /dev/null 2>&1
-    openssl s_server -accept 18767 -cert "$WORK_DIR/srv.crt" -key "$WORK_DIR/srv.key" -www -quiet \
-        > "$WORK_DIR/server.log" 2>&1 &
-    SERVER_PID=$!
-    for i in $(seq 1 50); do
-        curl -sk -o /dev/null --max-time 2 "https://localhost:18767/" 2>/dev/null && break
-        sleep 0.1
-    done
+    PORT=$(free_port)
+    start_server "https://localhost:$PORT/" \
+        openssl s_server -accept "$PORT" -cert "$WORK_DIR/srv.crt" -key "$WORK_DIR/srv.key" -www -quiet
     TESTS_RUN=$((TESTS_RUN + 1))
-    status=$(SSL_CERT_FILE="$WORK_DIR/ca.crt" timeout 10 "$WORK_DIR/client" "https://localhost:18767/" 2>&1 | head -n 1 || true)
+    status=$(SSL_CERT_FILE="$WORK_DIR/ca.crt" timeout 10 "$WORK_DIR/client" "https://localhost:$PORT/" 2>&1 | head -n 1 || true)
     if [ "$status" = "200" ]; then
         echo -e "  ${GREEN}✓${NC} https"
     else
@@ -214,7 +225,7 @@ if command -v openssl > /dev/null 2>&1; then
         echo "      actual:   $(printf '%q' "$status")"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
-    client_check "https, untrusted"  "error 3"  "https://localhost:18767/"
+    client_check "https, untrusted"  "error 3"  "https://localhost:$PORT/"
     stop_server
 fi
 
@@ -226,8 +237,9 @@ echo "=== SSE integration ==="
     exit 1
 }
 
-SSE="http://127.0.0.1:19877/test"
-start_server "$WORK_DIR/sse" "$SSE/single"
+PORT=$(free_port)
+SSE="http://127.0.0.1:$PORT/test"
+start_server "$SSE/single" "$WORK_DIR/sse" ":$PORT"
 
 check "SSE single"    "data: hello world"                                             "$SSE/single"
 check "SSE multiple"  "$(printf 'data: first\n\ndata: second\n\ndata: third')"        "$SSE/multiple"
